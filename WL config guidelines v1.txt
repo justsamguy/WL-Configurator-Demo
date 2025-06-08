@@ -1,0 +1,787 @@
+Thanks! I’ll create a complete set of coding guidelines to implement a mockup of the WoodLab Configurator using Three.js and standard web technologies. This will include structure, styling, placeholder logic, file organization, and GitHub Pages compatibility. I’ll let you know once everything is ready for handoff.
+
+
+# WoodLab Configurator Mockup – Development Guidelines
+
+This document outlines coding guidelines for a **standalone mockup** of the WoodLab Configurator app. The goal is to reproduce the UI/UX described in the design specification, using Three.js for a 3D viewer (or an equivalent alternative if needed) and placeholders instead of real 3D models. The app will be static and hosted on GitHub Pages, so we emphasize modular, client-side implementation with no server dependencies. The focus is on structure, layout, and interactive behavior, ensuring the mockup clearly demonstrates the intended functionality and design.
+
+## File and Folder Structure
+
+Organize the project into a clear hierarchy to support modularity and easy maintenance. A structured layout also simplifies deployment to GitHub Pages (which hosts static files). Below is a recommended structure:
+
+| **Path**                     | **Description**                                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/index.html`                | The main HTML file. Contains the base layout (containers for 3D canvas, sidebar, stage bar, etc.), and includes links to CSS and script files.                                                                                                                                                                               |
+| `/css/` (or `/styles/`)      | Stylesheets for the app. If using a preprocessor (SCSS) or utility CSS (Tailwind), source files can be here and compiled to a final `styles.css`.                                                                                                                                                                            |
+| `/css/styles.css`            | Compiled main CSS file (if using SCSS or Tailwind, the output after build). Linked by `index.html`.                                                                                                                                                                                                                          |
+| `/js/`                       | JavaScript files for app functionality. All logic for Three.js setup, UI interactions, and state management goes here.                                                                                                                                                                                                       |
+| `/js/main.js`                | **Entry point** script. Initializes the app: sets up the Three.js scene, configures UI components, and binds event listeners.                                                                                                                                                                                                |
+| `/js/viewer.js`              | Module for the **3D Viewer**. Handles creating the Three.js scene, camera, lights, renderer, and controls, as well as loading placeholder models. Exports functions to reset view or update the model.                                                                                                                       |
+| `/js/components/`            | (Optional) Folder for UI component logic if splitting into multiple files (e.g., `stageBar.js`, `sidebar.js`, `helpDrawer.js`). Each file manages a specific UI segment’s behavior.                                                                                                                                          |
+| `/assets/`                   | Static assets such as images, icons, and dummy 3D files. Use this for placeholder images (e.g. option thumbnails), logo, and any style assets like fonts. For a mockup, 3D models can be simple shapes defined in code, but if any dummy model files are used, they can reside here (e.g. `/assets/models/placeholder.glb`). |
+| `/assets/images/`            | Placeholder images and icons used in the UI (e.g., dummy product images, icons for buttons like reset, help, tooltips, etc.).                                                                                                                                                                                                |
+| `/assets/icons/`             | SVG or image files for UI icons if not using an icon font. (Alternatively, use an icon library via CDN).                                                                                                                                                                                                                     |
+| `_config.yml` or `.nojekyll` | *(If using GitHub Pages with Jekyll disabled)* Include a `.nojekyll` file to ensure no Jekyll processing, since the site is plain HTML/JS. This prevents issues with files/folders that start with underscores, etc.                                                                                                         |
+
+**Notes:**
+
+* Keep all paths **relative**. For example, in `index.html` use `./css/styles.css` and `./js/main.js` so that the app works both locally and when hosted under a GitHub Pages subpath. Using relative links ensures the site doesn’t break when the URL includes the repository name.
+* If using a build tool or framework (like React), your source folder (e.g. `/src/`) would contain the component files, and the build output (often a `/dist/` or `/build/` folder) should mirror the above structure for deployment. In a React setup, ensure the build is configured for a **relative homepage** (for GitHub Pages, you may need to set the `basename` or use hash routing, and deploy the static files accordingly).
+* **GitHub Pages hosting**: Place the site in the default publishing branch or the `gh-pages` branch as needed. The structure above can be placed in a `/docs` folder of the repo (if using that mechanism) or in the root of a `gh-pages` branch. No server-side code should be needed – all features (including PDF generation, if any) should execute in the browser.
+
+## Technology Stack
+
+Choosing the right tech stack is crucial for a static, interactive app. We recommend the following:
+
+### Three.js for 3D Visualization
+
+Use **Three.js** to implement the 3D viewer. Three.js is a widely-used WebGL library that works with static hosting and provides out-of-the-box controls and utilities for 3D scenes. It’s well-suited to render a placeholder model and allow user interaction (orbit, zoom, pan). The Three.js library can be included either by downloading the minified bundle into the project (e.g. under `/js/lib/three.min.js`) or via a CDN link in the HTML. If using modules, you can import Three.js and its add-ons (like OrbitControls) with ES6 imports.
+
+* **Alternative**: Other WebGL frameworks like Babylon.js or PlayCanvas could be used, but Three.js is recommended for its balance of simplicity and flexibility in a static context. It has broad community support and examples.
+
+### Framework vs. Vanilla JavaScript
+
+For this mockup, you can implement the UI in **Vanilla JavaScript** with organized modules, or use a component-based framework like **React**:
+
+* **Vanilla JS Approach**: Suitable if the app is relatively simple or if you want to avoid a build process. You can structure code using modules (ES6 imports) or IIFEs for each component. Maintain a global state object and update the DOM manually or with lightweight templating. This keeps deployment straightforward (just static files). Ensure to test in multiple browsers since you’ll be writing plain JS (transpile or polyfill if using newer syntax not supported by all target browsers).
+
+* **React (or Similar) Approach**: Useful for a complex UI because it provides a structured component model and state management out of the box. You can create components for the stage bar, sidebar panels, etc., and manage state (e.g., current stage, selected options) via React’s state and context or a state library. If using React, you will need a build step (using tools like Create React App or Vite). After building, deploy the static files. Remember to use **HashRouter** or configure the app for client-side routing only, since GitHub Pages only serves the static files (no server routing). React helps ensure UI updates reflect state changes declaratively, which can reduce manual DOM manipulation bugs.
+
+*Styling Note:* If using React, you might opt for CSS-in-JS or scoped CSS modules; but given this is a static app, traditional CSS (possibly generated from SCSS or Tailwind) is perfectly fine to use in either case.
+
+### Styling Solutions (Tailwind CSS vs SCSS)
+
+* **Tailwind CSS** (Utility-first CSS framework): Tailwind can speed up styling by offering utility classes for spacing, layout, colors, etc. This can be very handy to quickly implement the design spec’s styles without writing a lot of custom CSS. For example, Tailwind provides an `animate-pulse` utility that makes an element gently fade in and out – useful for skeleton loaders or loading indicators. If using Tailwind, you can either include the pre-built CSS via CDN (for prototyping) or set up a build process to purge and tree-shake unused classes (to keep CSS size small). The build route would require Node locally but results in static CSS for deployment.
+
+* **SCSS (Sass)**: Using SCSS is a good choice if you want more control or the design spec is very custom. SCSS allows nesting, variables, and mixins which can help organize styles per component. You can structure SCSS files mirroring the components (e.g., `_stagebar.scss`, `_sidebar.scss`) and import them into a main stylesheet. A pre-compilation step is needed (using a Sass compiler) to output a single CSS file for the site. This approach is classical and ensures maintainability as styles grow.
+
+Both approaches can achieve the desired responsive, polished UI. For a **mockup with pixel-specific design**, SCSS might make it easier to match the spec exactly. If **rapid development and consistency** is a priority, Tailwind’s pre-made classes (and possibly component libraries like Flowbite or DaisyUI) can be useful – e.g., Tailwind has ready-made classes for grids, flex layouts, tooltips, etc., that can quickly approximate the spec’s look.
+
+**Additional Tools:**
+
+* Consider using a build tool like **Webpack/Vite** if you need to bundle modules or process SCSS/Tailwind. The output should be static files for GH Pages. If avoiding build tools, stick to plain `<script>` tags and a simple CSS file.
+* Use polyfills as needed (for features like `window.fetch` or others if you target older browsers), but since this is 2025 and a controlled environment, focusing on modern evergreen browsers is fine.
+* **Icon libraries**: Instead of image files for every icon, you can use an icon font or library (e.g., FontAwesome via CDN, or HeroIcons with Tailwind). Alternatively, inline SVGs can be placed in the HTML for clear placeholders.
+
+By selecting the above stack, we ensure the app is a purely front-end solution that **runs entirely in the browser**, which fits the GitHub Pages deployment model.
+
+## Component and Layout Guide
+
+The UI is divided into several key components as described in the design spec. Each component’s structure and purpose is detailed below. The goal is to mirror the layout and functionality using placeholder content where needed:
+
+### Stage Bar (Progress Indicator)
+
+The **Stage Bar** is a horizontal progress indicator of the configuration steps (e.g., **Stage 1: Select Model**, **Stage 2: Customize**, **Stage 3: Summary**). It is typically positioned either at the top of the app (below any header) or possibly at the bottom as a sticky progress nav. Based on the spec, we assume it’s prominently displayed to guide users.
+
+* **Structure**: Use a `<nav>` or an ordered list for the stage steps for semantic clarity. For example:
+
+  ```html
+  <nav id="stage-bar">
+    <ul>
+      <li class="stage-item active"><span>1. Model</span></li>
+      <li class="stage-item"><span>2. Customize</span></li>
+      <li class="stage-item"><span>3. Summary</span></li>
+    </ul>
+  </nav>
+  ```
+
+  Each stage item can be a `<li>` containing a step number or icon and a label. The “active” stage has a highlight (e.g., different background or an underline). If stages are clickable (to go back to a completed step), use `<button>` or anchor for the labels to make them interactive.
+
+* **Logic**: The stage bar reflects the current stage in the configuration flow. As the user proceeds, update the active stage styling. If a stage is completed, you might show a checkmark or change its style to indicate completion. The current stage item is highlighted (and should be announced to screen readers as the current step).
+
+* **Next/Back Controls**: Depending on spec, navigation buttons (“Next”, “Previous”) might be separate from the stage bar (for example, at bottom of the sidebar or viewer). Ensure these controls are present to navigate stages sequentially, in addition to any direct clicking on the stage bar.
+
+* **Responsive**: On smaller screens, the stage bar might need to scroll horizontally or compress. For instance, you might shorten the labels to just numbers or icons on mobile. Use CSS media queries or Tailwind responsive utilities to hide full text on narrow screens and show a shortened version. Ensure the stage bar remains accessible (e.g., use aria-current on the active step, and if it’s scrollable, allow swiping or arrow key navigation).
+
+### 3D Viewer Canvas
+
+The **3D Viewer** is the central area where a 3D representation of the product is shown. In the mockup, this will display a placeholder model but should support the same interactions as the real app.
+
+* **Structure**: Use a `<div id="viewer-container">` as a wrapper, and within it the Three.js canvas. Three.js will insert a `<canvas>` element for the WebGL content. You can also include overlay elements within this container for UI hints or loading states. For example:
+
+  ```html
+  <div id="viewer-container">
+    <!-- Three.js canvas gets injected here -->
+    <div id="canvas-overlay" class="overlay">Loading 3D model...</div>
+    <button id="reset-view" title="Reset View">⟲</button>
+  </div>
+  ```
+
+  Here, `canvas-overlay` could be a semi-transparent overlay with a loading spinner or message. The `reset-view` button is an overlay control to reset the camera (design as per spec, e.g., a circular arrow icon).
+
+* **Three.js Setup**: The Three.js scene setup occurs in the `viewer.js` module (or equivalent). On app init, create a `THREE.Scene`, a camera (e.g., `PerspectiveCamera`), and a `WebGLRenderer`, then attach the renderer’s canvas to `#viewer-container`. Add basic lighting (e.g., an AmbientLight and a DirectionalLight or HemisphereLight) so the placeholder model is visible. Use Three.js **OrbitControls** to allow rotation, zoom, and pan of the camera. For example:
+
+  ```js
+  // Inside viewer.js
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
+  camera.position.set(0, 0, 5); // adjust as needed for a good view
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  document.getElementById('viewer-container').appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; // smooth inertia
+  controls.target.set(0, 0, 0);  // look at center of scene
+  controls.update();
+  ```
+
+  This attaches orbit controls to allow the user to rotate around the target (the product). Enable features like `controls.enableZoom = true` and `controls.enablePan = true` for full interaction. The `reset-view` button’s click handler can call something like `controls.reset()` or manually set `camera.position` back to default and call `controls.update()` to recenter.
+
+* **Placeholder Model**: Since we don’t have the actual 3D models, use simple geometry as stand-ins:
+
+  * For example, create a `THREE.BoxGeometry(1,1,1)` or `SphereGeometry` and a basic `MeshStandardMaterial`. This could represent the product generically. You might create different geometries for different configurations if needed (e.g., a taller box for one model, a flatter one for another) to illustrate model switching.
+  * If the design spec calls for multiple parts (like a table with chairs, etc.), you can add multiple geometric primitives to simulate parts (e.g., a large cube plus smaller cylinders as placeholders).
+  * Optionally, apply a simple color or texture to the material for visual distinctness. For instance, use a wood-like color on the cube to hint at the product’s material.
+
+* **Loading Indicator (Skeleton)**: When the app first loads or when switching models, show a loading state in the viewer. This can be the overlay with text “Loading 3D model...” or a **skeleton UI**. A skeleton loader is a placeholder that mimics the shape of content while loading. For instance, you could show a grey silhouette of the product or a spinner icon. Using Tailwind, one could overlay a semi-transparent dummy shape and apply `animate-pulse` to indicate loading. Ensure this overlay is removed once the placeholder model is “loaded” (in the mock, after a timeout or immediately since we have the shape already). Skeleton loaders improve perceived performance by showing an outline of content while data is fetched.
+
+* **UI Overlays**: Besides the loading message and reset button, the viewer might have other overlays per spec – e.g., a tooltip that says “Drag to rotate” appearing on first load, or hotspot indicators (if any). Implement these as HTML elements absolutely positioned over the canvas. Use CSS to ensure they don’t interfere with the canvas event picking (or set `pointer-events: none` on purely informational overlays).
+
+* **Responsiveness**: The viewer should resize with the window. Use CSS to give the container a flexible height (e.g., height: 60vh for desktop, and maybe smaller for mobile to leave room for options). Also, listen for window resize in JS to adjust the renderer size and camera aspect (`renderer.setSize` and `camera.aspect = newWidth/newHeight; camera.updateProjectionMatrix()` on resize).
+
+* **Accessibility**: Add an ARIA label to the canvas (e.g., `<canvas aria-label="3D model viewer, showing the product"></canvas>`). While 3D content isn’t directly accessible, providing a textual hint is good. Also ensure the reset view button is keyboard focusable and has a tooltip or `aria-label="Reset camera view"`.
+
+### Right Rail Sidebar (Configuration Panel)
+
+The **Right Rail** is the sidebar UI where users make selections (options, features, etc.) and view details like pricing. It typically contains multiple sections corresponding to the current stage. For example, in Stage 1 the sidebar might list product models to choose from; in Stage 2, it might show color and material options; in Stage 3, a summary. Our mockup will include all these UI elements using placeholder text and images.
+
+* **Structure**: Use an `<aside id="sidebar">` element for the panel (semantic for ancillary content). Inside, structure content by stage:
+
+  * You can hard-code sections for each stage in the HTML (showing only the relevant one at a time via JS), or dynamically populate the sidebar based on stage state.
+  * For example:
+
+    ```html
+    <aside id="sidebar">
+      <!-- Stage 1: Select Model -->
+      <section id="stage1-options" class="stage-section">
+        <h2>Select Model</h2>
+        <ul class="option-list">
+          <li class="option-card selected">
+            <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder">
+            <div class="option-info">
+              <h3>Model 1</h3>
+              <p class="option-price">Base Price: $100</p>
+            </div>
+          </li>
+          <li class="option-card">
+            <!-- ... other models ... -->
+          </li>
+        </ul>
+      </section>
+
+      <!-- Stage 2: Customize -->
+      <section id="stage2-options" class="stage-section hidden">
+        <h2>Customize</h2>
+        <!-- options like colors, features, with dummy inputs or buttons -->
+      </section>
+
+      <!-- Stage 3: Summary -->
+      <section id="stage3-summary" class="stage-section hidden">
+        <h2>Summary</h2>
+        <div id="summary-details"><!-- filled in by JS --></div>
+        <button id="download-pdf">Download PDF</button>
+      </section>
+    </aside>
+    ```
+
+    Each `section.stage-section` corresponds to a stage’s content. Only one is visible at a time (others hidden via `display: none` or a CSS class like `.hidden { display: none; }`). The example Stage 1 section shows a list of option “cards” – each could be a clickable `<li>` (with role="button" or made a `<button>` internally) to select that option.
+
+* **Option Cards**: Represent choices (like different models or finishes). As in the snippet, an option card might contain an image (placeholder image or icon), a title, and perhaps a price difference or description. Use a class like `.selected` on the currently chosen option to style it (highlight border or background). If the spec has a specific selection style (e.g., checkmark overlay or glow), replicate that with CSS.
+
+* **Dynamic Price Display**: The sidebar should show the current price and update as options change. This could be a dedicated element, e.g., a sticky footer in the sidebar or a header. For example, at the bottom of the sidebar:
+
+  ```html
+  <div id="price-bar">
+    <span>Total:</span>
+    <span id="total-price">$100</span>
+  </div>
+  ```
+
+  When selections change, update `#total-price` with the new total, and optionally animate it (see **Dynamic Pricing Animation** in the next section). If the spec calls for a price breakdown or monthly vs one-time cost, include placeholder text for those as needed.
+
+* **Scroll Behavior**: Ensure the sidebar is independently scrollable if content height exceeds the viewport (especially on mobile or shorter screens). Use CSS like `overflow-y: auto; max-height: 100%` on the sidebar or specific lists. If the stage bar is fixed at top, the sidebar content might need top padding to avoid being hidden under it when scrolled.
+
+* **Interactivity**:
+
+  * Clicking an option card selects that option: in JS, update the state (which model or option chosen), update the UI (mark the card as selected, unselect others), and possibly trigger changes in the 3D view (e.g., load a different placeholder model or change its color).
+  * If an option is incompatible or out of stock (in a real app), the design might show it as disabled. In the mock, you can illustrate this by adding a disabled style on some options (e.g., greyed out and non-clickable, with a tooltip explaining “Unavailable”).
+  * If selections lead to *banner* messages (e.g., “This material adds 2 weeks to delivery”), have a mechanism to display those (see **Banners** below).
+
+* **Stage Transitions**: When the user clicks “Next” to go to the next stage, hide the current section and show the next section. You might also programmatically scroll the sidebar to top for the new content (for a better user experience). If using a framework, this would correspond to rendering a different component; in vanilla JS, simply toggle classes or use `element.style.display`. Ensure that if a stage has required selections, you validate and maybe prevent advancing until something is selected (providing a warning banner or inline error message).
+
+* **Layout on Different Screens**: On desktop, the sidebar is a column to the right of the viewer. On tablet, if space permits, it can remain a sidebar; otherwise you might convert it to a bottom drawer or a collapsible panel. On mobile, typically the sidebar might become a full-width section either below the viewer or as an overlay. (More in **Responsive Design** section below).
+
+* **Semantic & Accessibility**: Use appropriate elements: e.g., the list of options could be a list of buttons or checkboxes (if treating selection like form input, a group of radio buttons might semantically fit). Make sure to label each option (the text in `<h3>` can serve as the label, and the image needs `alt=""` describing the option). Manage focus when content updates (e.g., when moving to a new stage, set focus to the first heading of the new section so screen reader users know the context changed). Allow keyboard users to select options (you can add `tabindex="0"` to option cards if they’re non-standard elements and use key listeners, or just use actual `<button>` or `<input type="radio">` for inherent keyboard support).
+
+### Banners (Notifications)
+
+“Banners” refer to UI messages that span across the interface, usually to display important information or alerts to the user. According to the spec, these could include: informational banners (e.g., “Free shipping on orders over \$500”), warning/error banners (e.g., “Please select an option from each category before proceeding”), or promotional messages.
+
+* **Structure**: A banner can be a `<div id="banner" role="alert">` styled as a bar that spans the top of the main content area (or within the sidebar or viewer, depending on spec). It could be fixed or static. For example:
+
+  ```html
+  <div id="banner" class="banner-info hidden">
+    <p><strong>Note:</strong> All prices include installation.</p>
+    <button id="banner-close" aria-label="Close alert">×</button>
+  </div>
+  ```
+
+  The banner includes a close button (if banners are dismissible). Use distinct styles for different types (info, warning, error, success) – e.g., blue background for info, yellow for warning, red for errors, etc., per the design guide. For dynamic banners (like “selection required”), you can inject the message text via JS.
+
+* **Behavior**:
+
+  * **Triggering**: Call a function like `showBanner(message, type)` to display a banner. For example, if the user tries to proceed without a required selection, trigger `showBanner("Please select a model to continue.", "warning")`. This function would set the banner text, apply the correct style class, and remove the `.hidden` class to make it visible.
+  * **Auto-hide**: Some banners (especially info ones) might auto-dismiss after a few seconds. Implement this with `setTimeout` to add the `.hidden` class back after, say, 5 seconds, unless the user hovers on it.
+  * **Close**: The close “×” button should hide the banner immediately. Ensure this is keyboard accessible (a `<button>` with an `aria-label`). When closed, remove it from DOM or hide it, and restore focus to a logical element (like focus back to what the user was doing).
+
+* **Animation**: Banners can slide in/out or fade in for better UX. For example, use CSS transitions to move the banner from top. Initially, apply `transform: translateY(-100%)` (off-screen) and when showing, remove that so it slides down.
+
+* **Responsive**: Banners typically span the full width of their container. Make sure the text wraps on small screens and the close button is still reachable. If the banner covers important UI (especially on mobile with small screen), consider making it position static (pushing content down) rather than fixed, or ensure it doesn’t overlap interactive elements.
+
+* **Accessibility**: By giving the banner `role="alert"`, screen readers will announce its content when it appears. This is useful for important messages. Do not use this for non-urgent info to avoid too many interruptions; for those, `aria-live="polite"` could be used instead. If the banner conveys critical info (error), ensure it’s not auto-dismissed or that the user has a way to retrieve it again.
+
+### Tooltips
+
+Tooltips provide contextual help or labels when a user hovers or focuses on a UI element (like explaining what an icon means or giving more detail on a truncated label). The spec mentions tooltips, so we should implement a simple, accessible tooltip component.
+
+* **Structure**: A tooltip is typically a small `<div class="tooltip">Help text...</div>` that appears on hover/focus of a target element. We don’t need it present in the DOM initially for every element; we can create and position it via JS or have it as an adjacent element toggled by CSS.
+
+  For example, if there is a help icon:
+
+  ```html
+  <button class="help-icon" aria-describedby="tt1">?</button>
+  <div id="tt1" class="tooltip" role="tooltip">This will reset the configuration.</div>
+  ```
+
+  Here the button has `aria-describedby="tt1"` linking it to the tooltip content. The tooltip `div` has `role="tooltip"` and is initially hidden (via CSS `display: none` or similar). On hover or focus of the button, you can show the tooltip (e.g., by adding a class or using a CSS sibling selector like `.help-icon:focus + .tooltip { display:block; }` if the structure allows).
+
+* **Behavior**:
+
+  * Show the tooltip on mouseenter or focus events, hide on mouseleave or blur. Use a slight delay on hiding to make it easier for users moving the mouse.
+  * Position the tooltip near the target. This could be done with CSS (e.g., absolutely position it above or below the element). If using JS, compute the target’s position and set the tooltip style accordingly. Ensure the tooltip doesn’t go off-screen (adjust if near edges).
+  * Only one tooltip should show at a time. If another opens, hide the previous.
+
+* **Content**: Use plain text or very simple HTML in tooltips. Since this is a mock, the content can be placeholder help text (e.g., “Explanation of this feature.”). Keep it short.
+
+* **Accessibility**: By using `aria-describedby` or `aria-label` on the target, screen reader users can get the tooltip info. Also ensure keyboard users can trigger it: if the target is focusable (like a button or input, which it should be), focusing it should reveal the tooltip. The tooltip itself should likely not take focus (it’s just a description), so manage focus such that Tab skips it (e.g., do not put interactive content inside tooltip). If a tooltip needs to contain a link or button, that becomes a more complex popover – in such a case, treat it as a popover dialog instead.
+
+### Help Drawer (Side Help Panel)
+
+The design spec mentions a "help drawer," which is usually a panel that slides out to provide additional help or instructions for using the configurator. This is often triggered by clicking a “Help” or “?” button in the UI.
+
+* **Trigger**: Likely a help icon or button in a consistent location (for example, top-right corner of the viewer or stage bar). For example:
+
+  ```html
+  <button id="help-button" aria-controls="help-drawer" aria-expanded="false">Help</button>
+  ```
+
+  This button toggles the help drawer. `aria-controls` and `aria-expanded` attributes help with accessibility (screen readers know it controls the drawer’s visibility).
+
+* **Structure**: The help drawer can be an `<aside id="help-drawer" class="drawer">` element, perhaps positioned off-canvas (e.g., right side of the screen) and sliding in over content or pushing content aside. It could contain static help text, a list of FAQs or an image tutorial, etc., as per spec.
+
+  Example:
+
+  ```html
+  <aside id="help-drawer" class="drawer hidden" tabindex="-1">
+    <h2>Help &amp; Support</h2>
+    <p>Use this configurator to customize your product. You can rotate the 3D model by dragging...</p>
+    <!-- more help content -->
+    <button id="help-close" aria-label="Close help">Close</button>
+  </aside>
+  ```
+
+  We give it `tabindex="-1"` so we can focus it via script when it opens (to trap focus inside).
+
+* **Behavior**:
+
+  * Clicking the Help button adds a class (e.g., remove `.hidden` and add `.open` on the drawer) to display it. The drawer might slide in from the right (CSS transition on transform). Simultaneously, update the `aria-expanded` on the button to "true".
+  * Inside the drawer, include a close button. Also allow clicking outside (on an overlay backdrop) or pressing Escape to close it. Add an overlay `<div class="backdrop"></div>` semi-transparent behind the drawer to darken the rest of the UI when open (and close the drawer if backdrop is clicked).
+  * **Focus Management**: When opening, set focus to the first focusable element in the drawer (e.g., the `<h2>` or some link). Trap focus within the drawer: i.e., while open, if user presses Tab at the last element, loop back to the first (and vice versa for Shift+Tab). When closing, return focus to the Help button so keyboard users don’t lose their place.
+  * Ensure the main content is not focusable when the drawer is open (you can add `aria-hidden="true"` to the main content container when help is open to prevent screen readers from navigating it).
+
+* **Responsive Considerations**: On desktop, the drawer might be a fixed-width panel that doesn’t cover the entire screen. On mobile or tablet, it might take the full screen (since there’s less space). Adjust via CSS breakpoints: for small screens, you might have the drawer cover 100% width, 100% height (essentially a modal). For larger, maybe 30% width and aligned to side.
+
+* **Styling**: Distinguish the drawer with a background (like a light panel or whatever spec calls for). It should be clearly above the main UI. A slight box-shadow can help denote it. The backdrop (if used) should be semi-transparent black to focus attention on the drawer.
+
+### Summary Stage and Export (Snapshot & PDF)
+
+The **Summary stage** (Stage 3 in our example) is where the user reviews their configuration and can export it (e.g., generating a snapshot image and a PDF). We implement this stage to illustrate the functionality, using placeholders for the final output.
+
+* **Summary UI**: In the sidebar’s Summary section (or it could be a full-page overlay depending on design), display a recap of selections and a snapshot of the product:
+
+  * List the chosen options (e.g., “Model: X”, “Color: Y”, etc.). You can populate this from the state object that tracks selections. For dummy content, just ensure each category is represented (even if it’s static text in the mock).
+  * Show the total price prominently, possibly with a breakdown if required (tax, discounts, etc. – can be static values in the mock or computed from dummy prices).
+  * Include a placeholder for the product image snapshot. In a real app, we would capture the 3D view; in the mock, we can simulate it by either using the canvas image or a dummy image:
+
+    * **Snapshot placeholder**: Use Three.js to capture the canvas image if possible. Three.js’s renderer canvas can be turned into a data URL image string using `renderer.domElement.toDataURL()`. For example:
+
+      ```js
+      const dataURL = renderer.domElement.toDataURL("image/png");
+      // then set an <img> src to this dataURL
+      document.getElementById('snapshot-img').src = dataURL;
+      ```
+
+      This would produce a PNG of the current 3D view which we can display in the summary. If this is complicated or not desired for the mock, simply use a placeholder image (like a static screenshot prepared beforehand or a blank image with “Snapshot here” text).
+    * In the summary HTML:
+
+      ```html
+      <div class="snapshot-frame">
+        <img id="snapshot-img" src="assets/images/snapshot_placeholder.png" alt="Screenshot of configured product">
+      </div>
+      ```
+
+      Style this frame to mimic how the snapshot would appear (maybe a bordered image).
+
+* **Export to PDF**: The app should allow generating a PDF of the summary. In the mock, we describe the structure of this PDF and provide a mock implementation:
+
+  * Use a library like **jsPDF** and **html2canvas** to capture the summary and compile a PDF on the client side. The basic approach is:
+
+    1. Create a jsPDF document in JavaScript.
+    2. Use html2canvas to render the summary HTML section to an image (canvas) in memory.
+    3. Add that image to the PDF and save/download it.
+
+    For example, on clicking "Download PDF":
+
+    ```js
+    import { jsPDF } from 'jspdf';
+    import html2canvas from 'html2canvas';
+
+    const summaryElem = document.getElementById('summary-details'); 
+    html2canvas(summaryElem).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ format: 'a4', unit: 'px', orientation: 'p' });
+      pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), 0); // add image full width
+      pdf.save('WoodLabConfiguration.pdf');
+    });
+    ```
+
+    This is a simplified outline; in practice you might need to scale the canvas to fit A4 properly, but since this is a mock, you could even skip actual generation and just indicate what would happen. The key is that *it’s possible to generate the PDF fully on the client side by converting the HTML content (including the snapshot) to an image and then using jsPDF to create the PDF*.
+  * **Placeholder PDF**: If not actually generating, you can simulate by triggering a download of a pre-made PDF file (a generic placeholder PDF in assets). But it’s more instructive to at least show the process above or have the button create a dummy PDF with jsPDF (like just a text “This is a PDF” which is straightforward with `pdf.text()`).
+
+* **Export Snapshot (Image)**: Apart from PDF, you might allow downloading just the image of the configuration. If so, a "Save Image" button could simply trigger the toDataURL and then create a temporary link to `dataURL` with `download` attribute. This is a nice-to-have.
+
+* **Before-unload Warning**: If the user has configured something and tries to leave or refresh on summary (or any stage), we might want to warn them to prevent losing their configuration. Use the `window.onbeforeunload` event to achieve this:
+
+  ```js
+  window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = ''; // this triggers the browser's confirmation dialog
+  });
+  ```
+
+  This will cause a native dialog: “Are you sure you want to leave? Changes you made may not be saved.” when the user attempts to close or refresh. Only do this if there are unsaved changes to avoid annoying the user every time. In a mock environment, it’s optional, but including it shows attention to UX detail for data loss prevention.
+
+* **PDF Content Structure**: In the PDF, include the snapshot image, the list of options selected, and price breakdown. Maybe also a title and date. This can be described in code comments or documentation rather than fully implemented in the mock. For example, “The PDF will show WoodLab logo, configuration summary in text, and the image. It uses the same data as on-screen summary, formatted for A4. If multiple pages are needed, the content will be split appropriately.” This shows the intent even if the actual PDF generation in the mock is basic.
+
+### Additional UI Elements
+
+Finally, ensure any other UI element from the spec is accounted for:
+
+* **Validation UI**: If there are form inputs (like maybe a text field to name the project or numeric inputs for dimensions), show validation states. For instance, if a field is required or out-of-range, highlight its border in red and show a message below it (in small red text). This can be static in mock (always showing one error as example) or triggered by a dummy validation.
+* **Buttons and States**: Style all buttons (like Next, Back, Download PDF, etc.) according to spec (colors, rounded corners, etc.). Add hover and active states in CSS for better UX feedback. If a button is meant to be disabled (e.g., Next disabled until an option is chosen), implement that logic and style (disabled attribute and grayed-out style).
+* **Transitions**: Use smooth transitions for showing/hiding panels (CSS `transition: opacity 0.3s` for fades, or `transition: transform 0.3s` for slides) to make the UI feel polished.
+
+## UI Behavior and State Management
+
+Now that structure is defined, we detail how the user interaction flows and how state is managed across the app. The aim is to mimic the dynamic behavior described in the spec:
+
+### Global State Management
+
+Maintain a central state object (or use component state if in React) to track:
+
+* **Current Stage** (e.g., 1, 2, 3).
+* **Selections/Options** chosen in each stage (e.g., `state.selectedModel`, `state.selectedColor`, etc., or a nested object).
+* **Pricing** information (base price, option surcharges, total price).
+* Any UI flags (e.g., whether help drawer is open, whether data is loading, etc.).
+
+For example in vanilla JS:
+
+```js
+const state = {
+  currentStage: 1,
+  selectedModel: null,
+  selectedOptions: {},  // could hold selections by category
+  basePrice: 0,
+  totalPrice: 0,
+  configurationComplete: false
+};
+```
+
+When a user selects an option or moves stages, update this `state` and call functions to update the UI accordingly (or in React, trigger re-render by state change).
+
+Encapsulate state updates and UI refresh in functions:
+
+* `selectOption(category, option)` – update `state.selectedOptions[category]`, recalc price.
+* `goToStage(n)` – update `state.currentStage`, show/hide appropriate sections, update stage bar.
+* `updatePriceDisplay()` – reads `state.totalPrice` and animates the number change in the UI.
+* etc.
+
+This modular approach ensures maintainability.
+
+### Stage Navigation and Flow
+
+* **Next Stage**: When the “Next” button is clicked on stage 1 or 2, perform validation: check required fields (e.g., if `state.selectedModel` is not set, prevent advancing). If validation passes, increment `currentStage` and call `goToStage( currentStage+1 )`.
+
+  * If validation fails, show a banner or inline message. For example, highlight the missing selection field with a red outline and show a banner “Please select a model to continue”.
+  * If the design spec uses a modal for incomplete steps, you could simulate that by an alert or a styled popup.
+
+* **Previous Stage**: A “Back” button should take the user to the previous stage without losing their already selected options. Simply decrement `currentStage` and call `goToStage(currentStage-1)`. The UI for prior stage should still reflect the selections made (which are retained in state). This allows users to review or change previous choices.
+
+* **Direct Stage Click (if enabled)**: If the user clicks a stage in the stage bar (and if that stage is already completed or is the current one), allow navigation. E.g., clicking “2. Customize” from stage 3 could jump back. Implement by reading the index and calling `goToStage(index)`. Decide if incomplete future stages can be clicked (likely not; disable those in UI by styling them differently and not attaching click handlers until they become available).
+
+* **goToStage(n)**: This function will:
+
+  * Update `state.currentStage = n`.
+  * Update the stage bar: find all `.stage-item` elements, remove “active” class, add it to the one for stage `n`. Also possibly add “completed” class to all those with index < n.
+  * Show the corresponding `<section id="stage{n}-...">` in sidebar, hide others (`section.classList.add('hidden')` for non-active ones).
+  * If needed, trigger any stage-specific logic, e.g., if entering stage 2 (Customize), maybe pre-load certain data or ensure the 3D viewer has all necessary placeholders.
+
+* **Completion**: When reaching the final stage (Summary), you might set `state.configurationComplete = true` which could trigger different UI (e.g., maybe disable Next button or change it to “Finish”). In the summary stage, instead of Next, you might show a “Start Over” or “Edit” option to return to earlier steps.
+
+### Option Selection and Dynamic Updates
+
+* When an option card in the sidebar is clicked:
+
+  * Determine which category or field it corresponds to. For instance, clicking a model card means `state.selectedModel` changes. Clicking a color swatch might mean `state.selectedOptions.color = "Red"` and possibly affect price.
+  * Update the state and mark that option as selected in the UI:
+
+    * Remove `.selected` class from sibling option cards.
+    * Add `.selected` to the clicked one.
+    * Optionally, if selection causes a change in the 3D view, call a function to update the model. For example, `updateModelGeometry(newModelId)` or if just color, maybe call a material color change on the existing mesh.
+    * Update pricing: retrieve the price associated with that option (for the mock, you can store dummy prices in a JS object or data attribute, e.g., `data-price="150"` on the element). Recalculate `state.totalPrice`. This may involve adding base price + all selected option extras.
+    * Call `updatePriceDisplay()` to reflect the new price on UI.
+
+* **Dynamic Pricing Animation**: Instead of the price just jumping to new value, animate it for a smooth UX:
+
+  * A simple approach is incremental counting. Suppose price goes from \$100 to \$150. You can use JavaScript to animate the number over, say, 0.5 seconds:
+
+    ```js
+    function animatePrice(oldPrice, newPrice) {
+      const duration = 500; // ms
+      const steps = 30;
+      let step = 0;
+      const increment = (newPrice - oldPrice) / steps;
+      const priceElement = document.getElementById('total-price');
+      const interval = setInterval(() => {
+        step++;
+        const current = Math.round(oldPrice + increment * step);
+        priceElement.textContent = `$${current}`;
+        if (step >= steps) {
+          clearInterval(interval);
+          priceElement.textContent = `$${newPrice}`;
+        }
+      }, duration/steps);
+    }
+    ```
+
+    Or use CSS transitions if the price is represented by a bar or something visual. But numeric animation is usually JS-driven.
+  * Provide some visual emphasis on change: e.g., briefly flash the background of the price in a highlight color, or use an upward arrow icon for increase. Keep it subtle and in line with spec aesthetics.
+  * Accessibility: If the price change is significant, you might announce it via an ARIA live region so screen reader users are aware. For example:
+
+    ```html
+    <div aria-live="polite" aria-atomic="true">
+      Total Price: <span id="total-price" aria-label="Total price $150">$150</span>
+    </div>
+    ```
+
+    Using `aria-live="polite" aria-atomic="true"` ensures the entire sentence is read when updated, giving context (“Total Price: \$150”).
+
+* If changing one option affects others (not sure if spec covers that, e.g., selecting a certain model might reset a color choice), make sure to handle that logic (clear or update incompatible selections, and perhaps show a notification “Option X was reset due to change in Model”).
+
+### Scroll and Overflow Behaviors
+
+* In any scrollable list (like a long list of options, or the stage bar on mobile if horizontal overflow):
+
+  * Ensure the selected item is scrolled into view if it’s out of view. You can use `element.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' })` when an item is selected.
+  * For horizontal carousels or scroll areas (maybe the stage bar or maybe a row of thumbnails), enable swipe on touch devices (CSS `overflow-x: auto` and maybe `-webkit-overflow-scrolling: touch;` for momentum).
+  * If using custom scroll styling, ensure it still remains accessible (visible focus, sufficient contrast on scrollbars if custom).
+* The main page might also scroll if the viewer and sidebar heights exceed viewport on small screens. In that case, consider making certain elements sticky:
+
+  * E.g., Stage bar could be `position: sticky; top: 0;` so it stays at top when scrolling on mobile.
+  * Or the price bar at bottom of sidebar could be sticky to bottom so the total is always visible.
+  * Use these carefully as per spec (don’t conflict with fixed banners etc.).
+
+### Tooltips and Hover Interactions
+
+We covered tooltip structure; from a behavior standpoint:
+
+* If an element has a tooltip (like an info icon next to “Financing option” text), ensure on hover, the tooltip appears near it, and on mouseout it disappears.
+* Provide a small delay (e.g., 200ms) before showing to avoid flicker if user just passes the mouse over.
+* For touch devices, tooltips could be triggered on tap (and tap outside to dismiss). However, on mobile one might forego tooltips in favor of expanding info or a dedicated help section (since hovering isn’t possible). The spec might not heavily emphasize tooltips on mobile, so you might disable them (or show them on long-press if desired, which is advanced).
+* State: you don’t need to store tooltip state globally, just manage it per element event. But ensure only one visible at a time by hiding any open tooltip when another is triggered.
+
+### Error Handling and Edge Cases
+
+Even in a mock, consider edge cases:
+
+* What if no selection is made and user hits Next? (We show banner or disable Next until selection).
+* What if user somehow double-clicks Next rapidly? (Debounce it or ensure stage only advances once).
+* If using a pricing formula, ensure it doesn’t go negative or NaN in the mock if something weird happens.
+* Provide default values in state so that from the start the UI is in a consistent state (e.g., maybe pre-select the first model by default to avoid a blank state, if that makes sense, or explicitly require user to pick one).
+
+By handling these interactions carefully, the mockup will **feel real**, even if the data is placeholder. The user can click through all the flows, see the UI respond with highlights, animations, and appropriate prompts, which effectively communicates the intended UX.
+
+## Responsive Design
+
+The app should be fully responsive, adapting the layout at different screen sizes (desktop, tablet, mobile). Based on the design spec’s breakpoints, implement CSS media queries (or Tailwind’s responsive utilities) to adjust the UI. Below is a table of breakpoints and key layout changes (assuming standard breakpoints, which can be adjusted to match exact spec values):
+
+| **Breakpoint**                | **Device Examples**     | **Layout/Behavior Changes**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Desktop Large** (≥ 1024px)  | Large desktops, laptops | **Two-column layout**: 3D viewer and sidebar are side by side. The stage bar is shown at the top in full, with step labels fully visible. All controls (reset view, help, etc.) are visible. Plenty of padding/margins as in design.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Tablet** (≈ 768px – 1023px) | iPads, small tablets    | Sidebar still side-by-side if space allows, but possibly at a smaller width (e.g., 30% of screen) and viewer taking the rest. If the sidebar becomes too narrow, switch to an alternative: for example, the sidebar could turn into a collapsible drawer or bottom sheet that overlays the viewer when needed. The stage bar might still be on top; if the text labels don’t fit, consider truncating them (or use just "Step 1, Step 2" labels). Font sizes may scale down slightly for readability.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Mobile** (≤ 767px)          | Phones (portrait)       | **Single-column layout**: Stack the viewer and the configuration vertically. Often the viewer is on top (for visual focus) and the configuration options below it. The stage bar can become a thin strip either at top or bottom, possibly with only numbers or icons for steps (use tooltips or short labels if possible). Alternatively, the stage bar might be hidden on mobile and replaced by a simple “Step X of Y” text in the header for simplicity. The sidebar becomes a full-width section beneath the viewer: users may scroll to view the 3D then scroll down to options, or use a toggle to switch view vs options. Also, on mobile, certain elements might be hidden or replaced with icon-only buttons (e.g., the reset view button could become a small icon in a corner of the viewer). The help drawer likely becomes full-screen when opened. Ensure ample touch targets (buttons should be at least \~48px in height). |
+| **Mobile Small** (< 375px)    | Small phones            | Ensure the layout still holds: perhaps reduce margins, use a single-column for even stage bar (maybe just an indicator). Possibly hide non-critical text (for example, on a very narrow screen, you might hide price breakdown and just show total). Scroll behavior: likely the whole page scrolls. Keep fixed elements minimal to not eat up screen estate (banners might be shorter, stage bar could be small).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+*(Adjust the exact pixel values per spec – e.g., the spec might define specific breakpoints like 600px, 900px, etc. Use those if provided.)*
+
+**CSS Implementation**:
+
+* If using plain CSS/SCSS, write `@media` queries. For example:
+
+  ```css
+  @media (max-width: 1024px) {
+    /* Tablet: reduce sidebar width or make it overlay */
+    #sidebar { width: 40%; }
+  }
+  @media (max-width: 768px) {
+    /* Mobile: stack layout */
+    #main-content { flex-direction: column; } /* if using flex for main content */
+    #sidebar { width: 100%; order: 2; }
+    #viewer-container { width: 100%; order: 1; }
+    /* Hide or shrink text in stage bar */
+    #stage-bar li span { display: none; } /* hide long labels */
+  }
+  ```
+* If using Tailwind, utilize its breakpoints (`sm`, `md`, `lg`, etc. by default). For example, `<div class="flex lg:flex-row flex-col">` to stack columns on small and row on large, or `md:text-xl text-base` to adjust font sizes.
+
+**Component adjustments**:
+
+* **Stage Bar**: As mentioned, maybe use shorter labels or a horizontal scroll for many steps. You can also consider making the stage bar stick to bottom on mobile so it’s always accessible (like a wizard nav). Ensure icons have enough space.
+* **3D Viewer**: On mobile, you might limit its height (maybe 40vh) so that some of the options are visible without scrolling immediately. On desktop, it could be larger (e.g., 70vh or a fixed pixel height).
+* **Sidebar**: On mobile, it becomes the main content below viewer. Possibly use an accordion if the user should focus on one section at a time. For instance, in Stage 2 if there are multiple categories of options (material, finish, accessory), you might collapse them into accordion panels on small screens.
+* **Text & Controls**: Titles might scale down on smaller screens (use responsive font sizing or viewport-based fonts if appropriate). For interactive controls, consider touch ergonomics: e.g., on mobile, put the Next button as a full-width bar at bottom for easy tapping, whereas on desktop it might be a smaller button at bottom-right of sidebar.
+* **Margins/Padding**: Decrease on smaller screens to use space efficiently. Perhaps hide decorative elements.
+
+**Testing**: Manually test the layout at various sizes or use responsive design mode in browser. Ensure that no content is cut off or requires awkward scrolling (horizontal scroll should generally be avoided except for explicit carousels). All functionality (rotating 3D, clicking options, opening help) should remain usable on touch devices – e.g., the orbit control should allow touch drag rotation and pinch-zoom (Three.js OrbitControls typically supports touch by default for rotate/pan/zoom).
+
+By implementing these responsive rules, the configurator will maintain usability and match the spec’s design across devices.
+
+## Placeholder Content Implementation
+
+Because this is a mockup, we use placeholder content in place of actual 3D models, product images, and possibly some text. It’s important that placeholders are chosen and designed to clearly indicate the intended final content and not break the layout.
+
+Here are guidelines for using placeholder content:
+
+* **3D Models**: Use simple geometric shapes in Three.js as discussed. For example, a wooden table might be approximated by a box; a chair by a combination of small boxes. If multiple product variations exist, consider using different color placeholders (e.g., Model A’s placeholder is a red cube, Model B is a blue sphere) so the user sees a visual change when switching. This helps illustrate the configurator functionality. Add a subtle texture if possible (maybe a basic wood grain texture on the box) to suggest material, but it's not required. The key is that the model appears, can be rotated, and roughly occupies the expected space.
+
+* **Images and Thumbnails**: For any image slots (like thumbnails of different finishes, or an image in the summary):
+
+  * You can use a generic placeholder image (like a solid gray rectangle with an “X” or the text "Image" on it), or use an online placeholder service image (though for offline use, better to include locally).
+  * Alternatively, use simple colored blocks to represent color options. E.g., if offering finishes in “Oak”, “Walnut”, show a solid brown square labeled "Oak" as the thumbnail for Oak finish.
+  * Make sure each placeholder image has the same aspect ratio as the expected real image so the layout is accurate. If the design has, say, square thumbnails, use square placeholders.
+  * Provide meaningful `alt` text for these images in the mock, e.g., alt="Placeholder for Walnut finish image". This shows consideration for accessibility even if the image is not real.
+
+* **Icons**: For UI icons (reset button, help icon, tooltips, navigation arrows, etc.), if the actual icons aren’t available, use common substitutes:
+
+  * Use Unicode symbols or emojis if acceptable (e.g., "⟲" for reset as shown, "?" for help).
+  * Or include an icon font like FontAwesome: e.g., use `<i class="fa fa-undo"></i>` for reset (with appropriate additional styling).
+  * Or use open-source SVGs (there are many free icon sets). For instance, a camera icon for snapshot, a download icon for PDF.
+  * Ensure the icons are styled per spec (size, color on hover, etc.). Since they’re placeholders, just approximate the appearance.
+
+* **Text Content**:
+
+  * Use meaningful dummy text rather than lorem ipsum for key UI elements. For example, for option names, use generic names like "Option A", "Option B" or descriptive placeholders like "Wood Finish 1", "Wood Finish 2" to simulate different choices. This helps testers or stakeholders understand what the option would be.
+  * In descriptions or help text, you can use lorem ipsum if needed, but it might be better to write short mock descriptions (e.g., “A high-quality walnut wood with rich texture.”).
+  * Keep lengths similar to expected real content. If a product name might be two lines, ensure one of the dummy names wraps to two lines to test layout.
+
+* **Interactive Placeholder Behavior**: Some placeholders might benefit from a bit of interactivity to mimic real content:
+
+  * For example, if clicking an image would normally open a zoomed view or a modal, you could simulate by simply enlarging the placeholder image in a modal with a dummy caption.
+  * If the spec mentions a feature like “360 view” but you don’t have that, you could place a placeholder button that does nothing except maybe show a toast “360 view not available in mock”.
+  * The idea is to not leave any dead/unexplained elements – either implement a mock version or clearly mark it as stub.
+
+* **Styling of Placeholders**:
+
+  * Often, gray is used for placeholders (e.g., light gray background with darker gray text or icon). You can standardize a style: e.g., `.placeholder { background-color: #ccc; color: #666; text-align: center; }`.
+  * For skeleton loading states, use a very light gray for the base and animate it if possible (as earlier described).
+  * If using Tailwind, apply classes like `bg-gray-300 animate-pulse` to blocks to indicate loading placeholders easily.
+
+* **Dummy Data Source**: It might be useful to simulate data-driven content by storing placeholder data in a JSON or JS object. For example:
+
+  ```js
+  const models = [
+    { id: 1, name: "Model One", price: 100, img: "assets/images/model1.png" },
+    { id: 2, name: "Model Two", price: 120, img: "assets/images/model2.png" }
+  ];
+  ```
+
+  Then your UI code loops through this to populate options. This way, the structure mimics a real scenario where data might come from an API or database. It’s easier to replace later and shows modularity.
+
+* **Labels and Documentation**: Consider adding a small note or watermark in the mock to clarify something is a placeholder if not obvious. For instance, on the 3D viewer overlay, you could have text “3D Model Placeholder”. Or in the PDF, a watermark "Mock Data". This is optional but can prevent confusion during demos (so nobody mistakes it for final assets).
+
+By thoughtfully using placeholders, the mockup will clearly demonstrate how each piece of content will eventually look and behave, without requiring the actual assets. It also ensures the development is focused on structure and interaction, which is the core purpose of this mock project.
+
+## Export Features and Summary Implementation
+
+*(This section complements the earlier summary stage description, focusing on how to implement the export-related features in code and structure.)*
+
+As described, the export functionality includes generating a snapshot image and compiling a PDF. Here we outline how to implement these in the mock:
+
+* **Snapshot Generation (Image)**: Using Three.js, it’s straightforward to capture the current canvas content:
+
+  * After rendering the final view (e.g., when reaching the summary stage, or on clicking a “Capture Snapshot” button), use `renderer.domElement.toDataURL()` to get a base64 PNG of the canvas.
+  * Create an `<img>` element or reuse an existing one in the summary section to show this snapshot. Set its `src` to the data URL. This effectively “freezes” the current view as an image that can be included in the summary or exported.
+  * If the snapshot needs to have a certain resolution or quality (maybe higher-res than the on-screen canvas), you can temporarily increase the renderer size, take the dataURL, then revert. But for simplicity, using the on-screen size is fine for a mock.
+  * Example:
+
+    ```js
+    function captureSnapshot() {
+      // assume renderer and camera already set up and last render done
+      const dataURL = renderer.domElement.toDataURL("image/jpeg", 0.8);
+      document.getElementById('snapshot-img').src = dataURL;
+    }
+    ```
+
+    The second parameter in `toDataURL` is quality for JPEG (0.8 = 80% quality). PNG ignores it and is lossless by default.
+  * You might call `captureSnapshot()` automatically when entering the summary stage, so the snapshot image is ready and shown.
+
+* **PDF Export Implementation**: We have touched on using jsPDF and html2canvas:
+
+  * Include the jsPDF library (via script tag or bundle). Include html2canvas (also via script or as an import).
+  * The #download-pdf button’s click handler will:
+
+    1. Optionally, call `captureSnapshot()` if not already done, to ensure the snapshot image is in the summary.
+    2. Use html2canvas on the summary container `<section id="stage3-summary">` or a specific `<div id="summary-details">` that has exactly what we want in the PDF (perhaps excluding buttons).
+    3. In the canvas callback, get `canvas.toDataURL("image/png")` which gives an image of the summary.
+    4. Create a new `jsPDF` document of appropriate size (likely A4 in portrait). If using pixel units, note the dimensions: A4 is 595x842 points (or \~2480 x 3508 px at 300dpi, but since we use px unit with the `px_scaling` hotfix in jsPDF as seen in references, we can use screen pixels directly).
+    5. `pdf.addImage(imgData, 'PNG', x, y, width, height)`. Width and height need to fit on the page; you can use `pdf.internal.pageSize.getWidth()` and similar for height to scale the image to full page.
+    6. `pdf.save("filename.pdf")` triggers the download.
+  * **PDF Content**: Using the image of the summary is simplest. If we wanted a more bespoke PDF, we could add text via jsPDF (e.g., `pdf.text("WoodLab Configurator Summary", 20, 20)` and then individually add the snapshot and lines of text for options). But converting the whole summary section to an image ensures WYSIWYG output and is easier in a static setup.
+  * The combination of html2canvas and jsPDF is a known approach to get HTML content into a PDF on the client-side. It won’t be as perfect as a server-side PDF but is sufficient for user downloads or print.
+  * Because this is a static app, this approach avoids any server and generates PDF in-browser, which **is compatible with GitHub Pages** (no need for server PDF generation).
+
+* **Export UX**: After clicking the download button, you could show a brief message like “Generating PDF...” perhaps as a disabled state on the button, because html2canvas can take a second if the content is large. Once `pdf.save()` is called, the user will get the file. You might not be able to detect when the download completes, but you can at least re-enable the button after a moment or change its text to “Download PDF” again.
+
+  * If for the mock, you don't actually integrate jsPDF (maybe to avoid adding libraries), you can simulate by opening a new tab or downloading a dummy PDF. But including the actual libraries for demonstration could be worth it since it’s a static reference implementation. The file size of these libs is not huge and acceptable for a prototype.
+
+* **Edge Cases**: If the user hasn’t captured a snapshot or something, ensure the PDF still generates. For example, if `snapshot-img` is not yet populated, call `captureSnapshot()` inside the PDF function or instruct user to press a “Capture Image” button (depending on spec flow). But smoother is automatic capture.
+
+* **Printing**: Some users might just print the summary web page. We can add a print stylesheet (e.g., hide the UI chrome and just show summary nicely). That’s a bonus, but since PDF is provided, not strictly necessary.
+
+With these export features implemented as described, the mockup not only shows the UI but also proves that complex features like snapshot and PDF export are feasible in a static client-side context.
+
+## Accessibility and UX Considerations
+
+Building the mockup with accessibility in mind ensures the final product will be inclusive and user-friendly. Here are guidelines to incorporate:
+
+* **Semantic HTML**: Use appropriate elements for structure:
+
+  * `<header>`, `<main>`, `<aside>`, `<nav>`, `<section>`, `<footer>` to delineate regions. For example, the stage bar nav is a `<nav>` inside the header or main.
+  * Use `<button>` for anything clickable that is not a link. This gives keyboard focusability and ARIA role by default.
+  * If any custom element is used (e.g., clickable `<div>`), add `tabindex="0"` and `role="button"` and keydown event handlers (Space/Enter) to mimic a real button – but using actual `<button>` is strongly preferred in most cases.
+  * Forms: If there are input fields (even in a mock), use `<form>` and `<label>` to tie them together. For example, a quantity input should be `<label>Quantity: <input type="number" ...></label>`.
+
+* **Focus Management & Outlines**: Never remove the default focus outline without providing an equal or better alternative. Focus outlines are critical for keyboard navigation. If the default blue halo or dotted line doesn’t match the design, style it in CSS (e.g., a 2px solid custom color) but ensure a high contrast. As WAI guidelines note: *"Removing focus outlines critically hinders keyboard navigation."*
+
+  * Use `:focus-visible` if you want to only show outline for keyboard (so mouse users don’t see it when clicking, if that’s a concern).
+  * Ensure focus order flows logically: e.g., when tabbing through the page, it should go to stage bar (if interactive), then into the sidebar options, then to viewer controls, etc., in an order that makes sense. You can adjust with tabindex if needed, but ideally structure the HTML in logical reading/nav order.
+
+* **ARIA Roles and Labels**:
+
+  * Use `aria-label` or `aria-labelledby` for icons and controls that have no text. E.g., the reset view button: `<button aria-label="Reset camera view">⟲</button>`.
+  * The help icon could be a question mark but should have `aria-label="Open help"`.
+  * Link the tooltip to its target via `aria-describedby` as discussed, or use `role="tooltip"`.
+  * In the summary, use `aria-live` regions for dynamic content updates such as price. Mark it as `polite` so it announces changes when the user is idle.
+  * If certain regions update without a full page refresh (like the 3D view updating or new options loading), consider informing users. Possibly a live region message like "3D model updated" when switching model could be helpful.
+
+* **Keyboard Interaction**:
+
+  * All interactive elements must be reachable and operable by keyboard. This includes: stage navigation (make stage items focusable, allow Enter to activate), option selection (if using radio inputs this is automatic; if using custom cards, add key handlers to select on Enter/Space), help drawer (trigger with Enter, close with Escape, etc.), tooltips (not usually directly focusable, but ensure their trigger is).
+  * Implement **focus trap** for modals/drawers as mentioned: when Help drawer is open, the Tab key should not leave the drawer content. You can do this by scripting or using libraries, but a simple method: on open, save the last focused element (the help button), then focus the first focusable in drawer. On Tab wrapping, manually redirect. On close, return focus to the help button.
+  * Ensure Escape key closes modals or popups (help drawer, tooltips if they were sticky, etc.).
+
+* **Color Contrast & UI Feedback**:
+
+  * Choose placeholder colors with sufficient contrast. If the design has a light gray background and white text (for a disabled state, say), that might be low contrast – adjust in the mock to meet at least WCAG AA contrast if possible (because in real design that should be considered too). Use an online contrast checker if needed.
+  * Indicate selection not just by color but also by some other means (icon or text) for colorblind users. E.g., the selected option card could have a checkmark icon or a bold outline in addition to a color highlight.
+  * Provide feedback on interactions: when clicking a button, you might briefly disable it or change its style to indicate it’s been pressed. If loading something (like generating PDF), show a spinner or progress message.
+
+* **Form Validation & Errors**:
+
+  * If the user misses a required field, do two things: 1) make the field stand out (red outline, maybe an icon or exclamation mark), 2) provide a descriptive error message text nearby. For example, `<p class="error">Please select a model.</p>` right below the options list. In HTML, you could tie it with `aria-live="assertive"` so it's immediately announced when it appears.
+  * The banner approach for errors is also fine for general errors, but specific field-level errors are more accessible if focus is within that field's area.
+  * Prevent submission (or stage advance) until errors are resolved, but allow the user to navigate away if they choose (with a warning if losing progress possibly).
+
+* **beforeunload Prompt**:
+
+  * As mentioned, adding a `beforeunload` confirmation helps prevent accidental loss of work. This is especially useful if the configurator can be lengthy. Modern browsers have standardized messages (you can’t custom-write the text), but it will typically say “Are you sure you want to leave?”.
+  * Only enable this if there’s unsaved progress. For the mock, you might enable it whenever state.currentStage > 1 or any selection made, to show that the feature exists. Just remember to disable it if the user actually completes (maybe on summary after downloading PDF, you could remove the handler, assuming that means they are done).
+
+* **Screen Reader Testing**: If possible, test the mock with a screen reader (or at least use browser’s dev tools accessibility tree viewer) to ensure the structure is navigable. Headings should be present (like each section has an `<h2>`). Landmarks (`<main>`, `<nav>`, `<aside>`) help region navigation. The content announced for each element should make sense (e.g., stage bar item might announce "Step 2, Customize, completed" if one adds appropriate aria-labels or statuses).
+
+* **Timing and Animation**:
+
+  * Avoid very fast or auto-advancing content. The configurator should wait for user input to move on. If any content auto-updates (like a price animation), ensure it’s not too sudden or allow the user to turn off animation if needed (probably not needed here as the animations are brief).
+  * Any flashing elements (if using for highlight) should not flash more than the thresholds for seizure safety (generally avoid rapid flashing).
+
+* **Documentation for Users**:
+
+  * The help drawer presumably serves as user documentation. Keep language simple and consider adding illustrations (in the real app). In the mock’s help text, at least outline how to rotate the model, how to select options, and how to undo (if possible). This ensures that even without external guidance, a new user could understand the UI.
+
+By embedding these accessibility practices, we not only make the mockup usable by a wider audience, but we also set the stage for the real app to be compliant with standards (like WCAG) from the ground up. Good UX for accessibility often aligns with good UX for all users (clear feedback, intuitive navigation, etc.).
+
+## Hosting on GitHub Pages (Deployment Considerations)
+
+Finally, because our target environment is GitHub Pages (a static hosting service), we must design and code the app with a few specific considerations:
+
+* **Relative Paths**: As mentioned, all resource URLs (CSS, JS, images) should be relative, or account for the site’s base path. For example, if the project is hosted at `https://username.github.io/WoodLab/`, and you use absolute `/css/styles.css`, the browser will look for `username.github.io/css/styles.css` which is wrong (missing the `/WoodLab/`). Instead use `./css/styles.css` or add the `<base href="/">` dynamically. The simplest is relative paths so it works both locally (file://) and on GitHub Pages without changes.
+
+* **No Server-Side Code**: GH Pages only serves static files. So all features must be implemented in client-side JS. We cannot use any server APIs or databases. If the real app would have, say, a pricing API or user login, those are out of scope here. Instead, simulate any needed data within the app. For example, hard-code the price calculations or option data.
+
+  * If you foresee needing data, you can include a JSON file in the repo and fetch it via `fetch('./assets/data/options.json')` since GH Pages can serve that. That would be static data fetch, which is fine.
+  * Avoid anything like PHP, or sending emails, etc., unless using a third-party static form service.
+
+* **Bundling and Build Outputs**: If using a bundler or preprocessor, ensure the output is committed to the repository branch that serves the pages. Common setups:
+
+  * Using the `docs/` folder on `main` branch: you would output your build into `docs/`. This means updating the project’s GitHub Pages setting to serve from docs. The structure inside docs would essentially have an index.html and static files.
+  * Using `gh-pages` branch: you’ll run the build and deploy steps (maybe via a package like `gh-pages` for React, or manually). That branch will have the static files at root.
+  * In either case, double-check that the links in `index.html` correctly point to the files. If using a React build, often it handles this, but you might need to set `homepage` in `package.json` for correct paths.
+
+* **Library Inclusion**: Because we can’t use npm on GH Pages runtime, any library we use must be shipped as part of our files or via CDN.
+
+  * For Three.js: including a local copy of `three.module.js` and `OrbitControls.js` is one way. Or use CDN: e.g., `<script type="module" src="https://unpkg.com/three@0.153.0/build/three.module.js"></script>` and similar for controls. If using CDN, pin the version to avoid unexpected changes.
+  * For Tailwind: if not building, you could include their CDN which uses JIT in the browser, but that’s not ideal for performance. Better to build or use a limited set of utility classes. Alternatively, include a pre-generated minimal CSS if possible.
+  * For any other library (jsPDF, html2canvas, etc.), you can either bundle them or link their UMD builds via CDN:
+
+    ```html
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    ```
+
+    Make sure to verify the URLs and that they allow usage from GitHub Pages. CDN links are generally fine.
+
+* **Performance on static host**: GH Pages has no dynamic scaling, so consider performance:
+
+  * Keep file sizes reasonable (images optimized, not too many large assets). For instance, a huge placeholder image could slow things; scale it down.
+  * Three.js and other libs minified are fine, but don’t include unnecessary modules (no need for the entire examples folder, just what you use).
+  * Use caching by giving files proper extensions and not reusing filenames when changed (GH Pages will serve with default cache headers typically, which are often fine for static assets).
+
+* **Testing on Pages**: Always test the deployed version on GitHub Pages because sometimes things like case-sensitive paths or missing files only show up when served via Pages (which might be case-sensitive even if Windows dev machine was not). Also test the site both at `username.github.io/project/` and if possible under a custom domain if one will be used (to ensure no path issues).
+
+* **Avoiding 404s for client-side routes**: If we had multiple pages or routes (like React Router without hash), direct linking could break because GH Pages will try to fetch a page that doesn’t exist (since it’s a SPA). In our case, we likely keep it one HTML. If not, and we had pretty URLs, a common trick is to have a custom 404.html that redirects all requests to index.html (so the SPA can handle routing). But that’s advanced; easier is to stick to a single-page app or use hash routes (`#/summary`).
+
+  * For our stage navigation, we don’t really need actual URL changes, but if we wanted to reflect stage in URL (e.g., `...?stage=2`), we could parse that on load. This is optional and probably not in spec unless they mention deep linking.
+
+* **Use of Jekyll**: By default, GH Pages runs Jekyll on the repo (except on `gh-pages` branch by default it doesn’t, but on main/docs it does). If we have files/folders starting with `_`, Jekyll will ignore them (e.g., `_assets` would be ignored). To prevent any Jekyll processing issues, adding an empty file named `.nojekyll` in the root of the pages content will disable it. We likely should do that in the mock deployment to avoid surprises. This is particularly important if your files include something like `{{` in them which Jekyll might try to interpret – typically not the case here, but good practice.
+
+* **Custom Domain** (if any): If planning to use a custom domain via CNAME, ensure all resources use protocol-relative or https URLs and nothing breaks due to domain differences. Probably not needed to mention in guidelines.
+
+In summary, **keep it static and self-contained**. The app should be able to run by simply opening `index.html` in a browser (even without a server, aside from features like PDF generation which should still work locally). If it runs locally from file://, it will almost certainly run on GH Pages (some exceptions: `fetch` can’t load local JSON via file:// due to CORS, but on GH Pages it will work since it’s served over http; so test via a local server or adjust approach). By respecting these deployment considerations, publishing the mockup on GitHub Pages will be smooth and the app will function correctly for all users who visit the page.
+
+---
+
+By following the above guidelines for file organization, tech stack, component structure, interactive behavior, responsive design, placeholder usage, and accessibility, the WoodLab Configurator mockup will be a well-structured, maintainable, and user-friendly project. This ensures that anyone reviewing the mockup on GitHub Pages can experience the intended UI/UX, and it sets a strong foundation for implementing the full-featured application in the future. All functionality is achieved with client-side code, making the app fast and easy to host or share.

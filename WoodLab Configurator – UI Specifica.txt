@@ -1,0 +1,62 @@
+WoodLab Configurator – UI Specification (Draft v0.4)
+1. Global Layout
+Viewport split: 60 % left for 3 D viewer, 40 % right rail for configuration.
+Top stage bar (single row):
+"< Previous" button · seven stage buttons · "Next >" button.
+Active button uses inverted colors (light text / dark bg). Hover states change color.
+Prev/Next fade to 40 % opacity when unavailable or while stage is loading.
+Independent scroll: Right rail scrolls; left viewer remains fixed.
+2. 3 D Viewer Pane
+Pre‑selection state: Blank area with message "Select a style to begin" (center‑aligned, grayscale).
+Controls bar (below canvas): Rotate ◐ · Pan ↕ · Zoom ▢ · Reset ⟳.
+**No hover previews; stylized realtime render; loading skeleton: blurred last render + "we’re building your table…" overlay.
+3. Right‑Rail Persistent Header
+Live price counter: $12,480  USD (USD label bottom‑right of the price box).
+Summary icon ▢ and Help icon ? to the right of price.
+Price animation: Quick count‑up/down with smooth ease‑in/out.
+4. Stage Panels
+4.1 Tiles (Models, Materials, Finish, Legs, Add‑ons)
+Grid: Max 2‑column auto‑fit.
+Tile anatomy:
+1 : 1 image · title (bold) · $Δ (smaller, same line) · 1‑line description underneath.
+Selection: thick border, bold text, corner check‑mark.
+Disabled: grayscale + tooltip on hover/click.
+Pagination: None; panel scrolls if content exceeds height.
+4.2 Dimensions Panel
+Length: buttons [ +12" ] [ –12" ] · numeric field · optional Cut to input (revealed by checkbox).
+Width: buttons [ +6" ] [ –6" ] · numeric field · optional Cut to input.
+Height: dropdown (Standard ▾, Bar‑height, Custom). Custom reveals numeric input.
+Validation: Red outline + helper text under field.
+Oversize banner: Grey inline banner above affected field (stacks vertically if multiple).
+5. Banners & Alerts
+Grayscale banners only; multiple banners stack vertically.
+Confirmation toast after PDF export: bottom‑right banner, auto‑dismiss 4 s.
+6. Tooltips
+Trigger: 200 ms hover delay or click.
+Style: Rounded rectangle (max‑width 280 px) with centered pointer under trigger.
+Close: Mouse‑out for hover; click‑outside for click‑triggered.
+7. Help Slide‑out
+Desktop: 30 % viewport width sliding from right.
+Mobile (< 768 px): full‑screen modal.
+Sections: Accordions for FAQs; contact info at bottom.
+Close: X (top‑left of panel) + click‑outside.
+8. Add‑ons Panel
+Same tile grid; grouped tabs/pills for Core, Aesthetics, Expedited (rush fee).
+Rush fee tile pinned at top of Expedited.
+9. Summary Stage & Export
+Single scrollable page → Price breakdown accordion + snapshot.
+PDF export:
+Filename WoodLab-Table-{YYYYMMDD‑HHMM}.pdf.
+A4/Letter portrait; WL 40 px logo top‑left; brand color header; contact info (phone, email, URL) footer.
+Snapshot resolution 1280 × 720; multiple pages allowed.
+Success banner: bottom‑right confirmation, auto‑dismiss.
+10. Responsive Breakpoints
+Range	Layout tweaks
+≥ 1024 px (Desktop)	60 / 40 split as above.
+768 – 1023 px (Tablet)	3 D viewer top, right rail collapses under viewer (accordion). Help slide‑out uses 30 %.
+< 768 px (Mobile)	Viewer top, rail below; stage bar swipe‑scroll; Help = full‑screen modal.
+11. Miscellaneous
+Focus outline: Browser default.
+AR preview & share link: Reserved space in control bar (disabled for MVP).
+Before‑unload: Native browser prompt: “Your configuration isn’t saved. Export PDF to keep a copy.”
+UI palette: Grayscale only for MVP; future WL accent colors TBD.
