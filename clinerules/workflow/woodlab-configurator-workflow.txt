@@ -1,0 +1,70 @@
+---
+description: Workflow guide for developing the WoodLab Configurator static mockup.
+globs: index.html, css/*.css, js/**/*.js, assets/**/*, *.md
+alwaysApply: true
+---
+
+- **Development Workflow Process**
+  - Edit project files: `index.html`, `css/styles.css`, `js/main.js`, `js/viewer.js`, `js/ui/*.js`, and any assets in `assets/`.
+  - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/styles.css), Three.js r160 (as ES6 module in js/lib/), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
+  - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
+  - Strictly follow the canonical file/folder layout:
+    - `index.html`: Entry point, all links must be relative.
+    - `css/styles.css`: Compiled Tailwind output.
+    - `js/main.js`: App bootstrap & global state (only file allowed to mutate state).
+    - `js/viewer.js`: 3D scene logic (Three.js).
+    - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js).
+    - `js/lib/three.module.js`: Vendored Three.js.
+    - `assets/`: All images, icons, and models (placeholders only).
+  - Do **not** deviate from this structure; deployment scripts and GH Pages depend on it.
+
+- **Testing & Viewing Changes**
+  - After saving changes, open or refresh `index.html` in a browser to test.
+  - Use browser developer tools (console, elements, network) for debugging and inspection.
+  - Use `console.log()` for JS debugging; set breakpoints as needed.
+  - Check for accessibility (focus outlines, ARIA, keyboard navigation) and responsive layout at all breakpoints.
+
+- **Build & Deployment**
+  - Run `npm i` to install Tailwind and dev tooling.
+  - `npm run build` compiles Tailwind to `css/styles.css` (JIT, purge unused), copies libs to `js/lib/`, and does **not** minify JS.
+  - Commit the `/` tree to the `gh-pages` branch.
+  - Ensure `.nojekyll` is present and all links are relative.
+  - Verify at `https://<user>.github.io/WoodLab/index.html`.
+
+- **Component & UI Guidelines**
+  - UI/UX must match the three-stage wizard, 3D viewer, sidebar, summary/export, and help drawer as described in the guidelines.
+  - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
+  - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
+  - Only `main.js` mutates global state; all UI modules observe state and dispatch `Event("statechange")` for updates.
+  - Implement banners, tooltips, and help drawer per spec (see `/js/ui/banner.js` and related files).
+
+- **Export & Summary**
+  - On summary stage, call `captureSnapshot()` and populate summary.
+  - PDF export uses jsPDF + html2canvas, includes snapshot, selections, and price.
+  - After export, fire `Event('exported')`.
+
+- **Accessibility & Responsiveness**
+  - Never remove keyboard focus outlines; use `:focus-visible`.
+  - All dynamic updates in `[aria-live="polite"][aria-atomic="true"]` regions.
+  - Escape closes help drawer and banners.
+  - Follow fixed breakpoints for layout: ≥1024px (2-column), 768–1023px (collapsible sidebar), ≤767px (stacked, stage bar bottom).
+
+- **Placeholder & Data Policy**
+  - Use only hard-coded placeholder data and assets.
+  - Mark all placeholder images with `alt="placeholder"`.
+
+- **Definition of Done**
+  - All checklist items in the guidelines are complete.
+  - QA walkthrough passes with no functional defects.
+  - This workflow file and the guidelines are committed to the repo.
+
+---
+
+## Implementation Instructions
+
+1. Place this file at `clinerules/workflow/woodlab-configurator-workflow.txt`.
+2. Run **“Cline: Reload Rules”** in VS Code or restart the Cline LSP/CLI to apply changes.
+3. Edit the `globs` pattern above if the project structure changes (current pattern covers all relevant files).
+4. Keep this guideline file under version control for team consistency.
+
+---

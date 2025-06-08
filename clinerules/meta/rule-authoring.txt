@@ -1,0 +1,91 @@
+---
+description: Guidelines for creating and maintaining Cline rules for the WoodLab Configurator project.
+globs: .clinerules/**/*.txt
+alwaysApply: true
+---
+
+- **Required Rule Structure:**
+  ```markdown
+  ---
+  description: Clear, one-line description of what the rule enforces
+  globs: path/to/files/*.ext, other/path/**/*
+  alwaysApply: boolean
+  ---
+
+  - **Main Points in Bold**
+    - Sub-points with details
+    - Examples and explanations
+  ```
+
+- **File References:**
+  - Use `[filename](mdc:path/to/file)` ([filename](mdc:filename)) to reference files
+  - Example: [woodlab-configurator-workflow.txt](mdc:.clinerules/workflow/woodlab-configurator-workflow.txt) for workflow rules
+  - Example: [main.js](mdc:js/main.js) for code references
+
+- **Code Examples:**
+  - Use language-specific code blocks
+  ```javascript
+  // ✅ DO: Show good examples
+  export function showBanner(msg) { ... }
+
+  // ❌ DON'T: Show anti-patterns
+  function showbanner() { ... } // inconsistent naming
+  ```
+
+- **Rule Content Guidelines:**
+  - Start with a high-level overview
+  - Include specific, actionable requirements
+  - Show examples of correct implementation using WoodLab files and conventions
+  - Reference the WoodLab guidelines and actual code when possible
+  - Keep rules DRY by referencing other rules
+
+- **Tailoring Rules for WoodLab Configurator:**
+  - **Module Best Practices:**
+    - Write rules that encourage clear `export` and `import` statements in `js/main.js`, `js/viewer.js`, and `js/ui/*.js`.
+    - Emphasize single responsibility for modules (e.g., `viewer.js` handles 3D scene, `banner.js` handles banners).
+    - Use consistent naming conventions for exported functions and variables.
+    - Example Rule: "UI modules must only observe state and dispatch 'statechange' events; only main.js mutates state."
+  - **UI/UX and Accessibility:**
+    - Create rules for accessibility (focus outlines, ARIA, keyboard navigation) and responsive layout.
+    - Include guidelines for managing event listeners and DOM updates in a static, client-only context.
+    - Provide examples for rules related to placeholder assets, banners, tooltips, and help drawer.
+    - Example Rule: "All placeholder images must have alt='placeholder'."
+  - **Code Structure for Static Web Apps:**
+    - Develop rules that guide the organization of code related to the locked tech stack (Three.js, Tailwind, jsPDF, html2canvas).
+    - Include guidelines for managing the 3D viewer, UI state, and export features.
+    - Suggest rules for structuring the build pipeline and deployment for GitHub Pages compatibility.
+
+- **Rule Maintenance:**
+  - Update rules when new patterns emerge in the WoodLab codebase
+  - Add examples from actual WoodLab code
+  - Remove outdated patterns
+  - Cross-reference related rules
+
+- **Best Practices:**
+  - Use bullet points for clarity
+  - Keep descriptions concise
+  - Include both DO and DON'T examples
+  - Reference actual WoodLab code over theoretical examples
+  - Use consistent formatting across rules
+  - Format commands for **PowerShell** if needed
+  - When using tools to run commands or make edits, consolidate their uses as much as possible
+  - When analyzing and coming to a conclusion, include 1 or 2 sentences that explain the actions being taken
+  - When something is done, decide if it is a significant enough action to request an image be shared back for further analysis
+  - When editing files, consolidate changes per-file rather than per-rule
+  - Add a one-line summary of the actions taken in addition to each response for saving changes. Examples: "Changed the style of the banner for accessibility"; "Refactored viewer.js to separate rendering logic". Separate multiple actions with a semicolon.
+
+- **WoodLab-Specific Requirements:**
+  - All rules must align with the WoodLab Configurator's static, client-only, and GitHub Pages-compatible requirements.
+  - Reference the locked tech stack and strict file/folder structure as described in the project guidelines.
+  - Ensure all rules reinforce the use of placeholder data/assets, accessibility, and responsive design.
+
+---
+
+## Implementation Instructions
+
+1. Place this file at the indicated path inside `.clinerules/meta/`.
+2. Run **“Cline: Reload Rules”** in VS Code or restart the Cline LSP/CLI so it picks up changes.
+3. Edit the `globs` pattern above if your project structure differs.
+4. Keep this guideline file under version control so the team shares the same conventions.
+
+---

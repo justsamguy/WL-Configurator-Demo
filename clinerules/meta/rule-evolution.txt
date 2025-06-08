@@ -1,0 +1,85 @@
+---
+description: Guidelines for continuously evolving Cline rules for the WoodLab Configurator project.
+globs: .clinerules/**/*.txt
+alwaysApply: true
+---
+
+- **Rule Improvement Triggers:**
+  - New code patterns in the WoodLab Configurator not covered by existing rules
+  - Repeated similar implementations across WoodLab files (e.g., in `js/main.js`, `js/viewer.js`, `js/ui/*.js`)
+  - Common error patterns that could be prevented in the WoodLab context
+  - New best practices or updates to the locked tech stack (Three.js, Tailwind, jsPDF, html2canvas)
+  - Changes in accessibility, placeholder, or deployment requirements
+
+- **Analysis Process:**
+  - Compare new WoodLab code with existing rules
+  - Identify patterns that should be standardized for WoodLab (e.g., state management, UI modules, placeholder usage)
+  - Reference the WoodLab guidelines and workflow file for context ([woodlab-configurator-workflow.txt](mdc:.clinerules/workflow/woodlab-configurator-workflow.txt))
+  - Check for consistent error handling, accessibility, and responsive design patterns
+  - Monitor test patterns and coverage in the WoodLab codebase
+
+- **Rule Updates:**
+  - **Add New Rules When:**
+    - A new technology/pattern is used in 3+ WoodLab files
+    - Common bugs could be prevented by a rule
+    - Code reviews repeatedly mention the same feedback
+    - New accessibility, performance, or deployment requirements emerge
+
+  - **Modify Existing Rules When:**
+    - Better examples exist in the WoodLab codebase
+    - Additional edge cases are discovered in WoodLab usage
+    - Related rules or guidelines have been updated
+    - Implementation details have changed (e.g., new version of a locked library)
+
+- **Example Pattern Recognition:**
+  ```javascript
+  // If you see repeated patterns like:
+  const banner = document.getElementById('banner');
+  banner.addEventListener('click', handleBannerClick);
+
+  // Consider adding a rule to ensure:
+  // - Event listeners are added and removed consistently in UI modules.
+  // - Only main.js mutates state; UI modules dispatch 'statechange' events.
+  // - Accessibility attributes (e.g., aria-live) are present where required.
+  ```
+
+- **Rule Quality Checks:**
+  - Rules must be actionable, specific, and relevant to the WoodLab Configurator
+  - Examples should come from actual WoodLab code
+  - References should be up to date with WoodLab guidelines
+  - Patterns should be consistently enforced across the WoodLab project
+
+- **Continuous Improvement:**
+  - Monitor code review comments and QA walkthroughs for WoodLab
+  - Track common development questions and issues in the WoodLab context
+  - Update rules after major refactors or guideline changes
+  - Add links to relevant WoodLab documentation and workflow files
+  - Cross-reference related rules
+
+- **Rule Deprecation:**
+  - Mark outdated patterns as deprecated, especially if WoodLab guidelines change
+  - Remove rules that no longer apply to the WoodLab project
+  - Update references to deprecated rules
+  - Document migration paths for old patterns
+
+- **Documentation Updates:**
+  - Keep examples synchronized with WoodLab code
+  - Update references to WoodLab guidelines and workflow files
+  - Maintain links between related rules
+  - Document breaking changes
+
+- **WoodLab-Specific Requirements:**
+  - All rule evolution must align with the WoodLab Configurator's static, client-only, and GitHub Pages-compatible requirements.
+  - Do not introduce server-side code, unsupported libraries, or break the locked file/folder structure.
+  - Reference the locked tech stack and placeholder/accessibility policies as described in the project guidelines.
+
+---
+
+## Implementation Instructions
+
+1. Place this file at the indicated path inside `.clinerules/meta/`.
+2. Run **“Cline: Reload Rules”** in VS Code or restart the Cline LSP/CLI so it picks up changes.
+3. Edit the `globs` pattern above if your project structure differs.
+4. Keep this guideline file under version control so the team shares the same conventions.
+
+---
