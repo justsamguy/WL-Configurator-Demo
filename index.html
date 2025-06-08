@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WoodLab Configurator Mockup</title>
+  <!-- Tailwind CSS via CDN for rapid prototyping -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Custom styles (if any) -->
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+  <!-- Stage Bar -->
+  <nav id="stage-bar" class="w-full flex items-center justify-center bg-white shadow z-10">
+    <ol class="flex space-x-2 py-2 px-4">
+      <li>
+        <button id="prev-stage" class="px-3 py-1 rounded text-gray-400 opacity-40 cursor-default" disabled>< Previous</button>
+      </li>
+      <li>
+        <button class="stage-btn px-3 py-1 rounded font-bold bg-gray-900 text-white" aria-current="step">Model</button>
+      </li>
+      <li>
+        <button class="stage-btn px-3 py-1 rounded text-gray-700 bg-gray-200" disabled>Customize</button>
+      </li>
+      <li>
+        <button class="stage-btn px-3 py-1 rounded text-gray-700 bg-gray-200" disabled>Summary</button>
+      </li>
+      <li>
+        <button id="next-stage" class="px-3 py-1 rounded text-gray-900 bg-gray-100 ml-2">Next ></button>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main-content" class="flex flex-1 w-full overflow-hidden">
+    <!-- 3D Viewer -->
+    <div id="viewer" class="flex-1 flex flex-col items-center justify-center bg-white relative min-h-[400px]">
+      <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
+        <!-- Three.js canvas will be injected here -->
+        <div id="viewer-placeholder" class="text-center text-gray-400">
+          Select a style to begin
+        </div>
+      </div>
+      <!-- Controls Bar -->
+      <div id="viewer-controls" class="flex items-center justify-center space-x-4 py-2 bg-gray-100 w-full border-t">
+        <span class="tooltip" data-tip="Rotate"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 6v6l4 2" stroke-width="2"/></svg></span>
+        <span class="tooltip" data-tip="Pan"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20" stroke-width="2"/></svg></span>
+        <span class="tooltip" data-tip="Zoom"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2"/></svg></span>
+        <button id="reset-view" class="tooltip" data-tip="Reset View" aria-label="Reset camera view">
+          <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582M21 21v-5h-.581M5 19A9 9 0 1 1 19 5" stroke-width="2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-[400px] max-w-full bg-gray-50 border-l flex flex-col overflow-y-auto">
+      <!-- Persistent Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b bg-white sticky top-0 z-10">
+        <div class="flex flex-col">
+          <span class="text-xs text-gray-500">Total</span>
+          <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="summary-btn" class="tooltip" data-tip="Summary" aria-label="Summary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
+          </button>
+          <button id="help-btn" class="tooltip" data-tip="Help" aria-label="Open help">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- Stage Sections (populated by JS) -->
+      <section id="stage1-section" class="p-4">
+        <!-- Option cards will be rendered here -->
+      </section>
+      <section id="stage2-section" class="p-4 hidden">
+        <!-- Customization options -->
+      </section>
+      <section id="stage3-section" class="p-4 hidden">
+        <!-- Summary and export -->
+      </section>
+    </aside>
+  </main>
+
+  <!-- Banners -->
+  <div id="banner-container" class="fixed top-0 left-0 w-full flex flex-col items-center space-y-2 z-50"></div>
+
+  <!-- Help Drawer -->
+  <aside id="help-drawer" class="fixed right-0 top-0 h-full w-[320px] bg-white shadow-lg z-50 transform translate-x-full transition-transform duration-300 ease-in-out" tabindex="-1" aria-hidden="true">
+    <button id="help-close" class="absolute top-2 left-2 text-gray-500" aria-label="Close help">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2"/></svg>
+    </button>
+    <div class="p-6">
+      <h2 class="text-xl font-bold mb-4">Help & Support</h2>
+      <div id="help-content">
+        <!-- Help content will be populated here -->
+      </div>
+    </div>
+  </aside>
+  <div id="help-backdrop" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
+
+  <!-- Scripts -->
+  <!-- Three.js (local or CDN) -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"></script>
+  <!-- OrbitControls (CDN) -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.min.js"></script>
+  <!-- jsPDF and html2canvas (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.5.1/dist/html2canvas.min.js"></script>
+  <!-- App scripts -->
+  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/viewer.js"></script>
+  <script type="module" src="./js/ui/banner.js"></script>
+</body>
+</html>
