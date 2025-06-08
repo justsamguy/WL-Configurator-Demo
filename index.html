@@ -6,8 +6,22 @@
   <title>WoodLab Configurator Mockup</title>
   <!-- Tailwind CSS via CDN for rapid prototyping -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Google Fonts: Inter for modern look -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Custom styles (if any) -->
   <link rel="stylesheet" href="./css/styles.css" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .option-card:focus, .option-card:hover {
+      box-shadow: 0 0 0 2px #2563eb33;
+      border-color: #2563eb;
+      outline: none;
+      z-index: 1;
+    }
+    .stage-btn[aria-current="step"] {
+      box-shadow: 0 2px 8px 0 #0001;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
   <!-- Stage Bar -->
@@ -35,12 +49,12 @@
   <main id="main-content" class="flex flex-1 w-full overflow-hidden">
     <!-- 3D Viewer Section -->
     <section class="flex-1 flex flex-col items-center justify-center bg-white relative min-h-[500px] max-w-5xl mx-auto p-8">
-      <!-- Logo/Banner (optional, can be replaced with actual logo) -->
+      <!-- Logo/Banner -->
       <div class="w-full flex justify-center mb-6">
-        <img src="assets/images/model1.svg" alt="WoodLab Logo" class="h-32 w-auto object-contain" />
+        <img src="assets/images/model1.svg" alt="WoodLab Logo" class="h-20 w-auto object-contain drop-shadow" />
       </div>
       <!-- 3D Viewer -->
-      <div id="viewer" class="w-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-inner min-h-[350px] max-h-[500px] mb-6">
+      <div id="viewer" class="w-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-xl shadow-lg min-h-[350px] max-h-[500px] mb-6 border border-gray-200">
         <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
           <!-- Three.js canvas will be injected here -->
           <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
@@ -48,7 +62,7 @@
           </div>
         </div>
         <!-- Controls Bar -->
-        <div id="viewer-controls" class="flex items-center justify-center space-x-6 py-3 bg-gray-200 w-full border-t rounded-b-lg">
+        <div id="viewer-controls" class="flex items-center justify-center space-x-6 py-3 bg-gray-200 w-full border-t rounded-b-xl">
           <span class="tooltip" data-tip="Rotate"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 6v6l4 2" stroke-width="2"/></svg></span>
           <span class="tooltip" data-tip="Pan"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20" stroke-width="2"/></svg></span>
           <span class="tooltip" data-tip="Zoom"><svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke-width="2"/></svg></span>
@@ -62,7 +76,7 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="w-[400px] max-w-full bg-gray-50 border-l flex flex-col overflow-y-auto shadow-lg">
       <!-- Persistent Header -->
-      <div class="flex flex-col gap-4 px-6 py-6 border-b bg-white sticky top-0 z-10">
+      <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10">
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
             <span class="text-xs text-gray-500">Total</span>
@@ -86,17 +100,17 @@
         </div>
       </div>
       <!-- Stage Sections (populated by JS) -->
-      <section id="stage1-section" class="p-6">
+      <section id="stage1-section" class="p-8">
         <!-- Option cards will be rendered here -->
       </section>
-      <section id="stage2-section" class="p-6 hidden">
+      <section id="stage2-section" class="p-8 hidden">
         <!-- Customization options -->
       </section>
-      <section id="stage3-section" class="p-6 hidden">
+      <section id="stage3-section" class="p-8 hidden">
         <!-- Summary and export -->
       </section>
       <!-- Help & Support -->
-      <div class="mt-auto px-6 py-4 border-t bg-white">
+      <div class="mt-auto px-8 py-6 border-t bg-white">
         <h2 class="text-md font-semibold mb-2">Help & Support</h2>
         <div id="sidebar-help-content" class="text-sm text-gray-600">
           <!-- Help content will be populated here -->
@@ -104,6 +118,14 @@
       </div>
     </aside>
   </main>
+
+  <!-- Bottom Summary Bar -->
+  <footer class="w-full bg-white border-t shadow fixed bottom-0 left-0 z-30 flex items-center justify-between px-12 py-4 max-h-20">
+    <div class="flex items-center gap-8">
+      <span class="text-lg font-semibold">Total: <span id="footer-price" class="font-bold text-blue-700">$12,480</span></span>
+    </div>
+    <button id="footer-next" class="bg-blue-700 hover:bg-blue-800 text-white font-semibold px-8 py-2 rounded-lg shadow transition">Next Step &rarr;</button>
+  </footer>
 
   <!-- Banners -->
   <div id="banner-container" class="fixed top-0 left-0 w-full flex flex-col items-center space-y-2 z-50"></div>
@@ -134,5 +156,25 @@
   <script type="module" src="./js/main.js"></script>
   <script type="module" src="./js/viewer.js"></script>
   <script type="module" src="./js/ui/banner.js"></script>
+  <script>
+    // Keep footer price in sync with sidebar price
+    document.addEventListener("statechange", () => {
+      const priceBar = document.getElementById("price-bar");
+      const footerPrice = document.getElementById("footer-price");
+      if (priceBar && footerPrice) {
+        footerPrice.textContent = priceBar.textContent.replace(/[^$\d,]/g, "");
+      }
+    });
+    // Footer next button triggers next stage
+    document.addEventListener("DOMContentLoaded", () => {
+      const nextBtn = document.getElementById("footer-next");
+      if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+          const nextStageBtn = document.getElementById("next-stage");
+          if (nextStageBtn && !nextStageBtn.disabled) nextStageBtn.click();
+        });
+      }
+    });
+  </script>
 </body>
 </html>

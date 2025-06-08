@@ -19,6 +19,7 @@ alwaysApply: true
   - Do **not** deviate from this structure; deployment scripts and GH Pages depend on it.
 
 - **Testing & Viewing Changes**
+  - If the project uses JS from CDNs, local file:// testing will not work. All changes must be committed and tested via the live (deployed) URL.
   - After saving changes, open or refresh `index.html` in a browser to test.
   - Use browser developer tools (console, elements, network) for debugging and inspection.
   - Use `console.log()` for JS debugging; set breakpoints as needed.
