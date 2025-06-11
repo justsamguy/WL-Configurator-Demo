@@ -175,16 +175,16 @@
   <div id="help-backdrop" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden"></div>
 
   <!-- Scripts -->
-  <!-- Three.js (local or CDN) -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"></script>
-  <!-- OrbitControls (CDN) -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.min.js"></script>
+  <!-- Three.js (CDN, UMD build for global THREE) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <!-- OrbitControls (CDN, UMD build for global THREE.OrbitControls) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.min.js"></script>
   <!-- jsPDF and html2canvas (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.5.1/dist/html2canvas.min.js"></script>
   <!-- App scripts -->
   <script type="module" src="./js/main.js"></script>
-  <script type="module" src="./js/viewer.js"></script>
+  <script src="./js/viewer.js"></script>
   <script type="module" src="./js/ui/banner.js"></script>
   <script>
     // Keep footer price in sync with sidebar price
