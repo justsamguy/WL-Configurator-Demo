@@ -85,33 +85,30 @@ function updateSidebar() {
 }
 
 function renderModelOptions() {
-  const section = document.getElementById("stage1-section");
-  if (!section) return;
-  section.innerHTML = `
-    <h2 class="text-lg font-bold mb-4">Select Model</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  const container = document.getElementById("model-options");
+  if (!container) return;
+  container.innerHTML = `
       ${modelOptions.map(opt => `
         <button
-          class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition
-            ${state.selections.model === opt.id ? "border-gray-900 ring-2 ring-gray-900 font-bold" : "border-gray-300"}
+          class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full
+            ${state.selections.model === opt.id ? "border-blue-600 ring-2 ring-blue-200 font-semibold" : "border-gray-300 bg-white"}
           "
           data-id="${opt.id}"
           data-price="${opt.price}"
           aria-pressed="${state.selections.model === opt.id}"
         >
-          <img src="${opt.img}" alt="placeholder" class="w-24 h-24 object-cover mb-2 bg-gray-200 rounded" />
+          <img src="${opt.img}" alt="placeholder" class="w-full h-24 object-cover mb-3 bg-gray-100 rounded-md" />
           <div class="flex items-center w-full justify-between">
-            <span class="label">${opt.name}</span>
-            <span class="ml-2 text-xs text-gray-500">$${opt.price.toLocaleString()}</span>
+            <span class="label text-sm">${opt.name}</span>
+            <span class="ml-2 text-xs text-gray-600">$${opt.price.toLocaleString()}</span>
           </div>
-          <span class="text-xs text-gray-500 mt-1">${opt.desc}</span>
-          ${state.selections.model === opt.id ? `<span class="absolute top-2 right-2 text-green-600 font-bold text-lg">&#10003;</span>` : ""}
+          <span class="text-xs text-gray-500 mt-1 self-start">${opt.desc}</span>
+          ${state.selections.model === opt.id ? `<div class="absolute top-2 right-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>` : ""}
         </button>
       `).join("")}
-    </div>
   `;
   // Add event listeners
-  section.querySelectorAll(".option-card").forEach(btn => {
+  container.querySelectorAll(".option-card").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const price = parseInt(btn.getAttribute("data-price"), 10);
@@ -128,17 +125,19 @@ function renderModelOptions() {
 function animatePrice(newTotal) {
   const priceBar = document.getElementById("price-bar");
   if (!priceBar) return;
-  const oldTotal = state.pricing.total;
-  let start = oldTotal, end = newTotal, duration = 400, step = 0;
-  const steps = 24, increment = (end - start) / steps;
-  function tick() {
-    step++;
-    const val = Math.round(start + increment * step);
-    priceBar.innerHTML = `$${val.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
-    if (step < steps) setTimeout(tick, duration / steps);
-    else priceBar.innerHTML = `$${end.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
-  }
-  tick();
+  const oldTotal = parseFloat(priceBar.textContent.replace(/[^0-9.-]+/g,"")) || state.pricing.total;
+  let start = null;
+  const duration = 300;
+  const step = (timestamp) => {
+    if (!start) start = timestamp;
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const currentPrice = Math.round(oldTotal + (newTotal - oldTotal) * progress);
+    priceBar.innerHTML = `$${currentPrice.toLocaleString()} <span class="text-xs font-normal text-gray-500">USD</span>`;
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+  window.requestAnimationFrame(step);
 }
 
 // Event listeners for navigation
