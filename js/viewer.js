@@ -1,5 +1,6 @@
 // WoodLab Configurator - viewer.js
 // Three.js 3D viewer setup
+// NOTE: THREE.js is loaded globally from a CDN in index.html.
 
 let renderer, scene, camera, controls, boxMesh;
 let initialized = false;
