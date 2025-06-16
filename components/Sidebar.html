@@ -1,0 +1,46 @@
+<!-- Sidebar -->
+<aside id="sidebar" class="w-[400px] max-w-full bg-gray-50 border-l flex flex-col overflow-y-auto shadow-lg">
+  <!-- Persistent Header -->
+  <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10">
+    <div class="flex items-center justify-between">
+      <div class="flex flex-col">
+        <span class="text-xs text-gray-500">Total</span>
+        <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="summary-btn" class="tooltip" data-tip="Summary" aria-label="Summary">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
+        </button>
+        <button id="help-btn" class="tooltip" data-tip="Help" aria-label="Open help">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke-width="2"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Model Selection (will be replaced by data-include) -->
+    <div id="model-selection-placeholder"></div>
+  </div>
+  <!-- Stage Sections (populated by JS) -->
+  <section id="stage1-section" class="p-8">
+    <!-- Content for Stage 1 will be injected here -->
+  </section>
+  <section id="stage2-section" class="p-8 hidden">
+    <!-- Content for Stage 2 will be injected here -->
+  </section>
+  <section id="stage3-section" class="p-8 hidden">
+    <!-- Content for Stage 3 will be injected here -->
+  </section>
+  <!-- Help & Support -->
+  <div class="mt-auto px-8 py-6 border-t bg-white">
+    <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
+      Help & Support
+      <svg id="help-support-arrow" class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      </svg>
+    </h2>
+    <div id="sidebar-help-content" class="text-sm text-gray-600 hidden">
+      <p class="mb-2">Need assistance with your configuration?</p>
+      <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded transition mb-2">View Help Guide</button>
+      <p>Or contact us at <a href="mailto:support@woodlab.example.com" class="text-blue-600 hover:underline">support@woodlab.example.com</a></p>
+    </div>
+  </div>
+</aside>

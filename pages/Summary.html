@@ -1,0 +1,45 @@
+<div class="flex flex-col gap-6 px-8 py-8">
+  <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+
+  <div class="mb-6">
+    <div id="snapshot-container" class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+      <img id="snapshot-img" class="max-w-full max-h-full object-contain" alt="Configuration snapshot" style="display: none;" />
+      <div id="snapshot-placeholder" class="text-gray-400">Your configuration snapshot will appear here</div>
+    </div>
+
+    <div class="border rounded-lg p-4 bg-white">
+      <h3 class="font-semibold mb-2">Selected Options</h3>
+
+      <div class="mb-3">
+        <div class="flex justify-between py-1 border-b">
+          <span class="font-medium">Model</span>
+          <span id="summary-model-name"></span>
+        </div>
+        <div class="flex justify-between py-1 text-sm text-gray-600">
+          <span>Base Price</span>
+          <span id="summary-model-price"></span>
+        </div>
+      </div>
+
+      <!-- Customization options summary will be rendered here by js/main.js -->
+      <div id="summary-custom-options"></div>
+
+      <div class="mt-4 pt-2 border-t flex justify-between font-bold">
+        <span>Total Price</span>
+        <span id="summary-total-price"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-3">
+    <button id="capture-snapshot" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition">
+      Capture Snapshot
+    </button>
+    <button id="export-pdf" class="bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 px-4 rounded transition">
+      Export PDF
+    </button>
+    <button id="restart-config" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded transition mt-2">
+      Start Over
+    </button>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-// WoodLab Configurator - main.js
+// WoodLab Configurator - app.js
 // Global state and app bootstrap
 
 export const state = {
@@ -38,7 +38,8 @@ function goToStage(stageNum) {
   if (stageNum < 1 || stageNum > 3) return;
   setState({ stage: stageNum });
   updateStageBar();
-  updateSidebar();
+  updateMainContent(); // Update main content area based on stage
+  updateSidebarContent(); // Update sidebar content based on stage
 }
 
 // Update stage bar UI
@@ -92,25 +93,110 @@ const modelOptions = [
   }
 ];
 
-// Update sidebar sections
-function updateSidebar() {
-  for (let i = 1; i <= 3; i++) {
-    const section = document.getElementById(`stage${i}-section`);
-    if (section) section.classList.toggle("hidden", state.stage !== i);
+// Function to load HTML content via data-include
+async function loadIncludes() {
+  const includes = document.querySelectorAll('[data-include]');
+  for (const el of includes) {
+    const url = el.getAttribute('data-include');
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+      const content = await response.text();
+      el.innerHTML = content;
+    } catch (error) {
+      console.error(`Error loading include from ${url}:`, error);
+      el.innerHTML = `<p style="color: red;">Failed to load: ${url}</p>`;
+    }
   }
-  // Render model options in stage 1
+}
+
+// Update main content area based on stage
+async function updateMainContent() {
+  const mainContentSection = document.querySelector("#main-content section");
+  if (!mainContentSection) return;
+
+  let contentPath = '';
   if (state.stage === 1) {
-    renderModelOptions();
+    // Model selection is part of the sidebar now, main content is just viewer
+    contentPath = ''; // No specific page for viewer, it's always there
+  } else if (state.stage === 2) {
+    contentPath = 'pages/Customize.html';
+  } else if (state.stage === 3) {
+    contentPath = 'pages/Summary.html';
   }
-  // Render customization options in stage 2
-  else if (state.stage === 2) {
+
+  // Clear previous content if switching pages
+  if (mainContentSection.dataset.currentPage !== contentPath) {
+    mainContentSection.innerHTML = `
+      <!-- 3D Viewer -->
+      <div id="viewer" class="w-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-xl shadow-lg min-h-[350px] max-h-[500px] mb-6 border border-gray-200">
+        <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
+          <!-- Three.js canvas will be injected here -->
+          <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
+            Select a style to begin
+          </div>
+        </div>
+        <div data-include="components/ViewerControls.html"></div>
+      </div>
+    `;
+    mainContentSection.dataset.currentPage = contentPath;
+    await loadIncludes(); // Load viewer controls
+  }
+
+  // Now inject stage-specific content into the main content area
+  const viewerContainer = document.getElementById('viewer');
+  if (viewerContainer) {
+    if (state.stage === 1) {
+      // Viewer is always present, no additional page content for stage 1 in main
+    } else if (state.stage === 2) {
+      const response = await fetch('pages/Customize.html');
+      const content = await response.text();
+      viewerContainer.insertAdjacentHTML('afterend', content); // Insert after viewer
+    } else if (state.stage === 3) {
+      const response = await fetch('pages/Summary.html');
+      const content = await response.text();
+      viewerContainer.insertAdjacentHTML('afterend', content); // Insert after viewer
+    }
+  }
+  
+  // Re-render content that depends on state
+  if (state.stage === 2) {
     renderCustomizationOptions();
-  }
-  // Render summary in stage 3
-  else if (state.stage === 3) {
+  } else if (state.stage === 3) {
     renderSummary();
   }
 }
+
+
+// Update sidebar sections
+async function updateSidebarContent() {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+
+  // Handle model selection placeholder in sidebar
+  const modelSelectionPlaceholder = document.getElementById('model-selection-placeholder');
+  if (modelSelectionPlaceholder) {
+    const response = await fetch('components/ModelSelection.html');
+    const content = await response.text();
+    modelSelectionPlaceholder.innerHTML = content;
+    renderModelOptions(); // Render model options after content is loaded
+  }
+
+  // Handle collapsible help & support
+  const toggleHelpSupport = document.getElementById('toggle-help-support');
+  const sidebarHelpContent = document.getElementById('sidebar-help-content');
+  const helpSupportArrow = document.getElementById('help-support-arrow');
+
+  if (toggleHelpSupport && sidebarHelpContent && helpSupportArrow) {
+    toggleHelpSupport.onclick = () => {
+      const isOpen = sidebarHelpContent.classList.toggle('hidden');
+      sidebarHelpContent.classList.toggle('open', !isOpen);
+      helpSupportArrow.classList.toggle('rotated', !isOpen);
+      toggleHelpSupport.setAttribute('aria-expanded', !isOpen);
+    };
+  }
+}
+
 
 function renderModelOptions() {
   const container = document.getElementById("model-options");
@@ -244,73 +330,37 @@ function renderSummary() {
   // Find selected model
   const selectedModel = modelOptions.find(m => m.id === state.selections.model) || { name: "No model selected", price: 0 };
   
-  // Create HTML for summary
-  container.innerHTML = `
-    <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
-    
-    <div class="mb-6">
-      <div id="snapshot-container" class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-        <img id="snapshot-img" class="max-w-full max-h-full object-contain" alt="Configuration snapshot" />
-        <div id="snapshot-placeholder" class="text-gray-400">Your configuration snapshot will appear here</div>
-      </div>
+  // Update summary HTML
+  document.getElementById("summary-model-name").textContent = selectedModel.name;
+  document.getElementById("summary-model-price").textContent = `$${selectedModel.price.toLocaleString()}`;
+  document.getElementById("summary-total-price").textContent = `$${state.pricing.total.toLocaleString()}`;
+
+  const customOptionsContainer = document.getElementById("summary-custom-options");
+  if (customOptionsContainer) {
+    customOptionsContainer.innerHTML = Object.keys(state.selections.options).map(category => {
+      const optionId = state.selections.options[category];
+      if (!optionId) return '';
       
-      <div class="border rounded-lg p-4 bg-white">
-        <h3 class="font-semibold mb-2">Selected Options</h3>
-        
+      const option = customizationOptions[category].find(o => o.id === optionId);
+      if (!option) return '';
+      
+      return `
         <div class="mb-3">
           <div class="flex justify-between py-1 border-b">
-            <span class="font-medium">Model</span>
-            <span>${selectedModel.name}</span>
+            <span class="font-medium capitalize">${category}</span>
+            <span>${option.name}</span>
           </div>
-          <div class="flex justify-between py-1 text-sm text-gray-600">
-            <span>Base Price</span>
-            <span>$${selectedModel.price.toLocaleString()}</span>
-          </div>
-        </div>
-        
-        ${Object.keys(state.selections.options).map(category => {
-          const optionId = state.selections.options[category];
-          if (!optionId) return '';
-          
-          const option = customizationOptions[category].find(o => o.id === optionId);
-          if (!option) return '';
-          
-          return `
-            <div class="mb-3">
-              <div class="flex justify-between py-1 border-b">
-                <span class="font-medium capitalize">${category}</span>
-                <span>${option.name}</span>
-              </div>
-              ${option.price > 0 ? `
-                <div class="flex justify-between py-1 text-sm text-gray-600">
-                  <span>Additional Cost</span>
-                  <span>+$${option.price.toLocaleString()}</span>
-                </div>
-              ` : ''}
+          ${option.price > 0 ? `
+            <div class="flex justify-between py-1 text-sm text-gray-600">
+              <span>Additional Cost</span>
+              <span>+$${option.price.toLocaleString()}</span>
             </div>
-          `;
-        }).join("")}
-        
-        <div class="mt-4 pt-2 border-t flex justify-between font-bold">
-          <span>Total Price</span>
-          <span>$${state.pricing.total.toLocaleString()}</span>
+          ` : ''}
         </div>
-      </div>
-    </div>
-    
-    <div class="flex flex-col gap-3">
-      <button id="capture-snapshot" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded transition">
-        Capture Snapshot
-      </button>
-      <button id="export-pdf" class="bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 px-4 rounded transition">
-        Export PDF
-      </button>
-      <button id="restart-config" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded transition mt-2">
-        Start Over
-      </button>
-    </div>
-  `;
-  
+      `;
+    }).join("");
+  }
+
   // Add event listeners
   document.getElementById("capture-snapshot").addEventListener("click", captureSnapshot);
   document.getElementById("export-pdf").addEventListener("click", exportPDF);
@@ -462,9 +512,11 @@ function animatePrice(newTotal) {
 }
 
 // Event listeners for navigation
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadIncludes(); // Load all data-include components first
   updateStageBar();
-  updateSidebar();
+  updateMainContent();
+  updateSidebarContent();
 
   document.getElementById("prev-stage").addEventListener("click", () => {
     if (state.stage > 1) goToStage(state.stage - 1);
@@ -491,12 +543,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const helpDrawer = document.getElementById("help-drawer");
   const helpBackdrop = document.getElementById("help-backdrop");
   const helpClose = document.getElementById("help-close");
-  helpBtn.addEventListener("click", () => openHelpDrawer());
-  helpClose.addEventListener("click", () => closeHelpDrawer());
-  helpBackdrop.addEventListener("click", () => closeHelpDrawer());
-  document.addEventListener("keydown", (e) => {
-    if (helpDrawer.classList.contains("translate-x-0") && e.key === "Escape") closeHelpDrawer();
-  });
+  if (helpBtn && helpDrawer && helpBackdrop && helpClose) {
+    helpBtn.addEventListener("click", () => openHelpDrawer());
+    helpClose.addEventListener("click", () => closeHelpDrawer());
+    helpBackdrop.addEventListener("click", () => closeHelpDrawer());
+    document.addEventListener("keydown", (e) => {
+      if (helpDrawer.classList.contains("translate-x-0") && e.key === "Escape") closeHelpDrawer();
+    });
+  }
 
   function openHelpDrawer() {
     helpDrawer.classList.remove("translate-x-full");
@@ -519,6 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Listen for state changes to update UI
 document.addEventListener("statechange", () => {
   updateStageBar();
-  updateSidebar();
+  updateMainContent(); // Re-render main content on state change
+  updateSidebarContent(); // Re-render sidebar content on state change
   animatePrice(state.pricing.total);
 });
