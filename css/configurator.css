@@ -8,30 +8,47 @@ body {
 /* Main content grid layout for desktop */
 @media (min-width: 1024px) {
   body {
-    grid-template-columns: 1fr 400px; /* Viewer takes 1fr, sidebar fixed 400px */
-    grid-template-rows: auto 1fr auto; /* Header, Main, Footer */
+    grid-template-columns: 60fr 40fr; /* 60/40 split as specified */
+    grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main Content, Footer */
   }
 
   header {
     grid-column: 1 / -1; /* Span all columns */
+    grid-row: 1 / 2;
   }
 
   #stage-bar {
     grid-column: 1 / -1; /* Span all columns */
+    grid-row: 2 / 3;
   }
 
   main {
     grid-column: 1 / 2; /* Viewer in first column */
-    grid-row: 2 / 3; /* In the main content row */
+    grid-row: 3 / 4; /* In the main content row */
+    overflow: hidden; /* Prevent scrolling in viewer area */
   }
 
   #sidebar {
     grid-column: 2 / 3; /* Sidebar in second column */
-    grid-row: 2 / 3; /* In the main content row */
+    grid-row: 3 / 4; /* In the main content row */
+    width: 100%; /* Take full width of the column */
   }
 
   footer {
     grid-column: 1 / -1; /* Span all columns */
+    grid-row: 4 / 5;
+  }
+  
+  /* Ensure viewer takes full height */
+  #viewer {
+    height: calc(100vh - 200px); /* Adjust based on header, stage bar, and footer heights */
+    min-height: 500px;
+  }
+  
+  /* Controls bar styling */
+  #viewer-controls-container {
+    height: auto;
+    margin-top: 1rem;
   }
 }
 
@@ -227,4 +244,82 @@ body {
 
 #help-support-arrow.rotated {
   transform: rotate(180deg);
+}
+
+/* Viewer controls styling */
+#viewer-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem; /* Increase spacing between controls */
+  padding: 0.75rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+#viewer-controls button, 
+#viewer-controls span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+#viewer-controls button:hover,
+#viewer-controls span:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+#viewer-controls svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #4b5563;
+}
+
+/* Control button styling */
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background-color: white;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.control-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.control-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #4b5563;
+}
+
+/* Loading animation enhancement */
+#loading-overlay {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease-out;
+}
+
+#loading-overlay .animate-spin {
+  border-top-color: transparent;
 }

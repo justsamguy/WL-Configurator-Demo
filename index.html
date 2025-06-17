@@ -11,7 +11,7 @@
   <!-- Custom styles -->
   <link rel="stylesheet" href="./css/configurator.css" />
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen grid grid-rows-[auto_1fr_auto] lg:grid-cols-[1fr_400px] lg:grid-rows-[auto_1fr] overflow-hidden">
+<body class="bg-gray-50 text-gray-900 min-h-screen grid grid-rows-[auto_auto_1fr_auto] lg:grid-cols-[60fr_40fr] lg:grid-rows-[auto_auto_1fr_auto] overflow-hidden">
   <!-- App Header -->
   <header class="w-full flex items-center justify-between bg-white shadow px-8 py-3 sticky top-0 z-30 lg:col-span-2">
     <!-- Left: Menu -->
@@ -39,8 +39,8 @@
     </div>
   </header>
   <!-- Stage Bar -->
-  <nav id="stage-bar" class="w-full flex items-center justify-center bg-white shadow z-20 sticky top-0 lg:col-span-2">
-    <ol class="flex space-x-2 py-3 px-6">
+  <nav id="stage-bar" class="col-span-full row-span-1 w-full flex items-center justify-center bg-white shadow z-20 sticky top-0 lg:col-span-full lg:row-span-1">
+    <ol class="flex space-x-4 py-3 px-6">
       <li>
         <button id="prev-stage" class="px-3 py-1 rounded text-gray-400 opacity-40 cursor-default" disabled>< Previous</button>
       </li>
@@ -59,27 +59,76 @@
     </ol>
   </nav>
 
-  <!-- Main Content -->
-  <main id="main-content" class="flex flex-1 w-full overflow-hidden lg:col-span-1">
+  <!-- Main Content - Viewer Section -->
+  <main id="main-content" class="col-span-1 row-span-1 flex flex-col overflow-hidden lg:col-span-1 lg:row-span-1">
     <!-- 3D Viewer Section -->
-    <section class="flex-1 flex flex-col items-center justify-center bg-white relative min-h-[500px] max-w-5xl mx-auto p-8">
+    <section class="flex-1 flex flex-col items-center justify-center bg-white relative min-h-[600px] w-full p-4">
       <!-- 3D Viewer -->
-      <div id="viewer" class="w-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-xl shadow-lg min-h-[350px] max-h-[500px] mb-6 border border-gray-200">
+      <div id="viewer" class="w-full h-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-lg border border-gray-200">
         <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
           <!-- Three.js canvas will be injected here -->
           <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
             Select a style to begin
           </div>
         </div>
+      </div>
+      <!-- Controls Bar - Moved outside viewer but below it -->
+      <div id="viewer-controls-container" class="w-full mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
+        <!-- ViewerControls.html will be included here -->
         <div data-include="components/ViewerControls.html"></div>
       </div>
     </section>
   </main>
 
-  <div data-include="components/Sidebar.html"></div>
+  <!-- Sidebar - Configuration Panel -->
+  <aside id="sidebar" class="col-span-1 row-span-1 bg-white border-l flex flex-col overflow-y-auto shadow-lg lg:col-span-1 lg:row-span-1">
+    <!-- Persistent Header -->
+    <div class="flex flex-col gap-4 px-8 py-6 border-b bg-white sticky top-0 z-10">
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col">
+          <span class="text-xs text-gray-500">Total</span>
+          <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="summary-btn" class="tooltip" data-tip="Summary" aria-label="Summary">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
+          </button>
+          <button id="help-btn" class="tooltip" data-tip="Help" aria-label="Open help">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- Model Selection (will be replaced by data-include) -->
+      <div id="model-selection-placeholder"></div>
+    </div>
+    <!-- Stage Sections (populated by JS) -->
+    <section id="stage1-section" class="p-8 overflow-y-auto">
+      <!-- Content for Stage 1 will be injected here -->
+    </section>
+    <section id="stage2-section" class="p-8 hidden overflow-y-auto">
+      <!-- Content for Stage 2 will be injected here -->
+    </section>
+    <section id="stage3-section" class="p-8 hidden overflow-y-auto">
+      <!-- Content for Stage 3 will be injected here -->
+    </section>
+    <!-- Help & Support -->
+    <div class="mt-auto px-8 py-6 border-t bg-white">
+      <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
+        Help & Support
+        <svg id="help-support-arrow" class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </h2>
+      <div id="sidebar-help-content" class="text-sm text-gray-600 hidden">
+        <p class="mb-2">Need assistance with your configuration?</p>
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded transition mb-2">View Help Guide</button>
+        <p>Or contact us at <a href="mailto:support@woodlab.example.com" class="text-blue-600 hover:underline">support@woodlab.example.com</a></p>
+      </div>
+    </div>
+  </aside>
 
   <!-- Bottom Summary Bar -->
-  <footer class="w-full bg-white border-t shadow fixed bottom-0 left-0 z-30 flex items-center justify-between px-12 py-4 max-h-20 lg:col-span-2">
+  <footer class="col-span-full row-span-1 w-full bg-white border-t shadow fixed bottom-0 left-0 z-30 flex items-center justify-between px-12 py-4 max-h-20 lg:col-span-full lg:row-span-1">
     <div class="flex items-center gap-8">
       <span class="text-lg font-semibold">Total: <span id="footer-price" class="font-bold text-blue-700">$12,480</span></span>
     </div>

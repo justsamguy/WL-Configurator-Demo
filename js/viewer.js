@@ -9,6 +9,67 @@ let renderer, scene, camera, controls, boxMesh;
 let initialized = false;
 let isLoading = false;
 
+// Enhance lighting for better visualization
+function enhanceLighting() {
+  // Remove existing lights
+  scene.children.forEach(child => {
+    if (child.type === "AmbientLight" || child.type === "DirectionalLight") {
+      scene.remove(child);
+    }
+  });
+  
+  // Add improved lighting setup
+  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambient);
+  
+  const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  mainLight.position.set(5, 10, 7);
+  mainLight.castShadow = true;
+  scene.add(mainLight);
+  
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  fillLight.position.set(-5, 5, -7);
+  scene.add(fillLight);
+  
+  const backLight = new THREE.DirectionalLight(0xffffff, 0.2);
+  backLight.position.set(0, 5, -10);
+  scene.add(backLight);
+}
+
+// Add a subtle ground plane for better spatial context
+function addGroundPlane() {
+  const groundGeometry = new THREE.PlaneGeometry(20, 20);
+  const groundMaterial = new THREE.MeshStandardMaterial({ 
+    color: 0xf5f5f5,
+    roughness: 0.8,
+    metalness: 0.2,
+    side: THREE.DoubleSide
+  });
+  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.rotation.x = Math.PI / 2;
+  ground.position.y = -0.8;
+  ground.receiveShadow = true;
+  scene.add(ground);
+}
+
+// Improve material quality
+function createEnhancedMaterials() {
+  return {
+    tableMaterial: new THREE.MeshStandardMaterial({ 
+      color: 0x8B4513,
+      roughness: 0.7,
+      metalness: 0.1,
+      envMapIntensity: 1.0
+    }),
+    legMaterial: new THREE.MeshStandardMaterial({ 
+      color: 0x8B4513,
+      roughness: 0.7,
+      metalness: 0.1,
+      envMapIntensity: 1.0
+    })
+  };
+}
+
 export function initViewer() {
   if (initialized) return;
   const container = document.getElementById("viewer-canvas");
@@ -35,14 +96,15 @@ export function initViewer() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(width, height);
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
 
-  // Lights
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-  scene.add(ambient);
-  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-  dir.position.set(5, 10, 7);
-  scene.add(dir);
+  // Enhanced lighting
+  enhanceLighting();
+  
+  // Add ground plane
+  addGroundPlane();
 
   // Controls
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -51,20 +113,21 @@ export function initViewer() {
   controls.target.set(0, 0.5, 0);
   controls.update();
 
+  // Create enhanced materials
+  const materials = createEnhancedMaterials();
+  
   // Placeholder model (BoxGeometry)
   boxMesh = new THREE.Mesh(
     new THREE.BoxGeometry(1, 0.1, 1.5),
-    new THREE.MeshStandardMaterial({ 
-      color: 0x8B4513,
-      roughness: 0.7,
-      metalness: 0.1
-    })
+    materials.tableMaterial
   );
   boxMesh.position.set(0, 0.05, 0);
+  boxMesh.castShadow = true;
+  boxMesh.receiveShadow = true;
   scene.add(boxMesh);
   
   // Add table legs
-  addTableLegs();
+  addTableLegs(materials.legMaterial);
 
   // Render loop
   function animate() {
@@ -82,14 +145,8 @@ export function initViewer() {
   initialized = true;
 }
 
-// Add table legs
-function addTableLegs() {
-  const legMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0x8B4513,
-    roughness: 0.7,
-    metalness: 0.1
-  });
-  
+// Update the addTableLegs function to use the enhanced material
+function addTableLegs(legMaterial) {
   // Create four legs
   const legPositions = [
     [-0.4, -0.4, 0.6], // front-left
@@ -104,6 +161,8 @@ function addTableLegs() {
       legMaterial
     );
     leg.position.set(pos[0], pos[1], pos[2]);
+    leg.castShadow = true;
+    leg.receiveShadow = true;
     scene.add(leg);
   });
 }
