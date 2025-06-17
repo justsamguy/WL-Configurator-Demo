@@ -5,15 +5,18 @@ alwaysApply: true
 ---
 
 - **Development Workflow Process**
-  - Edit project files: `index.html`, `css/styles.css`, `js/main.js`, `js/viewer.js`, `js/ui/*.js`, and any assets in `assets/`.
+  - Edit project files: `index.html`, `css/configurator.css`, `js/main.js`, `js/viewer.js`, `js/app.js`, `js/ui/*.js`, `components/*.html`, `pages/*.html`, and any assets in `assets/`.
   - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/styles.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
   - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
   - Strictly follow the canonical file/folder layout:
     - `index.html`: Entry point, all links must be relative.
-    - `css/styles.css`: Compiled Tailwind output.
+    - `css/configurator.css`: Compiled Tailwind output.
     - `js/main.js`: App bootstrap & global state (only file allowed to mutate state).
     - `js/viewer.js`: 3D scene logic (Three.js).
+    - `js/app.js`: Additional application logic.
     - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js).
+    - `components/`: Directory for reusable HTML components (e.g., `ModelSelection.html`, `Sidebar.html`, `ViewerControls.html`).
+    - `pages/`: Directory for main application pages (e.g., `Customize.html`, `Summary.html`).
     - `assets/`: All images, icons, and models (placeholders only).
   - Do **not** deviate from this structure; deployment scripts and GH Pages depend on it.
 
@@ -26,7 +29,7 @@ alwaysApply: true
 
 - **Build & Deployment**
   - Run `npm i` to install Tailwind and dev tooling.
-  - `npm run build` compiles Tailwind to `css/styles.css` (JIT, purge unused) and does **not** minify JS.
+  - `npm run build` compiles Tailwind to `css/configurator.css` (JIT, purge unused) and does **not** minify JS.
   - Commit the `/` tree to the `gh-pages` branch.
   - Ensure `.nojekyll` is present and all links are relative.
   - Verify at `https://<user>.github.io/WoodLab/index.html`.
@@ -35,7 +38,7 @@ alwaysApply: true
   - UI/UX must match the three-stage wizard, 3D viewer, sidebar, summary/export, and help drawer as described in the guidelines.
   - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
   - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
-  - Only `main.js` mutates global state; all UI modules observe state and dispatch `Event("statechange")` for updates.
+  - Only `main.js` mutates global state; all UI modules and HTML components observe state and dispatch `Event("statechange")` for updates.
   - Implement banners, tooltips, and help drawer per spec (see `/js/ui/banner.js` and related files).
 
 - **Export & Summary**

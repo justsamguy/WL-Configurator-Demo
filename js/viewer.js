@@ -1,6 +1,7 @@
 // WoodLab Configurator - viewer.js
 // Three.js 3D viewer setup
 // NOTE: THREE.js is loaded globally from a CDN in index.html.
+import { state } from './main.js'; // Import state from main.js
 
 // TODO: Create SVG files for Model Two and Model Three in assets/images/
 
@@ -8,7 +9,7 @@ let renderer, scene, camera, controls, boxMesh;
 let initialized = false;
 let isLoading = false;
 
-function initViewer() {
+export function initViewer() {
   if (initialized) return;
   const container = document.getElementById("viewer-canvas");
   if (!container) return;
@@ -81,7 +82,7 @@ function initViewer() {
   initialized = true;
 }
 
-// Add table legs to the model
+// Add table legs
 function addTableLegs() {
   const legMaterial = new THREE.MeshStandardMaterial({ 
     color: 0x8B4513,
@@ -134,7 +135,7 @@ function showLoadingState(isLoading) {
 }
 
 // Reset camera view
-function resetView() {
+export function resetView() {
   if (!controls || !camera) return;
   camera.position.set(2, 2, 3);
   controls.target.set(0, 0.5, 0);
@@ -142,7 +143,7 @@ function resetView() {
 }
 
 // Resize handler
-function resizeViewer() {
+export function resizeViewer() {
   if (!renderer || !camera) return;
   const container = document.getElementById("viewer-canvas");
   if (!container) return;
@@ -161,7 +162,7 @@ window.addEventListener("resize", () => {
 });
 
 // Update model based on selection
-function updateModel(modelId) {
+export function updateModel(modelId) {
   if (!scene || !boxMesh) return;
   
   // Show loading state
@@ -264,20 +265,16 @@ function updateModel(modelId) {
 }
 
 // Bind reset button and listen for model changes
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("reset-view").addEventListener("click", resetView);
-  
-  // Initialize viewer
-  initViewer();
-  
-  // Listen for model selection changes
-  document.addEventListener("statechange", () => {
-    // Get state from main.js
-    const mainModule = document.querySelector('script[src="./js/main.js"]');
-    if (mainModule && window.state && window.state.selections && window.state.selections.model) {
-      updateModel(window.state.selections.model);
-    }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("reset-view").addEventListener("click", resetView);
+    
+    // Initialize viewer
+    initViewer();
+    
+    // Listen for model selection changes
+    document.addEventListener("statechange", () => {
+      if (state && state.selections && state.selections.model) {
+        updateModel(state.selections.model);
+      }
+    });
   });
-});
-
-export { initViewer, resetView, resizeViewer, updateModel };

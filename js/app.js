@@ -1,14 +1,8 @@
 // WoodLab Configurator - app.js
-// Global state and app bootstrap
-
-export const state = {
-  stage: 1, // 1: Model, 2: Customize, 3: Summary
-  selections: { model: null, options: {} },
-  pricing: { base: 12480, extras: 0, total: 12480 }
-};
-
-// Make state globally accessible for non-module scripts
-window.state = state;
+// Application logic and UI updates
+import { state, setState } from './main.js'; // Import state and setState from main.js
+import { initViewer, resetView, resizeViewer, updateModel } from './viewer.js';
+import { showBanner } from './ui/banner.js';
 
 // Customization options
 const customizationOptions = {
@@ -26,12 +20,6 @@ const customizationOptions = {
     { id: "leg-02", name: "Modern", price: 250, img: "assets/images/model1.svg", desc: "Contemporary design." }
   ]
 };
-
-// Dispatch a custom event when state changes
-export function setState(newState) {
-  Object.assign(state, newState);
-  document.dispatchEvent(new Event("statechange"));
-}
 
 // Stage navigation logic
 function goToStage(stageNum) {
@@ -93,20 +81,45 @@ const modelOptions = [
   }
 ];
 
+// Cache for fetched HTML content
+const htmlCache = {};
+
 // Function to load HTML content via data-include
 async function loadIncludes() {
   const includes = document.querySelectorAll('[data-include]');
   for (const el of includes) {
     const url = el.getAttribute('data-include');
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-      const content = await response.text();
-      el.innerHTML = content;
-    } catch (error) {
-      console.error(`Error loading include from ${url}:`, error);
-      el.innerHTML = `<p style="color: red;">Failed to load: ${url}</p>`;
+    if (htmlCache[url]) {
+      el.innerHTML = htmlCache[url];
+    } else {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+        const content = await response.text();
+        htmlCache[url] = content; // Cache the content
+        el.innerHTML = content;
+      } catch (error) {
+        console.error(`Error loading include from ${url}:`, error);
+        el.innerHTML = `<p style="color: red;">Failed to load: ${url}</p>`;
+      }
     }
+  }
+}
+
+// Function to fetch and return HTML content (with caching)
+async function fetchHtmlContent(url) {
+  if (htmlCache[url]) {
+    return htmlCache[url];
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+    const content = await response.text();
+    htmlCache[url] = content;
+    return content;
+  } catch (error) {
+    console.error(`Error fetching content from ${url}:`, error);
+    return `<p style="color: red;">Failed to load: ${url}</p>`;
   }
 }
 
@@ -149,12 +162,10 @@ async function updateMainContent() {
     if (state.stage === 1) {
       // Viewer is always present, no additional page content for stage 1 in main
     } else if (state.stage === 2) {
-      const response = await fetch('pages/Customize.html');
-      const content = await response.text();
+      const content = await fetchHtmlContent('pages/Customize.html');
       viewerContainer.insertAdjacentHTML('afterend', content); // Insert after viewer
     } else if (state.stage === 3) {
-      const response = await fetch('pages/Summary.html');
-      const content = await response.text();
+      const content = await fetchHtmlContent('pages/Summary.html');
       viewerContainer.insertAdjacentHTML('afterend', content); // Insert after viewer
     }
   }
@@ -176,8 +187,7 @@ async function updateSidebarContent() {
   // Handle model selection placeholder in sidebar
   const modelSelectionPlaceholder = document.getElementById('model-selection-placeholder');
   if (modelSelectionPlaceholder) {
-    const response = await fetch('components/ModelSelection.html');
-    const content = await response.text();
+    const content = await fetchHtmlContent('components/ModelSelection.html');
     modelSelectionPlaceholder.innerHTML = content;
     renderModelOptions(); // Render model options after content is loaded
   }
@@ -232,14 +242,7 @@ function renderModelOptions() {
       });
       
       // Update 3D model
-      try {
-        // Try to access the updateModel function from viewer.js
-        if (typeof updateModel === 'function') {
-          updateModel(id);
-        }
-      } catch (error) {
-        console.warn("Could not update 3D model:", error);
-      }
+      updateModel(id);
       
       renderModelOptions();
     });
