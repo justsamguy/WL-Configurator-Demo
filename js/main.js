@@ -20,3 +20,17 @@ document.addEventListener("statechange", () => {
   // In a more complex app, main.js might call functions from app.js, viewer.js, etc.
   // to trigger their respective updates.
 });
+
+// Import icon loading utility
+import { loadIconFromCDN } from './ui/icon.js';
+
+// Load icons on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
+
+    iconPlaceholders.forEach(async (element) => {
+        const iconName = element.getAttribute('data-icon');
+        const iconTitle = element.getAttribute('data-icon-title') || '';
+        await loadIconFromCDN(element, iconName, iconTitle);
+    });
+});
