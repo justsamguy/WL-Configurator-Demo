@@ -1,74 +1,29 @@
-# WoodLab Configurator Placeholder Visuals Checklist
+---
 
-This document details the specific placeholder images and icons required for the WoodLab Configurator project, organized by category and importance for asset creation. All images should be marked with `alt="placeholder"` as per project guidelines.
+### 2. Product Model Placeholders (PNGs)
 
-## 1. Icons (Hero-icons SVGs)
-*   **Description:** A comprehensive set of SVG icons for various UI elements.
-*   **Target Directory:** `assets/icons/`
-    *   **Navigation/General UI:**
-        *   Menu/Hamburger icon
-        *   Close/X icon (for drawers, modals, banners)
-        *   Back/Arrow-left icon
-        *   Next/Arrow-right icon
-        *   Home icon
-        *   Search icon
-        *   Info/Question mark icon
-        *   Help icon
-        *   Settings/Gear icon
-        *   User/Profile icon
-        *   Shopping Cart/Basket icon
-    *   **Controls/Actions:**
-        *   Plus/Add icon
-        *   Minus/Subtract icon
-        *   Edit/Pencil icon
-        *   Delete/Trash icon
-        *   Download icon (for PDF export)
-        *   Print icon
-        *   Share icon
-        *   Checkmark/Success icon
-        *   Warning/Exclamation icon
-        *   Error/Alert icon
-    *   **Viewer Controls:**
-        *   Zoom In icon
-        *   Zoom Out icon
-        *   Rotate icon
-        *   Pan icon
-        *   Reset View icon
-        *   Fullscreen icon
-        *   Camera icon (for snapshot)
-    *   **Specific to Configurator Stages:**
-        *   Model Selection icon
-        *   Customize icon
-        *   Summary icon
+**Directory:** `assets/images/`
+**Purpose:** Generic placeholders for product models and snapshots
+**Recommended size:** 256 × 256 px
 
-## 2. Product Model Placeholders (PNGs)
-*   **Description:** Specific PNG images for general product representation and features.
-*   **Target Directory:** `assets/images/`
-    *   `model1_placeholder.png`: A generic placeholder image for the primary product model. (256x256px recommended)
-    *   `snapshot_placeholder.png`: A placeholder image representing a generated product snapshot, used for features like PDF export. (e.g., a simple wireframe or generic product outline)
-    *   `model2.png`: A PNG version of the second product model, to complement its SVG counterpart. (256x256px recommended)
+* `model1_placeholder.png`
+  Placeholder for the primary product model
+* `snapshot_placeholder.png`
+  Snapshot placeholder (e.g. wireframe) for PDF-export or similar features
+* `model2.png`
+  PNG version of the second product model (to complement its SVG)
 
-## 3. Specific Option Images (SVG or PNG)
-*   **Description:** Unique placeholder images for various configurable options (materials, finishes, leg styles). These should visually differentiate each option.
-*   **Target Directory:** `assets/images/options/` (New sub-directory recommended for organization)
-    *   **Materials:**
-        *   `material_oak.png` / `material_oak.svg`: Visual representation of Oak wood grain.
-        *   `material_walnut.png` / `material_walnut.svg`: Visual representation of Walnut wood grain.
-        *   `material_maple.png` / `material_maple.svg`: Visual representation of Maple wood grain.
-        *   (Add more as needed for other material types)
-    *   **Finishes:**
-        *   `finish_natural.png` / `finish_natural.svg`: Visual representation of a natural wood finish.
-        *   `finish_stained.png` / `finish_stained.svg`: Visual representation of a stained wood finish (e.g., a darker tone).
-        *   (Add more as needed for other finish types)
-    *   **Leg Styles:**
-        *   `leg_standard.png` / `leg_standard.svg`: Visual representation of a standard leg style.
-        *   `leg_modern.png` / `leg_modern.svg`: Visual representation of a modern leg style.
-        *   (Add more as needed for other leg styles)
+---
 
-## 4. Detailed Main Product Model Visuals (SVGs/Renders)
-*   **Description:** More detailed or actual 3D renders/visuals to replace the existing generic SVG placeholders for the main product models. These should showcase the models from various angles or with different configurations.
-*   **Target Directory:** `assets/images/`
-    *   `model1.svg`: Replace with a more detailed SVG or a high-quality render of Model 1. Consider multiple views (front, side, isometric).
-    *   `model2.svg`: Replace with a more detailed SVG or a high-quality render of Model 2. Consider multiple views (front, side, isometric).
-    *   `model3.svg`: Replace with a more detailed SVG or a high-quality render of Model 3. Consider multiple views (front, side, isometric).
-    *   (Consider adding variations for different configurations if applicable, e.g., `model1_with_oak_finish.png`)
+
+### 4. Detailed Main Product Model Visuals (SVGs / Renders)
+
+**Directory:** `assets/images/`
+**Purpose:** High-quality SVGs or renders showcasing each model from multiple views
+
+* `model1.svg` — Detailed render of Model 1 (front, side, isometric)
+* `model2.svg` — Detailed render of Model 2 (front, side, isometric)
+* `model3.svg` — Detailed render of Model 3 (front, side, isometric)
+* *Optional:* variations (e.g. `model1_with_oak_finish.png`)
+
+---
