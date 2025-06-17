@@ -323,3 +323,70 @@ body {
 #loading-overlay .animate-spin {
   border-top-color: transparent;
 }
+
+/* Button Styling System */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+  @apply text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500;
+}
+
+.btn-secondary {
+  @apply text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:ring-indigo-500;
+}
+
+.btn-tertiary {
+  @apply text-gray-700 bg-white hover:bg-gray-50 border-gray-300 focus:ring-indigo-500;
+}
+
+.btn-icon {
+  @apply p-1.5 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
+}
+
+/* Specific button styles */
+.control-btn {
+  @apply inline-flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-sm border border-gray-300 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
+
+.control-btn svg {
+  @apply w-5 h-5;
+}
+
+.option-card {
+  @apply relative flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg text-center cursor-pointer;
+}
+
+.option-card.selected {
+  @apply border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50;
+}
+
+.option-card:hover {
+  @apply border-indigo-400;
+}
+
+.option-card.disabled {
+  @apply opacity-50 cursor-not-allowed bg-gray-50;
+}
+
+.stage-btn {
+  @apply flex-1 py-2 px-1 text-center text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 border-transparent;
+}
+
+.stage-btn.active {
+  @apply border-indigo-500 text-indigo-600;
+}
+
+.nav-btn {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500;
+}

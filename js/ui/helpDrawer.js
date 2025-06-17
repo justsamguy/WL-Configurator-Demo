@@ -74,11 +74,11 @@ export function populateHelpDrawer() {
   // Sidebar help content (simplified version)
   sidebarHelpContent.innerHTML = `
     <p class="mb-2">Need assistance with your configuration?</p>
-    <button id="open-help-drawer" class="text-blue-600 hover:underline focus:outline-none focus:underline">
+    <button id="open-help-drawer" class="btn btn-secondary btn-sm">
       View Help Guide
     </button>
     <p class="mt-2">
-      Or contact us at <a href="mailto:support@woodlab.example.com" class="text-blue-600 hover:underline">support@woodlab.example.com</a>
+      Or contact us at <a href="mailto:support@woodlab.example.com" class="text-indigo-600 hover:underline">support@woodlab.example.com</a>
     </p>
   `;
   
