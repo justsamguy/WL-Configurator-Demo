@@ -1,7 +1,7 @@
 // WoodLab Configurator - app.js
 // Application logic and UI updates
 import { state, setState } from './main.js'; // Import state and setState from main.js
-import { initViewer, resetView, resizeViewer, updateModel } from './viewer.js';
+import { initViewer, initViewerControls, resetView, resizeViewer, updateModel } from './viewer.js';
 import { showBanner } from './ui/banner.js';
 
 // Customization options
@@ -515,6 +515,8 @@ function animatePrice(newTotal) {
 // Event listeners for navigation
 document.addEventListener("DOMContentLoaded", async () => {
   await loadIncludes(); // Load all data-include components first
+  initViewer(); // Initialize the 3D viewer
+  initViewerControls(); // Initialize viewer controls after they are loaded
   updateStageBar();
   updateMainContent();
   updateSidebarContent();

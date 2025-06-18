@@ -1,7 +1,7 @@
 // js/ui/icon.js
-export async function loadIconFromCDN(element, iconName, title = '') {
-    const cdnBaseUrl = 'https://cdn.jsdelivr.net/npm/@heroicons/html@2.1.1/dist/svg/24/solid/';
-    const iconUrl = `${cdnBaseUrl}${iconName}.svg`;
+export async function loadIcon(element, iconName, title = '') {
+    const iconBaseUrl = 'assets/icons/'; // Local path as per project rules
+    const iconUrl = `${iconBaseUrl}${iconName}.svg`;
 
     try {
         const response = await fetch(iconUrl);

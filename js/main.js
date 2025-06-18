@@ -22,7 +22,7 @@ document.addEventListener("statechange", () => {
 });
 
 // Import icon loading utility
-import { loadIconFromCDN } from './ui/icon.js';
+import { loadIcon } from './ui/icon.js';
 
 // Load icons on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,6 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     iconPlaceholders.forEach(async (element) => {
         const iconName = element.getAttribute('data-icon');
         const iconTitle = element.getAttribute('data-icon-title') || '';
-        await loadIconFromCDN(element, iconName, iconTitle);
+        await loadIcon(element, iconName, iconTitle);
     });
 });

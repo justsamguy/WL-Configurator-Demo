@@ -271,17 +271,19 @@ export function updateModel(modelId) {
   displayPlaceholderImage(modelId);
 }
 
-// Bind reset button and listen for model changes
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("reset-view").addEventListener("click", resetView);
-    
-    // Initialize viewer
-    initViewer();
-    
-    // Listen for model selection changes
-    document.addEventListener("statechange", () => {
-      if (state && state.selections && state.selections.model) {
-        updateModel(state.selections.model);
-      }
-    });
-  });
+// Function to initialize viewer controls after they are loaded into the DOM
+export function initViewerControls() {
+  const resetViewButton = document.getElementById("reset-view");
+  if (resetViewButton) {
+    resetViewButton.addEventListener("click", resetView);
+  } else {
+    console.warn("Reset view button not found. Viewer controls might not be loaded yet.");
+  }
+}
+
+// Listen for model selection changes
+document.addEventListener("statechange", () => {
+  if (state && state.selections && state.selections.model) {
+    updateModel(state.selections.model);
+  }
+});
