@@ -3,11 +3,65 @@
 // NOTE: THREE.js is loaded globally from a CDN in index.html.
 import { state } from './main.js'; // Import state from main.js
 
-// TODO: Create SVG files for Model Two and Model Three in assets/images/
-
-let renderer, scene, camera, controls, boxMesh;
+let renderer, scene, camera, controls;
 let initialized = false;
 let isLoading = false;
+let currentPlaceholderImage = null; // To keep track of the current placeholder image
+
+// Function to display SVG placeholder image
+function displayPlaceholderImage(modelId) {
+  const container = document.getElementById("viewer-canvas");
+  if (!container) return;
+
+  // Hide Three.js canvas if it exists
+  if (renderer && renderer.domElement) {
+    renderer.domElement.style.display = "none";
+  }
+
+  let placeholderDiv = document.getElementById("viewer-placeholder");
+  if (!placeholderDiv) {
+    placeholderDiv = document.createElement("div");
+    placeholderDiv.id = "viewer-placeholder";
+    placeholderDiv.className = "text-center text-gray-400 text-lg flex flex-col items-center justify-center w-full h-full";
+    container.appendChild(placeholderDiv);
+  } else {
+    placeholderDiv.style.display = "flex"; // Ensure it's visible
+  }
+
+  const imagePath = `assets/images/${modelId}.svg`; // Use SVG files
+  // Check if the image already exists and is the correct one
+  if (currentPlaceholderImage && currentPlaceholderImage.src.includes(imagePath)) {
+    return; // Image is already displayed
+  }
+
+  // Clear previous image
+  placeholderDiv.innerHTML = '';
+
+  const img = document.createElement("img");
+  img.src = imagePath;
+  img.alt = `Placeholder for ${modelId}`;
+  img.className = "max-w-full max-h-full object-contain"; // Ensure image scales within container
+  placeholderDiv.appendChild(img);
+
+  const label = document.createElement("p");
+  label.className = "mt-4 text-gray-600 font-semibold text-xl";
+  label.textContent = `Model: ${modelId.replace('model', 'Model ')}`; // e.g., "Model: Model 1"
+  placeholderDiv.appendChild(label);
+
+  currentPlaceholderImage = img;
+}
+
+// Function to hide placeholder image and show Three.js canvas
+function hidePlaceholderImage() {
+  const placeholderDiv = document.getElementById("viewer-placeholder");
+  if (placeholderDiv) {
+    placeholderDiv.style.display = "none";
+  }
+  if (renderer && renderer.domElement) {
+    renderer.domElement.style.display = "block";
+  }
+  currentPlaceholderImage = null;
+}
 
 // Enhance lighting for better visualization
 function enhanceLighting() {
@@ -75,16 +129,16 @@ export function initViewer() {
   const container = document.getElementById("viewer-canvas");
   if (!container) return;
 
-  // Show loading state
-  showLoadingState(true);
-  
-  // Remove placeholder
-  const placeholder = document.getElementById("viewer-placeholder");
-  if (placeholder) placeholder.style.display = "none";
+  // Initially display a placeholder image
+  displayPlaceholderImage("model1"); // Display model1 as default placeholder
 
   // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf8fafc);
+  // The Three.js scene will be hidden by default until a model is loaded
+  if (renderer && renderer.domElement) {
+    renderer.domElement.style.display = "none";
+  }
 
   // Camera
   const width = container.clientWidth;
@@ -113,39 +167,21 @@ export function initViewer() {
   controls.target.set(0, 0.5, 0);
   controls.update();
 
-  // Create enhanced materials
-  const materials = createEnhancedMaterials();
-  
-  // Placeholder model (BoxGeometry)
-  boxMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 0.1, 1.5),
-    materials.tableMaterial
-  );
-  boxMesh.position.set(0, 0.05, 0);
-  boxMesh.castShadow = true;
-  boxMesh.receiveShadow = true;
-  scene.add(boxMesh);
-  
-  // Add table legs
-  addTableLegs(materials.legMaterial);
-
   // Render loop
   function animate() {
-    controls.update();
-    renderer.render(scene, camera);
+    if (renderer && scene && camera) { // Only render if Three.js is active
+      controls.update();
+      renderer.render(scene, camera);
+    }
     requestAnimationFrame(animate);
   }
   animate();
-
-  // Hide loading state after a short delay to simulate loading
-  setTimeout(() => {
-    showLoadingState(false);
-  }, 800);
   
   initialized = true;
 }
 
 // Update the addTableLegs function to use the enhanced material
+// This function will only be called if actual 3D models are loaded, not for placeholders
 function addTableLegs(legMaterial) {
   // Create four legs
   const legPositions = [
@@ -167,14 +203,14 @@ function addTableLegs(legMaterial) {
   });
 }
 
-// Show/hide loading state
-function showLoadingState(isLoading) {
+// Show loading state
+function showLoadingState() {
   const container = document.getElementById("viewer-canvas");
   if (!container) return;
   
   // Create or get loading overlay
   let loadingOverlay = document.getElementById("loading-overlay");
-  if (!loadingOverlay && isLoading) {
+  if (!loadingOverlay) {
     loadingOverlay = document.createElement("div");
     loadingOverlay.id = "loading-overlay";
     loadingOverlay.className = "absolute inset-0 bg-gray-100 bg-opacity-80 flex flex-col items-center justify-center z-10";
@@ -183,7 +219,14 @@ function showLoadingState(isLoading) {
       <p class="text-gray-700">We're building your table...</p>
     `;
     container.appendChild(loadingOverlay);
-  } else if (loadingOverlay && !isLoading) {
+  }
+  loadingOverlay.classList.remove("opacity-0");
+}
+
+// Hide loading state
+function hideLoadingState() {
+  const loadingOverlay = document.getElementById("loading-overlay");
+  if (loadingOverlay) {
     loadingOverlay.classList.add("opacity-0");
     setTimeout(() => {
       if (loadingOverlay.parentNode) {
@@ -222,105 +265,10 @@ window.addEventListener("resize", () => {
 
 // Update model based on selection
 export function updateModel(modelId) {
-  if (!scene || !boxMesh) return;
-  
-  // Show loading state
-  showLoadingState(true);
-  
-  // Remove existing table legs
-  scene.children.forEach(child => {
-    if (child !== boxMesh && child.type === "Mesh") {
-      scene.remove(child);
-    }
-  });
-  
-  // Update model based on selection
-  switch(modelId) {
-    case "mdl-01": // Model One - Rectangular
-      boxMesh.geometry = new THREE.BoxGeometry(1, 0.1, 1.5);
-      boxMesh.position.set(0, 0.05, 0);
-      addTableLegs();
-      break;
-    case "mdl-02": // Model Two - Round
-      boxMesh.geometry = new THREE.CylinderGeometry(0.8, 0.8, 0.1, 32);
-      boxMesh.position.set(0, 0.05, 0);
-      // Add round table legs
-      const roundLegMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7,
-        metalness: 0.1
-      });
-      
-      // Create four legs for round table
-      const roundLegPositions = [
-        [-0.4, -0.4, 0.4], // front-left
-        [0.4, -0.4, 0.4],  // front-right
-        [-0.4, -0.4, -0.4], // back-left
-        [0.4, -0.4, -0.4]   // back-right
-      ];
-      
-      roundLegPositions.forEach(pos => {
-        const leg = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.05, 0.05, 0.8, 12),
-          roundLegMaterial
-        );
-        leg.position.set(pos[0], pos[1], pos[2]);
-        scene.add(leg);
-      });
-      break;
-    case "mdl-03": // Model Three - Expandable
-      boxMesh.geometry = new THREE.BoxGeometry(1.2, 0.1, 1.5);
-      boxMesh.position.set(0, 0.05, 0);
-      
-      // Add expandable section
-      const expandablePart = new THREE.Mesh(
-        new THREE.BoxGeometry(0.4, 0.1, 1.5),
-        new THREE.MeshStandardMaterial({ 
-          color: 0x8B4513,
-          roughness: 0.7,
-          metalness: 0.1
-        })
-      );
-      expandablePart.position.set(-0.8, 0.05, 0);
-      scene.add(expandablePart);
-      
-      // Add legs
-      const expandableLegMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513,
-        roughness: 0.7,
-        metalness: 0.1
-      });
-      
-      // Create six legs for expandable table
-      const expandableLegPositions = [
-        [-0.4, -0.4, 0.6], // main front-left
-        [0.4, -0.4, 0.6],  // main front-right
-        [-0.4, -0.4, -0.6], // main back-left
-        [0.4, -0.4, -0.6],  // main back-right
-        [-0.8, -0.4, 0.6],  // extension front
-        [-0.8, -0.4, -0.6]  // extension back
-      ];
-      
-      expandableLegPositions.forEach(pos => {
-        const leg = new THREE.Mesh(
-          new THREE.BoxGeometry(0.1, 0.8, 0.1),
-          expandableLegMaterial
-        );
-        leg.position.set(pos[0], pos[1], pos[2]);
-        scene.add(leg);
-      });
-      break;
-    default:
-      // Default rectangular table
-      boxMesh.geometry = new THREE.BoxGeometry(1, 0.1, 1.5);
-      boxMesh.position.set(0, 0.05, 0);
-      addTableLegs();
-  }
-  
-  // Hide loading state after a short delay
-  setTimeout(() => {
-    showLoadingState(false);
-  }, 800);
+  // For now, we only display placeholder images.
+  // In a real scenario, this function would load and display the actual 3D model.
+  hideLoadingState(); // Ensure loading state is hidden
+  displayPlaceholderImage(modelId);
 }
 
 // Bind reset button and listen for model changes

@@ -41,8 +41,8 @@ body {
   
   /* Ensure viewer takes full height */
   #viewer {
-    height: calc(100vh - 200px); /* Adjust based on header, stage bar, and footer heights */
-    min-height: 500px;
+    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+    /* The actual height will be managed by flex-1 in main-content */
   }
   
   /* Controls bar styling */
@@ -152,6 +152,13 @@ body {
 /* Stage button styles */
 .stage-btn[aria-current="step"] {
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Define CSS variables for heights */
+:root {
+  --header-height: 60px; /* Approximate height of header */
+  --stage-bar-height: 50px; /* Approximate height of stage bar */
+  --footer-height: 80px; /* Approximate height of footer */
 }
 
 /* Responsive adjustments */
