@@ -1,8 +1,14 @@
 /* WoodLab Configurator - Custom Styles */
 
+html {
+  height: 100%;
+}
+
 /* Base layout for grid */
 body {
   font-family: 'Inter', system-ui, sans-serif;
+  display: grid; /* Ensure body is a grid container */
+  min-height: 100vh; /* Ensure body takes full viewport height */
 }
 
 /* Main content grid layout for desktop */
@@ -26,12 +32,14 @@ body {
     grid-column: 1 / 2; /* Viewer in first column */
     grid-row: 3 / 4; /* In the main content row */
     overflow: hidden; /* Prevent scrolling in viewer area */
+    height: 100%; /* Ensure main fills its grid cell */
   }
 
   #sidebar {
     grid-column: 2 / 3; /* Sidebar in second column */
     grid-row: 3 / 4; /* In the main content row */
     width: 100%; /* Take full width of the column */
+    height: 100%; /* Ensure sidebar fills its grid cell */
   }
 
   footer {
@@ -207,10 +215,18 @@ body {
     bottom: 0;
     top: auto;
     z-index: 40;
+    height: var(--stage-bar-height); /* Ensure fixed height */
   }
 
   footer {
-    bottom: 40px; /* Adjust footer position to be above stage bar */
+    bottom: var(--stage-bar-height); /* Adjust footer position to be above stage bar */
+    height: var(--footer-height); /* Ensure fixed height */
+  }
+
+  /* Adjust main and sidebar height for mobile fixed elements */
+  main, #sidebar {
+    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+    overflow-y: auto; /* Allow scrolling within main/sidebar if content overflows */
   }
 }
 
