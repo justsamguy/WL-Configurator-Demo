@@ -1,20 +1,5 @@
 ---
 
-### 2. Product Model Placeholders (PNGs)
-
-**Directory:** `assets/images/`
-**Purpose:** Generic placeholders for product models and snapshots
-**Recommended size:** 256 × 256 px
-
-* `model1_placeholder.png`
-  Placeholder for the primary product model
-* `snapshot_placeholder.png`
-  Snapshot placeholder (e.g. wireframe) for PDF-export or similar features
-* `model2.png`
-  PNG version of the second product model (to complement its SVG)
-
----
-
 
 ### 4. Detailed Main Product Model Visuals (SVGs / Renders)
 
