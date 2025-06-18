@@ -78,7 +78,7 @@ export function populateHelpDrawer() {
       View Help Guide
     </button>
     <p class="mt-2">
-      Or contact us at <a href="mailto:support@woodlab.example.com" class="text-indigo-600 hover:underline">support@woodlab.example.com</a>
+      Or contact us at <a href="mailto:support@woodlab.example.com" class="text-blue-600 hover:underline">support@woodlab.example.com</a>
     </p>
   `;
   

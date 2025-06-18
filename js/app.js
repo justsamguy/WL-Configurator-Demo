@@ -213,11 +213,12 @@ function renderModelOptions() {
   container.innerHTML = `
       ${modelOptions.map(opt => `
         <button
-          class="option-card ${state.selections.model === opt.id ? "selected" : ""} ${opt.disabled ? "disabled" : ""}"
+          class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full
+            ${state.selections.model === opt.id ? "border-blue-600 ring-2 ring-blue-200 font-semibold" : "border-gray-300 bg-white"}
+          "
           data-id="${opt.id}"
           data-price="${opt.price}"
           aria-pressed="${state.selections.model === opt.id}"
-          ${opt.disabled ? "disabled" : ""}
         >
           <img src="${opt.img}" alt="placeholder" class="w-full h-24 object-cover mb-3 bg-gray-100 rounded-md" />
           <div class="flex items-center w-full justify-between">
@@ -225,7 +226,7 @@ function renderModelOptions() {
             <span class="ml-2 text-xs text-gray-600">$${opt.price.toLocaleString()}</span>
           </div>
           <span class="text-xs text-gray-500 mt-1 self-start">${opt.desc}</span>
-          ${state.selections.model === opt.id ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>` : ""}
+          ${state.selections.model === opt.id ? `<div class="absolute top-2 right-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>` : ""}
         </button>
       `).join("")}
   `;
@@ -247,7 +248,6 @@ function renderModelOptions() {
   });
 }
 
-// Render customization options for stage 2
 function renderCustomizationOptions() {
   const container = document.getElementById("stage2-section");
   if (!container) return;
@@ -263,12 +263,13 @@ function renderCustomizationOptions() {
         <div class="grid grid-cols-1 gap-4">
           ${customizationOptions[category].map(opt => `
             <button
-              class="option-card ${state.selections.options[category] === opt.id ? "selected" : ""} ${opt.disabled ? "disabled" : ""}"
+              class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full
+                ${state.selections.options[category] === opt.id ? "border-blue-600 ring-2 ring-blue-200 font-semibold" : "border-gray-300 bg-white"}
+              "
               data-category="${category}"
               data-id="${opt.id}"
               data-price="${opt.price}"
               aria-pressed="${state.selections.options[category] === opt.id}"
-              ${opt.disabled ? "disabled" : ""}
             >
               <img src="${opt.img}" alt="placeholder" class="w-full h-16 object-cover mb-3 bg-gray-100 rounded-md" />
               <div class="flex items-center w-full justify-between">
@@ -276,7 +277,7 @@ function renderCustomizationOptions() {
                 <span class="ml-2 text-xs text-gray-600">${opt.price > 0 ? '+' : ''}$${opt.price.toLocaleString()}</span>
               </div>
               <span class="text-xs text-gray-500 mt-1 self-start">${opt.desc}</span>
-              ${state.selections.options[category] === opt.id ? `<div class="absolute top-2 right-2 bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>` : ""}
+              ${state.selections.options[category] === opt.id ? `<div class="absolute top-2 right-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>` : ""}
             </button>
           `).join("")}
         </div>
