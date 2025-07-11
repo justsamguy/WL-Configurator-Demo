@@ -1,0 +1,20 @@
+<!-- Main Content - Viewer Section -->
+<section class="col-span-1 row-span-1 flex flex-col overflow-hidden lg:col-span-1 lg:row-span-1">
+  <!-- 3D Viewer Section -->
+  <section class="flex-1 flex flex-col items-center justify-center bg-white relative w-full p-4">
+    <!-- 3D Viewer -->
+    <div id="viewer" class="w-full h-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-lg border border-gray-200">
+      <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
+        <!-- Three.js canvas will be injected here -->
+        <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
+          Select a style to begin
+        </div>
+      </div>
+    </div>
+    <!-- Controls Bar - Moved outside viewer but below it -->
+    <div id="viewer-controls-container" class="w-full mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
+      <!-- ViewerControls.html will be included here -->
+      <div data-include="components/ViewerControls.html"></div>
+    </div>
+  </section>
+</section>

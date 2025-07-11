@@ -127,7 +127,10 @@ function createEnhancedMaterials() {
 export function initViewer() {
   if (initialized) return;
   const container = document.getElementById("viewer-canvas");
-  if (!container) return;
+  if (!container) {
+    console.warn("Viewer canvas container not found. Viewer initialization deferred.");
+    return;
+  }
 
   // Initially display a placeholder image
   displayPlaceholderImage("model1"); // Display model1 as default placeholder
