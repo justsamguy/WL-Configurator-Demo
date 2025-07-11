@@ -33,7 +33,6 @@ document.addEventListener("statechange", () => {
 document.addEventListener('DOMContentLoaded', async () => {
   // Load main layout components
   await loadComponent('app-header', 'components/Header.html');
-  await loadComponent('app-stage-bar', 'components/StageBar.html');
   await loadComponent('app-main', 'pages/MainContent.html');
   await loadComponent('app-sidebar', 'components/Sidebar.html');
   await loadComponent('app-footer', 'components/Footer.html');

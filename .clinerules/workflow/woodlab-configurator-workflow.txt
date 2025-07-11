@@ -18,7 +18,7 @@ alwaysApply: true
     - `components/`: Directory for reusable HTML components (e.g., `Header.html`, `StageBar.html`, `Sidebar.html`, `Footer.html`, `ModelSelection.html`, `ViewerControls.html`).
     - `pages/`: Directory for main application pages (e.g., `MainContent.html`, `Customize.html`, `Summary.html`).
     - `assets/`: All images, icons, and models (placeholders only).
-  - Do **not** deviate from this structure; deployment scripts and GH Pages depend on it.
+  - Any changes made to the file structure should be updated here in the clinerules as well.
 
 - **Testing & Viewing Changes**
   - If the project uses JS from CDNs, local file:// testing will not work. All changes must be committed and tested via the live (deployed) URL.

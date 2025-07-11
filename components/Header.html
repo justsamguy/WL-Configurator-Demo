@@ -1,26 +1,15 @@
 <!-- App Header -->
-<header class="w-full flex items-center justify-between bg-white shadow px-8 py-3 sticky top-0 z-30 lg:col-span-2">
-  <!-- Left: Menu -->
-  <div class="flex items-center gap-2">
-    <button aria-label="Open menu" class="btn btn-icon focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded">
-      <!-- Menu icon (Heroicons solid bars-3) -->
-      <div class="icon-placeholder w-6 h-6 text-gray-700" data-icon="bars-3" data-icon-title="Main Menu"></div>
-    </button>
-    <span class="ml-1 text-sm text-gray-700 font-medium select-none">Menu</span>
-  </div>
+<div class="w-full flex flex-col items-center justify-center py-3">
   <!-- Center: Logo -->
-  <div class="flex-1 flex justify-center">
+  <div class="flex justify-center mb-4">
     <img src="assets/images/model1.svg" alt="WoodLab Logo" class="h-8 w-auto object-contain" />
   </div>
-  <!-- Right: Utility Icons -->
-  <div class="flex items-center gap-4">
-    <button aria-label="Search" class="btn btn-icon focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded">
-      <!-- Search icon (Heroicons solid magnifying-glass) -->
-      <div class="icon-placeholder w-6 h-6 text-gray-700" data-icon="magnifying-glass" data-icon-title="Search"></div>
-    </button>
-    <button aria-label="Account" class="btn btn-icon focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded">
-      <!-- User icon (Heroicons solid user) -->
-      <div class="icon-placeholder w-6 h-6 text-gray-700" data-icon="user" data-icon-title="Account"></div>
-    </button>
-  </div>
-</header>
+  <!-- Stage Bar Buttons -->
+  <nav id="stage-bar" class="flex flex-row space-x-4 px-6">
+    <button id="prev-stage" class="nav-btn text-gray-400 opacity-40 cursor-default" disabled>< Previous</button>
+    <button class="stage-btn btn-tertiary" aria-current="step">Model</button>
+    <button class="stage-btn btn-tertiary" disabled>Customize</button>
+    <button class="stage-btn btn-tertiary" disabled>Summary</button>
+    <button id="next-stage" class="nav-btn">Next ></button>
+  </nav>
+</div>
