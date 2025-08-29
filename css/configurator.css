@@ -36,6 +36,20 @@ body {
   box-sizing: border-box;
 }
 
+/* Constrain decorative or brand graphics so they can't overwhelm the layout */
+.decorative-graphic, .viewer-placeholder-img {
+  max-width: 320px;
+  max-height: 320px;
+  width: auto;
+  height: auto;
+  display: block;
+}
+
+.brand-fallback {
+  opacity: 0.95;
+  max-width: 220px; /* slightly smaller for brand fallback */
+}
+
 /* Make the viewer area respect available viewport height (account for header/stage/footer) */
 #viewer {
   width: 100%;
@@ -73,6 +87,13 @@ img, svg {
   body {
     grid-template-columns: 60fr 40fr; /* 60/40 split as specified */
     grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main Content, Footer */
+  }
+
+  /* Prevent the secondary column from expanding uncontrollably on very wide screens */
+  @media (min-width: 1400px) {
+    body {
+      grid-template-columns: minmax(760px, 1fr) 360px; /* fixed-ish sidebar width */
+    }
   }
 
   header {

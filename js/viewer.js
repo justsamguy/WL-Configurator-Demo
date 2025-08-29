@@ -28,7 +28,10 @@ function displayPlaceholderImage(modelId) {
     placeholderDiv.style.display = "flex"; // Ensure it's visible
   }
 
-  const imagePath = `assets/images/${modelId}.svg`; // Use SVG files
+  // Prefer model SVGs if present, otherwise fall back to the WoodLab brand placeholder
+  const svgPath = `assets/images/${modelId}.svg`;
+  const fallbackBrand = `assets/Brand/WoodLab_official_-_for_blackwhite_print.png`;
+  const imagePath = svgPath; // default to model SVG
   // Check if the image already exists and is the correct one
   if (currentPlaceholderImage && currentPlaceholderImage.src.includes(imagePath)) {
     return; // Image is already displayed
@@ -40,7 +43,9 @@ function displayPlaceholderImage(modelId) {
   const img = document.createElement("img");
   img.src = imagePath;
   img.alt = `Placeholder for ${modelId}`;
-  img.className = "max-w-full max-h-full object-contain"; // Ensure image scales within container
+  img.className = "max-w-full max-h-full object-contain viewer-placeholder-img"; // Ensure image scales within container
+  // If the requested SVG fails to load, swap to the brand fallback
+  img.onerror = () => { img.src = fallbackBrand; img.classList.add('brand-fallback'); };
   placeholderDiv.appendChild(img);
 
   const label = document.createElement("p");
