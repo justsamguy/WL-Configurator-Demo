@@ -24,6 +24,43 @@ body {
   }
 }
 
+/* Viewer container: constrain and center the 3D viewer */
+.viewer-container {
+  width: 100%;
+  max-width: 980px; /* sensible max width for viewer */
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+/* Make the viewer area respect available viewport height (account for header/stage/footer) */
+#viewer {
+  width: 100%;
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 3rem);
+  max-height: 900px;
+}
+
+/* Header / stage-bar tweaks */
+#stage-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.nav-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.375rem;
+}
+
+.stage-btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
 /* Ensure images and SVGs don't blow out layout */
 img, svg {
   max-width: 100%;

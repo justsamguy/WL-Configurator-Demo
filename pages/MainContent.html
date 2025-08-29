@@ -3,11 +3,13 @@
   <!-- 3D Viewer Section -->
   <section class="flex-1 flex flex-col items-center justify-center bg-white relative w-full p-4">
     <!-- 3D Viewer -->
-    <div id="viewer" class="w-full h-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-lg border border-gray-200">
-      <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
-        <!-- Three.js canvas will be injected here -->
-        <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
-          Select a style to begin
+    <div class="viewer-container">
+      <div id="viewer" class="w-full h-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-lg border border-gray-200">
+        <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
+          <!-- Three.js canvas will be injected here -->
+          <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
+            Select a style to begin
+          </div>
         </div>
       </div>
     </div>
