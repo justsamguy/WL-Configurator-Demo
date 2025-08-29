@@ -33,7 +33,8 @@
   <div class="mt-auto px-8 py-6 border-t bg-white">
     <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
       Help & Support
-      <svg id="help-support-arrow" class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Help toggle chevron: explicitly sized to avoid layout scaling issues -->
+      <svg id="help-support-arrow" width="20" height="20" class="inline-icon transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
       </svg>
     </h2>

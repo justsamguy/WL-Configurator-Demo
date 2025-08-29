@@ -65,6 +65,29 @@ body {
   object-fit: contain;
 }
 
+/* Inline UI icons (small controls) should always remain small and not scale with container */
+.inline-icon, .btn-icon svg, .control-btn svg, #viewer-controls svg {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  max-width: none;
+  max-height: none;
+}
+
+/* Ensure help arrow rotation happens around center */
+#help-support-arrow {
+  transform-origin: 50% 50%;
+}
+
+/* Strong global safety: prevent any SVG from rendering at enormous sizes.
+   This will override inline width/height attributes in most cases. */
+body svg {
+  max-width: 560px !important;
+  max-height: 560px !important;
+  width: auto !important;
+  height: auto !important;
+  display: inline-block;
+}
+
 /* If some decorative image is absolutely enormous, reduce its opacity and scale as a last resort */
 .decorative-graphic.oversized {
   transform: scale(0.28) translateZ(0);
