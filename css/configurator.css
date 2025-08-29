@@ -50,6 +50,28 @@ body {
   max-width: 220px; /* slightly smaller for brand fallback */
 }
 
+/* Site logo sizing — ensure the header logo never grows too large on wide screens */
+.site-logo {
+  max-width: 220px;
+  height: auto;
+}
+
+/* Aggressive constraints for any unexpectedly large decorative graphics (like the V-shape) */
+#sidebar img, #sidebar svg, main img, main svg, footer img, footer svg {
+  max-width: 360px;
+  max-height: 360px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* If some decorative image is absolutely enormous, reduce its opacity and scale as a last resort */
+.decorative-graphic.oversized {
+  transform: scale(0.28) translateZ(0);
+  transform-origin: top left;
+  opacity: 0.95;
+}
+
 /* Make the viewer area respect available viewport height (account for header/stage/footer) */
 #viewer {
   width: 100%;

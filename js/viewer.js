@@ -30,7 +30,7 @@ function displayPlaceholderImage(modelId) {
 
   // Prefer model SVGs if present, otherwise fall back to the WoodLab brand placeholder
   const svgPath = `assets/images/${modelId}.svg`;
-  const fallbackBrand = `assets/Brand/WoodLab_official_-_for_blackwhite_print.png`;
+  const fallbackBrand = `assets/images/WoodLab_official_-_for_blackwhite_print.png`;
   const imagePath = svgPath; // default to model SVG
   // Check if the image already exists and is the correct one
   if (currentPlaceholderImage && currentPlaceholderImage.src.includes(imagePath)) {
