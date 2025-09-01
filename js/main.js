@@ -99,6 +99,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Initial state update to render the first stage
   document.dispatchEvent(new Event("statechange"));
 
+  // Initialize stage manager after header/sidebar components exist
+  try {
+    const { default: stageManager } = await import('./stageManager.js');
+    stageManager.initStageManager();
+    console.log('Stage manager initialized from main.js');
+  } catch (err) {
+    console.warn('Failed to initialize stage manager from main.js', err);
+  }
+
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
   try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
 });

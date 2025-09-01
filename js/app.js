@@ -27,14 +27,4 @@ export async function loadComponent(containerId, componentPath) {
 }
 
 // Initialize application-level behaviors
-import stageManager from './stageManager.js';
-
-document.addEventListener('DOMContentLoaded', () => {
-  // initialize the stage manager (wires stage bar and model selection handlers)
-  try {
-    stageManager.initStageManager();
-    console.log('Stage manager initialized');
-  } catch (err) {
-    console.warn('Failed to initialize stage manager', err);
-  }
-});
+// Note: stageManager is initialized after components are loaded from `js/main.js`.
