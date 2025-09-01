@@ -108,11 +108,13 @@ function setStage(index) {
       if (panel0.parentElement !== main) {
         panel0.style.display = '';
         main.insertBefore(panel0, main.firstChild);
-        // add fullwidth hook class to allow different styling
-        panel0.classList.add('fullwidth-model-stage');
-        // hide the viewer while selecting model
-        const viewer = document.getElementById('viewer');
-        if (viewer) viewer.style.display = 'none';
+  // add fullwidth hook class to allow different styling
+  panel0.classList.add('fullwidth-model-stage');
+  // hide the viewer and viewer controls while selecting model
+  const viewer = document.getElementById('viewer');
+  if (viewer) viewer.style.display = 'none';
+  const viewerControls = document.getElementById('viewer-controls-container');
+  if (viewerControls) viewerControls.style.display = 'none';
       }
     }
   } else {
@@ -120,11 +122,13 @@ function setStage(index) {
     if (sidebar) sidebar.style.display = '';
     if (panel0 && panel0.__originalParent && panel0.parentElement !== panel0.__originalParent) {
       panel0.style.display = 'none';
-      // remove fullwidth styling
-      panel0.classList.remove('fullwidth-model-stage');
-      // restore viewer display
-      const viewer = document.getElementById('viewer');
-      if (viewer) viewer.style.display = '';
+  // remove fullwidth styling
+  panel0.classList.remove('fullwidth-model-stage');
+  // restore viewer and viewer controls display
+  const viewer = document.getElementById('viewer');
+  if (viewer) viewer.style.display = '';
+  const viewerControls = document.getElementById('viewer-controls-container');
+  if (viewerControls) viewerControls.style.display = '';
       panel0.__originalParent.appendChild(panel0);
     }
   }

@@ -282,24 +282,26 @@ img, svg {
 
 /* Full-width model stage: center a single-column large preview layout */
 .fullwidth-model-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 2rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 1.25rem;
+  padding: 2rem 1.5rem;
 }
 
 .fullwidth-model-stage .option-card {
-  width: 320px;
-  max-width: 90vw;
-  display: block;
-  text-align: left;
+  width: 100%;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
 }
 
 .fullwidth-model-stage .viewer-placeholder-img {
   width: 100%;
-  height: 360px;
-  object-fit: cover;
+  height: 180px;
+  object-fit: contain;
+  background: #ffffff;
 }
 
 /* Stage button styles */
