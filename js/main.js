@@ -7,6 +7,7 @@
 
 import { loadComponent } from './app.js';
 import { loadIcon } from './ui/icon.js';
+import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 
 export const state = {
@@ -28,6 +29,48 @@ document.addEventListener("statechange", () => {
   // In a more complex app, main.js might call functions from app.js, viewer.js, etc.
   // to trigger their respective updates.
 });
+
+// Price animation helper used by the UI when updating the price display
+function animatePrice(from, to, duration = 400, onUpdate) {
+  const start = performance.now();
+  const delta = to - from;
+  function tick(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut-like
+    const value = Math.round(from + delta * eased);
+    onUpdate(value);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function updatePriceUI(total) {
+  const el = document.getElementById('price-bar');
+  if (!el) return;
+  el.textContent = `$${total.toLocaleString()} `;
+  const usd = document.createElement('span');
+  usd.className = 'text-xs font-normal';
+  usd.textContent = 'USD';
+  el.appendChild(usd);
+}
+
+// Listen for placeholder selection events dispatched by placeholders.js
+document.addEventListener('option-selected', (ev) => {
+  const { id, price } = ev.detail || { id: null, price: 0 };
+  // compute new pricing
+  const newExtras = price || 0;
+  const newTotal = state.pricing.base + newExtras;
+
+  // animate the price change
+  const from = state.pricing.total || state.pricing.base;
+  animatePrice(from, newTotal, 420, (val) => updatePriceUI(val));
+
+  // update state
+  setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, extras: newExtras, total: newTotal } });
+});
+
+// initialize displayed price
+document.addEventListener('DOMContentLoaded', () => updatePriceUI(state.pricing.total));
 
 // Initialize the application by loading components
 document.addEventListener('DOMContentLoaded', async () => {
@@ -55,4 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial state update to render the first stage
   document.dispatchEvent(new Event("statechange"));
+
+  // Initialize placeholder interactions (click handlers, price animation, skeleton)
+  try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
 });
