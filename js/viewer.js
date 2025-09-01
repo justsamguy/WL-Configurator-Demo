@@ -1,6 +1,7 @@
 // WoodLab Configurator - viewer.js
-// Three.js 3D viewer setup
-// NOTE: THREE.js is loaded globally from a CDN in index.html.
+// Three.js 3D viewer setup (uses ES module imports)
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { state } from './main.js'; // Import state from main.js
 
 let renderer, scene, camera, controls;
@@ -30,7 +31,7 @@ function displayPlaceholderImage(modelId) {
 
   // Prefer model SVGs if present, otherwise fall back to the WoodLab brand placeholder
   const svgPath = `assets/images/${modelId}.svg`;
-  const fallbackBrand = `assets/images/WoodLab_official_-_for_blackwhite_print.png`;
+  const fallbackBrand = `assets/icons/WoodLab_official_-_for_blackwhite_print.png`;
   const imagePath = svgPath; // default to model SVG
   // Check if the image already exists and is the correct one
   if (currentPlaceholderImage && currentPlaceholderImage.src.includes(imagePath)) {
@@ -168,34 +169,9 @@ export async function initViewer() {
   // Add ground plane
   addGroundPlane();
 
-  // Controls: try to initialize OrbitControls robustly across UMD and module builds
+  // Controls: use imported OrbitControls
   try {
-    let OrbitControlsCtor = null;
-    // If OrbitControls is available as module export on THREE (UMD build)
-    if (THREE && typeof THREE.OrbitControls === 'function') {
-      OrbitControlsCtor = THREE.OrbitControls;
-    }
-    // Some UMD builds attach an object with OrbitControls property
-    else if (THREE && THREE.OrbitControls && typeof THREE.OrbitControls.OrbitControls === 'function') {
-      OrbitControlsCtor = THREE.OrbitControls.OrbitControls;
-    }
-
-    // If running in an environment that supports ES module imports, try a dynamic import
-    if (!OrbitControlsCtor && typeof window !== 'undefined' && 'document' in window) {
-      try {
-        // dynamic import from CDN module path (works if origin allows module import)
-        const mod = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js');
-        OrbitControlsCtor = mod.OrbitControls;
-      } catch (e) {
-        // ignore; fallback to global
-      }
-    }
-
-    if (!OrbitControlsCtor) {
-      throw new Error('OrbitControls constructor not found on global THREE or via dynamic import.');
-    }
-
-    controls = new OrbitControlsCtor(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.target.set(0, 0.5, 0);
