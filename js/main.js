@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadComponent('app-footer', 'components/Footer.html');
 
   // Initialize viewer and controls after MainContent is loaded
-  initViewer();
+  await initViewer();
   initViewerControls();
   resizeViewer(); // Ensure viewer is sized correctly on load
 

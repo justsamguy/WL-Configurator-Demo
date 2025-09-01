@@ -129,7 +129,7 @@ function createEnhancedMaterials() {
   };
 }
 
-export function initViewer() {
+export async function initViewer() {
   if (initialized) return;
   const container = document.getElementById("viewer-canvas");
   if (!container) {
@@ -168,12 +168,45 @@ export function initViewer() {
   // Add ground plane
   addGroundPlane();
 
-  // Controls
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.target.set(0, 0.5, 0);
-  controls.update();
+  // Controls: try to initialize OrbitControls robustly across UMD and module builds
+  try {
+    let OrbitControlsCtor = null;
+    // If OrbitControls is available as module export on THREE (UMD build)
+    if (THREE && typeof THREE.OrbitControls === 'function') {
+      OrbitControlsCtor = THREE.OrbitControls;
+    }
+    // Some UMD builds attach an object with OrbitControls property
+    else if (THREE && THREE.OrbitControls && typeof THREE.OrbitControls.OrbitControls === 'function') {
+      OrbitControlsCtor = THREE.OrbitControls.OrbitControls;
+    }
+
+    // If running in an environment that supports ES module imports, try a dynamic import
+    if (!OrbitControlsCtor && typeof window !== 'undefined' && 'document' in window) {
+      try {
+        // dynamic import from CDN module path (works if origin allows module import)
+        const mod = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js');
+        OrbitControlsCtor = mod.OrbitControls;
+      } catch (e) {
+        // ignore; fallback to global
+      }
+    }
+
+    if (!OrbitControlsCtor) {
+      throw new Error('OrbitControls constructor not found on global THREE or via dynamic import.');
+    }
+
+    controls = new OrbitControlsCtor(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0.5, 0);
+    controls.update();
+  } catch (err) {
+    console.warn('OrbitControls initialization failed:', err);
+    // Provide a no-op controls object to avoid breaking render loop
+    controls = {
+      update() { /* no-op */ }
+    };
+  }
 
   // Render loop
   function animate() {
