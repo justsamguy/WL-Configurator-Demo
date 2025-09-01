@@ -7,11 +7,20 @@
   </div>
   <!-- Center Column: Stage Bar Buttons -->
   <nav id="stage-bar" class="flex flex-row items-center justify-center space-x-4">
-    <button id="prev-stage" class="nav-btn text-gray-400 opacity-40 cursor-default" disabled>< Previous</button>
-    <button class="stage-btn btn-tertiary" aria-current="step">Model</button>
-    <button class="stage-btn btn-tertiary" disabled>Customize</button>
-    <button class="stage-btn btn-tertiary" disabled>Summary</button>
-    <button id="next-stage" class="nav-btn">Next ></button>
+    <button id="prev-stage" class="nav-btn text-gray-400 opacity-40 cursor-default" disabled aria-label="Previous stage">< Previous</button>
+    <!-- Seven stages as specified in the UI spec; data-stage-index used by the stage manager -->
+    <button class="stage-btn btn-tertiary" data-stage-index="0" aria-current="step">Select Model</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="1" disabled>Materials</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="2" disabled>Finish</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="3" disabled>Dimensions</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="4" disabled>Legs</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="5" disabled>Add‑ons</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="6" disabled>Summary &amp; Export</button>
+    <div id="live-price" class="price-box ml-4 text-right" aria-live="polite">
+      <div class="price-amount text-base font-semibold">$0</div>
+      <div class="price-currency text-xs text-gray-500">USD</div>
+    </div>
+    <button id="next-stage" class="nav-btn" aria-label="Next stage">Next &gt;</button>
   </nav>
     <!-- Right Column: Spacer -->
     <div></div>
