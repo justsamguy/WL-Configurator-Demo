@@ -90,6 +90,31 @@ function setStage(index) {
     const idx = Number(panel.id.replace('stage-panel-', ''));
     panel.style.display = idx === state.current ? '' : 'none';
   });
+
+  // Special case: Select Model stage should be full-width and not show the sidebar.
+  // Move the stage-panel-0 into the main area and hide the sidebar while on stage 0.
+  const sidebar = document.getElementById('app-sidebar');
+  const main = document.getElementById('app-main');
+  const panel0 = document.getElementById('stage-panel-0');
+  if (state.current === 0) {
+    if (sidebar) sidebar.style.display = 'none';
+    if (panel0 && main) {
+      // remember original parent so we can restore later
+      if (!panel0.__originalParent) panel0.__originalParent = panel0.parentElement;
+      // move the panel into main if it's not already there
+      if (panel0.parentElement !== main) {
+        panel0.style.display = '';
+        main.insertBefore(panel0, main.firstChild);
+      }
+    }
+  } else {
+    // restore sidebar and ensure panel0 is back in its original place
+    if (sidebar) sidebar.style.display = '';
+    if (panel0 && panel0.__originalParent && panel0.parentElement !== panel0.__originalParent) {
+      panel0.style.display = 'none';
+      panel0.__originalParent.appendChild(panel0);
+    }
+  }
 }
 
 function nextStage() {
