@@ -1,22 +1,47 @@
 <div class="flex flex-col gap-4 px-8 py-8">
   <h2 class="text-lg font-semibold mb-2">Select Model</h2>
   <div id="model-options" class="grid grid-cols-1 gap-4">
-    <!-- Model cards will be rendered here by js/main.js -->
-    <!-- Example structure for a single card: -->
-    <!--
+    <!-- Static placeholders (visible when JS hasn't rendered options yet) -->
     <button
       class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full"
       data-id="mdl-01"
       data-price="12480"
       aria-pressed="false"
     >
-  <img src="assets/images/model1.svg" alt="placeholder" class="w-full h-24 object-cover mb-3 bg-gray-100 rounded-md viewer-placeholder-img" />
+      <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder" class="w-full h-36 object-cover mb-3 bg-gray-100 rounded-md viewer-placeholder-img" />
       <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model One</span>
+        <span class="label text-sm">Model 1</span>
         <span class="ml-2 text-xs text-gray-600">$12,480</span>
       </div>
       <span class="text-xs text-gray-500 mt-1 self-start">Classic rectangular table.</span>
     </button>
-    -->
+
+    <button
+      class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full"
+      data-id="mdl-02"
+      data-price="12900"
+      aria-pressed="false"
+    >
+      <img src="assets/images/model2.png" alt="Model 2 placeholder" class="w-full h-36 object-cover mb-3 bg-gray-100 rounded-md viewer-placeholder-img" />
+      <div class="flex items-center w-full justify-between">
+        <span class="label text-sm">Model 2</span>
+        <span class="ml-2 text-xs text-gray-600">$12,900</span>
+      </div>
+      <span class="text-xs text-gray-500 mt-1 self-start">Large farmhouse style.</span>
+    </button>
+
+    <button
+      class="option-card border rounded-lg p-3 flex flex-col items-center text-left transition w-full"
+      data-id="mdl-03"
+      data-price="11450"
+      aria-pressed="false"
+    >
+      <img src="assets/images/model3.svg" alt="Model 3 placeholder" class="w-full h-36 object-cover mb-3 bg-gray-100 rounded-md viewer-placeholder-img" />
+      <div class="flex items-center w-full justify-between">
+        <span class="label text-sm">Model 3</span>
+        <span class="ml-2 text-xs text-gray-600">$11,450</span>
+      </div>
+      <span class="text-xs text-gray-500 mt-1 self-start">Compact round table.</span>
+    </button>
   </div>
 </div>
