@@ -9,16 +9,16 @@ alwaysApply: true
   - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/styles.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
   - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
   - Strictly follow the canonical file/folder layout:
-    - `index.html`: Entry point, all links must be relative.
+    - `index.html`: Minimal entry point; contains root `div` elements for dynamic content injection. All links must be relative.
     - `css/configurator.css`: Compiled Tailwind output.
-    - `js/main.js`: App bootstrap & global state (only file allowed to mutate state).
-    - `js/viewer.js`: 3D scene logic (Three.js).
-    - `js/app.js`: Additional application logic.
-    - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js).
-    - `components/`: Directory for reusable HTML components (e.g., `ModelSelection.html`, `Sidebar.html`, `ViewerControls.html`).
-    - `pages/`: Directory for main application pages (e.g., `Customize.html`, `Summary.html`).
+    - `js/main.js`: App bootstrap, global state (only file allowed to mutate state), and orchestrates dynamic loading of main UI components.
+    - `js/app.js`: Provides utility functions, including `loadComponent` for fetching and injecting HTML components.
+    - `js/viewer.js`: 3D scene logic (Three.js); initialized after `MainContent.html` is loaded.
+    - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js); these modules attach logic to dynamically loaded content.
+    - `components/`: Directory for reusable HTML components (e.g., `Header.html`, `StageBar.html`, `Sidebar.html`, `Footer.html`, `ModelSelection.html`, `ViewerControls.html`).
+    - `pages/`: Directory for main application pages (e.g., `MainContent.html`, `Customize.html`, `Summary.html`).
     - `assets/`: All images, icons, and models (placeholders only).
-  - Do **not** deviate from this structure; deployment scripts and GH Pages depend on it.
+  - Any changes made to the file structure should be updated here in the clinerules as well.
 
 - **Testing & Viewing Changes**
   - If the project uses JS from CDNs, local file:// testing will not work. All changes must be committed and tested via the live (deployed) URL.

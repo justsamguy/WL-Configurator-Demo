@@ -1,0 +1,18 @@
+<!-- App Header -->
+<header class="w-full" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0.75rem 2rem;">
+  <!-- Left Column: Logo -->
+  <div class="flex justify-start">
+    <!-- Use official brand asset from assets/icons for logo (icons are the source of web-ready PNGs) -->
+    <img src="assets/icons/WoodLab_official_-_for_blackwhite_print.png" alt="WoodLab Logo" title="WoodLab" class="h-8 w-auto object-contain site-logo" />
+  </div>
+  <!-- Center Column: Stage Bar Buttons -->
+  <nav id="stage-bar" class="flex flex-row items-center justify-center space-x-4">
+    <button id="prev-stage" class="nav-btn text-gray-400 opacity-40 cursor-default" disabled>< Previous</button>
+    <button class="stage-btn btn-tertiary" aria-current="step">Model</button>
+    <button class="stage-btn btn-tertiary" disabled>Customize</button>
+    <button class="stage-btn btn-tertiary" disabled>Summary</button>
+    <button id="next-stage" class="nav-btn">Next ></button>
+  </nav>
+    <!-- Right Column: Spacer -->
+    <div></div>
+  </header>
