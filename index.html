@@ -10,6 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Custom styles -->
   <link rel="stylesheet" href="./css/configurator.css" />
+  <!-- Import map to resolve bare module specifiers like 'three' used by JSM example modules -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
 </head>
 <body class="bg-gray-50 text-gray-900 app-root h-screen">
   <!-- Root elements for dynamic content injection -->
