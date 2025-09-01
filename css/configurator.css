@@ -281,11 +281,48 @@ img, svg {
 }
 
 /* Full-width model stage: center a single-column large preview layout */
+/* Fullwidth model stage: center a constrained content area and let inner grid control columns */
 .fullwidth-model-stage {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 1.25rem;
+  display: block;
   padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Override embedded model list (which has grid-cols-1) to be a 3-column grid when in model stage */
+.fullwidth-model-stage #model-options {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  gap: 1.25rem !important;
+  align-items: start;
+}
+
+/* Responsive: collapse to 2/1 columns on smaller widths */
+@media (max-width: 1100px) {
+  .fullwidth-model-stage #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  .fullwidth-model-stage #model-options { grid-template-columns: 1fr !important; }
+}
+
+/* Strong fallback: ensure the stage-panel-0 layout is 3-column when present in the DOM */
+#stage-panel-0 {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+#stage-panel-0 #model-options {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  gap: 1.25rem !important;
+}
+
+@media (max-width: 1100px) {
+  #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  #stage-panel-0 #model-options { grid-template-columns: 1fr !important; }
 }
 
 .fullwidth-model-stage .option-card {
@@ -295,6 +332,7 @@ img, svg {
   flex-direction: column;
   justify-content: space-between;
   padding: 1rem;
+  box-sizing: border-box;
 }
 
 .fullwidth-model-stage .viewer-placeholder-img {
@@ -302,6 +340,10 @@ img, svg {
   height: 180px;
   object-fit: contain;
   background: #ffffff;
+}
+
+.fullwidth-model-stage h3, .fullwidth-model-stage h2 {
+  text-align: center;
 }
 
 /* Stage button styles */
