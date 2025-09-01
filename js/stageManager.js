@@ -81,7 +81,10 @@ function setStage(index) {
     prev.classList.toggle('opacity-40', prev.disabled);
   }
   if (next) {
-    next.disabled = state.current === STAGES.length - 1;
+    // disable Next unless the current stage is completed (prevents advancing without required selection)
+    const atLast = state.current === STAGES.length - 1;
+    const currentCompleted = !!state.completed[state.current];
+    next.disabled = atLast || !currentCompleted;
     next.classList.toggle('opacity-40', next.disabled);
   }
 
@@ -105,6 +108,11 @@ function setStage(index) {
       if (panel0.parentElement !== main) {
         panel0.style.display = '';
         main.insertBefore(panel0, main.firstChild);
+        // add fullwidth hook class to allow different styling
+        panel0.classList.add('fullwidth-model-stage');
+        // hide the viewer while selecting model
+        const viewer = document.getElementById('viewer');
+        if (viewer) viewer.style.display = 'none';
       }
     }
   } else {
@@ -112,12 +120,22 @@ function setStage(index) {
     if (sidebar) sidebar.style.display = '';
     if (panel0 && panel0.__originalParent && panel0.parentElement !== panel0.__originalParent) {
       panel0.style.display = 'none';
+      // remove fullwidth styling
+      panel0.classList.remove('fullwidth-model-stage');
+      // restore viewer display
+      const viewer = document.getElementById('viewer');
+      if (viewer) viewer.style.display = '';
       panel0.__originalParent.appendChild(panel0);
     }
   }
 }
 
 function nextStage() {
+  // If current stage isn't completed, show banner and block advancing
+  if (!state.completed[state.current]) {
+    showBanner('Please select an option before proceeding.');
+    return;
+  }
   setStage(Math.min(state.current + 1, STAGES.length - 1));
 }
 
@@ -177,6 +195,18 @@ export function initStageManager() {
   wireModelSelection();
   updateLivePrice();
   setStage(0);
+}
+
+function showBanner(message, timeout = 2500) {
+  const container = document.getElementById('banner-container') || document.body;
+  const banner = document.createElement('div');
+  banner.className = 'banner bg-gray-800 text-white px-4 py-2 rounded shadow-md mt-2';
+  banner.textContent = message;
+  container.appendChild(banner);
+  setTimeout(() => {
+    banner.classList.add('opacity-0');
+    setTimeout(() => banner.remove(), 300);
+  }, timeout);
 }
 
 // expose for debugging

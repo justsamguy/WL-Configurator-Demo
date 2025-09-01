@@ -280,6 +280,28 @@ img, svg {
   background-color: #f9fafb;
 }
 
+/* Full-width model stage: center a single-column large preview layout */
+.fullwidth-model-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+}
+
+.fullwidth-model-stage .option-card {
+  width: 320px;
+  max-width: 90vw;
+  display: block;
+  text-align: left;
+}
+
+.fullwidth-model-stage .viewer-placeholder-img {
+  width: 100%;
+  height: 360px;
+  object-fit: cover;
+}
+
 /* Stage button styles */
 .stage-btn[aria-current="step"] {
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.05);
