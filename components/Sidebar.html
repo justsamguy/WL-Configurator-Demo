@@ -19,16 +19,8 @@
     <!-- Model Selection (will be replaced by data-include) -->
     <div id="model-selection-placeholder"></div>
   </div>
-  <!-- Stage Sections (populated by JS) -->
-  <section id="stage1-section" class="p-8">
-    <!-- Content for Stage 1 will be injected here -->
-  </section>
-  <section id="stage2-section" class="p-8 hidden">
-    <!-- Content for Stage 2 will be injected here -->
-  </section>
-  <section id="stage3-section" class="p-8 hidden">
-    <!-- Content for Stage 3 will be injected here -->
-  </section>
+  <!-- Stage Panels (single include) -->
+  <div data-include="components/StagePanels.html"></div>
   <!-- Help & Support -->
   <div class="mt-auto px-8 py-6 border-t bg-white">
     <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
