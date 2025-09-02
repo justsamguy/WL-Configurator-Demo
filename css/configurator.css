@@ -342,6 +342,24 @@ img, svg {
   gap: 1.25rem !important;
 }
 
+/* Sidebar model options: smaller cards, 3 columns, 5px gaps for testing */
+#app-sidebar #model-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+#app-sidebar #model-options .option-card {
+  padding: 6px;
+  min-height: 84px;
+}
+
+#app-sidebar #model-options .viewer-placeholder-img {
+  height: 64px;
+  object-fit: cover;
+  margin-bottom: 6px;
+}
+
 @media (max-width: 1100px) {
   #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
 }
