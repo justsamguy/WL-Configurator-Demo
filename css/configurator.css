@@ -8,13 +8,20 @@ html {
 body {
   font-family: 'Inter', system-ui, sans-serif;
   display: grid; /* Ensure body is a grid container */
-  min-height: 100vh; /* Ensure body takes full viewport height */
+  height: 100vh; /* Force body to exactly match viewport height so grid sizing (1fr) works predictably */
+  overflow: hidden; /* Hide page-level overflow; internal panels will scroll instead */
 }
 
 /* Root grid layout controlled via .app-root to avoid relying on Tailwind arbitrary utilities */
 .app-root {
   display: grid;
   grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main, Footer */
+}
+
+/* Make the root grid fill the viewport and avoid causing the overall page to scroll. */
+.app-root {
+  height: 100vh;
+  overflow: hidden; /* let internal regions manage their own scrolling */
 }
 
 @media (min-width: 1024px) {
@@ -162,7 +169,10 @@ img, svg {
     grid-column: 2 / 3; /* Sidebar in second column */
     grid-row: 3 / 4; /* In the main content row */
     width: 100%; /* Take full width of the column */
-    height: 100%; /* Ensure sidebar fills its grid cell */
+  /* Ensure sidebar fills available vertical space but scrolls independently */
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+  overflow-y: auto; /* Independent scrolling for right-hand sidebar */
   }
 
   footer {
