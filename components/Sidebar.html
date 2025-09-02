@@ -19,8 +19,16 @@
     <!-- Model Selection (will be replaced by data-include) -->
     <div id="model-selection-placeholder"></div>
   </div>
-  <!-- Stage Panels (single include) -->
-  <div data-include="components/StagePanels.html"></div>
+  <!-- Stage Panels (scrollable area) -->
+  <div class="sidebar-scroll px-6 py-4">
+    <div data-include="components/StagePanels.html"></div>
+  </div>
+
+  <!-- Fixed bottom area (Materials or other persistent controls) -->
+  <div id="sidebar-fixed-bottom" class="px-4 py-4 border-t bg-white">
+    <div data-include="components/MaterialsPanel.html"></div>
+  </div>
+
   <!-- Help & Support -->
   <div class="mt-auto px-8 py-6 border-t bg-white">
     <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
