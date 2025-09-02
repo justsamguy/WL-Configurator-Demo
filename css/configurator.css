@@ -360,6 +360,16 @@ img, svg {
   margin-bottom: 6px;
 }
 
+/* By default, hide any option-card that represents a model so model tiles don't
+   appear in the sidebar or other stage panels unless the Select Model stage is active.
+   Model cards are identified by data-id starting with 'mdl-'. CSS can't directly
+   match attribute prefixes across generated content universally, so rely on the
+   body class 'show-model-tiles' toggled by JS. When the class is absent, hide
+   model-specific option cards using an attribute selector. */
+body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
+  display: none !important;
+}
+
 @media (max-width: 1100px) {
   #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
 }

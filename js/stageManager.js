@@ -94,6 +94,21 @@ function setStage(index) {
     panel.style.display = idx === state.current ? '' : 'none';
   });
 
+  // Ensure the model selection area in the sidebar is only visible when the Select Model
+  // stage is active. This prevents model tiles from appearing in other stages' sidebars.
+  const modelSidebarPlaceholder = document.getElementById('model-selection-placeholder');
+  if (modelSidebarPlaceholder) {
+    modelSidebarPlaceholder.style.display = state.current === 0 ? '' : 'none';
+  }
+
+  // Add a body-level class so CSS can easily show/hide model tiles across the app.
+  // When not on the Select Model stage, model tiles are hidden by default.
+  try {
+    document.body.classList.toggle('show-model-tiles', state.current === 0);
+  } catch (e) {
+    // document.body might not be available in some test contexts; ignore.
+  }
+
   // Special case: Select Model stage should be full-width and not show the sidebar.
   // Move the stage-panel-0 into the main area and hide the sidebar while on stage 0.
   const sidebar = document.getElementById('app-sidebar');
@@ -169,10 +184,12 @@ function wireStageButtons() {
 
 function wireModelSelection() {
   // model option cards have class .option-card and data-id and data-price
-  $all('.option-card').forEach(card => {
+  // Only wire the cards that are model choices (data-id starting with 'mdl-') so other
+  // stage option-cards (materials, finishes, legs, etc.) are not treated as model picks.
+  $all('.option-card[data-id^="mdl-"]').forEach(card => {
     card.addEventListener('click', () => {
-      // mark selected state
-      $all('.option-card').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      // mark selected state (only for model cards)
+      $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       card.setAttribute('aria-pressed', 'true');
       const id = card.getAttribute('data-id');
       const price = Number(card.getAttribute('data-price')) || 0;
