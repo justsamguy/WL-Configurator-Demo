@@ -3,35 +3,83 @@
   <!-- Stage 0: Select Model -->
   <section id="stage-panel-0" class="stage-panel">
     <h3 class="text-md font-semibold mb-2">Select Model</h3>
-    <div data-include="components/ModelSelection.html"></div>
+  <div id="stage-0-placeholder"></div>
   </section>
 
   <!-- Stage 1: Materials -->
   <section id="stage-panel-1" class="stage-panel" style="display: none;">
-    <!-- Materials are rendered in the sidebar fixed area -->
+    <h3 class="text-md font-semibold mb-2">Materials</h3>
+    <div id="materials-options" class="stage-options-grid">
+      <!-- sample material tiles (3-column, small cards like model sidebar) -->
+      <button class="option-card" data-id="mat-sample-01" data-price="0">
+        <img src="assets/images/17B1E0.png" alt="Material sample 1" class="viewer-placeholder-img" />
+        <div class="label text-sm">American Elm</div>
+      </button>
+      <button class="option-card" data-id="mat-sample-02" data-price="250">
+        <img src="assets/images/Black_Walnut_Sample.jpg" alt="Material sample 2" class="viewer-placeholder-img" />
+        <div class="label text-sm">Black Walnut</div>
+      </button>
+      <button class="option-card" data-id="mat-sample-03" data-price="150">
+        <img src="assets/images/17B1E0.png" alt="Material sample 3" class="viewer-placeholder-img" />
+        <div class="label text-sm">Siberian Elm</div>
+      </button>
+    </div>
   </section>
 
   <!-- Stage 2: Finish -->
   <section id="stage-panel-2" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Finish</h3>
-    <div id="finish-panel-placeholder" class="grid grid-cols-1 gap-4">
-      <p class="text-sm text-gray-600">Finish options and helpers will be shown here.</p>
+    <div id="finish-options" class="stage-options-grid">
+      <button class="option-card" data-id="fin-sample-01" data-price="0">
+        <div class="viewer-placeholder-img" style="background:#AEDCE7"></div>
+        <div class="label text-sm">Natural Oil</div>
+      </button>
+      <button class="option-card" data-id="fin-sample-02" data-price="75">
+        <div class="viewer-placeholder-img" style="background:#3DACE1"></div>
+        <div class="label text-sm">Gloss Lacquer</div>
+      </button>
+      <button class="option-card" data-id="fin-sample-03" data-price="40">
+        <div class="viewer-placeholder-img" style="background:#57C3E9"></div>
+        <div class="label text-sm">Satin Lacquer</div>
+      </button>
     </div>
   </section>
 
   <!-- Stage 3: Dimensions -->
   <section id="stage-panel-3" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Dimensions</h3>
-    <div id="dimensions-panel-placeholder" class="grid grid-cols-1 gap-4">
-      <p class="text-sm text-gray-600">Length / Width / Height controls will appear here.</p>
+    <div id="dimensions-options" class="stage-options-grid">
+      <button class="option-card" data-id="dim-sample-01" data-price="0">
+        <div class="viewer-placeholder-img" style="background:#f3f4f6;height:64px"></div>
+        <div class="label text-sm">Small (120x60)</div>
+      </button>
+      <button class="option-card" data-id="dim-sample-02" data-price="0">
+        <div class="viewer-placeholder-img" style="background:#f8fafc;height:64px"></div>
+        <div class="label text-sm">Medium (180x90)</div>
+      </button>
+      <button class="option-card" data-id="dim-sample-03" data-price="0">
+        <div class="viewer-placeholder-img" style="background:#ffffff;height:64px"></div>
+        <div class="label text-sm">Large (240x100)</div>
+      </button>
     </div>
   </section>
 
   <!-- Stage 4: Legs -->
   <section id="stage-panel-4" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Legs</h3>
-    <div id="legs-panel-placeholder" class="grid grid-cols-1 gap-4">
-      <p class="text-sm text-gray-600">Leg style tiles will be shown here.</p>
+    <div id="legs-options" class="stage-options-grid">
+      <button class="option-card" data-id="leg-sample-01" data-price="120">
+        <img src="assets/images/Leg styles/C Style.jpg" alt="C style leg" class="viewer-placeholder-img" />
+        <div class="label text-sm">C Style</div>
+      </button>
+      <button class="option-card" data-id="leg-sample-02" data-price="95">
+        <img src="assets/images/Leg styles/Cube.jpg" alt="Cube leg" class="viewer-placeholder-img" />
+        <div class="label text-sm">Cube</div>
+      </button>
+      <button class="option-card" data-id="leg-sample-03" data-price="140">
+        <img src="assets/images/Leg styles/Tapered.jpg" alt="Tapered leg" class="viewer-placeholder-img" />
+        <div class="label text-sm">Tapered</div>
+      </button>
     </div>
   </section>
 

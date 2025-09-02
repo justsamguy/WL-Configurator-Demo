@@ -15,6 +15,8 @@ const STAGES = [
   'Summary & Export'
 ];
 
+import { loadComponent } from './app.js';
+
 const state = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
@@ -48,7 +50,7 @@ function updateLivePrice() {
   elAmount.textContent = formatPrice(state.config.price || 0);
 }
 
-function setStage(index) {
+async function setStage(index) {
   if (index < 0 || index >= STAGES.length) return;
   // gating: cannot jump forward past first incomplete required stage (model required)
   if (index > state.current) {
@@ -94,12 +96,8 @@ function setStage(index) {
     panel.style.display = idx === state.current ? '' : 'none';
   });
 
-  // Ensure the model selection area in the sidebar is only visible when the Select Model
-  // stage is active. This prevents model tiles from appearing in other stages' sidebars.
-  const modelSidebarPlaceholder = document.getElementById('model-selection-placeholder');
-  if (modelSidebarPlaceholder) {
-    modelSidebarPlaceholder.style.display = state.current === 0 ? '' : 'none';
-  }
+  // Sidebar no longer contains a model selection placeholder; model tiles are loaded
+  // directly into the main stage panel when stage 0 is active.
 
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Select Model stage, model tiles are hidden by default.
@@ -132,6 +130,12 @@ function setStage(index) {
   if (viewerControls) viewerControls.style.display = 'none';
       }
     }
+    // ensure the ModelSelection component is loaded into the panel's placeholder
+    try {
+      await loadComponent('stage-0-placeholder', 'components/ModelSelection.html');
+    } catch (e) {
+      // ignore load errors
+    }
   } else {
     // restore sidebar and ensure panel0 is back in its original place
     if (sidebar) sidebar.style.display = '';
@@ -145,6 +149,11 @@ function setStage(index) {
   const viewerControls = document.getElementById('viewer-controls-container');
   if (viewerControls) viewerControls.style.display = '';
       panel0.__originalParent.appendChild(panel0);
+      // remove model selection content from the panel placeholder to avoid duplicate model tiles
+      try {
+        const ph = document.getElementById('stage-0-placeholder');
+        if (ph) ph.innerHTML = '';
+      } catch (e) {}
     }
   }
 }
@@ -183,30 +192,29 @@ function wireStageButtons() {
 }
 
 function wireModelSelection() {
-  // model option cards have class .option-card and data-id and data-price
-  // Only wire the cards that are model choices (data-id starting with 'mdl-') so other
-  // stage option-cards (materials, finishes, legs, etc.) are not treated as model picks.
-  $all('.option-card[data-id^="mdl-"]').forEach(card => {
-    card.addEventListener('click', () => {
-      // mark selected state (only for model cards)
-      $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-      card.setAttribute('aria-pressed', 'true');
-      const id = card.getAttribute('data-id');
-      const price = Number(card.getAttribute('data-price')) || 0;
-      state.config.model = id;
-      state.config.price = price;
-      markCompleted(0, true);
-      updateLivePrice();
-      // enable material stage button
-      const materialBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
-      if (materialBtn) materialBtn.disabled = false;
-      // automatically advance one stage for a smoother flow
-      setTimeout(() => setStage(1), 220);
-      // If a viewer API exists, call it to load model (viewer.js should expose window.viewerLoadModel)
-      if (window.viewerLoadModel) {
-        window.viewerLoadModel(id).catch?.(err => console.warn('viewerLoadModel failed', err));
-      }
-    });
+  // Use event delegation so dynamically-inserted model option-cards are handled.
+  document.addEventListener('click', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.option-card[data-id^="mdl-"]');
+    if (!card) return;
+    if (card.hasAttribute('disabled')) return;
+    // mark selected state (only for model cards)
+    $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    card.setAttribute('aria-pressed', 'true');
+    const id = card.getAttribute('data-id');
+    const price = Number(card.getAttribute('data-price')) || 0;
+    state.config.model = id;
+    state.config.price = price;
+    markCompleted(0, true);
+    updateLivePrice();
+    // enable material stage button
+    const materialBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
+    if (materialBtn) materialBtn.disabled = false;
+    // automatically advance one stage for a smoother flow
+    setTimeout(() => setStage(1), 220);
+    // If a viewer API exists, call it to load model
+    if (window.viewerLoadModel) {
+      window.viewerLoadModel(id).catch?.(err => console.warn('viewerLoadModel failed', err));
+    }
   });
 }
 

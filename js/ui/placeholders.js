@@ -49,9 +49,8 @@ function showSkeleton(timeout = 700) {
 
 // Wire click handlers for any .option-card elements
 export function initPlaceholderInteractions() {
-  // Delegate clicks from the sidebar container
-  const sidebar = document.getElementById('app-sidebar') || document.body;
-  sidebar.addEventListener('click', (ev) => {
+  // Delegate clicks from the document so option-cards in stage panels are also handled
+  document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.option-card');
     if (!btn) return;
     if (btn.hasAttribute('disabled')) return;

@@ -78,9 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadComponent('app-header', 'components/Header.html');
   await loadComponent('app-main', 'pages/MainContent.html');
   await loadComponent('app-sidebar', 'components/Sidebar.html');
-  // Load the model selection component into the placeholder inside the sidebar
-  // so static placeholders (or the component's own markup) are visible on initial load.
-  await loadComponent('model-selection-placeholder', 'components/ModelSelection.html');
+  // ModelSelection is loaded lazily into the main stage-panel by the stage manager when
+  // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
 
   // Initialize viewer and controls after MainContent is loaded
