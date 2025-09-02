@@ -1,7 +1,44 @@
-<!-- Materials Panel (moved out of the scrollable stack so it remains visible) -->
+<!-- Sidebar info panels for each stage. Each section is shown only when its stage is active. -->
 <div id="materials-panel" class="">
-  <h3 class="text-md font-semibold mb-2">Materials</h3>
-  <div id="materials-panel-placeholder" class="grid grid-cols-1 gap-4">
-    <p class="text-sm text-gray-600">Material selection tiles will be shown here.</p>
+  <div id="sidebar-info-root">
+    <section id="info-stage-0" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Select Model — Tips</h3>
+      <p class="text-sm text-gray-600">Choose a base model to begin. You can preview models in the main viewer. Selecting a model will enable the Materials stage.</p>
+    </section>
+
+    <section id="info-stage-1" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Materials</h3>
+      <p class="text-sm text-gray-600">Select a material for your tabletop. Prices shown reflect the material differential. You can compare samples and read short descriptions here.</p>
+      <ul class="text-sm text-gray-600 mt-2 list-disc pl-5">
+        <li>American Elm — warm, open grain.</li>
+        <li>Black Walnut — deep, rich tone (+$250).</li>
+        <li>Siberian Elm — balanced, neutral look.</li>
+      </ul>
+    </section>
+
+    <section id="info-stage-2" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Finish</h3>
+      <p class="text-sm text-gray-600">Choose a finish to protect and style the surface. Higher gloss finishes may show wear differently over time.</p>
+    </section>
+
+    <section id="info-stage-3" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Dimensions</h3>
+      <p class="text-sm text-gray-600">Adjust the overall size to fit your space. Note: Larger sizes may affect lead time and price.</p>
+    </section>
+
+    <section id="info-stage-4" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Legs</h3>
+      <p class="text-sm text-gray-600">Pick a leg style that complements the tabletop. Prices vary by material and finish.</p>
+    </section>
+
+    <section id="info-stage-5" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Add-ons</h3>
+      <p class="text-sm text-gray-600">Optional extras such as protective pads, expedited production, or assembly are available here.</p>
+    </section>
+
+    <section id="info-stage-6" class="sidebar-info" style="display:none">
+      <h3 class="text-md font-semibold mb-2">Summary & Export</h3>
+      <p class="text-sm text-gray-600">Review your configuration, view a price breakdown, and export order details or a snapshot PDF.</p>
+    </section>
   </div>
 </div>

@@ -107,6 +107,16 @@ async function setStage(index) {
     // document.body might not be available in some test contexts; ignore.
   }
 
+  // Show only the sidebar info section that corresponds to the active stage (if present)
+  try {
+    const infos = document.querySelectorAll('#sidebar-info-root .sidebar-info');
+    infos.forEach(sec => { sec.style.display = 'none'; });
+    const active = document.getElementById(`info-stage-${state.current}`);
+    if (active) active.style.display = '';
+  } catch (e) {
+    // ignore if sidebar info root not present
+  }
+
   // Special case: Select Model stage should be full-width and not show the sidebar.
   // Move the stage-panel-0 into the main area and hide the sidebar while on stage 0.
   const sidebar = document.getElementById('app-sidebar');
