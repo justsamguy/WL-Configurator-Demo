@@ -1023,37 +1023,43 @@ p, label { font-size: 15px; color: #374151; }
   font-weight: 500;
   transition: all 0.2s;
 }
-
-.stage-btn[aria-current="step"] {
-  background-color: #1f2937; /* Gray 800 */
-  color: white;
-  font-weight: 600;
-}
-
-/* New mapping:
-   - Disabled state uses the previous hover color (Gray 300)
-   - Enabled (clickable) state uses blue
-   - Hover uses the previous default grey (Gray 200)
+/* Visual mapping for stage buttons (requested):
+   - Non-clickable (disabled) = light tone (no hover)
+   - Active stage (aria-current="step") = blue
+   - Clickable previous stages = dark tone, hover -> blue
 */
 
-/* clickable state: only when not disabled */
-.stage-btn:not([aria-current="step"]):not([disabled]) {
+/* Base: neutral/light look so disabled/empty appear subtle */
+.stage-btn {
+  background-color: transparent;
+  color: #6b7280; /* Gray 500 */
+}
+
+/* Active stage: prominent blue */
+.stage-btn[aria-current="step"] {
   background-color: #2563eb; /* Blue 600 */
-  color: white;
+  color: #ffffff;
+  font-weight: 600;
+  border-bottom-color: transparent;
 }
 
+/* Clickable stages (usually previous stages) — dark background, white text.
+   Hovering a clickable stage shows the blue accent. */
+.stage-btn:not([aria-current="step"]):not([disabled]) {
+  background-color: #1f2937; /* Gray 800 / dark */
+  color: #ffffff;
+}
 .stage-btn:not([aria-current="step"]):not([disabled]):hover {
-  /* hover becomes the old grey */
-  background-color: #e5e7eb; /* Gray 200 */
-  color: #4b5563; /* make text readable on grey hover */
+  background-color: #2563eb; /* Blue 600 on hover */
+  color: #ffffff;
 }
 
+/* Disabled (non-clickable) stages: light, no hover effect */
 .stage-btn[disabled] {
-  /* disabled now uses the previous hover (Gray 300) */
-  background-color: #d1d5db; /* Gray 300 */
-  color: #6b7280;
+  background-color: #f3f4f6; /* Gray 100 / light */
+  color: #9ca3af; /* Gray 400 */
   cursor: not-allowed;
-  opacity: 1; /* keep full opacity so color communicates the disabled state */
+  pointer-events: none; /* ensure no hover/interaction */
 }
 
 /* Navigation buttons (prev/next) */
@@ -1069,23 +1075,24 @@ p, label { font-size: 15px; color: #374151; }
    - Enabled uses blue
    - Hover uses the current grey (dark gray background)
 */
+/* Prev/Next button rules per request:
+   - Disabled (non-clickable): light, no hover
+   - Enabled (clickable): dark default, hover -> blue
+*/
 
-/* Nav buttons only show blue when not disabled */
+.nav-btn:disabled {
+  background-color: #f3f4f6; /* Gray 100 / light */
+  color: #9ca3af; /* Gray 400 */
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .nav-btn:not([disabled]) {
-  background-color: #2563eb; /* Blue 600 */
-  color: #fff;
+  background-color: #1f2937; /* Gray 800 / dark */
+  color: #ffffff;
 }
 
 .nav-btn:not([disabled]):hover {
-  /* hover uses the current grey tone (previous default for nav) */
-  background-color: #374151; /* Gray 700 */
-  color: #fff;
-}
-
-.nav-btn:disabled {
-  /* disabled uses the previous hover color for nav (dark gray) */
-  background-color: #1f2937; /* Gray 800/700 used in previous hover */
+  background-color: #2563eb; /* Blue 600 on hover */
   color: #ffffff;
-  cursor: not-allowed;
-  opacity: 1; /* keep opacity so color communicates disabled state */
 }
