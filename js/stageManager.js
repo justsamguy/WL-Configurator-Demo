@@ -31,6 +31,9 @@ const state = {
   }
 };
 
+// Stages that are optional (no selection required to advance)
+const OPTIONAL_STAGES = [5]; // index 5 = 'Add-ons'
+
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -94,8 +97,12 @@ async function setStage(index, options = {}) {
   // disable Next unless we're not at the last stage AND the current stage is completed
   const atLast = state.current === STAGES.length - 1;
   const currentCompleted = !!state.completed[state.current];
-  next.disabled = atLast || !currentCompleted;
+  // treat optional stages as implicitly completed
+  const canAdvanceFromCurrent = currentCompleted || OPTIONAL_STAGES.includes(state.current);
+  next.disabled = atLast || !canAdvanceFromCurrent;
   next.classList.toggle('opacity-40', next.disabled);
+  // hide Next entirely on the final Summary & Export stage
+  next.style.display = atLast ? 'none' : '';
   }
 
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
@@ -242,6 +249,14 @@ export function initStageManager() {
   wireStageButtons();
   wireModelSelection();
   updateLivePrice();
+  // Mark current stage completed when options are selected elsewhere in the app
+  document.addEventListener('option-selected', (ev) => {
+    // mark the active stage complete so Next becomes enabled
+    markCompleted(state.current, true);
+    // run a UI update to refresh Next/Prev/button states
+    setStage(state.current);
+  });
+
   setStage(0);
 }
 
