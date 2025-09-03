@@ -227,8 +227,9 @@ function wireModelSelection() {
     // enable material stage button
     const materialBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
     if (materialBtn) materialBtn.disabled = false;
-    // automatically advance one stage for a smoother flow
-    setTimeout(() => setStage(1), 220);
+  // Do not automatically advance to the next stage when a model is selected.
+  // Selection should only mark the stage completed and enable the Next button;
+  // advancing should happen only when the user clicks Next or a stage button.
     // If a viewer API exists, call it to load model
     if (window.viewerLoadModel) {
       window.viewerLoadModel(id).catch?.(err => console.warn('viewerLoadModel failed', err));
