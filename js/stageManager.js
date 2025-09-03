@@ -67,6 +67,8 @@ async function setStage(index, options = {}) {
   }
 
   state.current = index;
+  // treat optional stages as implicitly completed for gating decisions
+  const currentCompleted = !!state.completed[state.current] || OPTIONAL_STAGES.includes(state.current);
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
     const idx = Number(btn.getAttribute('data-stage-index'));
@@ -79,9 +81,16 @@ async function setStage(index, options = {}) {
       if (idx < state.current) {
         btn.disabled = false;
       } else {
-        // For future stages (idx > current), only enable if the current stage is completed
-        // or if that future stage is already marked completed.
-        btn.disabled = !(state.completed[state.current] || state.completed[idx]);
+        // For future stages (idx > current):
+        // - allow if that future stage is already completed (user previously finished it),
+        // - or allow only the immediate next stage when the current stage is completed.
+        if (state.completed[idx]) {
+          btn.disabled = false;
+        } else if (idx === state.current + 1 && currentCompleted) {
+          btn.disabled = false;
+        } else {
+          btn.disabled = true;
+        }
       }
     }
   });
@@ -96,9 +105,8 @@ async function setStage(index, options = {}) {
   if (next) {
   // disable Next unless we're not at the last stage AND the current stage is completed
   const atLast = state.current === STAGES.length - 1;
-  const currentCompleted = !!state.completed[state.current];
-  // treat optional stages as implicitly completed
-  const canAdvanceFromCurrent = currentCompleted || OPTIONAL_STAGES.includes(state.current);
+  // currentCompleted was computed above and already includes optional-stage handling
+  const canAdvanceFromCurrent = currentCompleted;
   next.disabled = atLast || !canAdvanceFromCurrent;
   next.classList.toggle('opacity-40', next.disabled);
   // hide Next entirely on the final Summary & Export stage
