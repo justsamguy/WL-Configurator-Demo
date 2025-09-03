@@ -50,10 +50,12 @@ function updateLivePrice() {
   elAmount.textContent = formatPrice(state.config.price || 0);
 }
 
-async function setStage(index) {
+async function setStage(index, options = {}) {
+  // options: { allowSkip: boolean }
   if (index < 0 || index >= STAGES.length) return;
-  // gating: cannot jump forward past first incomplete required stage (model required)
-  if (index > state.current) {
+  // gating: normally prevent jumping forward past first incomplete required stage (model required)
+  // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
+  if (index > state.current && !options.allowSkip) {
     // require model selected to advance beyond 0
     if (!state.config.model) {
       // keep at current, optionally show a small banner (omitted here)
@@ -83,10 +85,10 @@ async function setStage(index) {
     prev.classList.toggle('opacity-40', prev.disabled);
   }
   if (next) {
-    // disable Next unless the current stage is completed (prevents advancing without required selection)
+    // Only disable Next when we're at the last stage. Allow the right-side Next button
+    // to navigate forward even if the current stage hasn't been marked completed.
     const atLast = state.current === STAGES.length - 1;
-    const currentCompleted = !!state.completed[state.current];
-    next.disabled = atLast || !currentCompleted;
+    next.disabled = atLast;
     next.classList.toggle('opacity-40', next.disabled);
   }
 
@@ -169,12 +171,10 @@ async function setStage(index) {
 }
 
 function nextStage() {
-  // If current stage isn't completed, show banner and block advancing
-  if (!state.completed[state.current]) {
-    showBanner('Please select an option before proceeding.');
-    return;
-  }
-  setStage(Math.min(state.current + 1, STAGES.length - 1));
+  // Advance to the next stage. Use allowSkip so the button can navigate forward even
+  // if the current stage hasn't been marked completed. This provides the expected
+  // "Next" navigation behavior while keeping click-to-stage gating intact.
+  setStage(Math.min(state.current + 1, STAGES.length - 1), { allowSkip: true });
 }
 
 function prevStage() {
