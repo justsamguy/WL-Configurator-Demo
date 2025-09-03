@@ -72,8 +72,14 @@ async function setStage(index, options = {}) {
       btn.disabled = false;
     } else {
       btn.removeAttribute('aria-current');
-      // keep buttons enabled if they've been completed, otherwise follow gating
-      btn.disabled = !(state.completed[idx] || idx <= state.current + 1);
+      // allow revisiting previous stages
+      if (idx < state.current) {
+        btn.disabled = false;
+      } else {
+        // For future stages (idx > current), only enable if the current stage is completed
+        // or if that future stage is already marked completed.
+        btn.disabled = !(state.completed[state.current] || state.completed[idx]);
+      }
     }
   });
 
@@ -85,11 +91,11 @@ async function setStage(index, options = {}) {
     prev.classList.toggle('opacity-40', prev.disabled);
   }
   if (next) {
-    // Only disable Next when we're at the last stage. Allow the right-side Next button
-    // to navigate forward even if the current stage hasn't been marked completed.
-    const atLast = state.current === STAGES.length - 1;
-    next.disabled = atLast;
-    next.classList.toggle('opacity-40', next.disabled);
+  // disable Next unless we're not at the last stage AND the current stage is completed
+  const atLast = state.current === STAGES.length - 1;
+  const currentCompleted = !!state.completed[state.current];
+  next.disabled = atLast || !currentCompleted;
+  next.classList.toggle('opacity-40', next.disabled);
   }
 
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
@@ -171,10 +177,12 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
-  // Advance to the next stage. Use allowSkip so the button can navigate forward even
-  // if the current stage hasn't been marked completed. This provides the expected
-  // "Next" navigation behavior while keeping click-to-stage gating intact.
-  setStage(Math.min(state.current + 1, STAGES.length - 1), { allowSkip: true });
+  // If current stage isn't completed, show banner and block advancing
+  if (!state.completed[state.current]) {
+    showBanner('Please select an option before proceeding.');
+    return;
+  }
+  setStage(Math.min(state.current + 1, STAGES.length - 1));
 }
 
 function prevStage() {

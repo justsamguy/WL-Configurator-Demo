@@ -1035,8 +1035,9 @@ p, label { font-size: 15px; color: #374151; }
    - Enabled (clickable) state uses blue
    - Hover uses the previous default grey (Gray 200)
 */
-.stage-btn:not([aria-current="step"]) {
-  /* clickable state: blue */
+
+/* clickable state: only when not disabled */
+.stage-btn:not([aria-current="step"]):not([disabled]) {
   background-color: #2563eb; /* Blue 600 */
   color: white;
 }
@@ -1068,8 +1069,9 @@ p, label { font-size: 15px; color: #374151; }
    - Enabled uses blue
    - Hover uses the current grey (dark gray background)
 */
-.nav-btn {
-  /* enabled state (clickable) */
+
+/* Nav buttons only show blue when not disabled */
+.nav-btn:not([disabled]) {
   background-color: #2563eb; /* Blue 600 */
   color: #fff;
 }
