@@ -59,15 +59,33 @@ export function initPlaceholderInteractions() {
     const priceAttr = btn.getAttribute('data-price') || '0';
     const price = parseInt(priceAttr, 10) || 0;
     const id = btn.getAttribute('data-id') || null;
+    const category = btn.getAttribute('data-category') || null;
 
-  // Dispatch a selection event that main.js will handle (update state, price)
-  document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price } }));
+    // For single-choice categories (default), clear previous selection in the same category
+    if (category && category !== 'addon') {
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach((el) => {
+        el.setAttribute('aria-pressed', 'false');
+        if (el.hasAttribute('role') && el.getAttribute('role') === 'checkbox') el.setAttribute('aria-checked', 'false');
+      });
+    }
 
-    // visually mark selected
-    document.querySelectorAll('.option-card[aria-pressed="true"]').forEach((el) => el.setAttribute('aria-pressed', 'false'));
-    btn.setAttribute('aria-pressed', 'true');
+    // Toggle behavior for addons (multi-select checkboxes)
+    if (category === 'addon') {
+      const wasPressed = btn.getAttribute('aria-pressed') === 'true';
+      const nowPressed = !wasPressed;
+      btn.setAttribute('aria-pressed', nowPressed ? 'true' : 'false');
+      btn.setAttribute('aria-checked', nowPressed ? 'true' : 'false');
+      // Dispatch an addon-toggled event
+      document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowPressed } }));
+    } else {
+      // Default: single-select behavior
+      document.querySelectorAll('.option-card[aria-pressed="true"]').forEach((el) => el.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      // Dispatch a selection event that main.js will handle (update state, price)
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
+    }
 
-  // show skeleton to mimic viewer re-render
-  showSkeleton(700);
+    // show skeleton to mimic viewer re-render
+    showSkeleton(700);
   });
 }
