@@ -1,87 +1,103 @@
-<div class="flex flex-col gap-4 px-8 py-8">
-  <h2 class="text-lg font-semibold mb-2">Select Model</h2>
-  <div id="model-options" class="grid">
-    <!-- Static placeholders (visible when JS hasn't rendered options yet) -->
-    <!-- Nine smaller option cards for testing (3-column grid in sidebar) -->
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-01" data-price="12480" aria-pressed="false">
-      <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 1</span>
-        <span class="ml-2 text-xs text-gray-600">$12,480</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Classic rectangular.</span>
-    </button>
+<div class="flex flex-col gap-6 px-8 py-8">
+  <h2 class="text-lg font-semibold mb-4">Select Model</h2>
 
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-02" data-price="12900" aria-pressed="false">
-      <img src="assets/images/model2.png" alt="Model 2" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 2</span>
-        <span class="ml-2 text-xs text-gray-600">$12,900</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Farmhouse style.</span>
-    </button>
+  <!-- Row 1: Classic Tables -->
+  <div class="model-row">
+    <h3 class="text-md font-medium mb-3 text-gray-700">Classic Tables</h3>
+    <div class="model-row-grid">
+      <button class="option-card" data-id="mdl-01" data-price="12480" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 1</div>
+          <div class="price-delta">$12,480</div>
+        </div>
+        <div class="description">Classic rectangular</div>
+      </button>
+      <button class="option-card" data-id="mdl-02" data-price="12900" aria-pressed="false">
+        <img src="assets/images/model2.png" alt="Model 2" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 2</div>
+          <div class="price-delta">$12,900</div>
+        </div>
+        <div class="description">Farmhouse style</div>
+      </button>
+      <button class="option-card" data-id="mdl-05" data-price="13500" aria-pressed="false">
+        <img src="assets/images/model2.png" alt="Model 5" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 5</div>
+          <div class="price-delta">$13,500</div>
+        </div>
+        <div class="description">Large dining</div>
+      </button>
+    </div>
+  </div>
 
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-03" data-price="11450" aria-pressed="false">
-      <img src="assets/images/model3.svg" alt="Model 3" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 3</span>
-        <span class="ml-2 text-xs text-gray-600">$11,450</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Compact round.</span>
-    </button>
+  <!-- Row 2: Modern Designs -->
+  <div class="model-row">
+    <h3 class="text-md font-medium mb-3 text-gray-700">Modern Designs</h3>
+    <div class="model-row-grid">
+      <button class="option-card" data-id="mdl-03" data-price="11450" aria-pressed="false">
+        <img src="assets/images/model3.svg" alt="Model 3" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 3</div>
+          <div class="price-delta">$11,450</div>
+        </div>
+        <div class="description">Compact round</div>
+      </button>
+      <button class="option-card" data-id="mdl-08" data-price="14800" aria-pressed="false">
+        <img src="assets/images/model2.png" alt="Model 8" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 8</div>
+          <div class="price-delta">$14,800</div>
+        </div>
+        <div class="description">Executive</div>
+      </button>
+    </div>
+  </div>
 
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-04" data-price="9800" aria-pressed="false">
-      <img src="assets/images/model1_placeholder.png" alt="Model 4 placeholder" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 4</span>
-        <span class="ml-2 text-xs text-gray-600">$9,800</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Small desk.</span>
-    </button>
+  <!-- Row 3: Specialty Pieces -->
+  <div class="model-row">
+    <h3 class="text-md font-medium mb-3 text-gray-700">Specialty Pieces</h3>
+    <div class="model-row-grid">
+      <button class="option-card" data-id="mdl-04" data-price="9800" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="Model 4 placeholder" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 4</div>
+          <div class="price-delta">$9,800</div>
+        </div>
+        <div class="description">Small desk</div>
+      </button>
+      <button class="option-card" data-id="mdl-06" data-price="7600" aria-pressed="false">
+        <img src="assets/images/model3.svg" alt="Model 6" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 6</div>
+          <div class="price-delta">$7,600</div>
+        </div>
+        <div class="description">Accent table</div>
+      </button>
+      <button class="option-card" data-id="mdl-07" data-price="10200" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="Model 7" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 7</div>
+          <div class="price-delta">$10,200</div>
+        </div>
+        <div class="description">Console style</div>
+      </button>
+    </div>
+  </div>
 
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-05" data-price="13500" aria-pressed="false">
-      <img src="assets/images/model2.png" alt="Model 5" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 5</span>
-        <span class="ml-2 text-xs text-gray-600">$13,500</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Large dining.</span>
-    </button>
-
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-06" data-price="7600" aria-pressed="false">
-      <img src="assets/images/model3.svg" alt="Model 6" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 6</span>
-        <span class="ml-2 text-xs text-gray-600">$7,600</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Accent table.</span>
-    </button>
-
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-07" data-price="10200" aria-pressed="false">
-      <img src="assets/images/model1_placeholder.png" alt="Model 7" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 7</span>
-        <span class="ml-2 text-xs text-gray-600">$10,200</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Console style.</span>
-    </button>
-
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-08" data-price="14800" aria-pressed="false">
-      <img src="assets/images/model2.png" alt="Model 8" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 8</span>
-        <span class="ml-2 text-xs text-gray-600">$14,800</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Executive.</span>
-    </button>
-
-    <button class="option-card border rounded-lg p-2 flex flex-col items-center text-left transition w-full" data-id="mdl-09" data-price="8900" aria-pressed="false">
-      <img src="assets/images/model3.svg" alt="Model 9" class="w-full h-20 object-cover mb-2 bg-gray-100 rounded-md viewer-placeholder-img" />
-      <div class="flex items-center w-full justify-between">
-        <span class="label text-sm">Model 9</span>
-        <span class="ml-2 text-xs text-gray-600">$8,900</span>
-      </div>
-      <span class="text-xs text-gray-500 mt-1 self-start">Round small.</span>
-    </button>
+  <!-- Row 4: Compact Options -->
+  <div class="model-row">
+    <h3 class="text-md font-medium mb-3 text-gray-700">Compact Options</h3>
+    <div class="model-row-grid">
+      <button class="option-card" data-id="mdl-09" data-price="8900" aria-pressed="false">
+        <img src="assets/images/model3.svg" alt="Model 9" class="viewer-placeholder-img" />
+        <div class="title-price-row">
+          <div class="title">Model 9</div>
+          <div class="price-delta">$8,900</div>
+        </div>
+        <div class="description">Round small</div>
+      </button>
+    </div>
   </div>
 </div>
