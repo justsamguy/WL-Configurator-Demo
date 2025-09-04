@@ -24,6 +24,7 @@ alwaysApply: true
   - Note: Testing must occur in a live server environment due to CDN dependencies.
   - Recommendation: Commit changes and deploy to verify functionality.
   - Next steps: Ensure accessibility, responsiveness, and debug issues as needed.
+  - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
 
 - **Build & Deployment**
   - Run `npm i` to install Tailwind and dev tooling.

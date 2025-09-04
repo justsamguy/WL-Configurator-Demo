@@ -28,6 +28,7 @@ This document outlines the guidelines and conventions for developing the WoodLab
 - **Remove keyboard focus outlines.**
 - **Mutate global state outside of `js/main.js`.**
 - **Introduce non-placeholder assets or data.**
+- **Suggest or run local testing commands** unless explicitly requested. Testing and verification must occur in a live server environment (GitHub Pages deployment) due to CDN dependencies.
 
 ## Commands
 
