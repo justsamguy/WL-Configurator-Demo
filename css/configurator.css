@@ -156,10 +156,7 @@ img, svg {
     }
   }
 
-  header {
-    grid-column: 1 / -1; /* Span all columns */
-    grid-row: 1 / 2;
-  }
+
 
   #stage-bar {
     grid-column: 1 / -1; /* Span all columns */
@@ -603,10 +600,7 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
     grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main, Footer */
   }
 
-  header {
-    grid-column: 1 / -1;
-    grid-row: 1 / 2;
-  }
+
 
   #stage-bar {
     grid-column: 1 / -1;
