@@ -336,6 +336,16 @@ img, svg {
   padding: 1.5rem;
 }
 
+/* Hide sidebar for model stage (assuming body has class 'stage-0' when model stage is active) */
+.stage-0 #app-sidebar {
+  display: none;
+}
+
+/* Make main take full width when sidebar is hidden */
+.stage-0 main {
+  grid-column: 1 / -1;
+}
+
 .model-row {
   margin-bottom: 2rem;
 }
