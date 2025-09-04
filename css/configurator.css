@@ -63,6 +63,14 @@ body {
   height: auto;
 }
 
+/* Ensure header logo is centered */
+header .flex.justify-center.items-center {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 /* Aggressive constraints for any unexpectedly large decorative graphics (like the V-shape) */
 #sidebar img, #sidebar svg, main img, main svg, footer img, footer svg {
   max-width: 360px;
