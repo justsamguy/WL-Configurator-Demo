@@ -142,6 +142,12 @@ img, svg {
   display: block;
 }
 
+/* Header logo: make it smaller and ensure our size wins over generic img rules */
+header .site-logo {
+  height: 40px !important; /* roughly half the previous large rendering */
+  width: auto;
+}
+
 /* Main content grid layout for desktop */
 @media (min-width: 1024px) {
   body {
@@ -592,6 +598,27 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
 }
+
+/* ---------------- Model stage layout tweaks ---------------- */
+/* Hide live price while on Select Model (stage 0). Stage manager toggles .show-model-tiles */
+body.show-model-tiles #live-price { display: none !important; }
+
+/* When on model stage, take full width and allow vertical scroll in main */
+body.show-model-tiles #app-sidebar { display: none !important; }
+body.show-model-tiles main { grid-column: 1 / -1; }
+body.show-model-tiles #app-main { 
+  max-width: none; 
+  width: 100%; 
+  overflow-y: auto; 
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+}
+/* Override viewer container max width while on model stage */
+body.show-model-tiles #app-main.viewer-container { max-width: none; padding-left: 1rem; padding-right: 1rem; }
+/* Remove viewer panel chrome during model selection */
+body.show-model-tiles #app-main.viewer-panel { background: transparent; box-shadow: none; }
+
+/* Ensure the fullwidth model panel itself is not constrained */
+.fullwidth-model-stage { max-width: none; width: 100%; }
 
 /* Responsive adjustments */
 @media (max-width: 1023px) { /* Tablet and smaller */
