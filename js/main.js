@@ -121,6 +121,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   initViewerControls();
   resizeViewer(); // Ensure viewer is sized correctly on load
 
+  // Compute and set accurate header height so main content doesn't tuck under it
+  const setHeaderVars = () => {
+    try {
+      const header = document.getElementById('app-header');
+      if (!header) return;
+      const h = header.offsetHeight || 0;
+      document.documentElement.style.setProperty('--header-height', `${h}px`);
+      // stage bar lives inside header, so avoid double-subtracting
+      document.documentElement.style.setProperty('--stage-bar-height', `0px`);
+    } catch (e) {
+      // ignore
+    }
+  };
+  setHeaderVars();
+  window.addEventListener('resize', setHeaderVars);
+
   // Load icons after all components are in the DOM
   const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
   iconPlaceholders.forEach(async (element) => {
@@ -137,6 +153,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { default: stageManager } = await import('./stageManager.js');
     stageManager.initStageManager();
     console.log('Stage manager initialized from main.js');
+    // header height may change when stage changes sticky/static; recalc on next frame
+    setTimeout(setHeaderVars, 0);
   } catch (err) {
     console.warn('Failed to initialize stage manager from main.js', err);
   }

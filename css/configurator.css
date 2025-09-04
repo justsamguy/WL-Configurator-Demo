@@ -31,6 +31,12 @@ body {
   }
 }
 
+/* Ensure the header spans the full grid width (both columns) */
+#app-header {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 /* Viewer container: constrain and center the 3D viewer */
 .viewer-container {
   width: 100%;
@@ -146,6 +152,17 @@ img, svg {
 header .site-logo {
   height: 40px !important; /* roughly half the previous large rendering */
   width: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* During Model selection, keep header non-sticky on desktop to avoid overlap */
+@media (min-width: 1024px) {
+  body.show-model-tiles #app-header {
+    position: static !important;
+    top: auto !important;
+  }
 }
 
 /* Main content grid layout for desktop */
