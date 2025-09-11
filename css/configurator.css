@@ -700,6 +700,31 @@ body.show-model-tiles #app-header {
   width: 100%;
 }
 
+/* Center the inner model container and make it vertically scrollable
+   within the viewport so long model lists remain accessible. */
+#app-header + .fullwidth-model-stage,
+#app-header + #stage-panel-0 {
+  display: flex;
+  justify-content: center;
+}
+
+#app-header + .fullwidth-model-stage > .flex,
+#app-header + #stage-panel-0 > .flex {
+  width: 100%;
+  max-width: 1200px; /* keep tiles centered and readable */
+  box-sizing: border-box;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
+}
+
+/* Center the model rows and allow wrapping/centering of option-cards */
+.model-row-grid {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 /* Ensure the stage bar (if it lives inside header) doesn't float on top */
 body.show-model-tiles #stage-bar {
   position: static !important;
