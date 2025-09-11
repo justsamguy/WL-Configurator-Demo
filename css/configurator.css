@@ -39,8 +39,9 @@ body {
 
 /* Make header visually separate and reserve space so it doesn't overlap content */
 #app-header {
-  position: relative; /* let grid control placing; avoid absolute/fixed overlap */
-  z-index: 50; /* above viewer but below any critical overlays */
+  position: sticky; /* stick to top while remaining in flow */
+  top: 0;
+  z-index: 60; /* above viewer controls and most elements */
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
   border-bottom: 1px solid rgba(16,24,40,0.04);
   padding-top: 0.75rem;
@@ -209,6 +210,12 @@ header .site-logo {
     grid-row: 3 / 4; /* In the main content row */
   overflow: visible; /* Allow viewer controls to be visible outside strict clipping */
   height: 100%; /* Ensure main fills its grid cell */
+  }
+
+  /* Always offset the main content by the header height so a sticky header cannot overlap it */
+  #app-main {
+    box-sizing: border-box;
+    padding-top: var(--header-height);
   }
 
   #sidebar, #app-sidebar {
