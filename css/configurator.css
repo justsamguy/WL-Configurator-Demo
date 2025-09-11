@@ -89,7 +89,7 @@ header .flex.justify-center.items-center {
 }
 
 /* Aggressive constraints for any unexpectedly large decorative graphics (like the V-shape) */
-#sidebar img, #sidebar svg, main img, main svg, footer img, footer svg {
+.app-sidebar img, #app-sidebar svg, main img, main svg, footer img, footer svg {
   max-width: 360px;
   max-height: 360px;
   width: auto;
@@ -218,7 +218,7 @@ header .site-logo {
     padding-top: var(--header-height);
   }
 
-  #sidebar, #app-sidebar {
+  #app-sidebar {
     grid-column: 2 / 3; /* Sidebar in second column */
     grid-row: 3 / 4; /* In the main content row */
     width: 100%; /* Take full width of the column */
@@ -826,7 +826,7 @@ body.show-model-tiles #stage-bar {
     flex-direction: column; /* Stack viewer and sidebar vertically */
   }
 
-  #sidebar, #app-sidebar {
+  #app-sidebar {
     width: 100%;
     max-width: 100%;
     border-left: none;
@@ -857,7 +857,7 @@ body.show-model-tiles #stage-bar {
   }
 
   /* Adjust main and sidebar height for mobile fixed elements */
-  main, #sidebar, #app-sidebar {
+  main, #app-sidebar {
     height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
     overflow-y: auto; /* Allow scrolling within main/sidebar if content overflows */
   }

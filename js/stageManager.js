@@ -16,8 +16,9 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
+import { state as appState, setState as setAppState } from './state.js';
 
-const state = {
+const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
   config: {
@@ -50,7 +51,7 @@ function formatPrice(centsOrUnits) {
 function updateLivePrice() {
   const elAmount = $('#live-price .price-amount');
   if (!elAmount) return;
-  elAmount.textContent = formatPrice(state.config.price || 0);
+  elAmount.textContent = formatPrice(managerState.config.price || 0);
 }
 
 async function setStage(index, options = {}) {
@@ -58,35 +59,34 @@ async function setStage(index, options = {}) {
   if (index < 0 || index >= STAGES.length) return;
   // gating: normally prevent jumping forward past first incomplete required stage (model required)
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
-  if (index > state.current && !options.allowSkip) {
+  if (index > managerState.current && !options.allowSkip) {
     // require model selected to advance beyond 0
-    if (!state.config.model) {
+    if (!managerState.config.model) {
       // keep at current, optionally show a small banner (omitted here)
       return;
     }
   }
-
-  state.current = index;
+  managerState.current = index;
   // treat optional stages as implicitly completed for gating decisions
-  const currentCompleted = !!state.completed[state.current] || OPTIONAL_STAGES.includes(state.current);
+  const currentCompleted = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
     const idx = Number(btn.getAttribute('data-stage-index'));
-    if (idx === state.current) {
+    if (idx === managerState.current) {
       btn.setAttribute('aria-current', 'step');
       btn.disabled = false;
     } else {
       btn.removeAttribute('aria-current');
       // allow revisiting previous stages
-      if (idx < state.current) {
+      if (idx < managerState.current) {
         btn.disabled = false;
       } else {
         // For future stages (idx > current):
         // - allow if that future stage is already completed (user previously finished it),
         // - or allow only the immediate next stage when the current stage is completed.
-        if (state.completed[idx]) {
+        if (managerState.completed[idx]) {
           btn.disabled = false;
-        } else if (idx === state.current + 1 && currentCompleted) {
+        } else if (idx === managerState.current + 1 && currentCompleted) {
           btn.disabled = false;
         } else {
           btn.disabled = true;
@@ -99,12 +99,12 @@ async function setStage(index, options = {}) {
   const prev = $('#prev-stage');
   const next = $('#next-stage');
   if (prev) {
-    prev.disabled = state.current === 0;
+    prev.disabled = managerState.current === 0;
     prev.classList.toggle('opacity-40', prev.disabled);
   }
   if (next) {
   // disable Next unless we're not at the last stage AND the current stage is completed
-  const atLast = state.current === STAGES.length - 1;
+  const atLast = managerState.current === STAGES.length - 1;
   // currentCompleted was computed above and already includes optional-stage handling
   const canAdvanceFromCurrent = currentCompleted;
   next.disabled = atLast || !canAdvanceFromCurrent;
@@ -116,7 +116,7 @@ async function setStage(index, options = {}) {
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
-    panel.style.display = idx === state.current ? '' : 'none';
+    panel.style.display = idx === managerState.current ? '' : 'none';
   });
 
   // Sidebar no longer contains a model selection placeholder; model tiles are loaded
@@ -125,7 +125,7 @@ async function setStage(index, options = {}) {
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Select Model stage, model tiles are hidden by default.
   try {
-    document.body.classList.toggle('show-model-tiles', state.current === 0);
+    document.body.classList.toggle('show-model-tiles', managerState.current === 0);
   } catch (e) {
     // document.body might not be available in some test contexts; ignore.
   }
@@ -145,7 +145,7 @@ async function setStage(index, options = {}) {
   try {
     const infos = document.querySelectorAll('#sidebar-info-root .sidebar-info');
     infos.forEach(sec => { sec.style.display = 'none'; });
-    const active = document.getElementById(`info-stage-${state.current}`);
+    const active = document.getElementById(`info-stage-${managerState.current}`);
     if (active) active.style.display = '';
   } catch (e) {
     // ignore if sidebar info root not present
@@ -156,7 +156,7 @@ async function setStage(index, options = {}) {
   const sidebar = document.getElementById('app-sidebar');
   const main = document.getElementById('app-main');
   const panel0 = document.getElementById('stage-panel-0');
-  if (state.current === 0) {
+  if (managerState.current === 0) {
     if (sidebar) sidebar.style.display = 'none';
     if (panel0 && main) {
       // remember original parent so we can restore later
@@ -178,7 +178,7 @@ async function setStage(index, options = {}) {
           insertionParent.insertBefore(panel0, header.nextSibling);
         }
         // add fullwidth hook class to allow different styling
-        panel0.classList.add('fullwidth-model-stage');
+  panel0.classList.add('fullwidth-model-stage');
         // hide the viewer and viewer controls while selecting model
         const viewer = document.getElementById('viewer');
         if (viewer) viewer.style.display = 'none';
@@ -216,20 +216,20 @@ async function setStage(index, options = {}) {
 
 function nextStage() {
   // If current stage isn't completed, show banner and block advancing
-  if (!state.completed[state.current]) {
+  if (!managerState.completed[managerState.current]) {
     showBanner('Please select an option before proceeding.');
     return;
   }
-  setStage(Math.min(state.current + 1, STAGES.length - 1));
+  setStage(Math.min(managerState.current + 1, STAGES.length - 1));
 }
 
 function prevStage() {
-  setStage(Math.max(state.current - 1, 0));
+  setStage(Math.max(managerState.current - 1, 0));
 }
 
 function markCompleted(index, completed = true) {
   if (index < 0 || index >= STAGES.length) return;
-  state.completed[index] = completed;
+  managerState.completed[index] = completed;
   // enable next stage if current completed
   const nextIdx = index + 1;
   const nextBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${nextIdx}']`);
@@ -256,10 +256,12 @@ function wireModelSelection() {
     // mark selected state (only for model cards)
     $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
     card.setAttribute('aria-pressed', 'true');
-    const id = card.getAttribute('data-id');
-    const price = Number(card.getAttribute('data-price')) || 0;
-    state.config.model = id;
-    state.config.price = price;
+  const id = card.getAttribute('data-id');
+  const price = Number(card.getAttribute('data-price')) || 0;
+  managerState.config.model = id;
+  managerState.config.price = price;
+  // Synchronize shared app state so viewer and other modules update from the canonical source
+  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, extras: appState.pricing.extras || 0, total: (appState.pricing.base || 0) + (appState.pricing.extras || 0) + price } }); } catch (e) {}
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button
@@ -269,9 +271,7 @@ function wireModelSelection() {
   // Selection should only mark the stage completed and enable the Next button;
   // advancing should happen only when the user clicks Next or a stage button.
     // If a viewer API exists, call it to load model
-    if (window.viewerLoadModel) {
-      window.viewerLoadModel(id).catch?.(err => console.warn('viewerLoadModel failed', err));
-    }
+    // viewer.js listens for 'statechange' and will update the displayed model accordingly
   });
 }
 
@@ -283,9 +283,9 @@ export function initStageManager() {
   // Mark current stage completed when options are selected elsewhere in the app
   document.addEventListener('option-selected', (ev) => {
     // mark the active stage complete so Next becomes enabled
-    markCompleted(state.current, true);
+    markCompleted(managerState.current, true);
     // run a UI update to refresh Next/Prev/button states
-    setStage(state.current);
+    setStage(managerState.current);
   });
 
   setStage(0);
@@ -304,6 +304,6 @@ function showBanner(message, timeout = 2500) {
 }
 
 // expose for debugging
-window.__wlStage = { state, setStage, nextStage, prevStage, initStageManager };
+window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
 
-export default { initStageManager, state, setStage };
+export default { initStageManager, state: managerState, setStage };

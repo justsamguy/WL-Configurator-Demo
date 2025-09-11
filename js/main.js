@@ -9,25 +9,12 @@ import { loadComponent } from './app.js';
 import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
-
-export const state = {
-  stage: 1, // 1: Model, 2: Customize, 3: Summary
-  selections: { model: null, options: {} },
-  pricing: { base: 12480, extras: 0, total: 12480 }
-};
-
-// Dispatch a custom event when state changes
-export function setState(newState) {
-  Object.assign(state, newState);
-  document.dispatchEvent(new Event("statechange"));
-}
+import { state, setState } from './state.js';
 
 // Listen for state changes to update UI
-document.addEventListener("statechange", () => {
-  // This is where main.js would orchestrate updates across other modules
-  // For now, app.js still handles the direct UI updates based on state.
-  // In a more complex app, main.js might call functions from app.js, viewer.js, etc.
-  // to trigger their respective updates.
+document.addEventListener('statechange', (ev) => {
+  // main orchestrator can react to state changes here if needed.
+  // ev.detail.state contains the latest state object.
 });
 
 // Price animation helper used by the UI when updating the price display
@@ -145,8 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIcon(element, iconName, iconTitle);
   });
 
-  // Initial state update to render the first stage
-  document.dispatchEvent(new Event("statechange"));
+  // Initial state update to render the first stage (use setState to dispatch standardized event)
+  setState({});
 
   // Initialize stage manager after header/sidebar components exist
   try {
