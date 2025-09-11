@@ -642,6 +642,21 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   --footer-height: 80px; /* Approximate height of footer */
 }
 
+/* Always reserve space at the top of the main area for the header height so
+   the header cannot visually overlap the main content. JS updates
+   --header-height at runtime for accuracy. */
+#app-main {
+  box-sizing: border-box;
+  padding-top: var(--header-height);
+}
+
+/* When the Select Model panel is moved into #app-main it should not add any
+   extra top margin that could cause the content to be cropped inside the
+   scrollable container. */
+#app-main > .fullwidth-model-stage {
+  margin-top: 0;
+}
+
 /* ---------------- Model stage layout tweaks ---------------- */
 /* Hide live price while on Select Model (stage 0). Stage manager toggles .show-model-tiles */
 body.show-model-tiles #live-price { display: none !important; }
@@ -664,6 +679,21 @@ body.show-model-tiles #app-main.viewer-panel { background: transparent; box-shad
 
 /* Ensure the fullwidth model panel itself is not constrained */
 .fullwidth-model-stage { max-width: none; width: 100%; }
+
+/* Safety: force header out of the way while model selection is active. This
+   applies regardless of viewport width to avoid overlap when class toggles
+   don't take effect early. We intentionally use !important to override the
+   header's sticky positioning during the model-selection flow. */
+body.show-model-tiles #app-header {
+  position: static !important;
+  top: auto !important;
+  z-index: 1 !important; /* keep header below floating controls */
+}
+
+/* Ensure the stage bar (if it lives inside header) doesn't float on top */
+body.show-model-tiles #stage-bar {
+  position: static !important;
+}
 
 /* Responsive adjustments */
 @media (max-width: 1023px) { /* Tablet and smaller */
