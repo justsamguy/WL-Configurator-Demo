@@ -654,6 +654,8 @@ body.show-model-tiles #app-main {
   overflow-y: auto; 
   height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
 }
+/* Ensure app-main is offset below the header during model selection to avoid overlap */
+body.show-model-tiles #app-main { padding-top: calc(var(--header-height) + 0.5rem) !important; }
 /* Override viewer container max width while on model stage */
 body.show-model-tiles #app-main.viewer-container { max-width: none; padding-left: 1rem; padding-right: 1rem; }
 /* Remove viewer panel chrome during model selection */

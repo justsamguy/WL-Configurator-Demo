@@ -130,6 +130,17 @@ async function setStage(index, options = {}) {
     // document.body might not be available in some test contexts; ignore.
   }
 
+  // Recompute and set accurate header height so main content doesn't tuck under it.
+  try {
+    const header = document.getElementById('app-header');
+    if (header) {
+      const h = header.offsetHeight || 0;
+      document.documentElement.style.setProperty('--header-height', `${h}px`);
+    }
+  } catch (e) {
+    // ignore
+  }
+
   // Show only the sidebar info section that corresponds to the active stage (if present)
   try {
     const infos = document.querySelectorAll('#sidebar-info-root .sidebar-info');
