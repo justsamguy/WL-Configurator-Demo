@@ -366,12 +366,6 @@ header .site-logo {
   margin: 0 auto;
 }
 
-/* Ensure full-width model stage is visually offset from the sticky header/stage bar
-   so model tiles cannot be overlapped by the navbar. Uses the computed CSS vars
-   set by JS; falls back to a sensible fixed spacing when vars are absent. */
-.fullwidth-model-stage {
-  margin-top: calc(var(--header-height, 60px) + var(--stage-bar-height, 50px) + 0.5rem);
-}
 
 /* Override embedded model list (which has grid-cols-1) to be a 3-column grid when in model stage */
 .fullwidth-model-stage #model-options {
