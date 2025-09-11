@@ -21,7 +21,42 @@ export async function loadComponent(containerId, componentPath) {
     const html = await response.text();
     container.innerHTML = html;
     console.log(`Component '${componentPath}' loaded into '${containerId}'.`);
+    // Resolve any nested data-include elements inside the newly-inserted content
+    try {
+      await processIncludes(container);
+    } catch (e) {
+      console.warn('processIncludes failed for', containerId, e);
+    }
   } catch (error) {
     console.error(`Failed to load component '${componentPath}':`, error);
   }
 }
+
+/**
+ * Recursively process elements that have a `data-include` attribute.
+ * Replaces each such element's innerHTML with the fetched file and continues recursively.
+ * @param {Element} root - DOM node to search under
+ */
+export async function processIncludes(root = document) {
+  const nodes = Array.from(root.querySelectorAll('[data-include]'));
+  for (const node of nodes) {
+    const path = node.getAttribute('data-include');
+    if (!path) continue;
+    try {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+      const html = await res.text();
+      node.innerHTML = html;
+      // remove attribute to avoid reprocessing
+      node.removeAttribute('data-include');
+      // process nested includes inside the newly injected content
+      await processIncludes(node);
+      console.log(`Included '${path}' into element`, node);
+    } catch (err) {
+      console.error(`Error including '${path}':`, err);
+    }
+  }
+}
+
+// Initialize application-level behaviors
+// Note: stageManager is initialized after components are loaded from `js/main.js`.

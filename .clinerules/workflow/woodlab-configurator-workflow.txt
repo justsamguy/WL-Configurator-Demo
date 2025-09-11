@@ -21,11 +21,10 @@ alwaysApply: true
   - Any changes made to the file structure should be updated here in the clinerules as well.
 
 - **Testing & Viewing Changes**
-  - If the project uses JS from CDNs, local file:// testing will not work. All changes must be committed and tested via the live (deployed) URL.
-  - After saving changes, open or refresh `index.html` in a browser to test.
-  - Use browser developer tools (console, elements, network) for debugging and inspection.
-  - Use `console.log()` for JS debugging; set breakpoints as needed.
-  - Check for accessibility (focus outlines, ARIA, keyboard navigation) and responsive layout at all breakpoints.
+  - Note: Testing must occur in a live server environment due to CDN dependencies.
+  - Recommendation: Commit changes and deploy to verify functionality.
+  - Next steps: Ensure accessibility, responsiveness, and debug issues as needed.
+  - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
 
 - **Build & Deployment**
   - Run `npm i` to install Tailwind and dev tooling.
@@ -58,7 +57,7 @@ alwaysApply: true
 
 - **Definition of Done**
   - All checklist items in the guidelines are complete.
-  - QA walkthrough passes with no functional defects.
+  - Ensure all features work as expected.
   - This workflow file and the guidelines are committed to the repo.
 
 ---
