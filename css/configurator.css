@@ -4,6 +4,20 @@ html {
   height: 100%;
 }
 
+/*
+  CSS flags and conventions used in this stylesheet
+
+  - body.show-model-tiles: toggled by JS when the Select Model stage is active.
+    It signals the stylesheet to expand the model tiles area to span the full
+    viewport, hide the sidebar, and adjust header/stage positioning.
+
+  - .fullwidth-model-stage: applied to the stage panel/content that should
+    take the full width of the viewport when model-selection is active.
+
+  - Prefer scoping under body.show-model-tiles instead of using !important to
+    keep the cascade predictable and maintainable.
+*/
+
 /* Base layout for grid */
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -369,23 +383,36 @@ header .site-logo {
 }
 
 
-/* Override embedded model list (which has grid-cols-1) to be a 3-column grid when in model stage */
+/* Model tiles layout when model-selection is active.
+   Scoped under body.show-model-tiles so it does not affect other places where
+   #model-options may appear (sidebar, other panels). */
+body.show-model-tiles .fullwidth-model-stage #model-options,
+body.show-model-tiles #stage-panel-0 #model-options,
 .fullwidth-model-stage #model-options,
-body.show-model-tiles .fullwidth-model-stage #model-options {
-  /* When the app is in model-selection mode the tiles should form a dense grid
-     scoped under the body flag so we don't need to rely on !important. */
+#stage-panel-0 #model-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
   gap: 1.25rem;
   align-items: start;
 }
 
-/* Responsive: collapse to 2/1 columns on smaller widths */
+/* Responsive collapse for model tiles: 3 -> 2 -> 1 columns */
 @media (max-width: 1100px) {
-  body.show-model-tiles .fullwidth-model-stage #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
+  body.show-model-tiles .fullwidth-model-stage #model-options,
+  body.show-model-tiles #stage-panel-0 #model-options,
+  .fullwidth-model-stage #model-options,
+  #stage-panel-0 #model-options {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
 }
+
 @media (max-width: 640px) {
-  body.show-model-tiles .fullwidth-model-stage #model-options { grid-template-columns: 1fr; }
+  body.show-model-tiles .fullwidth-model-stage #model-options,
+  body.show-model-tiles #stage-panel-0 #model-options,
+  .fullwidth-model-stage #model-options,
+  #stage-panel-0 #model-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Model selection stage layout */
