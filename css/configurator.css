@@ -690,6 +690,16 @@ body.show-model-tiles #app-header {
   z-index: 1 !important; /* keep header below floating controls */
 }
 
+/* If the fullwidth model stage is inserted directly after the header (via JS),
+   ensure it doesn't get clipped and has a small gap below the stage bar. */
+#app-header + .fullwidth-model-stage,
+#app-header + #stage-panel-0 {
+  margin-top: 0.5rem;
+  padding-top: 0.25rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 /* Ensure the stage bar (if it lives inside header) doesn't float on top */
 body.show-model-tiles #stage-bar {
   position: static !important;

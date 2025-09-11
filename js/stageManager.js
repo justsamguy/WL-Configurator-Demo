@@ -162,16 +162,20 @@ async function setStage(index, options = {}) {
       // remember original parent so we can restore later
       if (!panel0.__originalParent) panel0.__originalParent = panel0.parentElement;
       // move the panel into main if it's not already there
-      if (panel0.parentElement !== main) {
+      // insert the panel immediately after the header so it appears below the
+      // stage buttons/heading section and cannot be overlapped by a sticky header
+      const header = document.getElementById('app-header');
+      if (panel0.parentElement !== (header && header.parentElement) && header) {
         panel0.style.display = '';
-        main.insertBefore(panel0, main.firstChild);
-  // add fullwidth hook class to allow different styling
-  panel0.classList.add('fullwidth-model-stage');
-  // hide the viewer and viewer controls while selecting model
-  const viewer = document.getElementById('viewer');
-  if (viewer) viewer.style.display = 'none';
-  const viewerControls = document.getElementById('viewer-controls-container');
-  if (viewerControls) viewerControls.style.display = 'none';
+        // place directly after header element
+        header.parentElement.insertBefore(panel0, header.nextSibling);
+        // add fullwidth hook class to allow different styling
+        panel0.classList.add('fullwidth-model-stage');
+        // hide the viewer and viewer controls while selecting model
+        const viewer = document.getElementById('viewer');
+        if (viewer) viewer.style.display = 'none';
+        const viewerControls = document.getElementById('viewer-controls-container');
+        if (viewerControls) viewerControls.style.display = 'none';
       }
     }
     // ensure the ModelSelection component is loaded into the panel's placeholder
