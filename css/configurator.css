@@ -693,6 +693,8 @@ body.show-model-tiles #app-header {
 /* Ensure the stage bar (if it lives inside header) doesn't float on top */
 body.show-model-tiles #stage-bar {
   position: static !important;
+  /* Add a small gap below the stage/nav bar so model tiles aren't flush against it */
+  margin-bottom: 1rem !important;
 }
 
 /* Responsive adjustments */
