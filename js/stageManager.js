@@ -162,8 +162,21 @@ async function setStage(index, options = {}) {
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
     if (viewerControls) viewerControls.style.display = 'none';
-    // ensure the ModelSelection component is loaded into the in-place panel placeholder
+    // Move the Select Model panel out of the sidebar and into the main flow so
+    // it can span the full viewport. We restore it to its original container
+    // when leaving stage 0. This is a minimal, explicit reparent to avoid
+    // relying solely on timing-sensitive body class toggles.
     try {
+      const panel = document.getElementById('stage-panel-0');
+      const root = document.getElementById('stage-panels-root');
+      const header = document.getElementById('app-header');
+      if (panel && root && header) {
+        // remember that we moved it
+        if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
+        // insert after header so CSS selectors like #app-header + #stage-panel-0 apply
+        document.body.insertBefore(panel, header.nextSibling);
+      }
+      // ensure the ModelSelection component is loaded into the in-place panel placeholder
       await loadComponent('stage-0-placeholder', 'components/ModelSelection.html');
     } catch (e) {
       // ignore load errors
@@ -177,6 +190,13 @@ async function setStage(index, options = {}) {
     try {
       const ph = document.getElementById('stage-0-placeholder');
       if (ph) ph.innerHTML = '';
+      // If we previously moved #stage-panel-0 out of the sidebar, put it back
+      const panel = document.getElementById('stage-panel-0');
+      const root = document.getElementById('stage-panels-root');
+      if (panel && root && panel.dataset.wlOrigParent === 'stage-panels-root') {
+        root.appendChild(panel);
+        delete panel.dataset.wlOrigParent;
+      }
     } catch (e) {}
   }
 }
