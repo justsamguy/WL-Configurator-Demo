@@ -362,8 +362,9 @@ header .site-logo {
 .fullwidth-model-stage {
   display: block;
   padding: 2rem 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
+  width: 100%;
 }
 
 
@@ -385,9 +386,10 @@ header .site-logo {
 
 /* Model selection stage layout */
 #stage-panel-0 {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 1.5rem;
+  width: 100%;
 }
 
 /* Hide sidebar for model stage (assuming body has class 'stage-0' when model stage is active) */
@@ -411,9 +413,11 @@ header .site-logo {
 
 .model-row-grid {
   display: flex;
-  gap: 1rem;
-  overflow-x: auto;
+  gap: 1.5rem;
+  overflow-x: visible;
   padding: 0.5rem 0;
+  justify-content: center; /* center cards across the full container */
+  flex-wrap: wrap; /* allow cards to wrap to new lines on narrow viewports */
 }
 
 .model-row .option-card {
@@ -704,19 +708,54 @@ body.show-model-tiles #app-header {
    within the viewport so long model lists remain accessible. */
 #app-header + .fullwidth-model-stage,
 #app-header + #stage-panel-0 {
-  display: flex;
-  justify-content: center;
+  display: block;
+  grid-column: 1 / -1; /* span both columns so tiles are centered across the whole viewport */
+  width: 100%;
 }
 
+/* Allow the inner container to expand full width (no artificial max) and be scrollable */
 #app-header + .fullwidth-model-stage > .flex,
 #app-header + #stage-panel-0 > .flex {
   width: 100%;
-  max-width: 1200px; /* keep tiles centered and readable */
+  max-width: none; /* allow tiles to use full available width */
   box-sizing: border-box;
   padding-left: 1rem;
   padding-right: 1rem;
   overflow-y: auto;
   max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
+}
+
+/* High-specificity override: when model stage is active, remove the site max width
+   to ensure tiles can center across the entire viewport. This overrides the
+   --max-site-width main-layout wrapper when present. */
+body.show-model-tiles .main-layout,
+body.show-model-tiles .top-stepper {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Force the stage-panel to occupy full viewport width when it's directly after the header/stepper */
+#app-header + .fullwidth-model-stage,
+#top-stepper + .fullwidth-model-stage,
+#app-header + #stage-panel-0,
+#top-stepper + #stage-panel-0 {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+/* Strong override: expand the panel to viewport width and cancel any parent centering
+   so the inner tiles can be centered across the entire screen. Use the 100vw +
+   negative margin technique to neutralize container padding/margins. */
+.fullwidth-model-stage, #stage-panel-0.fullwidth-model-stage {
+  width: 100vw !important;
+  max-width: none !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 /* Center the model rows and allow wrapping/centering of option-cards */

@@ -162,13 +162,21 @@ async function setStage(index, options = {}) {
       // remember original parent so we can restore later
       if (!panel0.__originalParent) panel0.__originalParent = panel0.parentElement;
       // move the panel into main if it's not already there
-      // insert the panel immediately after the header so it appears below the
-      // stage buttons/heading section and cannot be overlapped by a sticky header
+      // insert the panel after the top-stepper (if present) so it appears below
+      // the stage bar/heading and spans the full grid; fall back to inserting
+      // after the header if the stepper isn't present.
       const header = document.getElementById('app-header');
-      if (panel0.parentElement !== (header && header.parentElement) && header) {
+      const stepper = document.getElementById('top-stepper');
+      const insertionParent = header && header.parentElement;
+      if (panel0.parentElement !== insertionParent && insertionParent) {
         panel0.style.display = '';
-        // place directly after header element
-        header.parentElement.insertBefore(panel0, header.nextSibling);
+        if (stepper && stepper.parentElement === insertionParent) {
+          // insert after the stepper element
+          insertionParent.insertBefore(panel0, stepper.nextSibling);
+        } else {
+          // fallback: insert directly after header
+          insertionParent.insertBefore(panel0, header.nextSibling);
+        }
         // add fullwidth hook class to allow different styling
         panel0.classList.add('fullwidth-model-stage');
         // hide the viewer and viewer controls while selecting model
