@@ -98,9 +98,9 @@ header .flex.justify-center.items-center {
 }
 
 /* Inline UI icons (small controls) should always remain small and not scale with container */
-.inline-icon, .btn-icon svg, .control-btn svg, #viewer-controls svg {
-  width: 1.25rem !important;
-  height: 1.25rem !important;
+.inline-icon, .inline-icon svg, .btn-icon svg, .control-btn svg, #viewer-controls svg {
+  width: 1.25rem;
+  height: 1.25rem;
   max-width: none;
   max-height: none;
 }
@@ -110,13 +110,13 @@ header .flex.justify-center.items-center {
   transform-origin: 50% 50%;
 }
 
-/* Strong global safety: prevent any SVG from rendering at enormous sizes.
-   This will override inline width/height attributes in most cases. */
-body svg {
-  max-width: 560px !important;
-  max-height: 560px !important;
-  width: auto !important;
-  height: auto !important;
+/* Strong safety for large decorative SVGs: only apply to decorative graphics and large brand assets.
+   Small UI icons remain controlled by .inline-icon and .btn-icon svg rules. */
+.decorative-graphic svg, .viewer-placeholder-img svg, .brand-fallback svg {
+  max-width: 560px;
+  max-height: 560px;
+  width: auto;
+  height: auto;
   display: inline-block;
 }
 
@@ -161,7 +161,7 @@ img, svg {
 
 /* Header logo: make it smaller and ensure our size wins over generic img rules */
 header .site-logo {
-  height: 40px !important; /* roughly half the previous large rendering */
+  height: 40px; /* roughly half the previous large rendering */
   width: auto;
   display: block;
   margin-left: auto;
@@ -179,8 +179,9 @@ header .site-logo {
 /* During Model selection, keep header non-sticky on desktop to avoid overlap */
 @media (min-width: 1024px) {
   body.show-model-tiles #app-header {
-    position: static !important;
-    top: auto !important;
+    /* Scoped under body.show-model-tiles for higher specificity so we don't need !important */
+    position: static;
+    top: auto;
   }
 }
 
@@ -369,19 +370,22 @@ header .site-logo {
 
 
 /* Override embedded model list (which has grid-cols-1) to be a 3-column grid when in model stage */
-.fullwidth-model-stage #model-options {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
-  gap: 1.25rem !important;
+.fullwidth-model-stage #model-options,
+body.show-model-tiles .fullwidth-model-stage #model-options {
+  /* When the app is in model-selection mode the tiles should form a dense grid
+     scoped under the body flag so we don't need to rely on !important. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 1.25rem;
   align-items: start;
 }
 
 /* Responsive: collapse to 2/1 columns on smaller widths */
 @media (max-width: 1100px) {
-  .fullwidth-model-stage #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+  body.show-model-tiles .fullwidth-model-stage #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
 }
 @media (max-width: 640px) {
-  .fullwidth-model-stage #model-options { grid-template-columns: 1fr !important; }
+  body.show-model-tiles .fullwidth-model-stage #model-options { grid-template-columns: 1fr; }
 }
 
 /* Model selection stage layout */
@@ -517,7 +521,9 @@ header .site-logo {
    body class 'show-model-tiles' toggled by JS. When the class is absent, hide
    model-specific option cards using an attribute selector. */
 body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
-  display: none !important;
+  /* Hide model tiles when model-selection UI is not active. Specific enough
+     to avoid needing !important. */
+  display: none;
 }
 
 /* Generic stage options grid used by stage panels (max 2-column auto-fit, 8px gap) */
@@ -607,10 +613,10 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
 }
 
 @media (max-width: 1100px) {
-  #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+  #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
 }
 @media (max-width: 640px) {
-  #stage-panel-0 #model-options { grid-template-columns: 1fr !important; }
+  #stage-panel-0 #model-options { grid-template-columns: 1fr; }
 }
 
 .fullwidth-model-stage .option-card {
@@ -644,6 +650,14 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
+  /* Spacing and typographic tokens (merged from later definitions) */
+  --space-xs: 6px;
+  --space-sm: 12px;
+  --space-md: 18px;
+  --space-lg: 24px;
+  --max-site-width: 1200px;
+  --brand-green: #1b8f6b;
+  --brand-dark: #263238;
 }
 
 /* Always reserve space at the top of the main area for the header height so
@@ -663,10 +677,10 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
 
 /* ---------------- Model stage layout tweaks ---------------- */
 /* Hide live price while on Select Model (stage 0). Stage manager toggles .show-model-tiles */
-body.show-model-tiles #live-price { display: none !important; }
+body.show-model-tiles #live-price { display: none; }
 
 /* When on model stage, take full width and allow vertical scroll in main */
-body.show-model-tiles #app-sidebar { display: none !important; }
+body.show-model-tiles #app-sidebar { display: none; }
 body.show-model-tiles main { grid-column: 1 / -1; }
 body.show-model-tiles #app-main { 
   max-width: none; 
@@ -675,7 +689,7 @@ body.show-model-tiles #app-main {
   height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
 }
 /* Ensure app-main is offset below the header during model selection to avoid overlap */
-body.show-model-tiles #app-main { padding-top: calc(var(--header-height) + 0.5rem) !important; }
+body.show-model-tiles #app-main { padding-top: calc(var(--header-height) + 0.5rem); }
 /* Override viewer container max width while on model stage */
 body.show-model-tiles #app-main.viewer-container { max-width: none; padding-left: 1rem; padding-right: 1rem; }
 /* Remove viewer panel chrome during model selection */
@@ -689,9 +703,12 @@ body.show-model-tiles #app-main.viewer-panel { background: transparent; box-shad
    don't take effect early. We intentionally use !important to override the
    header's sticky positioning during the model-selection flow. */
 body.show-model-tiles #app-header {
-  position: static !important;
-  top: auto !important;
-  z-index: 1 !important; /* keep header below floating controls */
+  /* Scoped override to move header out of the way during model selection. Using
+     the body.show-model-tiles prefix increases specificity so !important is
+     not required. */
+  position: static;
+  top: auto;
+  z-index: 1; /* keep header below floating controls */
 }
 
 /* If the fullwidth model stage is inserted directly after the header (via JS),
@@ -730,8 +747,8 @@ body.show-model-tiles #app-header {
    --max-site-width main-layout wrapper when present. */
 body.show-model-tiles .main-layout,
 body.show-model-tiles .top-stepper {
-  max-width: none !important;
-  width: 100% !important;
+  max-width: none;
+  width: 100%;
 }
 
 /* Force the stage-panel to occupy full viewport width when it's directly after the header/stepper */
@@ -739,30 +756,33 @@ body.show-model-tiles .top-stepper {
 #top-stepper + .fullwidth-model-stage,
 #app-header + #stage-panel-0,
 #top-stepper + #stage-panel-0 {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding-left: 0.75rem !important;
-  padding-right: 0.75rem !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 /* When the model panel is a top-level child (inserted after header/stepper),
    ensure it spans the entire grid (both columns) so tiles can center across
    the full viewport. This avoids relying on 100vw tricks which can be clipped
    when a parent uses overflow or transforms. */
-body > .fullwidth-model-stage,
-body > #stage-panel-0,
-#app-header + .fullwidth-model-stage,
-#top-stepper + .fullwidth-model-stage,
-#app-header + #stage-panel-0,
-#top-stepper + #stage-panel-0 {
-  grid-column: 1 / -1 !important;
-  grid-row: 3 / 4 !important; /* place in the main content row so it centers across both columns */
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding-left: 0.75rem !important;
-  padding-right: 0.75rem !important;
+body.show-model-tiles > .fullwidth-model-stage,
+body.show-model-tiles > #stage-panel-0,
+body.show-model-tiles #app-header + .fullwidth-model-stage,
+body.show-model-tiles #top-stepper + .fullwidth-model-stage,
+body.show-model-tiles #app-header + #stage-panel-0,
+body.show-model-tiles #top-stepper + #stage-panel-0 {
+  /* When model-selection is active we ensure the panel spans the full grid
+     using the body.show-model-tiles prefix to increase specificity and avoid
+     !important overrides. */
+  grid-column: 1 / -1;
+  grid-row: 3 / 4; /* place in the main content row so it centers across both columns */
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
   box-sizing: border-box;
   position: relative;
 }
@@ -800,9 +820,10 @@ body > #stage-panel-0 {
 
 /* Ensure the stage bar (if it lives inside header) doesn't float on top */
 body.show-model-tiles #stage-bar {
-  position: static !important;
+  /* Scoped rule so we can remove !important */
+  position: static;
   /* Add a small gap below the stage/nav bar so model tiles aren't flush against it */
-  margin-bottom: 1rem !important;
+  margin-bottom: 1rem;
 }
 
 /* Responsive adjustments */
@@ -1103,47 +1124,46 @@ p, label { font-size: 15px; color: #374151; }
   border-top-color: transparent;
 }
 
-/* Button Styling System (plain CSS replacements for Tailwind @apply) */
+/* Consolidated Button System - single authoritative definition */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent;
-  font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.375rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #4f46e5; /* Indigo-600 */
+.btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
-.btn-primary:hover { background-color: #4338ca; }
+.btn:disabled { cursor: not-allowed; opacity: 0.7; }
 
-.btn-secondary {
-  color: #3730a3; /* Indigo-700 */
-  background-color: #e0e7ff; /* Indigo-100 */
-  border: 1px solid #e5e7eb;
-}
+.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+.btn-md { padding: 0.5rem 1rem; font-size: 0.875rem; }
+.btn-lg { padding: 0.625rem 1.25rem; font-size: 1rem; }
 
-.btn-tertiary {
-  color: #374151; /* Gray-700 */
-  background-color: transparent;
-  border: none;
-}
+.btn-primary { background-color: #2563eb; color: white; font-weight: 600; border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.btn-primary:hover { background-color: #1d4ed8; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn-primary:active { background-color: #1e40af; transform: translateY(1px); }
+.btn-primary:disabled { background-color: #93c5fd; }
 
-.btn-icon {
-  padding: 0.375rem;
-  color: #9ca3af;
-  border-radius: 9999px;
-}
+.btn-secondary { background-color: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.btn-secondary:hover { background-color: #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn-secondary:active { background-color: #d1d5db; transform: translateY(1px); }
+.btn-secondary:disabled { background-color: #f9fafb; color: #9ca3af; }
 
-.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
-.btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; }
+.btn-tertiary { background-color: transparent; color: #4b5563; border: none; }
+.btn-tertiary:hover { background-color: #f3f4f6; }
+.btn-tertiary:active { background-color: #e5e7eb; }
+.btn-tertiary:disabled { color: #9ca3af; }
+
+.btn-icon { display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 9999px; background-color: transparent; color: #4b5563; border: none; }
+.btn-icon svg { width: 1.25rem; height: 1.25rem; }
+.btn-icon:hover { background-color: #f3f4f6; }
 
 /* Control button */
 .control-btn {
@@ -1161,9 +1181,23 @@ p, label { font-size: 15px; color: #374151; }
 
 .control-btn svg { width: 1.25rem; height: 1.25rem; }
 
-.option-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; text-align: center; }
-.option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+/* Canonical option-card base styles. Stage-specific layouts override sizing/padding as needed. */
+.option-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
 .option-card:hover { border-color: #818cf8; }
+.option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
 .option-card.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
 
 .stage-btn { flex: 1; padding: 0.5rem 0.25rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; }

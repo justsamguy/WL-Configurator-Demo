@@ -152,65 +152,32 @@ async function setStage(index, options = {}) {
   }
 
   // Special case: Select Model stage should be full-width and not show the sidebar.
-  // Move the stage-panel-0 into the main area and hide the sidebar while on stage 0.
+  // Special case: Select Model stage should be full-width and not show the sidebar.
+  // Use CSS (body.show-model-tiles) to reflow layout instead of moving DOM nodes.
   const sidebar = document.getElementById('app-sidebar');
-  const main = document.getElementById('app-main');
-  const panel0 = document.getElementById('stage-panel-0');
+  const viewer = document.getElementById('viewer');
+  const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0) {
+    // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
-    if (panel0 && main) {
-      // remember original parent so we can restore later
-      if (!panel0.__originalParent) panel0.__originalParent = panel0.parentElement;
-      // move the panel into main if it's not already there
-      // insert the panel after the top-stepper (if present) so it appears below
-      // the stage bar/heading and spans the full grid; fall back to inserting
-      // after the header if the stepper isn't present.
-      const header = document.getElementById('app-header');
-      const stepper = document.getElementById('top-stepper');
-      const insertionParent = header && header.parentElement;
-      if (panel0.parentElement !== insertionParent && insertionParent) {
-        panel0.style.display = '';
-        if (stepper && stepper.parentElement === insertionParent) {
-          // insert after the stepper element
-          insertionParent.insertBefore(panel0, stepper.nextSibling);
-        } else {
-          // fallback: insert directly after header
-          insertionParent.insertBefore(panel0, header.nextSibling);
-        }
-        // add fullwidth hook class to allow different styling
-  panel0.classList.add('fullwidth-model-stage');
-        // hide the viewer and viewer controls while selecting model
-        const viewer = document.getElementById('viewer');
-        if (viewer) viewer.style.display = 'none';
-        const viewerControls = document.getElementById('viewer-controls-container');
-        if (viewerControls) viewerControls.style.display = 'none';
-      }
-    }
-    // ensure the ModelSelection component is loaded into the panel's placeholder
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
+    // ensure the ModelSelection component is loaded into the in-place panel placeholder
     try {
       await loadComponent('stage-0-placeholder', 'components/ModelSelection.html');
     } catch (e) {
       // ignore load errors
     }
   } else {
-    // restore sidebar and ensure panel0 is back in its original place
+    // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
-    if (panel0 && panel0.__originalParent && panel0.parentElement !== panel0.__originalParent) {
-      panel0.style.display = 'none';
-  // remove fullwidth styling
-  panel0.classList.remove('fullwidth-model-stage');
-  // restore viewer and viewer controls display
-  const viewer = document.getElementById('viewer');
-  if (viewer) viewer.style.display = '';
-  const viewerControls = document.getElementById('viewer-controls-container');
-  if (viewerControls) viewerControls.style.display = '';
-      panel0.__originalParent.appendChild(panel0);
-      // remove model selection content from the panel placeholder to avoid duplicate model tiles
-      try {
-        const ph = document.getElementById('stage-0-placeholder');
-        if (ph) ph.innerHTML = '';
-      } catch (e) {}
-    }
+    if (viewer) viewer.style.display = '';
+    if (viewerControls) viewerControls.style.display = '';
+    // Clean up the stage-0 placeholder to avoid duplicates (the component remains in-place)
+    try {
+      const ph = document.getElementById('stage-0-placeholder');
+      if (ph) ph.innerHTML = '';
+    } catch (e) {}
   }
 }
 
