@@ -553,6 +553,14 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   display: none;
 }
 
+/* If the model panel is present inside a fullwidth-model-stage or the primary
+   stage panel, ensure model-specific tiles are visible. This guards against
+   timing issues where JS hasn't toggled body.show-model-tiles yet. */
+.fullwidth-model-stage .option-card[data-id^="mdl-"],
+#stage-panel-0 .option-card[data-id^="mdl-"] {
+  display: block;
+}
+
 /* Generic stage options grid used by stage panels (max 2-column auto-fit, 8px gap) */
 .stage-options-grid {
   display: grid;
