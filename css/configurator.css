@@ -746,16 +746,50 @@ body.show-model-tiles .top-stepper {
   padding-right: 0.75rem !important;
 }
 
-/* Strong override: expand the panel to viewport width and cancel any parent centering
-   so the inner tiles can be centered across the entire screen. Use the 100vw +
-   negative margin technique to neutralize container padding/margins. */
-.fullwidth-model-stage, #stage-panel-0.fullwidth-model-stage {
-  width: 100vw !important;
+/* When the model panel is a top-level child (inserted after header/stepper),
+   ensure it spans the entire grid (both columns) so tiles can center across
+   the full viewport. This avoids relying on 100vw tricks which can be clipped
+   when a parent uses overflow or transforms. */
+body > .fullwidth-model-stage,
+body > #stage-panel-0,
+#app-header + .fullwidth-model-stage,
+#top-stepper + .fullwidth-model-stage,
+#app-header + #stage-panel-0,
+#top-stepper + #stage-panel-0 {
+  grid-column: 1 / -1 !important;
+  grid-row: 3 / 4 !important; /* place in the main content row so it centers across both columns */
+  width: 100% !important;
   max-width: none !important;
-  margin-left: calc(50% - 50vw) !important;
-  margin-right: calc(50% - 50vw) !important;
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
+  margin: 0 !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Ensure the inner content of the model panel is scrollable regardless of
+   whether the panel is inserted after the header, stepper, or as a direct
+   child of the body. */
+body > .fullwidth-model-stage > .flex,
+body > #stage-panel-0 > .flex,
+#app-header + .fullwidth-model-stage > .flex,
+#top-stepper + .fullwidth-model-stage > .flex,
+#app-header + #stage-panel-0 > .flex,
+#top-stepper + #stage-panel-0 > .flex {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
+}
+
+/* Also make the stage panel itself scrollable if it's a direct child (covers edge cases) */
+body > .fullwidth-model-stage,
+body > #stage-panel-0 {
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 1rem);
 }
 
 /* Center the model rows and allow wrapping/centering of option-cards */
@@ -937,6 +971,12 @@ p, label { font-size: 15px; color: #374151; }
   margin: 12px auto;
   width: calc(100% - 32px);
   max-width: var(--max-site-width);
+}
+/* Ensure the top stepper always spans the full app grid width so it doesn't
+   push following panels into the sidebar column when elements are inserted
+   between header and main. */
+#top-stepper {
+  grid-column: 1 / -1;
 }
 .top-stepper .step {
   flex:1;
