@@ -78,8 +78,41 @@ export function initPlaceholderInteractions() {
       // Dispatch an addon-toggled event
       document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowPressed } }));
     } else {
-      // Default: single-select behavior
-      document.querySelectorAll('.option-card[aria-pressed="true"]').forEach((el) => el.setAttribute('aria-pressed', 'false'));
+      // Default: single-select behavior - only clear selections within the same implicit category
+      // Determine the implicit category based on the data-id prefix
+      let implicitCategory = '';
+      if (id) {
+        if (id.startsWith('mdl-')) {
+          implicitCategory = 'model';
+        } else if (id.startsWith('mat-')) {
+          implicitCategory = 'material';
+        } else if (id.startsWith('fin-')) {
+          implicitCategory = 'finish';
+        } else if (id.startsWith('dim-')) {
+          implicitCategory = 'dimensions';
+        } else if (id.startsWith('leg-')) {
+          implicitCategory = 'legs';
+        }
+      }
+
+      // Clear previous selections in the same implicit category, but preserve model selection
+      if (implicitCategory) {
+        document.querySelectorAll(`.option-card[data-id^="${implicitCategory === 'model' ? 'mdl-' :
+                                                   implicitCategory === 'material' ? 'mat-' :
+                                                   implicitCategory === 'finish' ? 'fin-' :
+                                                   implicitCategory === 'dimensions' ? 'dim-' :
+                                                   implicitCategory === 'legs' ? 'leg-' : ''}"]`).forEach((el) => {
+          if (el !== btn) { // Don't clear the button we're clicking
+            el.setAttribute('aria-pressed', 'false');
+          }
+        });
+      } else {
+        // Fallback: clear all non-model selections if we can't determine the category
+        document.querySelectorAll('.option-card[aria-pressed="true"]:not([data-id^="mdl-"])').forEach((el) => {
+          el.setAttribute('aria-pressed', 'false');
+        });
+      }
+
       btn.setAttribute('aria-pressed', 'true');
       // Dispatch a selection event that main.js will handle (update state, price)
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
