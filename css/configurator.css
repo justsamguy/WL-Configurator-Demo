@@ -119,6 +119,24 @@ header .flex.justify-center.items-center {
   max-height: none;
 }
 
+/* Summary tooltip styles */
+.summary-tooltip {
+  position: absolute;
+  z-index: 80;
+  background: #ffffff;
+  border: 1px solid rgba(16,24,40,0.08);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  border-radius: 8px;
+  padding: 10px;
+  width: 300px;
+}
+.summary-tooltip.hidden { display: none; }
+.summary-tooltip.visible { display: block; }
+.summary-tooltip .tooltip-inner { display:flex; flex-direction:column; gap:6px; }
+.summary-tooltip .tooltip-header { border-bottom: 1px solid rgba(16,24,40,0.04); padding-bottom:6px; }
+.summary-tooltip .tooltip-content { max-height: 220px; overflow:auto; }
+.summary-tooltip .tooltip-footer { border-top: 1px solid rgba(16,24,40,0.04); padding-top:6px; }
+
 /* Ensure help arrow rotation happens around center */
 #help-support-arrow {
   transform-origin: 50% 50%;

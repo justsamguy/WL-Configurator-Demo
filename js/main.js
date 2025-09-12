@@ -132,6 +132,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIcon(element, iconName, iconTitle);
   });
 
+  // Initialize summary tooltip (after sidebar/header components exist)
+  try {
+    const { initSummaryTooltip } = await import('./ui/summaryTooltip.js');
+    const sb = document.getElementById('summary-btn');
+    if (sb) initSummaryTooltip(sb);
+  } catch (e) {
+    console.warn('Failed to initialize summary tooltip', e);
+  }
+
   // Initial state update to render the first stage (use setState to dispatch standardized event)
   setState({});
 
