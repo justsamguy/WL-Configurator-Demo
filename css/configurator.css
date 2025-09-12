@@ -259,6 +259,10 @@ header .site-logo {
   footer {
     grid-column: 1 / -1; /* Span all columns */
     grid-row: 4 / 5;
+    position: static; /* Remove fixed positioning */
+    bottom: auto;
+    left: auto;
+    z-index: auto;
   }
   
   /* Ensure viewer takes full height */
@@ -923,7 +927,8 @@ body.show-model-tiles #stage-bar {
   }
 
   footer {
-    bottom: var(--stage-bar-height); /* Adjust footer position to be above stage bar */
+    position: static; /* Remove fixed positioning for mobile */
+    bottom: auto;
     height: var(--footer-height); /* Ensure fixed height */
   }
 
