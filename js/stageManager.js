@@ -248,7 +248,7 @@ function wireModelSelection() {
   managerState.config.model = id;
   managerState.config.price = price;
   // Synchronize shared app state so viewer and other modules update from the canonical source
-  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, extras: appState.pricing.extras || 0, total: (appState.pricing.base || 0) + (appState.pricing.extras || 0) + price } }); } catch (e) {}
+  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: price, total: price + (appState.pricing.extras || 0) } }); } catch (e) {}
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button

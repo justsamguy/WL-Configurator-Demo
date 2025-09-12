@@ -5,7 +5,7 @@
 export const state = {
   stage: 1,
   selections: { model: null, options: {} },
-  pricing: { base: 12480, extras: 0, total: 12480 }
+  pricing: { base: 0, extras: 0, total: 0 }
 };
 
 export function setState(patch) {

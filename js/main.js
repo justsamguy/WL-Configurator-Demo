@@ -58,12 +58,12 @@ document.addEventListener('option-selected', (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, newPricing.total, 300, (val) => updatePriceUI(val));
   } else {
-    // assume model selection
+    // assume model selection - set base price to model price
     const newExtras = state.pricing.extras || 0;
-    const newTotal = state.pricing.base + newExtras + (price || 0);
+    const newTotal = price + newExtras;
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, newTotal, 420, (val) => updatePriceUI(val));
-    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, extras: newExtras, total: newTotal } });
+    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price, total: newTotal } });
   }
 });
 
