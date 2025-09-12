@@ -784,7 +784,7 @@ body.show-model-tiles #app-header {
   width: 100%;
 }
 
-/* Allow the inner container to expand full width (no artificial max) and be scrollable */
+/* Allow the inner container to expand full width (no artificial max) - scrolling handled by parent */
 #app-header + .fullwidth-model-stage > .flex,
 #app-header + #stage-panel-0 > .flex {
   width: 100%;
@@ -792,8 +792,6 @@ body.show-model-tiles #app-header {
   box-sizing: border-box;
   padding-left: 1rem;
   padding-right: 1rem;
-  overflow-y: auto;
-  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
 }
 
 /* High-specificity override: when model stage is active, remove the site max width
@@ -841,9 +839,9 @@ body.show-model-tiles #top-stepper + #stage-panel-0 {
   position: relative;
 }
 
-/* Ensure the inner content of the model panel is scrollable regardless of
+/* Ensure the inner content of the model panel has proper width regardless of
    whether the panel is inserted after the header, stepper, or as a direct
-   child of the body. */
+   child of the body. Scrolling is handled by the parent panel. */
 body > .fullwidth-model-stage > .flex,
 body > #stage-panel-0 > .flex,
 #app-header + .fullwidth-model-stage > .flex,
@@ -855,8 +853,6 @@ body > #stage-panel-0 > .flex,
   box-sizing: border-box;
   padding-left: 1rem;
   padding-right: 1rem;
-  overflow-y: auto;
-  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
 }
 
 /* Also make the stage panel itself scrollable if it's a direct child (covers edge cases) */
