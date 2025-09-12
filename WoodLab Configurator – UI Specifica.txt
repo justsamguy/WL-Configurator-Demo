@@ -12,7 +12,7 @@ Controls bar (below canvas): Rotate ◐ · Pan ↕ · Zoom ▢ · Reset ⟳.
 **No hover previews; stylized realtime render; loading skeleton: blurred last render + "we’re building your table…" overlay.
 3. Right‑Rail Persistent Header
 Live price counter: $12,480  USD (USD label bottom‑right of the price box).
-Summary icon ▢ and Help icon ? to the right of price.
+Summary icon ▢ that opens a tooltip listing all curent selections and price total (include 0-cost items).
 Price animation: Quick count‑up/down with smooth ease‑in/out.
 4. Stage Panels
 4.1 Tiles (Models, Materials, Finish, Legs, Add‑ons)
@@ -21,7 +21,7 @@ Tile anatomy:
 1 : 1 image · title (bold) · $Δ (smaller, same line) · 1‑line description underneath.
 Selection: thick border, bold text, corner check‑mark.
 Disabled: grayscale + tooltip on hover/click.
-Pagination: None; panel scrolls if content exceeds height.
+Pagination: None; panel scrolls vertically if content exceeds height.
 4.2 Dimensions Panel
 Length: buttons [ +12" ] [ –12" ] · numeric field · optional Cut to input (revealed by checkbox).
 Width: buttons [ +6" ] [ –6" ] · numeric field · optional Cut to input.
