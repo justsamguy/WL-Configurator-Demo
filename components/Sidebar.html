@@ -3,16 +3,13 @@
   <!-- Persistent Header -->
   <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10">
     <div class="flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="text-xs text-gray-500">Total</span>
-        <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
-      </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-4">
+        <div class="flex flex-col">
+          <span class="text-xs text-gray-500">Total</span>
+          <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
+        </div>
         <button id="summary-btn" class="btn-icon tooltip" data-tip="Summary" aria-label="Summary" aria-haspopup="dialog" aria-expanded="false">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
-        </button>
-        <button id="help-btn" class="btn-icon tooltip" data-tip="Help" aria-label="Open help">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke-width="2"/></svg>
         </button>
       </div>
     </div>
