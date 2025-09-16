@@ -178,6 +178,20 @@ async function setStage(index, options = {}) {
       }
       // ensure the ModelSelection component is loaded into the in-place panel placeholder
       await loadComponent('stage-0-placeholder', 'components/ModelSelection.html');
+      // Restore visual selections when entering model selection stage
+      setTimeout(() => {
+        try {
+          import('./ui/placeholders.js').then(({ initPlaceholderInteractions }) => {
+            // Call restore function if already initialized, otherwise it will be called during init
+            if (document.querySelector('.option-card[data-id^="mdl-"]')) {
+              // Trigger a statechange-like restoration
+              document.dispatchEvent(new CustomEvent('statechange', { detail: { state: appState } }));
+            }
+          });
+        } catch (e) {
+          console.warn('Failed to restore selections on stage change:', e);
+        }
+      }, 100); // Small delay to ensure DOM is ready
     } catch (e) {
       // ignore load errors
     }

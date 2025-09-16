@@ -47,8 +47,64 @@ function showSkeleton(timeout = 700) {
   }, timeout);
 }
 
+// Restore visual selection state from the app state
+function restoreVisualSelections() {
+  // Import state dynamically to avoid circular dependency
+  import('../state.js').then(({ state }) => {
+    // Restore model selection
+    if (state.selections.model) {
+      // Clear all model selections first
+      document.querySelectorAll('.option-card[data-id^="mdl-"]').forEach((el) => {
+        el.setAttribute('aria-pressed', 'false');
+      });
+      // Set the selected model
+      const selectedModel = document.querySelector(`.option-card[data-id="${state.selections.model}"]`);
+      if (selectedModel) {
+        selectedModel.setAttribute('aria-pressed', 'true');
+      }
+    }
+
+    // Restore other single-choice selections
+    Object.entries(state.selections.options || {}).forEach(([category, id]) => {
+      if (category !== 'addon' && id) {
+        // Clear previous selections in this category
+        document.querySelectorAll(`.option-card[data-id^="${category === 'material' ? 'mat-' :
+                                                         category === 'finish' ? 'fin-' :
+                                                         category === 'dimensions' ? 'dim-' :
+                                                         category === 'legs' ? 'leg-' : ''}"]`).forEach((el) => {
+          el.setAttribute('aria-pressed', 'false');
+        });
+        // Set the selected option
+        const selectedOption = document.querySelector(`.option-card[data-id="${id}"]`);
+        if (selectedOption) {
+          selectedOption.setAttribute('aria-pressed', 'true');
+        }
+      }
+    });
+
+    // Restore addon selections (multi-select)
+    const selectedAddons = state.selections.options?.addon || [];
+    document.querySelectorAll('.option-card[data-category="addon"]').forEach((el) => {
+      const id = el.getAttribute('data-id');
+      const isSelected = selectedAddons.includes(id);
+      el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      el.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+    });
+  }).catch((e) => {
+    console.warn('Failed to restore visual selections:', e);
+  });
+}
+
 // Wire click handlers for any .option-card elements
 export function initPlaceholderInteractions() {
+  // Restore visual selections on initialization
+  restoreVisualSelections();
+
+  // Listen for state changes to update visual selections
+  document.addEventListener('statechange', () => {
+    restoreVisualSelections();
+  });
+
   // Delegate clicks from the document so option-cards in stage panels are also handled
   document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.option-card');
