@@ -47,6 +47,48 @@ function showSkeleton(timeout = 700) {
   }, timeout);
 }
 
+// Helpers to manage multiple incompatibility sources per tile.
+// We store a simple separator-delimited list in `data-disabled-by` and
+// keep a human-readable tooltip in `data-tooltip` for the CSS to show.
+function _getDisabledByList(el) {
+  const raw = el.getAttribute('data-disabled-by') || '';
+  return raw ? raw.split('||').filter(Boolean) : [];
+}
+
+function addDisabledBy(el, sourceTitle) {
+  if (!el) return;
+  const title = (sourceTitle || '').trim();
+  if (!title) return;
+  const list = _getDisabledByList(el);
+  if (!list.includes(title)) list.push(title);
+  el.setAttribute('data-disabled-by', list.join('||'));
+  el.setAttribute('disabled', 'true');
+  el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
+}
+
+function removeDisabledBy(el, sourceTitle) {
+  if (!el) return;
+  const title = (sourceTitle || '').trim();
+  if (!title) return;
+  const list = _getDisabledByList(el).filter((t) => t !== title);
+  if (list.length) {
+    el.setAttribute('data-disabled-by', list.join('||'));
+    el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
+    el.setAttribute('disabled', 'true');
+  } else {
+    el.removeAttribute('data-disabled-by');
+    el.removeAttribute('data-tooltip');
+    el.removeAttribute('disabled');
+  }
+}
+
+function clearAllDisabledBy(el) {
+  if (!el) return;
+  el.removeAttribute('data-disabled-by');
+  el.removeAttribute('data-tooltip');
+  el.removeAttribute('disabled');
+}
+
 // Restore visual selection state from the app state
 function restoreVisualSelections() {
   // Import state dynamically to avoid circular dependency
@@ -174,29 +216,25 @@ export function initPlaceholderInteractions() {
       // - If user selects Matte or Gloss, disable 2K Poly
       try {
         if (id === 'fin-coat-02') {
-          // disable matte and gloss sheens
+          // disable matte and gloss sheens — set tooltip to reference the selected coating's title
+          const polyTitleEl = btn.querySelector('.title');
+          const polyTitle = (polyTitleEl && polyTitleEl.textContent && polyTitleEl.textContent.trim()) || '2K Poly';
           ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
             const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
-            if (el) {
-              el.setAttribute('disabled', 'true');
-              el.setAttribute('data-tooltip', 'Not compatible with 2K Poly');
-            }
+            if (el) addDisabledBy(el, polyTitle);
           });
         } else if (id === 'fin-sheen-02' || id === 'fin-sheen-03') {
+          // disable 2K poly and set tooltip to reference the selected sheen's title
+          const sheenTitleEl = btn.querySelector('.title');
+          const sheenTitle = (sheenTitleEl && sheenTitleEl.textContent && sheenTitleEl.textContent.trim()) || 'selected sheen';
           const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
-          if (poly) {
-            poly.setAttribute('disabled', 'true');
-            poly.setAttribute('data-tooltip', 'Not compatible with selected sheen');
-          }
+          if (poly) addDisabledBy(poly, sheenTitle);
         } else {
           // If selecting a non-conflicting option in these groups, re-enable all options in related groups
           // e.g., selecting Natural Oil should re-enable sheens and 2K poly if previously disabled
           ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
             const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-            if (el) {
-              el.removeAttribute('disabled');
-              el.removeAttribute('data-tooltip');
-            }
+            if (el) clearAllDisabledBy(el);
           });
         }
       } catch (e) {
