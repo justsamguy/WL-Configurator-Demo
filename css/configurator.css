@@ -989,22 +989,7 @@ body.show-model-tiles #stage-bar {
   overflow-y: auto;
 }
 
-/* Collapsible Help & Support in Sidebar */
-#sidebar-help-content {
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-}
-
-#sidebar-help-content.open {
-  max-height: 500px; /* Arbitrary large value to allow content to show */
-  opacity: 1;
-}
-
-#help-support-arrow.rotated {
-  transform: rotate(180deg);
-}
+/* (Sidebar Help & Support styles removed) */
 
 /* Viewer controls styling */
 #viewer-controls {
