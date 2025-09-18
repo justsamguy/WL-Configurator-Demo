@@ -139,6 +139,25 @@ header .flex.justify-center.items-center {
 .summary-tooltip .tooltip-content { max-height: 220px; overflow:auto; }
 .summary-tooltip .tooltip-footer { border-top: 1px solid rgba(16,24,40,0.04); padding-top:6px; }
 
+/* Floating tooltip used for disabled option-card explanations. Appended to <body>
+   and positioned with JS to avoid clipping from overflow/stacking contexts. */
+.inline-disabled-tooltip {
+  position: fixed;
+  z-index: 220; /* above header/controls */
+  background: rgba(0,0,0,0.86);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none; /* don't intercept mouse events */
+  transform: translateY(0);
+  transition: opacity 120ms ease, transform 120ms ease;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.inline-disabled-tooltip.visible { opacity: 1; }
+
 /* Ensure help arrow rotation happens around center */
 #help-support-arrow {
   transform-origin: 50% 50%;

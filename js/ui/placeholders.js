@@ -248,4 +248,60 @@ export function initPlaceholderInteractions() {
     // show skeleton to mimic viewer re-render
     showSkeleton(700);
   });
+
+  // Create a single floating tooltip element for disabled tiles to avoid clipping
+  let _floatingTooltip = document.getElementById('inline-disabled-tooltip');
+  if (!_floatingTooltip) {
+    _floatingTooltip = document.createElement('div');
+    _floatingTooltip.id = 'inline-disabled-tooltip';
+    _floatingTooltip.className = 'inline-disabled-tooltip';
+    document.body.appendChild(_floatingTooltip);
+  }
+
+  // Helper to position and show the floating tooltip above an element
+  function showFloatingTooltipFor(el) {
+    if (!el) return;
+    const tip = _floatingTooltip;
+    const txt = el.getAttribute('data-tooltip') || el.getAttribute('data-disabled-by') || '';
+    if (!txt) return;
+    tip.textContent = txt;
+    const rect = el.getBoundingClientRect();
+    // position centered horizontally above the element
+    const left = rect.left + rect.width / 2;
+    const top = rect.top - 8; // small gap
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+    tip.style.transform = 'translate(-50%, -100%)';
+    tip.classList.add('visible');
+  }
+
+  function hideFloatingTooltip() {
+    _floatingTooltip.classList.remove('visible');
+  }
+
+  // Use event delegation to show tooltips for disabled option-cards on pointerenter/leave
+  document.addEventListener('pointerenter', (ev) => {
+    const el = ev.target.closest && ev.target.closest('.option-card');
+    if (!el) return;
+    if (!el.hasAttribute('disabled')) return;
+    // prefer human-friendly data-tooltip; fallback to data-disabled-by which contains the list
+    const tooltipText = el.getAttribute('data-tooltip') || (el.getAttribute('data-disabled-by') || '').split('||').join(', ');
+    if (!tooltipText) return;
+    // set content and show
+    _floatingTooltip.textContent = tooltipText;
+    const rect = el.getBoundingClientRect();
+    const left = rect.left + rect.width / 2;
+    const top = rect.top - 8;
+    _floatingTooltip.style.left = `${left}px`;
+    _floatingTooltip.style.top = `${top}px`;
+    _floatingTooltip.style.transform = 'translate(-50%, -100%)';
+    _floatingTooltip.classList.add('visible');
+  }, true);
+
+  document.addEventListener('pointerleave', (ev) => {
+    const el = ev.target.closest && ev.target.closest('.option-card');
+    if (!el) return;
+    if (!el.hasAttribute('disabled')) return;
+    hideFloatingTooltip();
+  }, true);
 }
