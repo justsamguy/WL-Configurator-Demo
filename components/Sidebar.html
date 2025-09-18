@@ -1,16 +1,17 @@
 <!-- Sidebar -->
 <aside id="app-sidebar" class="max-w-full bg-gray-50 border-l flex flex-col shadow-lg">
   <!-- Persistent Header -->
-  <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10">
+  <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10 relative">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4 min-w-0 flex-nowrap">
         <div class="flex flex-col min-w-0">
           <span class="text-xs text-gray-500">Total</span>
           <span id="price-bar" class="text-2xl font-bold whitespace-nowrap" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
         </div>
-  <button id="summary-btn" class="btn-icon tooltip flex-shrink-0" data-tip="Summary" aria-label="Summary (info)" aria-haspopup="dialog" aria-expanded="false">ⓘ</button>
       </div>
     </div>
+    <!-- Absolutely-positioned summary button; placed here so it's visually pinned to the header and not affected by flex wrapping -->
+    <button id="summary-btn" class="btn-icon tooltip sidebar-summary-btn" data-tip="Summary" aria-label="Summary (info)" aria-haspopup="dialog" aria-expanded="false">ⓘ</button>
   <!-- Model Selection removed from sidebar; ModelSelection will be loaded into the main stage panel only -->
   </div>
   <!-- Stage Panels (scrollable area) -->

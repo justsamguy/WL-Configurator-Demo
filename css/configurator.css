@@ -144,6 +144,24 @@ header .flex.justify-center.items-center {
   transform-origin: 50% 50%;
 }
 
+/* Positioned summary button inside the sidebar header to avoid layout wrapping */
+.sidebar-summary-btn {
+  position: absolute;
+  right: 1rem; /* small inset from right edge of header */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 120; /* above header (60) */
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+}
+.sidebar-summary-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
 /* Strong safety for large decorative SVGs: only apply to decorative graphics and large brand assets.
    Small UI icons remain controlled by .inline-icon and .btn-icon svg rules. */
 .decorative-graphic svg, .viewer-placeholder-img svg, .brand-fallback svg {
