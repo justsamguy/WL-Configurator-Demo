@@ -146,17 +146,19 @@ header .flex.justify-center.items-center {
 
 /* Positioned summary button inside the sidebar header to avoid layout wrapping */
 .sidebar-summary-btn {
-  position: absolute;
-  /* anchor to the price container - sit just to its right */
-  right: -1.125rem; /* slightly negative to float outside the price block */
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 120; /* above header (60) */
+  /* Inline presentation: remove absolute positioning so the button sits inline with the price */
+  position: relative;
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0.25rem;
-  font-size: 1rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  width: 34px;
+  height: 34px;
 }
 .sidebar-summary-btn:focus {
   outline: 2px solid #3b82f6;
