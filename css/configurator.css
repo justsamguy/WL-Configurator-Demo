@@ -176,12 +176,38 @@ header .flex.justify-center.items-center {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  width: 34px;
-  height: 34px;
+  /* Avoid taking the fixed .btn-icon width/height so it flows inline with text */
+  width: auto;
+  height: auto;
 }
 .sidebar-summary-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* Explicit price row to avoid relying on utility classes; keeps label, icon, and price inline */
+.sidebar-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Keep the price from growing too large and forcing siblings onto new lines */
+.price-compact {
+  max-width: 10rem; /* allow reasonable space for numbers/currency */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* More specific override to ensure the summary button doesn't inherit the global .btn-icon fixed sizing */
+.btn-icon.sidebar-summary-btn {
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 6px !important;
 }
 
 
