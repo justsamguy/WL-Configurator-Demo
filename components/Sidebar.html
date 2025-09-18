@@ -18,12 +18,12 @@
   <!-- Stage Panels (scrollable area) -->
   <div class="sidebar-scroll px-6 py-4">
     <div data-include="components/StagePanels.html"></div>
-  </div>
-
-  <!-- Fixed bottom area (Materials or other persistent controls) -->
-  <div id="sidebar-fixed-bottom" class="px-4 py-4 border-t bg-white">
+    <!-- Include the MaterialsPanel inside the scrollable area so its tiles can layout and scroll correctly -->
     <div data-include="components/MaterialsPanel.html"></div>
   </div>
+
+  <!-- Fixed bottom area reserved for truly fixed controls (left intentionally empty) -->
+  <div id="sidebar-fixed-bottom" class="px-4 py-4 border-t bg-white"></div>
 
   <!-- Help & Support -->
   <div class="mt-auto px-8 py-6 border-t bg-white">
