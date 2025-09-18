@@ -210,6 +210,21 @@ header .flex.justify-center.items-center {
   border-radius: 6px !important;
 }
 
+/* Make the summary button look like a tangible control: subtle bg, border, and a tiny shadow */
+.btn-icon.sidebar-summary-btn {
+  background: #ffffff;
+  border: 1px solid rgba(16,24,40,0.06);
+  box-shadow: 0 1px 4px rgba(16,24,40,0.06);
+  color: #374151;
+}
+.btn-icon.sidebar-summary-btn:hover {
+  background: #f8fafc;
+}
+.btn-icon.sidebar-summary-btn:focus {
+  outline: 3px solid rgba(59,130,246,0.18);
+  outline-offset: 2px;
+}
+
 
 /* Strong safety for large decorative SVGs: only apply to decorative graphics and large brand assets.
    Small UI icons remain controlled by .inline-icon and .btn-icon svg rules. */
