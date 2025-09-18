@@ -13,31 +13,57 @@
   <!-- Stage 2: Finish -->
   <section id="stage-panel-2" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Finish</h3>
-    <div id="finish-options" class="stage-options-grid">
-      <button class="option-card" data-id="fin-sample-01" data-price="0" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Natural Oil</div>
-          <div class="price-delta">+$0</div>
-        </div>
-        <div class="description">Low sheen</div>
-      </button>
-      <button class="option-card" data-id="fin-sample-02" data-price="75" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Gloss Lacquer</div>
-          <div class="price-delta">+$75</div>
-        </div>
-        <div class="description">High gloss</div>
-      </button>
-      <button class="option-card" data-id="fin-sample-03" data-price="40" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Satin Lacquer</div>
-          <div class="price-delta">+$40</div>
-        </div>
-        <div class="description">Medium sheen</div>
-      </button>
+    <div id="finish-options" class="">
+      <h4 class="text-sm font-semibold mb-2">Coating</h4>
+      <div class="stage-options-grid mb-4" id="finish-coating-options">
+        <button class="option-card" data-id="fin-coat-01" data-category="finish-coating" data-price="0" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Natural Oil</div>
+            <div class="price-delta">+$0</div>
+          </div>
+          <div class="description">Natural penetrating oil finish</div>
+        </button>
+
+        <button class="option-card" data-id="fin-coat-02" data-category="finish-coating" data-price="120" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f2f7fb,#e6f1f8);height:64px"></div>
+          <div class="title-pressure-row title-price-row">
+            <div class="title">2K Poly</div>
+            <div class="price-delta">+$120</div>
+          </div>
+          <div class="description">Two-component polyurethane (durable)</div>
+        </button>
+      </div>
+
+      <h4 class="text-sm font-semibold mb-2">Sheen</h4>
+      <div class="stage-options-grid" id="finish-sheen-options">
+        <button class="option-card" data-id="fin-sheen-01" data-category="finish-sheen" data-price="40" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Satin</div>
+            <div class="price-delta">+$40</div>
+          </div>
+          <div class="description">Medium sheen</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-02" data-category="finish-sheen" data-price="30" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f3f3f3,#e0e0e0);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Matte</div>
+            <div class="price-delta">+$30</div>
+          </div>
+          <div class="description">Low reflection matte</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-03" data-category="finish-sheen" data-price="75" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Gloss</div>
+            <div class="price-delta">+$75</div>
+          </div>
+          <div class="description">High gloss</div>
+        </button>
+      </div>
     </div>
   </section>
 

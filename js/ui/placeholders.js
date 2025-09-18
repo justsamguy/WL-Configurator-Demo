@@ -64,16 +64,22 @@ function restoreVisualSelections() {
       }
     }
 
-    // Restore other single-choice selections
+    // Restore other single-choice selections. We expect stored keys to map to data-category values
     Object.entries(state.selections.options || {}).forEach(([category, id]) => {
       if (category !== 'addon' && id) {
-        // Clear previous selections in this category
-        document.querySelectorAll(`.option-card[data-id^="${category === 'material' ? 'mat-' :
+        // If DOM elements use data-category attributes, prefer clearing by that attribute
+        const byCategoryAttr = document.querySelectorAll(`.option-card[data-category="${category}"]`);
+        if (byCategoryAttr && byCategoryAttr.length) {
+          byCategoryAttr.forEach((el) => el.setAttribute('aria-pressed', 'false'));
+        } else {
+          // Fallback to matching id prefixes used previously
+          document.querySelectorAll(`.option-card[data-id^="${category === 'material' ? 'mat-' :
                                                          category === 'finish' ? 'fin-' :
                                                          category === 'dimensions' ? 'dim-' :
                                                          category === 'legs' ? 'leg-' : ''}"]`).forEach((el) => {
-          el.setAttribute('aria-pressed', 'false');
-        });
+            el.setAttribute('aria-pressed', 'false');
+          });
+        }
         // Set the selected option
         const selectedOption = document.querySelector(`.option-card[data-id="${id}"]`);
         if (selectedOption) {
@@ -115,13 +121,13 @@ export function initPlaceholderInteractions() {
   const priceAttr = btn.getAttribute('data-price') || '0';
   const price = parseInt(priceAttr, 10) || 0;
   const id = btn.getAttribute('data-id') || null;
-  // allow explicit data-category but fall back to implicit category inferred from id prefix
+  // allow explicit data-category; this project uses more explicit categories for finishes
   let category = btn.getAttribute('data-category') || null;
 
     // For single-choice categories (default), clear previous selection in the same category
     if (category && category !== 'addon') {
       document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach((el) => {
-        el.setAttribute('aria-pressed', 'false');
+        if (el !== btn) el.setAttribute('aria-pressed', 'false');
         if (el.hasAttribute('role') && el.getAttribute('role') === 'checkbox') el.setAttribute('aria-checked', 'false');
       });
     }
@@ -136,32 +142,21 @@ export function initPlaceholderInteractions() {
       document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowPressed } }));
     } else {
       // Default: single-select behavior - only clear selections within the same implicit category
-      // Determine the implicit category based on the data-id prefix
+      // Determine implicit category from id prefix if explicit category wasn't provided
       let implicitCategory = '';
-      if (id) {
-        if (id.startsWith('mdl-')) {
-          implicitCategory = 'model';
-        } else if (id.startsWith('mat-')) {
-          implicitCategory = 'material';
-        } else if (id.startsWith('fin-')) {
-          implicitCategory = 'finish';
-        } else if (id.startsWith('dim-')) {
-          implicitCategory = 'dimensions';
-        } else if (id.startsWith('leg-')) {
-          implicitCategory = 'legs';
-        }
+      if (!category && id) {
+        if (id.startsWith('mdl-')) implicitCategory = 'model';
+        else if (id.startsWith('mat-')) implicitCategory = 'material';
+        else if (id.startsWith('fin-coat-')) implicitCategory = 'finish-coating';
+        else if (id.startsWith('fin-sheen-')) implicitCategory = 'finish-sheen';
+        else if (id.startsWith('dim-')) implicitCategory = 'dimensions';
+        else if (id.startsWith('leg-')) implicitCategory = 'legs';
       }
 
-      // Clear previous selections in the same implicit category, but preserve model selection
-      if (implicitCategory) {
-        document.querySelectorAll(`.option-card[data-id^="${implicitCategory === 'model' ? 'mdl-' :
-                                                   implicitCategory === 'material' ? 'mat-' :
-                                                   implicitCategory === 'finish' ? 'fin-' :
-                                                   implicitCategory === 'dimensions' ? 'dim-' :
-                                                   implicitCategory === 'legs' ? 'leg-' : ''}"]`).forEach((el) => {
-          if (el !== btn) { // Don't clear the button we're clicking
-            el.setAttribute('aria-pressed', 'false');
-          }
+      const categoryToClear = category || implicitCategory || null;
+      if (categoryToClear) {
+        document.querySelectorAll(`.option-card[data-category="${categoryToClear}"]`).forEach((el) => {
+          if (el !== btn) el.setAttribute('aria-pressed', 'false');
         });
       } else {
         // Fallback: clear all non-model selections if we can't determine the category
@@ -173,6 +168,41 @@ export function initPlaceholderInteractions() {
       btn.setAttribute('aria-pressed', 'true');
       // If no explicit data-category was provided, use the inferred implicitCategory
       const dispatchCategory = category || implicitCategory || null;
+
+      // Enforce incompatibility rules for finish options:
+      // - If user selects 2K Poly (fin-coat-02), disable Matte (fin-sheen-02) and Gloss (fin-sheen-03)
+      // - If user selects Matte or Gloss, disable 2K Poly
+      try {
+        if (id === 'fin-coat-02') {
+          // disable matte and gloss sheens
+          ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
+            const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
+            if (el) {
+              el.setAttribute('disabled', 'true');
+              el.setAttribute('data-tooltip', 'Not compatible with 2K Poly');
+            }
+          });
+        } else if (id === 'fin-sheen-02' || id === 'fin-sheen-03') {
+          const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
+          if (poly) {
+            poly.setAttribute('disabled', 'true');
+            poly.setAttribute('data-tooltip', 'Not compatible with selected sheen');
+          }
+        } else {
+          // If selecting a non-conflicting option in these groups, re-enable all options in related groups
+          // e.g., selecting Natural Oil should re-enable sheens and 2K poly if previously disabled
+          ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
+            const el = document.querySelector(`.option-card[data-id="${oid}"]`);
+            if (el) {
+              el.removeAttribute('disabled');
+              el.removeAttribute('data-tooltip');
+            }
+          });
+        }
+      } catch (e) {
+        // ignore DOM errors
+      }
+
       // Dispatch a selection event that main.js will handle (update state, price)
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: dispatchCategory } }));
     }
