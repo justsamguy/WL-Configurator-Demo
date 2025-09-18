@@ -163,15 +163,6 @@ header .flex.justify-center.items-center {
   outline-offset: 2px;
 }
 
-/* Debug helpers - remove after layout issues are resolved */
-.debug-header-outline {
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.12) inset;
-  background: rgba(59,130,246,0.02);
-}
-.debug-price-outline {
-  outline: 2px dashed rgba(16,24,40,0.12);
-  background: rgba(16,24,40,0.02);
-}
 
 /* Strong safety for large decorative SVGs: only apply to decorative graphics and large brand assets.
    Small UI icons remain controlled by .inline-icon and .btn-icon svg rules. */
