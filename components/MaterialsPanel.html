@@ -9,15 +9,97 @@
     <section id="info-stage-1" class="sidebar-info" style="display:none">
       <h3 class="text-md font-semibold mb-2">Wood</h3>
       <p class="text-sm text-gray-600">Select a wood species for your tabletop. Prices shown reflect the wood differential. You can compare samples and read short descriptions here.</p>
-      <ul class="text-sm text-gray-600 mt-2 list-disc pl-5">
-        <li>American Elm — warm, open grain.</li>
-        <li>Siberian Elm — balanced, neutral look.</li>
-        <li>Sycamore — light, versatile tone.</li>
-        <li>Ash — placeholder.</li>
-        <li>Claro Walnut — placeholder.</li>
-        <li>Maple — placeholder.</li>
-        <li>Other — placeholder.</li>
-      </ul>
+
+      <!-- Tiles for wood species (uses available images; missing species use placeholders) -->
+      <div class="mt-3 grid grid-cols-1 gap-3">
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-01" data-category="material" data-price="0" aria-label="American Elm">
+          <img src="assets/images/American_Elm_Sample.jpg" alt="American Elm sample" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">American Elm</span>
+              <span class="text-xs text-gray-600">+$0</span>
+            </div>
+            <div class="text-xs text-gray-500">Warm tone, open grain.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-02" data-category="material" data-price="250" aria-label="Black Walnut">
+          <img src="assets/images/Black_Walnut_Sample.jpg" alt="Black Walnut sample" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Black Walnut</span>
+              <span class="text-xs text-gray-600">+$250</span>
+            </div>
+            <div class="text-xs text-gray-500">Deep, rich color.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-03" data-category="material" data-price="100" aria-label="Siberian Elm">
+          <img src="assets/images/Siberian_Elm_Sample.jpg" alt="Siberian Elm sample" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Siberian Elm</span>
+              <span class="text-xs text-gray-600">+$100</span>
+            </div>
+            <div class="text-xs text-gray-500">Balanced, neutral look.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-04" data-category="material" data-price="150" aria-label="Sycamore">
+          <img src="assets/images/Sycamore_Sample.jpg" alt="Sycamore sample" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Sycamore</span>
+              <span class="text-xs text-gray-600">+$150</span>
+            </div>
+            <div class="text-xs text-gray-500">Light, versatile tone.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-05" data-category="material" data-price="0" aria-label="Ash">
+          <img src="assets/images/model1_placeholder.png" alt="Ash placeholder" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Ash</span>
+              <span class="text-xs text-gray-600">+$0</span>
+            </div>
+            <div class="text-xs text-gray-500">Placeholder.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-06" data-category="material" data-price="0" aria-label="Claro Walnut">
+          <img src="assets/images/snapshot_placeholder.png" alt="Claro Walnut placeholder" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Claro Walnut</span>
+              <span class="text-xs text-gray-600">+$0</span>
+            </div>
+            <div class="text-xs text-gray-500">Placeholder.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-07" data-category="material" data-price="0" aria-label="Maple">
+          <img src="assets/images/1B345A.png" alt="Maple placeholder" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Maple</span>
+              <span class="text-xs text-gray-600">+$0</span>
+            </div>
+            <div class="text-xs text-gray-500">Placeholder.</div>
+          </div>
+        </button>
+
+        <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="mat-08" data-category="material" data-price="0" aria-label="Other">
+          <img src="assets/images/645E51.png" alt="Other placeholder" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
+          <div class="flex-1 text-left">
+            <div class="flex justify-between items-center">
+              <span class="label text-sm font-medium">Other</span>
+              <span class="text-xs text-gray-600">+$0</span>
+            </div>
+            <div class="text-xs text-gray-500">Placeholder.</div>
+          </div>
+        </button>
+      </div>
     </section>
 
     <section id="info-stage-2" class="sidebar-info" style="display:none">
