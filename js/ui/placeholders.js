@@ -112,10 +112,11 @@ export function initPlaceholderInteractions() {
     if (btn.hasAttribute('disabled')) return;
 
     // read price from data-price (fallback to 0)
-    const priceAttr = btn.getAttribute('data-price') || '0';
-    const price = parseInt(priceAttr, 10) || 0;
-    const id = btn.getAttribute('data-id') || null;
-    const category = btn.getAttribute('data-category') || null;
+  const priceAttr = btn.getAttribute('data-price') || '0';
+  const price = parseInt(priceAttr, 10) || 0;
+  const id = btn.getAttribute('data-id') || null;
+  // allow explicit data-category but fall back to implicit category inferred from id prefix
+  let category = btn.getAttribute('data-category') || null;
 
     // For single-choice categories (default), clear previous selection in the same category
     if (category && category !== 'addon') {
@@ -170,8 +171,10 @@ export function initPlaceholderInteractions() {
       }
 
       btn.setAttribute('aria-pressed', 'true');
+      // If no explicit data-category was provided, use the inferred implicitCategory
+      const dispatchCategory = category || implicitCategory || null;
       // Dispatch a selection event that main.js will handle (update state, price)
-      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: dispatchCategory } }));
     }
 
     // show skeleton to mimic viewer re-render
