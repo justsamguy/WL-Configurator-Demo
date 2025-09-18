@@ -147,7 +147,8 @@ header .flex.justify-center.items-center {
 /* Positioned summary button inside the sidebar header to avoid layout wrapping */
 .sidebar-summary-btn {
   position: absolute;
-  right: 1rem; /* small inset from right edge of header */
+  /* anchor to the price container - sit just to its right */
+  right: -1.125rem; /* slightly negative to float outside the price block */
   top: 50%;
   transform: translateY(-50%);
   z-index: 120; /* above header (60) */
