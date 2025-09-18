@@ -60,11 +60,18 @@ function positionTooltip() {
   const tip = document.getElementById('summary-tooltip');
   if (!tip || !anchorButton) return;
   const rect = anchorButton.getBoundingClientRect();
-  // place tooltip to the left of the button if sidebar is narrow; default to below-right
-  const top = rect.bottom + 8 + window.scrollY;
-  const left = rect.right - tip.offsetWidth + window.scrollX;
-  tip.style.top = `${top}px`;
-  tip.style.left = `${Math.max(8, left)}px`;
+  // place tooltip relative to the viewport (fixed positioning)
+  // default: below the button with a small offset, aligned so the tooltip's right edge
+  // matches the button's right edge. Clamp to viewport so it isn't pushed off-screen.
+  const offset = 8;
+  const top = rect.bottom + offset; // viewport coordinates
+  let left = rect.right - tip.offsetWidth;
+  // clamp left within viewport with an 8px margin
+  left = Math.max(8, Math.min(left, window.innerWidth - tip.offsetWidth - 8));
+  // if there's not enough space below (near bottom of viewport) place above
+  const willOverflowBottom = top + tip.offsetHeight > window.innerHeight - 8;
+  tip.style.top = `${willOverflowBottom ? Math.max(8, rect.top - tip.offsetHeight - offset) : top}px`;
+  tip.style.left = `${left}px`;
 }
 
 function showTooltip() {

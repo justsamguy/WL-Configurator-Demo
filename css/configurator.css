@@ -121,8 +121,10 @@ header .flex.justify-center.items-center {
 
 /* Summary tooltip styles */
 .summary-tooltip {
-  position: absolute;
-  z-index: 80;
+  /* Use fixed positioning so the tooltip is not clipped by sticky/overflow parents (like the header or sidebar). */
+  position: fixed;
+  /* Ensure tooltip sits above the sticky header (header z-index: 60) and most UI chrome */
+  z-index: 120;
   background: #ffffff;
   border: 1px solid rgba(16,24,40,0.08);
   box-shadow: 0 6px 18px rgba(16,24,40,0.08);
@@ -331,6 +333,14 @@ header .site-logo {
   border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
   margin-bottom: -5px;
   transform: translateX(-50%) rotate(180deg);
+}
+
+/* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip
+   from appearing for that specific control to avoid duplicate/overlapping tooltips. */
+#summary-btn.tooltip:hover::after,
+#summary-btn.tooltip:hover::before {
+  content: none;
+  display: none;
 }
 
 /* Banner animations */
