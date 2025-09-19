@@ -14,7 +14,7 @@ function createTooltip() {
     <div class="tooltip-inner">
       <div class="tooltip-header text-sm font-semibold">Current selections</div>
       <div id="summary-tooltip-content" class="tooltip-content text-sm text-gray-700" aria-live="polite"></div>
-      <div class="tooltip-footer text-sm font-medium text-right mt-2">Total: <span id="summary-tooltip-total"></span></div>
+      <div class="tooltip-footer flex justify-between items-center text-sm font-medium mt-2"><span>Total:</span><span id="summary-tooltip-total"></span></div>
     </div>
   `;
   document.body.appendChild(t);
@@ -25,31 +25,63 @@ function formatCurrency(n) {
   return `$${(n || 0).toLocaleString()} USD`;
 }
 
+function formatCurrencyShort(n) {
+  return `$${(n || 0).toLocaleString()}`;
+}
+
+function formatSigned(n) {
+  const v = Number(n) || 0;
+  const sign = v < 0 ? '-' : '+';
+  return `(${sign} ${formatCurrencyShort(Math.abs(v))})`;
+}
+
 function renderTooltip() {
   const tip = createTooltip();
   const content = document.getElementById('summary-tooltip-content');
   const total = document.getElementById('summary-tooltip-total');
   if (!content || !total) return;
-  // Build lines for model and each option (including 0-cost items)
+  // Build lines for base model and each option (including 0-cost items)
   const lines = [];
   const s = state;
-  if (s.selections && s.selections.model) lines.push(`<div><strong>Model:</strong> ${s.selections.model}</div>`);
+  // Base model (use pricing.base for price if available)
+  if (s.selections && s.selections.model) {
+    const basePrice = (s.pricing && typeof s.pricing.base === 'number') ? s.pricing.base : 0;
+    lines.push(`<div class="flex justify-between items-center"><span><strong>Base model:</strong> ${s.selections.model}</span><span class="text-right ml-4">${formatCurrencyShort(basePrice)}</span></div>`);
+  }
+
   const opts = s.selections && s.selections.options ? s.selections.options : {};
-  // ensure ordering: material, finish, dimensions, legs, addon
-  const keys = Object.keys(opts);
+  const keys = Object.keys(opts).filter(k => k && k.toLowerCase() !== 'model'); // skip duplicate model key if present
   if (keys.length === 0) {
     lines.push('<div class="text-gray-600">No options selected</div>');
   } else {
     keys.forEach(k => {
       const v = opts[k];
+      // single-choice option stored as id string
       if (Array.isArray(v)) {
-        if (v.length === 0) lines.push(`<div><strong>${k}:</strong> none</div>`);
-        else lines.push(`<div><strong>${k}:</strong> ${v.join(', ')}</div>`);
+        if (v.length === 0) {
+          lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> none</span><span class="text-right ml-4">${formatSigned(0)}</span></div>`);
+        } else {
+          // For arrays (addons) list each id with its signed price and also show comma-separated names
+          const labels = v.join(', ');
+          // compute total price for this array
+          let arrSum = 0;
+          v.forEach(id => {
+            const el = document.querySelector(`.option-card[data-id="${id}"]`);
+            const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+            arrSum += p;
+          });
+          lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> ${labels}</span><span class="text-right ml-4">${formatSigned(arrSum)}</span></div>`);
+        }
       } else {
-        lines.push(`<div><strong>${k}:</strong> ${v || 'none'}</div>`);
+        const label = v || 'none';
+        // try to look up the option price from DOM (.option-card[data-id])
+        const el = document.querySelector(`.option-card[data-id="${v}"]`);
+        const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+        lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> ${label}</span><span class="text-right ml-4">${formatSigned(p)}</span></div>`);
       }
     });
   }
+
   content.innerHTML = lines.join('');
   total.textContent = formatCurrency(s.pricing && s.pricing.total ? s.pricing.total : s.pricing.base);
 }
