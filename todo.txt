@@ -1,0 +1,5 @@
+I'd like the app to have the functions broken out this way. can you look at the app and tell me what does and doesn't match up currently:
+
+All code affecting a single stage in that stage's file (example - materials logic is separate from finish logic, which is different code from the summary page, each gets their own files.)
+All data specific to a stage is also in it's own config file (making it easy to locate and update the actual content displayed)
+all code affecting multiple stages in a higher-level or specific-use file (example - tile logic is handled separately and could be in a different file from the price total/summary box)
