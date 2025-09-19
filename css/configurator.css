@@ -357,6 +357,10 @@ header .site-logo {
   #app-sidebar .sidebar-scroll {
       overflow-y: auto;
       overflow-x: hidden; /* prevent accidental horizontal scroll */
+      /* Space between the sticky header and the scrollable content.
+         Use a CSS variable so this spacing can be tuned in one place if needed. */
+      --sidebar-content-top-gap: 1rem; /* default 16px */
+      padding-top: var(--sidebar-content-top-gap);
       padding-right: 8px; /* give space for scrollbar */
     }
 
