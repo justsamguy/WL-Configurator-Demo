@@ -229,10 +229,10 @@ export function initPlaceholderInteractions() {
           const sheenTitle = (sheenTitleEl && sheenTitleEl.textContent && sheenTitleEl.textContent.trim()) || 'selected sheen';
           const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
           if (poly) addDisabledBy(poly, sheenTitle);
-        } else if (id && id.startsWith('fin-coat-') && id !== 'fin-coat-02') {
-          // Only re-enable related finish options when the user explicitly selects a different coating
-          // (for example: switching from 2K Poly to Natural Oil). Selecting other sheens
-          // (like Satin) should not re-enable previously-disabled options.
+        } else if ((dispatchCategory === 'finish-coating' || category === 'finish-coating') && id !== 'fin-coat-02') {
+          // Re-enable related finish options when the user explicitly selects a different coating
+          // (for example: switching from 2K Poly to Natural Oil). Use the resolved category so
+          // explicit data-category or implicit id prefixes both work reliably.
           ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
             const el = document.querySelector(`.option-card[data-id="${oid}"]`);
             if (el) clearAllDisabledBy(el);
