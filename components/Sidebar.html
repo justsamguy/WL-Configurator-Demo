@@ -4,18 +4,22 @@
   <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10 relative">
     <div class="flex items-center justify-between">
   <div class="flex items-center space-x-4 min-w-0 flex-nowrap flex-none">
-  <div class="sidebar-price-row flex items-baseline space-x-3 min-w-0">
-    <span class="text-xs text-gray-500">Total</span>
-  <span id="price-bar" class="font-medium text-lg price-compact">$12,480</span>
-    <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
-  </div>
+    <div class="flex items-center space-x-3 min-w-0">
+      <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
+    </div>
       </div>
     </div>
-    
+
   <!-- Model Selection removed from sidebar; ModelSelection will be loaded into the main stage panel only -->
   </div>
   <!-- Stage Panels (scrollable area) -->
   <div class="sidebar-scroll px-6 py-4">
+    <!-- Price (moved out of sticky header so it scrolls with the content).
+         Added margin to create comfortable spacing below the sticky header. -->
+    <div class="sidebar-price-row flex items-baseline space-x-3 min-w-0 mt-4 mb-4 px-2" aria-hidden="false">
+      <span class="text-xs text-gray-500">Total</span>
+      <span id="price-bar" class="font-medium text-lg price-compact">$12,480</span>
+    </div>
     <div data-include="components/StagePanels.html"></div>
     <!-- Include the MaterialsPanel inside the scrollable area so its tiles can layout and scroll correctly -->
     <div data-include="components/MaterialsPanel.html"></div>
