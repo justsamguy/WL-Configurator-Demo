@@ -1,12 +1,18 @@
 <!-- Sidebar -->
 <aside id="app-sidebar" class="max-w-full bg-gray-50 border-l flex flex-col shadow-lg">
-  <!-- Persistent Header -->
+  <!-- Persistent Header
+       Note: keep the header minimal and sticky; the summary button is intentionally
+       moved out of the sticky header (below) so it will scroll with the sidebar content
+       and remain inline with the live price. See the price-row markup for the summary
+       button — keeping these together ensures the price and its summary control stay
+       on the same line and do not become visually separated when the header is sticky.
+  -->
   <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10 relative">
     <div class="flex items-center justify-between">
-  <div class="flex items-center space-x-4 min-w-0 flex-nowrap flex-none">
-    <div class="flex items-center space-x-3 min-w-0">
-      <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
-    </div>
+      <div class="flex items-center space-x-4 min-w-0 flex-nowrap flex-none">
+        <div class="flex items-center space-x-3 min-w-0">
+          <!-- Header intentionally left without the summary button so the control scrolls with the price -->
+        </div>
       </div>
     </div>
 
@@ -14,11 +20,16 @@
   </div>
   <!-- Stage Panels (scrollable area) -->
   <div class="sidebar-scroll px-6 py-4">
-    <!-- Price (moved out of sticky header so it scrolls with the content).
-         Added margin to create comfortable spacing below the sticky header. -->
+    <!-- Price row + summary button (keep together on one line)
+         Important: The summary button is intentionally placed inline here so it scrolls
+         with the price (not sticky). Future edits: keep the <button id="summary-btn"> element
+         inside this .sidebar-price-row so the price and its summary control remain on the
+         same line and maintain their visual relationship. -->
     <div class="sidebar-price-row flex items-baseline space-x-3 min-w-0 mt-4 mb-4 px-2" aria-hidden="false">
       <span class="text-xs text-gray-500">Total</span>
       <span id="price-bar" class="font-medium text-lg price-compact">$12,480</span>
+      <!-- Summary button placed inline with the price so it scrolls together and doesn't stick to the header -->
+      <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
     </div>
     <div data-include="components/StagePanels.html"></div>
     <!-- Include the MaterialsPanel inside the scrollable area so its tiles can layout and scroll correctly -->

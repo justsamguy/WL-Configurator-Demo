@@ -185,6 +185,12 @@ header .flex.justify-center.items-center {
   outline-offset: 2px;
 }
 
+/* NOTE FOR MAINTAINERS:
+  The summary button (#summary-btn) must remain inline with the price inside
+  .sidebar-price-row so it scrolls together with the price and does not stick to
+  the header. Do NOT make the button position:sticky or move it back into the
+  sticky header without ensuring it remains visually grouped with #price-bar.
+*/
 /* Explicit price row to avoid relying on utility classes; keeps label, icon, and price inline */
 .sidebar-price-row {
   display: flex;
