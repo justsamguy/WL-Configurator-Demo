@@ -211,32 +211,35 @@ export function initPlaceholderInteractions() {
       // If no explicit data-category was provided, use the inferred implicitCategory
       const dispatchCategory = category || implicitCategory || null;
 
-      // Enforce incompatibility rules for finish options:
-      // - If user selects 2K Poly (fin-coat-02), disable Matte (fin-sheen-02) and Gloss (fin-sheen-03)
-      // - If user selects Matte or Gloss, disable 2K Poly
+      // Recompute incompatibility state for finish options deterministically based on
+      // the currently selected coating and sheen. This avoids incremental add/remove bugs
+      // where a sheen selection might not remove previously-applied disabled markers.
       try {
-        if (id === 'fin-coat-02') {
-          // disable matte and gloss sheens — set tooltip to reference the selected coating's title
-          const polyTitleEl = btn.querySelector('.title');
-          const polyTitle = (polyTitleEl && polyTitleEl.textContent && polyTitleEl.textContent.trim()) || '2K Poly';
+        // read current selections from the DOM (aria-pressed reflects visual selection)
+        const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
+        const selectedCoatingId = selectedCoatingEl && selectedCoatingEl.getAttribute('data-id');
+        const selectedSheenEl = document.querySelector('.option-card[data-category="finish-sheen"][aria-pressed="true"]');
+        const selectedSheenId = selectedSheenEl && selectedSheenEl.getAttribute('data-id');
+
+        // First, clear any previous disable flags for the related set so we can recompute fresh
+        ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
+          const el = document.querySelector(`.option-card[data-id="${oid}"]`);
+          if (el) clearAllDisabledBy(el);
+        });
+
+        // Apply rules:
+        // - If the selected coating is 2K Poly, disable Matte & Gloss sheens (reference coating title)
+        // - Else if the selected sheen is Matte or Gloss, disable 2K Poly (reference sheen title)
+        if (selectedCoatingId === 'fin-coat-02') {
+          const polyTitle = (selectedCoatingEl && selectedCoatingEl.querySelector('.title') && selectedCoatingEl.querySelector('.title').textContent.trim()) || '2K Poly';
           ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
             const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
             if (el) addDisabledBy(el, polyTitle);
           });
-        } else if (id === 'fin-sheen-02' || id === 'fin-sheen-03') {
-          // disable 2K poly and set tooltip to reference the selected sheen's title
-          const sheenTitleEl = btn.querySelector('.title');
-          const sheenTitle = (sheenTitleEl && sheenTitleEl.textContent && sheenTitleEl.textContent.trim()) || 'selected sheen';
+        } else if (selectedSheenId === 'fin-sheen-02' || selectedSheenId === 'fin-sheen-03') {
+          const sheenTitle = (selectedSheenEl && selectedSheenEl.querySelector('.title') && selectedSheenEl.querySelector('.title').textContent.trim()) || 'selected sheen';
           const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
           if (poly) addDisabledBy(poly, sheenTitle);
-        } else if ((dispatchCategory === 'finish-coating' || category === 'finish-coating') && id !== 'fin-coat-02') {
-          // Re-enable related finish options when the user explicitly selects a different coating
-          // (for example: switching from 2K Poly to Natural Oil). Use the resolved category so
-          // explicit data-category or implicit id prefixes both work reliably.
-          ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-            const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-            if (el) clearAllDisabledBy(el);
-          });
         }
       } catch (e) {
         // ignore DOM errors
