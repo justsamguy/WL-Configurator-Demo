@@ -854,8 +854,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 /* ---------------- Model stage layout tweaks ---------------- */
-/* Hide live price while on Select Model (stage 0). Stage manager toggles .show-model-tiles */
-body.show-model-tiles #live-price { display: none; }
+/* Note: header live-price element removed; sidebar contains the canonical live price. */
 
 /* When on model stage, take full width and allow vertical scroll in main */
 body.show-model-tiles #app-sidebar { display: none; }

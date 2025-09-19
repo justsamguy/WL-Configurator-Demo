@@ -49,6 +49,12 @@ function formatPrice(centsOrUnits) {
 }
 
 function updateLivePrice() {
+  // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
+  const sidebarPrice = document.getElementById('price-bar');
+  if (sidebarPrice) {
+    sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+    return;
+  }
   const elAmount = $('#live-price .price-amount');
   if (!elAmount) return;
   elAmount.textContent = formatPrice(managerState.config.price || 0);
