@@ -68,7 +68,25 @@ async function setStage(index, options = {}) {
   if (index > managerState.current && !options.allowSkip) {
     // require model selected to advance beyond 0
     if (!managerState.config.model) {
-      // keep at current, optionally show a small banner (omitted here)
+      // keep at current, optionally show a small banner
+      showBanner('Please select a model before proceeding.');
+      return;
+    }
+    // If attempting to move to the Finish stage (index 2), require both a wood
+    // (material) and a color selection. We check the shared app state which is
+    // updated by main.js when option-selected events occur.
+    try {
+      if (index >= 2) {
+        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+        if (!hasMaterial || !hasColor) {
+          showBanner('Please choose both a wood and a color before proceeding to Finish.');
+          return;
+        }
+      }
+    } catch (e) {
+      // if anything goes wrong reading appState, be conservative and block advance
+      showBanner('Please complete required selections before proceeding.');
       return;
     }
   }
@@ -289,8 +307,16 @@ export function initStageManager() {
   updateLivePrice();
   // Mark current stage completed when options are selected elsewhere in the app
   document.addEventListener('option-selected', (ev) => {
-    // mark the active stage complete so Next becomes enabled
-    markCompleted(managerState.current, true);
+    // For the Materials stage (index 1) require both material and color to
+    // consider the stage complete. For other stages, marking on selection is fine.
+    if (managerState.current === 1) {
+      const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+      const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+      markCompleted(1, !!(hasMaterial && hasColor));
+    } else {
+      // mark the active stage complete so Next becomes enabled
+      markCompleted(managerState.current, true);
+    }
     // run a UI update to refresh Next/Prev/button states
     setStage(managerState.current);
   });
