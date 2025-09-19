@@ -17,6 +17,8 @@ const STAGES = [
 
 import { loadComponent } from './app.js';
 import { state as appState, setState as setAppState } from './state.js';
+// helper from placeholders to recompute finish constraints when selections are set programmatically
+import { recomputeFinishConstraints } from './ui/placeholders.js';
 
 const managerState = {
   current: 0,
@@ -109,6 +111,8 @@ async function setStage(index, options = {}) {
             // merge into shared selections.options map
             const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
             setAppState({ selections: { ...appState.selections, options: newOptions } });
+            // ensure disabled tiles / incompatibilities are computed immediately
+            try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
           }
         } catch (e) {
           // ignore any DOM/state errors here; defaults are best-effort

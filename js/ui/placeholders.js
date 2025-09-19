@@ -89,6 +89,42 @@ function clearAllDisabledBy(el) {
   el.removeAttribute('disabled');
 }
 
+// Recompute and apply finish incompatibility constraints deterministically.
+// Exported so other modules (e.g., stageManager) can trigger the same logic
+// when selections are changed programmatically.
+export function recomputeFinishConstraints() {
+  try {
+    const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
+    const selectedCoatingId = selectedCoatingEl && selectedCoatingEl.getAttribute('data-id');
+    const selectedSheenEl = document.querySelector('.option-card[data-category="finish-sheen"][aria-pressed="true"]');
+    const selectedSheenId = selectedSheenEl && selectedSheenEl.getAttribute('data-id');
+
+    // First, clear any previous disable flags for the related set so we can recompute fresh
+    ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
+      const el = document.querySelector(`.option-card[data-id="${oid}"]`);
+      if (el) clearAllDisabledBy(el);
+    });
+
+    // Apply rules:
+    // - If the selected coating is 2K Poly, disable Matte & Gloss sheens (reference coating title)
+    // - Else if the selected sheen is Matte or Gloss, disable 2K Poly (reference sheen title)
+    if (selectedCoatingId === 'fin-coat-02') {
+      const polyTitle = (selectedCoatingEl && selectedCoatingEl.querySelector('.title') && selectedCoatingEl.querySelector('.title').textContent.trim()) || '2K Poly';
+      ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
+        const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
+        if (el) addDisabledBy(el, polyTitle);
+      });
+    } else if (selectedSheenId === 'fin-sheen-02' || selectedSheenId === 'fin-sheen-03') {
+      const sheenTitle = (selectedSheenEl && selectedSheenEl.querySelector('.title') && selectedSheenEl.querySelector('.title').textContent.trim()) || 'selected sheen';
+      const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
+      if (poly) addDisabledBy(poly, sheenTitle);
+    }
+  } catch (e) {
+    // ignore DOM errors
+    console.warn('Failed to recompute finish constraints:', e);
+  }
+}
+
 // Restore visual selection state from the app state
 function restoreVisualSelections() {
   // Import state dynamically to avoid circular dependency
@@ -211,39 +247,8 @@ export function initPlaceholderInteractions() {
       // If no explicit data-category was provided, use the inferred implicitCategory
       const dispatchCategory = category || implicitCategory || null;
 
-      // Recompute incompatibility state for finish options deterministically based on
-      // the currently selected coating and sheen. This avoids incremental add/remove bugs
-      // where a sheen selection might not remove previously-applied disabled markers.
-      try {
-        // read current selections from the DOM (aria-pressed reflects visual selection)
-        const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
-        const selectedCoatingId = selectedCoatingEl && selectedCoatingEl.getAttribute('data-id');
-        const selectedSheenEl = document.querySelector('.option-card[data-category="finish-sheen"][aria-pressed="true"]');
-        const selectedSheenId = selectedSheenEl && selectedSheenEl.getAttribute('data-id');
-
-        // First, clear any previous disable flags for the related set so we can recompute fresh
-        ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-          const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-          if (el) clearAllDisabledBy(el);
-        });
-
-        // Apply rules:
-        // - If the selected coating is 2K Poly, disable Matte & Gloss sheens (reference coating title)
-        // - Else if the selected sheen is Matte or Gloss, disable 2K Poly (reference sheen title)
-        if (selectedCoatingId === 'fin-coat-02') {
-          const polyTitle = (selectedCoatingEl && selectedCoatingEl.querySelector('.title') && selectedCoatingEl.querySelector('.title').textContent.trim()) || '2K Poly';
-          ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
-            const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
-            if (el) addDisabledBy(el, polyTitle);
-          });
-        } else if (selectedSheenId === 'fin-sheen-02' || selectedSheenId === 'fin-sheen-03') {
-          const sheenTitle = (selectedSheenEl && selectedSheenEl.querySelector('.title') && selectedSheenEl.querySelector('.title').textContent.trim()) || 'selected sheen';
-          const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
-          if (poly) addDisabledBy(poly, sheenTitle);
-        }
-      } catch (e) {
-        // ignore DOM errors
-      }
+      // Recompute finish incompatibility state deterministically (shared helper).
+      try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
 
       // Dispatch a selection event that main.js will handle (update state, price)
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: dispatchCategory } }));
