@@ -83,6 +83,37 @@ async function setStage(index, options = {}) {
           showBanner('Please choose both a wood and a color before proceeding to Finish.');
           return;
         }
+        // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
+        // they are not already selected. This updates the shared app state and triggers UI restoration.
+        try {
+          const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
+          const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
+          const updates = {};
+          // Only set defaults if neither is selected to avoid overwriting user choices
+          if (!coatingSel) {
+            // fin-coat-02 is 2K Poly
+            updates['finish-coating'] = 'fin-coat-02';
+            const el = document.querySelector('.option-card[data-id="fin-coat-02"]');
+            if (el) el.setAttribute('aria-pressed', 'true');
+            // also update pricing via dispatch
+            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
+          }
+          if (!sheenSel) {
+            // fin-sheen-01 is Satin
+            updates['finish-sheen'] = 'fin-sheen-01';
+            const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
+            if (el2) el2.setAttribute('aria-pressed', 'true');
+            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
+          }
+          if (Object.keys(updates).length) {
+            // merge into shared selections.options map
+            const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
+            setAppState({ selections: { ...appState.selections, options: newOptions } });
+          }
+        } catch (e) {
+          // ignore any DOM/state errors here; defaults are best-effort
+          console.warn('Failed to apply finish defaults:', e);
+        }
       }
     } catch (e) {
       // if anything goes wrong reading appState, be conservative and block advance
@@ -313,6 +344,11 @@ export function initStageManager() {
       const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
       const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
       markCompleted(1, !!(hasMaterial && hasColor));
+    } else if (managerState.current === 2) {
+      // For Finish stage, require both a coating and a sheen to consider the stage complete.
+      const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
+      const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
+      markCompleted(2, !!(hasCoating && hasSheen));
     } else {
       // mark the active stage complete so Next becomes enabled
       markCompleted(managerState.current, true);
