@@ -1,4 +1,9 @@
 import { state } from '../state.js';
+import { setState } from '../state.js';
+
+// html2canvas and jsPDF are available globally via CDN in index.html
+const hasHtml2Canvas = typeof html2canvas !== 'undefined';
+const hasJsPDF = typeof window.jspdf !== 'undefined' || typeof window.jspdf !== 'undefined';
 
 export function populateSummaryPanel() {
   const modelName = document.getElementById('summary-model-name');
@@ -28,3 +33,79 @@ export function populateSummaryPanel() {
 }
 
 export default { populateSummaryPanel };
+
+function formatCurrency(val) {
+  if (typeof val !== 'number') return '$0';
+  return `$${val.toLocaleString()}`;
+}
+
+async function captureSnapshot() {
+  const container = document.getElementById('snapshot-container');
+  const imgEl = document.getElementById('snapshot-img');
+  const placeholder = document.getElementById('snapshot-placeholder');
+  if (!container || !imgEl || !hasHtml2Canvas) return null;
+  try {
+    const canvas = await html2canvas(container, { backgroundColor: null, scale: 1 });
+    const dataUrl = canvas.toDataURL('image/png');
+    imgEl.src = dataUrl;
+    imgEl.style.display = '';
+    if (placeholder) placeholder.style.display = 'none';
+    return dataUrl;
+  } catch (e) {
+    console.warn('Snapshot failed', e);
+    return null;
+  }
+}
+
+async function exportPdf() {
+  // Capture snapshot first then write a simple pdf with image + summary text
+  if (!hasJsPDF || !hasHtml2Canvas) {
+    console.warn('jsPDF or html2canvas not available');
+    return;
+  }
+  const dataUrl = await captureSnapshot();
+  if (!dataUrl) return;
+  try {
+    const { jsPDF } = window.jspdf || window.jspdf || {};
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    // Add image (fit to page width)
+    const imgProps = doc.getImageProperties(dataUrl);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const ratio = imgProps.width / imgProps.height;
+    const imgWidth = pageWidth - 80;
+    const imgHeight = imgWidth / ratio;
+    doc.addImage(dataUrl, 'PNG', 40, 40, imgWidth, imgHeight);
+    // Add brief summary text below
+    const total = state.pricing && state.pricing.total ? formatCurrency(state.pricing.total) : '$0';
+    doc.setFontSize(12);
+    doc.text(`Total: ${total}`, 40, 60 + imgHeight);
+    doc.save('woodlab-summary.pdf');
+  } catch (e) {
+    console.warn('Failed to export PDF', e);
+  }
+}
+
+function restartConfig() {
+  // Reset selections/pricing to initial shape and dispatch state change
+  setState({ selections: { model: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+  // If a stage manager exists, try to navigate to stage 0
+  try {
+    const stageManager = window.stageManager || null;
+    if (stageManager && typeof stageManager.setStage === 'function') {
+      stageManager.setStage(0);
+    } else {
+      // Fallback: try to dispatch a custom event listeners (stageManager.initStageManager sets this up)
+      const ev = new CustomEvent('request-stage-change', { detail: { index: 0 } });
+      document.dispatchEvent(ev);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+export function initSummaryActions() {
+  const cap = document.getElementById('capture-snapshot');
+  const exp = document.getElementById('export-pdf');
+  const rst = document.getElementById('restart-config');
+  if (cap) cap.addEventListener('click', async (ev) => { ev.preventDefault(); await captureSnapshot(); });
+  if (exp) exp.addEventListener('click', async (ev) => { ev.preventDefault(); await exportPdf(); });
+  if (rst) rst.addEventListener('click', (ev) => { ev.preventDefault(); restartConfig(); });
+}

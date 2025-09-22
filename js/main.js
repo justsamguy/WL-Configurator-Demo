@@ -162,6 +162,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       const mats = await loadStageData('data/materials.json');
       if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
     }
+
+    // Render finish stage (coatings + sheens)
+    const finishCoatingRoot = document.getElementById('finish-coating-options');
+    const finishSheenRoot = document.getElementById('finish-sheen-options');
+    if (finishCoatingRoot || finishSheenRoot) {
+      const finish = await loadStageData('data/finish.json');
+      if (finish) {
+        if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
+        if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
+      }
+    }
+
+    // Render dimensions, legs, addons
+    const dimsRoot = document.getElementById('dimensions-options');
+    if (dimsRoot) {
+      const dims = await loadStageData('data/dimensions.json');
+      if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
+    }
+
+    const legsRoot = document.getElementById('legs-options');
+    if (legsRoot) {
+      const legs = await loadStageData('data/legs.json');
+      if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
+    }
+
+    const addonsRoot = document.getElementById('addons-options');
+    if (addonsRoot) {
+      const addons = await loadStageData('data/addons.json');
+      if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
+    }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
   }
@@ -173,6 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { default: stageManager } = await import('./stageManager.js');
     stageManager.initStageManager();
+  // expose for other modules (summary/restart) to programmatically change stage
+  window.stageManager = stageManager;
     console.log('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
@@ -184,6 +216,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const hasSummary = document.getElementById('summary-model-name');
     if (hasSummary) populateSummaryPanel();
+  } catch (e) { /* ignore */ }
+
+  // Initialize summary action handlers (capture/export/restart) if present
+  try {
+    const { initSummaryActions } = await import('./stages/summary.js');
+    if (document.getElementById('summary-model-name')) initSummaryActions();
   } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
