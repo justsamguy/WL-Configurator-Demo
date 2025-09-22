@@ -52,13 +52,13 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
-function updateLivePrice() {
+async function updateLivePrice() {
   // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
   const sidebarPrice = document.getElementById('price-bar');
   if (sidebarPrice) {
     // compute authoritative price using shared state where possible
     try {
-      const p = computePrice(appState);
+      const p = await computePrice(appState);
       sidebarPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
       return;
     } catch (e) {

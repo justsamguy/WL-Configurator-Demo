@@ -1,0 +1,5 @@
+[
+  { "id": "leg-sample-01", "title": "C Style", "price": 120, "image": "assets/images/Leg styles/C Style.jpg", "description": "Curved metal leg" },
+  { "id": "leg-sample-02", "title": "Cube", "price": 95, "image": "assets/images/Leg styles/Cube.jpg", "description": "Minimal square" },
+  { "id": "leg-sample-03", "title": "Tapered", "price": 140, "image": "assets/images/Leg styles/Tapered.jpg", "description": "Solid wood tapered" }
+]
