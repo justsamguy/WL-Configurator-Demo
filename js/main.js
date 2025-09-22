@@ -9,25 +9,12 @@ import { loadComponent } from './app.js';
 import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
-
-export const state = {
-  stage: 1, // 1: Model, 2: Customize, 3: Summary
-  selections: { model: null, options: {} },
-  pricing: { base: 12480, extras: 0, total: 12480 }
-};
-
-// Dispatch a custom event when state changes
-export function setState(newState) {
-  Object.assign(state, newState);
-  document.dispatchEvent(new Event("statechange"));
-}
+import { state, setState } from './state.js';
 
 // Listen for state changes to update UI
-document.addEventListener("statechange", () => {
-  // This is where main.js would orchestrate updates across other modules
-  // For now, app.js still handles the direct UI updates based on state.
-  // In a more complex app, main.js might call functions from app.js, viewer.js, etc.
-  // to trigger their respective updates.
+document.addEventListener('statechange', (ev) => {
+  // main orchestrator can react to state changes here if needed.
+  // ev.detail.state contains the latest state object.
 });
 
 // Price animation helper used by the UI when updating the price display
@@ -71,12 +58,12 @@ document.addEventListener('option-selected', (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, newPricing.total, 300, (val) => updatePriceUI(val));
   } else {
-    // assume model selection
+    // assume model selection - set base price to model price
     const newExtras = state.pricing.extras || 0;
-    const newTotal = state.pricing.base + newExtras + (price || 0);
+    const newTotal = price + newExtras;
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, newTotal, 420, (val) => updatePriceUI(val));
-    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, extras: newExtras, total: newTotal } });
+    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price, total: newTotal } });
   }
 });
 
@@ -145,8 +132,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIcon(element, iconName, iconTitle);
   });
 
-  // Initial state update to render the first stage
-  document.dispatchEvent(new Event("statechange"));
+  // Initialize summary tooltip (after sidebar/header components exist)
+  try {
+    const { initSummaryTooltip } = await import('./ui/summaryTooltip.js');
+    const sb = document.getElementById('summary-btn');
+    if (sb) initSummaryTooltip(sb);
+  } catch (e) {
+    console.warn('Failed to initialize summary tooltip', e);
+  }
+
+  // Initial state update to render the first stage (use setState to dispatch standardized event)
+  setState({});
 
   // Initialize stage manager after header/sidebar components exist
   try {

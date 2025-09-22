@@ -4,6 +4,20 @@ html {
   height: 100%;
 }
 
+/*
+  CSS flags and conventions used in this stylesheet
+
+  - body.show-model-tiles: toggled by JS when the Select Model stage is active.
+    It signals the stylesheet to expand the model tiles area to span the full
+    viewport, hide the sidebar, and adjust header/stage positioning.
+
+  - .fullwidth-model-stage: applied to the stage panel/content that should
+    take the full width of the viewport when model-selection is active.
+
+  - Prefer scoping under body.show-model-tiles instead of using !important to
+    keep the cascade predictable and maintainable.
+*/
+
 /* Base layout for grid */
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -89,7 +103,7 @@ header .flex.justify-center.items-center {
 }
 
 /* Aggressive constraints for any unexpectedly large decorative graphics (like the V-shape) */
-#sidebar img, #sidebar svg, main img, main svg, footer img, footer svg {
+.app-sidebar img, #app-sidebar svg, main img, main svg, footer img, footer svg {
   max-width: 360px;
   max-height: 360px;
   width: auto;
@@ -98,25 +112,133 @@ header .flex.justify-center.items-center {
 }
 
 /* Inline UI icons (small controls) should always remain small and not scale with container */
-.inline-icon, .btn-icon svg, .control-btn svg, #viewer-controls svg {
-  width: 1.25rem !important;
-  height: 1.25rem !important;
+.inline-icon, .inline-icon svg, .btn-icon svg, .control-btn svg, #viewer-controls svg {
+  width: 1.25rem;
+  height: 1.25rem;
   max-width: none;
   max-height: none;
 }
+
+/* Summary tooltip styles */
+.summary-tooltip {
+  /* Use fixed positioning so the tooltip is not clipped by sticky/overflow parents (like the header or sidebar). */
+  position: fixed;
+  /* Ensure tooltip sits above the sticky header (header z-index: 60) and most UI chrome */
+  z-index: 120;
+  background: #ffffff;
+  border: 1px solid rgba(16,24,40,0.08);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  border-radius: 8px;
+  padding: 10px;
+  width: 300px;
+}
+.summary-tooltip.hidden { display: none; }
+.summary-tooltip.visible { display: block; }
+.summary-tooltip .tooltip-inner { display:flex; flex-direction:column; gap:6px; }
+.summary-tooltip .tooltip-header { border-bottom: 1px solid rgba(16,24,40,0.04); padding-bottom:6px; }
+.summary-tooltip .tooltip-content { max-height: 220px; overflow:auto; }
+.summary-tooltip .tooltip-footer { border-top: 1px solid rgba(16,24,40,0.04); padding-top:6px; }
+
+/* Floating tooltip used for disabled option-card explanations. Appended to <body>
+   and positioned with JS to avoid clipping from overflow/stacking contexts. */
+.inline-disabled-tooltip {
+  position: fixed;
+  z-index: 220; /* above header/controls */
+  background: rgba(0,0,0,0.86);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none; /* don't intercept mouse events */
+  transform: translateY(0);
+  transition: opacity 120ms ease, transform 120ms ease;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.inline-disabled-tooltip.visible { opacity: 1; }
 
 /* Ensure help arrow rotation happens around center */
 #help-support-arrow {
   transform-origin: 50% 50%;
 }
 
-/* Strong global safety: prevent any SVG from rendering at enormous sizes.
-   This will override inline width/height attributes in most cases. */
-body svg {
-  max-width: 560px !important;
-  max-height: 560px !important;
+/* Positioned summary button inside the sidebar header to avoid layout wrapping */
+.sidebar-summary-btn {
+  /* Inline presentation: remove absolute positioning so the button sits inline with the price */
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  /* Avoid taking the fixed .btn-icon width/height so it flows inline with text */
+  width: auto;
+  height: auto;
+}
+.sidebar-summary-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* NOTE FOR MAINTAINERS:
+  The summary button (#summary-btn) must remain inline with the price inside
+  .sidebar-price-row so it scrolls together with the price and does not stick to
+  the header. Do NOT make the button position:sticky or move it back into the
+  sticky header without ensuring it remains visually grouped with #price-bar.
+*/
+/* Explicit price row to avoid relying on utility classes; keeps label, icon, and price inline */
+.sidebar-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Keep the price from growing too large and forcing siblings onto new lines */
+.price-compact {
+  max-width: 10rem; /* allow reasonable space for numbers/currency */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* More specific override to ensure the summary button doesn't inherit the global .btn-icon fixed sizing */
+.btn-icon.sidebar-summary-btn {
   width: auto !important;
   height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 6px !important;
+}
+
+/* Make the summary button look like a tangible control: subtle bg, border, and a tiny shadow */
+.btn-icon.sidebar-summary-btn {
+  background: #ffffff;
+  border: 1px solid rgba(16,24,40,0.06);
+  box-shadow: 0 1px 4px rgba(16,24,40,0.06);
+  color: #374151;
+}
+.btn-icon.sidebar-summary-btn:hover {
+  background: #f8fafc;
+}
+.btn-icon.sidebar-summary-btn:focus {
+  outline: 3px solid rgba(59,130,246,0.18);
+  outline-offset: 2px;
+}
+
+
+/* Strong safety for large decorative SVGs: only apply to decorative graphics and large brand assets.
+   Small UI icons remain controlled by .inline-icon and .btn-icon svg rules. */
+.decorative-graphic svg, .viewer-placeholder-img svg, .brand-fallback svg {
+  max-width: 560px;
+  max-height: 560px;
+  width: auto;
+  height: auto;
   display: inline-block;
 }
 
@@ -161,7 +283,7 @@ img, svg {
 
 /* Header logo: make it smaller and ensure our size wins over generic img rules */
 header .site-logo {
-  height: 40px !important; /* roughly half the previous large rendering */
+  height: 40px; /* roughly half the previous large rendering */
   width: auto;
   display: block;
   margin-left: auto;
@@ -179,8 +301,9 @@ header .site-logo {
 /* During Model selection, keep header non-sticky on desktop to avoid overlap */
 @media (min-width: 1024px) {
   body.show-model-tiles #app-header {
-    position: static !important;
-    top: auto !important;
+    /* Scoped under body.show-model-tiles for higher specificity so we don't need !important */
+    position: static;
+    top: auto;
   }
 }
 
@@ -218,7 +341,7 @@ header .site-logo {
     padding-top: var(--header-height);
   }
 
-  #sidebar, #app-sidebar {
+  #app-sidebar {
     grid-column: 2 / 3; /* Sidebar in second column */
     grid-row: 3 / 4; /* In the main content row */
     width: 100%; /* Take full width of the column */
@@ -232,9 +355,14 @@ header .site-logo {
 
   /* Scrollable region inside the sidebar */
   #app-sidebar .sidebar-scroll {
-    overflow-y: auto;
-    padding-right: 8px; /* give space for scrollbar */
-  }
+      overflow-y: auto;
+      overflow-x: hidden; /* prevent accidental horizontal scroll */
+      /* Space between the sticky header and the scrollable content.
+         Use a CSS variable so this spacing can be tuned in one place if needed. */
+      --sidebar-content-top-gap: 1rem; /* default 16px */
+      padding-top: var(--sidebar-content-top-gap);
+      padding-right: 8px; /* give space for scrollbar */
+    }
 
   /* Fixed bottom area inside the sidebar should not scroll with the tiles */
   #app-sidebar #sidebar-fixed-bottom {
@@ -244,6 +372,10 @@ header .site-logo {
   footer {
     grid-column: 1 / -1; /* Span all columns */
     grid-row: 4 / 5;
+    position: static; /* Remove fixed positioning */
+    bottom: auto;
+    left: auto;
+    z-index: auto;
   }
   
   /* Ensure viewer takes full height */
@@ -293,6 +425,14 @@ header .site-logo {
   border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
   margin-bottom: -5px;
   transform: translateX(-50%) rotate(180deg);
+}
+
+/* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip
+   from appearing for that specific control to avoid duplicate/overlapping tooltips. */
+#summary-btn.tooltip:hover::after,
+#summary-btn.tooltip:hover::before {
+  content: none;
+  display: none;
 }
 
 /* Banner animations */
@@ -368,20 +508,36 @@ header .site-logo {
 }
 
 
-/* Override embedded model list (which has grid-cols-1) to be a 3-column grid when in model stage */
-.fullwidth-model-stage #model-options {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
-  gap: 1.25rem !important;
+/* Model tiles layout when model-selection is active.
+   Scoped under body.show-model-tiles so it does not affect other places where
+   #model-options may appear (sidebar, other panels). */
+body.show-model-tiles .fullwidth-model-stage #model-options,
+body.show-model-tiles #stage-panel-0 #model-options,
+.fullwidth-model-stage #model-options,
+#stage-panel-0 #model-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 1.25rem;
   align-items: start;
 }
 
-/* Responsive: collapse to 2/1 columns on smaller widths */
+/* Responsive collapse for model tiles: 3 -> 2 -> 1 columns */
 @media (max-width: 1100px) {
-  .fullwidth-model-stage #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+  body.show-model-tiles .fullwidth-model-stage #model-options,
+  body.show-model-tiles #stage-panel-0 #model-options,
+  .fullwidth-model-stage #model-options,
+  #stage-panel-0 #model-options {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
 }
+
 @media (max-width: 640px) {
-  .fullwidth-model-stage #model-options { grid-template-columns: 1fr !important; }
+  body.show-model-tiles .fullwidth-model-stage #model-options,
+  body.show-model-tiles #stage-panel-0 #model-options,
+  .fullwidth-model-stage #model-options,
+  #stage-panel-0 #model-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Model selection stage layout */
@@ -390,6 +546,26 @@ header .site-logo {
   margin: 0;
   padding: 1.5rem;
   width: 100%;
+}
+
+/* Emergency fallback: ensure the Select Model panel and its inner grids/cards
+   are visible and laid out even when JS toggles or timing is inconsistent. */
+#stage-panel-0 {
+  display: block !important;
+}
+#stage-panel-0 .model-row-grid {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+#stage-panel-0 .option-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 200px;
+  max-width: 320px;
 }
 
 /* Hide sidebar for model stage (assuming body has class 'stage-0' when model stage is active) */
@@ -414,7 +590,7 @@ header .site-logo {
 .model-row-grid {
   display: flex;
   gap: 1.5rem;
-  overflow-x: visible;
+  overflow-x: hidden; /* prevent horizontal scrolling; allow wrapping */
   padding: 0.5rem 0;
   justify-content: center; /* center cards across the full container */
   flex-wrap: wrap; /* allow cards to wrap to new lines on narrow viewports */
@@ -510,21 +686,38 @@ header .site-logo {
   margin-bottom: 6px;
 }
 
-/* By default, hide any option-card that represents a model so model tiles don't
-   appear in the sidebar or other stage panels unless the Select Model stage is active.
-   Model cards are identified by data-id starting with 'mdl-'. CSS can't directly
-   match attribute prefixes across generated content universally, so rely on the
-   body class 'show-model-tiles' toggled by JS. When the class is absent, hide
-   model-specific option cards using an attribute selector. */
-body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
-  display: none !important;
+/* Hide model tiles in the sidebar to keep the sidebar small. Model tiles in the
+  Select Model panel (fullwidth stage or #stage-panel-0) are shown by default so
+  they are not lost due to JS timing. */
+#app-sidebar .option-card[data-id^="mdl-"] {
+  display: none;
 }
 
-/* Generic stage options grid used by stage panels (max 2-column auto-fit, 8px gap) */
+/* If the model panel is present inside a fullwidth-model-stage or the primary
+   stage panel, ensure model-specific tiles are visible. This guards against
+   timing issues where JS hasn't toggled body.show-model-tiles yet. */
+.fullwidth-model-stage .option-card[data-id^="mdl-"],
+#stage-panel-0 .option-card[data-id^="mdl-"] {
+  display: block;
+}
+
 .stage-options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 8px;
+  /* Use a 3-column layout by default. Use minmax(0, 1fr) to avoid intrinsic min-width
+     from causing horizontal overflow in some browsers when children use padding
+     or long content. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  box-sizing: border-box; /* ensure padding doesn't add to intrinsic width */
+  width: 100%;
+  overflow-x: hidden; /* prevent horizontal scroll from accidentally appearing */
+}
+/* Responsive collapse for stage options grid: 3 -> 2 -> 1 columns */
+@media (max-width: 1100px) {
+  .stage-options-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}
+@media (max-width: 640px) {
+  .stage-options-grid { grid-template-columns: 1fr; gap: 8px; }
 }
 .stage-options-grid .option-card {
   padding: 12px;
@@ -535,6 +728,7 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   justify-content: flex-start;
   text-align: center;
   position: relative;
+  box-sizing: border-box; /* make padding included in card width */
 }
 .stage-options-grid .viewer-placeholder-img {
   width: 100%;
@@ -607,10 +801,10 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
 }
 
 @media (max-width: 1100px) {
-  #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)) !important; }
+  #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
 }
 @media (max-width: 640px) {
-  #stage-panel-0 #model-options { grid-template-columns: 1fr !important; }
+  #stage-panel-0 #model-options { grid-template-columns: 1fr; }
 }
 
 .fullwidth-model-stage .option-card {
@@ -644,6 +838,14 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
+  /* Spacing and typographic tokens (merged from later definitions) */
+  --space-xs: 6px;
+  --space-sm: 12px;
+  --space-md: 18px;
+  --space-lg: 24px;
+  --max-site-width: 1200px;
+  --brand-green: #1b8f6b;
+  --brand-dark: #263238;
 }
 
 /* Always reserve space at the top of the main area for the header height so
@@ -662,11 +864,10 @@ body:not(.show-model-tiles) .option-card[data-id^="mdl-"] {
 }
 
 /* ---------------- Model stage layout tweaks ---------------- */
-/* Hide live price while on Select Model (stage 0). Stage manager toggles .show-model-tiles */
-body.show-model-tiles #live-price { display: none !important; }
+/* Note: header live-price element removed; sidebar contains the canonical live price. */
 
 /* When on model stage, take full width and allow vertical scroll in main */
-body.show-model-tiles #app-sidebar { display: none !important; }
+body.show-model-tiles #app-sidebar { display: none; }
 body.show-model-tiles main { grid-column: 1 / -1; }
 body.show-model-tiles #app-main { 
   max-width: none; 
@@ -675,7 +876,7 @@ body.show-model-tiles #app-main {
   height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
 }
 /* Ensure app-main is offset below the header during model selection to avoid overlap */
-body.show-model-tiles #app-main { padding-top: calc(var(--header-height) + 0.5rem) !important; }
+body.show-model-tiles #app-main { padding-top: calc(var(--header-height) + 0.5rem); }
 /* Override viewer container max width while on model stage */
 body.show-model-tiles #app-main.viewer-container { max-width: none; padding-left: 1rem; padding-right: 1rem; }
 /* Remove viewer panel chrome during model selection */
@@ -689,9 +890,12 @@ body.show-model-tiles #app-main.viewer-panel { background: transparent; box-shad
    don't take effect early. We intentionally use !important to override the
    header's sticky positioning during the model-selection flow. */
 body.show-model-tiles #app-header {
-  position: static !important;
-  top: auto !important;
-  z-index: 1 !important; /* keep header below floating controls */
+  /* Scoped override to move header out of the way during model selection. Using
+     the body.show-model-tiles prefix increases specificity so !important is
+     not required. */
+  position: static;
+  top: auto;
+  z-index: 1; /* keep header below floating controls */
 }
 
 /* If the fullwidth model stage is inserted directly after the header (via JS),
@@ -713,7 +917,7 @@ body.show-model-tiles #app-header {
   width: 100%;
 }
 
-/* Allow the inner container to expand full width (no artificial max) and be scrollable */
+/* Allow the inner container to expand full width (no artificial max) - scrolling handled by parent */
 #app-header + .fullwidth-model-stage > .flex,
 #app-header + #stage-panel-0 > .flex {
   width: 100%;
@@ -721,8 +925,6 @@ body.show-model-tiles #app-header {
   box-sizing: border-box;
   padding-left: 1rem;
   padding-right: 1rem;
-  overflow-y: auto;
-  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
 }
 
 /* High-specificity override: when model stage is active, remove the site max width
@@ -730,8 +932,8 @@ body.show-model-tiles #app-header {
    --max-site-width main-layout wrapper when present. */
 body.show-model-tiles .main-layout,
 body.show-model-tiles .top-stepper {
-  max-width: none !important;
-  width: 100% !important;
+  max-width: none;
+  width: 100%;
 }
 
 /* Force the stage-panel to occupy full viewport width when it's directly after the header/stepper */
@@ -739,37 +941,40 @@ body.show-model-tiles .top-stepper {
 #top-stepper + .fullwidth-model-stage,
 #app-header + #stage-panel-0,
 #top-stepper + #stage-panel-0 {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding-left: 0.75rem !important;
-  padding-right: 0.75rem !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
 }
 
 /* When the model panel is a top-level child (inserted after header/stepper),
    ensure it spans the entire grid (both columns) so tiles can center across
    the full viewport. This avoids relying on 100vw tricks which can be clipped
    when a parent uses overflow or transforms. */
-body > .fullwidth-model-stage,
-body > #stage-panel-0,
-#app-header + .fullwidth-model-stage,
-#top-stepper + .fullwidth-model-stage,
-#app-header + #stage-panel-0,
-#top-stepper + #stage-panel-0 {
-  grid-column: 1 / -1 !important;
-  grid-row: 3 / 4 !important; /* place in the main content row so it centers across both columns */
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding-left: 0.75rem !important;
-  padding-right: 0.75rem !important;
+body.show-model-tiles > .fullwidth-model-stage,
+body.show-model-tiles > #stage-panel-0,
+body.show-model-tiles #app-header + .fullwidth-model-stage,
+body.show-model-tiles #top-stepper + .fullwidth-model-stage,
+body.show-model-tiles #app-header + #stage-panel-0,
+body.show-model-tiles #top-stepper + #stage-panel-0 {
+  /* When model-selection is active we ensure the panel spans the full grid
+     using the body.show-model-tiles prefix to increase specificity and avoid
+     !important overrides. */
+  grid-column: 1 / -1;
+  grid-row: 3 / 4; /* place in the main content row so it centers across both columns */
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
   box-sizing: border-box;
   position: relative;
 }
 
-/* Ensure the inner content of the model panel is scrollable regardless of
+/* Ensure the inner content of the model panel has proper width regardless of
    whether the panel is inserted after the header, stepper, or as a direct
-   child of the body. */
+   child of the body. Scrolling is handled by the parent panel. */
 body > .fullwidth-model-stage > .flex,
 body > #stage-panel-0 > .flex,
 #app-header + .fullwidth-model-stage > .flex,
@@ -781,8 +986,6 @@ body > #stage-panel-0 > .flex,
   box-sizing: border-box;
   padding-left: 1rem;
   padding-right: 1rem;
-  overflow-y: auto;
-  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 2rem);
 }
 
 /* Also make the stage panel itself scrollable if it's a direct child (covers edge cases) */
@@ -800,9 +1003,10 @@ body > #stage-panel-0 {
 
 /* Ensure the stage bar (if it lives inside header) doesn't float on top */
 body.show-model-tiles #stage-bar {
-  position: static !important;
+  /* Scoped rule so we can remove !important */
+  position: static;
   /* Add a small gap below the stage/nav bar so model tiles aren't flush against it */
-  margin-bottom: 1rem !important;
+  margin-bottom: 1rem;
 }
 
 /* Responsive adjustments */
@@ -826,7 +1030,7 @@ body.show-model-tiles #stage-bar {
     flex-direction: column; /* Stack viewer and sidebar vertically */
   }
 
-  #sidebar, #app-sidebar {
+  #app-sidebar {
     width: 100%;
     max-width: 100%;
     border-left: none;
@@ -852,12 +1056,13 @@ body.show-model-tiles #stage-bar {
   }
 
   footer {
-    bottom: var(--stage-bar-height); /* Adjust footer position to be above stage bar */
+    position: static; /* Remove fixed positioning for mobile */
+    bottom: auto;
     height: var(--footer-height); /* Ensure fixed height */
   }
 
   /* Adjust main and sidebar height for mobile fixed elements */
-  main, #sidebar, #app-sidebar {
+  main, #app-sidebar {
     height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
     overflow-y: auto; /* Allow scrolling within main/sidebar if content overflows */
   }
@@ -885,22 +1090,7 @@ body.show-model-tiles #stage-bar {
   overflow-y: auto;
 }
 
-/* Collapsible Help & Support in Sidebar */
-#sidebar-help-content {
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-}
-
-#sidebar-help-content.open {
-  max-height: 500px; /* Arbitrary large value to allow content to show */
-  opacity: 1;
-}
-
-#help-support-arrow.rotated {
-  transform: rotate(180deg);
-}
+/* (Sidebar Help & Support styles removed) */
 
 /* Viewer controls styling */
 #viewer-controls {
@@ -1103,47 +1293,46 @@ p, label { font-size: 15px; color: #374151; }
   border-top-color: transparent;
 }
 
-/* Button Styling System (plain CSS replacements for Tailwind @apply) */
+/* Consolidated Button System - single authoritative definition */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent;
-  font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.375rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #4f46e5; /* Indigo-600 */
+.btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
-.btn-primary:hover { background-color: #4338ca; }
+.btn:disabled { cursor: not-allowed; opacity: 0.7; }
 
-.btn-secondary {
-  color: #3730a3; /* Indigo-700 */
-  background-color: #e0e7ff; /* Indigo-100 */
-  border: 1px solid #e5e7eb;
-}
+.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+.btn-md { padding: 0.5rem 1rem; font-size: 0.875rem; }
+.btn-lg { padding: 0.625rem 1.25rem; font-size: 1rem; }
 
-.btn-tertiary {
-  color: #374151; /* Gray-700 */
-  background-color: transparent;
-  border: none;
-}
+.btn-primary { background-color: #2563eb; color: white; font-weight: 600; border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.btn-primary:hover { background-color: #1d4ed8; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn-primary:active { background-color: #1e40af; transform: translateY(1px); }
+.btn-primary:disabled { background-color: #93c5fd; }
 
-.btn-icon {
-  padding: 0.375rem;
-  color: #9ca3af;
-  border-radius: 9999px;
-}
+.btn-secondary { background-color: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.btn-secondary:hover { background-color: #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn-secondary:active { background-color: #d1d5db; transform: translateY(1px); }
+.btn-secondary:disabled { background-color: #f9fafb; color: #9ca3af; }
 
-.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
-.btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; }
+.btn-tertiary { background-color: transparent; color: #4b5563; border: none; }
+.btn-tertiary:hover { background-color: #f3f4f6; }
+.btn-tertiary:active { background-color: #e5e7eb; }
+.btn-tertiary:disabled { color: #9ca3af; }
+
+.btn-icon { display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 9999px; background-color: transparent; color: #4b5563; border: none; }
+.btn-icon svg { width: 1.25rem; height: 1.25rem; }
+.btn-icon:hover { background-color: #f3f4f6; }
 
 /* Control button */
 .control-btn {
@@ -1161,9 +1350,23 @@ p, label { font-size: 15px; color: #374151; }
 
 .control-btn svg { width: 1.25rem; height: 1.25rem; }
 
-.option-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; text-align: center; }
-.option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+/* Canonical option-card base styles. Stage-specific layouts override sizing/padding as needed. */
+.option-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
 .option-card:hover { border-color: #818cf8; }
+.option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
 .option-card.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
 
 .stage-btn { flex: 1; padding: 0.5rem 0.25rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; }

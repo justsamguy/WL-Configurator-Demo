@@ -1,46 +1,43 @@
 <!-- Sidebar -->
 <aside id="app-sidebar" class="max-w-full bg-gray-50 border-l flex flex-col shadow-lg">
-  <!-- Persistent Header -->
-  <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10">
+  <!-- Persistent Header
+       Note: keep the header minimal and sticky; the summary button is intentionally
+       moved out of the sticky header (below) so it will scroll with the sidebar content
+       and remain inline with the live price. See the price-row markup for the summary
+       button — keeping these together ensures the price and its summary control stay
+       on the same line and do not become visually separated when the header is sticky.
+  -->
+  <div class="flex flex-col gap-4 px-8 py-8 border-b bg-white sticky top-0 z-10 relative">
     <div class="flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="text-xs text-gray-500">Total</span>
-        <span id="price-bar" class="text-2xl font-bold" aria-live="polite" aria-atomic="true">$12,480 <span class="text-xs font-normal">USD</span></span>
-      </div>
-      <div class="flex items-center space-x-2">
-        <button id="summary-btn" class="btn-icon tooltip" data-tip="Summary" aria-label="Summary">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="2"/></svg>
-        </button>
-        <button id="help-btn" class="btn-icon tooltip" data-tip="Help" aria-label="Open help">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke-width="2"/></svg>
-        </button>
+      <div class="flex items-center space-x-4 min-w-0 flex-nowrap flex-none">
+        <div class="flex items-center space-x-3 min-w-0">
+          <!-- Header intentionally left without the summary button so the control scrolls with the price -->
+        </div>
       </div>
     </div>
+
   <!-- Model Selection removed from sidebar; ModelSelection will be loaded into the main stage panel only -->
   </div>
   <!-- Stage Panels (scrollable area) -->
   <div class="sidebar-scroll px-6 py-4">
+    <!-- Price row + summary button (keep together on one line)
+         Important: The summary button is intentionally placed inline here so it scrolls
+         with the price (not sticky). Future edits: keep the <button id="summary-btn"> element
+         inside this .sidebar-price-row so the price and its summary control remain on the
+         same line and maintain their visual relationship. -->
+    <div class="sidebar-price-row flex items-baseline space-x-3 min-w-0 mt-4 mb-4 px-2" aria-hidden="false">
+      <span class="text-xs text-gray-500">Total</span>
+      <span id="price-bar" class="font-medium text-lg price-compact">$12,480</span>
+      <!-- Summary button placed inline with the price so it scrolls together and doesn't stick to the header -->
+      <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
+    </div>
     <div data-include="components/StagePanels.html"></div>
-  </div>
-
-  <!-- Fixed bottom area (Materials or other persistent controls) -->
-  <div id="sidebar-fixed-bottom" class="px-4 py-4 border-t bg-white">
+    <!-- Include the MaterialsPanel inside the scrollable area so its tiles can layout and scroll correctly -->
     <div data-include="components/MaterialsPanel.html"></div>
   </div>
 
-  <!-- Help & Support -->
-  <div class="mt-auto px-8 py-6 border-t bg-white">
-    <h2 class="text-md font-semibold mb-2 cursor-pointer flex justify-between items-center" id="toggle-help-support">
-      Help & Support
-      <!-- Help toggle chevron: explicitly sized to avoid layout scaling issues -->
-      <svg id="help-support-arrow" width="20" height="20" class="inline-icon transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-      </svg>
-    </h2>
-  <div id="sidebar-help-content" class="text-sm text-gray-600">
-      <p class="mb-2">Need assistance with your configuration?</p>
-      <button class="btn btn-secondary btn-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-1 px-3 rounded transition mb-2">View Help Guide</button>
-      <p>Or contact us at <a href="mailto:support@woodlab.example.com" class="text-indigo-600 hover:underline">support@woodlab.example.com</a></p>
-    </div>
-  </div>
+  <!-- Fixed bottom area reserved for truly fixed controls (left intentionally empty) -->
+  <div id="sidebar-fixed-bottom" class="px-4 py-4 border-t bg-white"></div>
+
+  <!-- Help & Support (removed) -->
 </aside>

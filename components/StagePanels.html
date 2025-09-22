@@ -2,159 +2,80 @@
 <div id="stage-panels-root" class="flex flex-col gap-4 px-6 py-6">
   <!-- Stage 0: Select Model -->
   <section id="stage-panel-0" class="stage-panel">
-    <div class="flex flex-col gap-6 px-8 py-8">
-      <h2 class="text-lg font-semibold mb-4">Select Model</h2>
-
-      <!-- Row 1: Classic Tables -->
-      <div class="model-row">
-        <h3 class="text-md font-medium mb-3 text-gray-700">Classic Tables</h3>
-        <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-01" data-price="12480" aria-pressed="false">
-        <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder" class="viewer-placeholder-img" />
-        <div class="title">Classic rectangular</div>
-        <div class="description">Starting from $12,480</div>
-      </button>
-          <button class="option-card" data-id="mdl-02" data-price="12900" aria-pressed="false">
-            <img src="assets/images/model2.png" alt="Model 2" class="viewer-placeholder-img" />
-            <div class="title">Farmhouse style</div>
-            <div class="description">Starting from $12,900</div>
-          </button>
-          <button class="option-card" data-id="mdl-05" data-price="13500" aria-pressed="false">
-            <img src="assets/images/model2.png" alt="Model 5" class="viewer-placeholder-img" />
-            <div class="title">Large dining</div>
-            <div class="description">Starting from $13,500</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Row 2: Modern Designs -->
-      <div class="model-row">
-        <h3 class="text-md font-medium mb-3 text-gray-700">Modern Designs</h3>
-        <div class="model-row-grid">
-          <button class="option-card" data-id="mdl-03" data-price="11450" aria-pressed="false">
-            <img src="assets/images/model3.svg" alt="Model 3" class="viewer-placeholder-img" />
-            <div class="title">Compact round</div>
-            <div class="description">Starting from $11,450</div>
-          </button>
-          <button class="option-card" data-id="mdl-08" data-price="14800" aria-pressed="false">
-            <img src="assets/images/model2.png" alt="Model 8" class="viewer-placeholder-img" />
-            <div class="title">Executive</div>
-            <div class="description">Starting from $14,800</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Row 3: Specialty Pieces -->
-      <div class="model-row">
-        <h3 class="text-md font-medium mb-3 text-gray-700">Specialty Pieces</h3>
-        <div class="model-row-grid">
-          <button class="option-card" data-id="mdl-04" data-price="9800" aria-pressed="false">
-            <img src="assets/images/model1_placeholder.png" alt="Model 4 placeholder" class="viewer-placeholder-img" />
-            <div class="title">Small desk</div>
-            <div class="description">Starting from $9,800</div>
-          </button>
-          <button class="option-card" data-id="mdl-06" data-price="7600" aria-pressed="false">
-            <img src="assets/images/model3.svg" alt="Model 6" class="viewer-placeholder-img" />
-            <div class="title">Accent table</div>
-            <div class="description">Starting from $7,600</div>
-          </button>
-          <button class="option-card" data-id="mdl-07" data-price="10200" aria-pressed="false">
-            <img src="assets/images/model1_placeholder.png" alt="Model 7" class="viewer-placeholder-img" />
-            <div class="title">Console style</div>
-            <div class="description">Starting from $10,200</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Row 4: Compact Options -->
-      <div class="model-row">
-        <h3 class="text-md font-medium mb-3 text-gray-700">Compact Options</h3>
-        <div class="model-row-grid">
-          <button class="option-card" data-id="mdl-09" data-price="8900" aria-pressed="false">
-            <img src="assets/images/model3.svg" alt="Model 9" class="viewer-placeholder-img" />
-            <div class="title">Round small</div>
-            <div class="description">Starting from $8,900</div>
-          </button>
-        </div>
-      </div>
-    </div>
+    <div id="stage-0-placeholder"></div>
   </section>
 
   <!-- Stage 1: Materials -->
   <section id="stage-panel-1" class="stage-panel" style="display: none;">
-    <h3 class="text-md font-semibold mb-2">Materials</h3>
-    <p class="text-sm text-gray-600 mb-4">Pick a top material — prices reflect material cost relative to the base model.</p>
-    <div id="materials-options" class="stage-options-grid">
-      <!-- sample material tiles (3-column, small cards like model sidebar) -->
-      <button class="option-card" data-id="mat-sample-01" data-price="0" aria-pressed="false">
-        <img src="assets/images/17B1E0.png" alt="Material sample 1" class="viewer-placeholder-img" />
-        <div class="title-price-row">
-          <div class="title">American Elm</div>
-          <div class="price-delta">Included</div>
-        </div>
-        <div class="description">Warm tone, open grain</div>
-      </button>
-      <button class="option-card" data-id="mat-sample-02" data-price="250" aria-pressed="false">
-        <img src="assets/images/Black_Walnut_Sample.jpg" alt="Material sample 2" class="viewer-placeholder-img" />
-        <div class="title-price-row">
-          <div class="title">Black Walnut</div>
-          <div class="price-delta">+$250</div>
-        </div>
-        <div class="description">Deep, rich color</div>
-      </button>
-      <button class="option-card" data-id="mat-sample-03" data-price="150" aria-pressed="false">
-        <img src="assets/images/17B1E0.png" alt="Material sample 3" class="viewer-placeholder-img" />
-        <div class="title-price-row">
-          <div class="title">Siberian Elm</div>
-          <div class="price-delta">+$150</div>
-        </div>
-        <div class="description">Balanced look</div>
-      </button>
-    </div>
+    <!-- Materials options are provided via components/MaterialsPanel.html (included in the sidebar) -->
   </section>
 
   <!-- Stage 2: Finish -->
   <section id="stage-panel-2" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Finish</h3>
-    <p class="text-sm text-gray-600 mb-4">Choose surface protection and sheen. Higher-sheen options are more reflective.</p>
-    <div id="finish-options" class="stage-options-grid">
-      <button class="option-card" data-id="fin-sample-01" data-price="0" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Natural Oil</div>
-          <div class="price-delta">Included</div>
-        </div>
-        <div class="description">Low sheen</div>
-      </button>
-      <button class="option-card" data-id="fin-sample-02" data-price="75" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Gloss Lacquer</div>
-          <div class="price-delta">+$75</div>
-        </div>
-        <div class="description">High gloss</div>
-      </button>
-      <button class="option-card" data-id="fin-sample-03" data-price="40" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Satin Lacquer</div>
-          <div class="price-delta">+$40</div>
-        </div>
-        <div class="description">Medium sheen</div>
-      </button>
+    <div id="finish-options" class="">
+      <h4 class="text-sm font-semibold mb-2">Coating</h4>
+      <div class="stage-options-grid mb-4" id="finish-coating-options">
+        <button class="option-card" data-id="fin-coat-01" data-category="finish-coating" data-price="0" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Natural Oil</div>
+            <div class="price-delta">+$0</div>
+          </div>
+          <div class="description">Natural penetrating oil finish</div>
+        </button>
+
+        <button class="option-card" data-id="fin-coat-02" data-category="finish-coating" data-price="120" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f2f7fb,#e6f1f8);height:64px"></div>
+          <div class="title-pressure-row title-price-row">
+            <div class="title">2K Poly</div>
+            <div class="price-delta">+$120</div>
+          </div>
+          <div class="description">Two-component polyurethane (durable)</div>
+        </button>
+      </div>
+
+      <h4 class="text-sm font-semibold mb-2">Sheen</h4>
+      <div class="stage-options-grid" id="finish-sheen-options">
+        <button class="option-card" data-id="fin-sheen-01" data-category="finish-sheen" data-price="0" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Satin</div>
+            <div class="price-delta">+$0</div>
+          </div>
+          <div class="description">Medium sheen</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-02" data-category="finish-sheen" data-price="30" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f3f3f3,#e0e0e0);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Matte</div>
+            <div class="price-delta">+$30</div>
+          </div>
+          <div class="description">Low reflection matte</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-03" data-category="finish-sheen" data-price="75" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Gloss</div>
+            <div class="price-delta">+$75</div>
+          </div>
+          <div class="description">High gloss</div>
+        </button>
+      </div>
     </div>
   </section>
 
   <!-- Stage 3: Dimensions -->
   <section id="stage-panel-3" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Dimensions</h3>
-    <p class="text-sm text-gray-600 mb-4">Select a size to fit your space. Lead time and price may vary with larger sizes.</p>
     <div id="dimensions-options" class="stage-options-grid">
       <button class="option-card" data-id="dim-sample-01" data-price="0" aria-pressed="false">
         <div class="viewer-placeholder-img" style="background:#f3f4f6;height:64px"></div>
         <div class="title-price-row">
           <div class="title">Small</div>
-          <div class="price-delta">Included</div>
+          <div class="price-delta">+$0</div>
         </div>
         <div class="description">120 x 60 cm — Fast delivery</div>
       </button>
@@ -180,26 +101,25 @@
   <!-- Stage 4: Legs -->
   <section id="stage-panel-4" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Legs</h3>
-    <p class="text-sm text-gray-600 mb-4">Choose a leg profile and material — prices shown per set.</p>
     <div id="legs-options" class="stage-options-grid">
-      <button class="option-card" data-id="leg-sample-01" data-price="120" aria-pressed="false">
-        <img src="assets/images/Leg styles/C Style.jpg" alt="C style leg" class="viewer-placeholder-img" />
+      <button class="option-card" data-id="leg-sample-01" data-category="legs" data-price="120" aria-pressed="false">
+        <img src="assets/images/Leg styles/C%20Style.jpg" alt="C style leg" class="viewer-placeholder-img" loading="lazy" />
         <div class="title-price-row">
           <div class="title">C Style</div>
           <div class="price-delta">+$120</div>
         </div>
         <div class="description">Curved metal leg</div>
       </button>
-      <button class="option-card" data-id="leg-sample-02" data-price="95" aria-pressed="false">
-        <img src="assets/images/Leg styles/Cube.jpg" alt="Cube leg" class="viewer-placeholder-img" />
+      <button class="option-card" data-id="leg-sample-02" data-category="legs" data-price="95" aria-pressed="false">
+        <img src="assets/images/Leg styles/Cube.jpg" alt="Cube leg" class="viewer-placeholder-img" loading="lazy" />
         <div class="title-price-row">
           <div class="title">Cube</div>
           <div class="price-delta">+$95</div>
         </div>
         <div class="description">Minimal square</div>
       </button>
-      <button class="option-card" data-id="leg-sample-03" data-price="140" aria-pressed="false">
-        <img src="assets/images/Leg styles/Tapered.jpg" alt="Tapered leg" class="viewer-placeholder-img" />
+      <button class="option-card" data-id="leg-sample-03" data-category="legs" data-price="140" aria-pressed="false">
+        <img src="assets/images/Leg styles/Tapered.jpg" alt="Tapered leg" class="viewer-placeholder-img" loading="lazy" />
         <div class="title-price-row">
           <div class="title">Tapered</div>
           <div class="price-delta">+$140</div>
@@ -212,7 +132,6 @@
   <!-- Stage 5: Add-ons -->
   <section id="stage-panel-5" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Add‑ons</h3>
-    <p class="text-sm text-gray-600 mb-4">Optional extras to customize your order.</p>
     <div id="addons-options" class="stage-options-grid">
       <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-01" data-price="45">
         <div class="viewer-placeholder-img" style="background:#f1f5f9;height:64px"></div>
@@ -251,7 +170,7 @@
         <ul class="text-sm text-gray-600 list-disc pl-5">
           <li>Base model: $9,800</li>
           <li>Material (Black Walnut): +$250</li>
-          <li>Finish (Satin): +$40</li>
+          <li>Finish (Satin): +$0</li>
           <li>Dimensions (Medium): +$150</li>
           <li>Legs (Cube): +$95</li>
           <li>Add-ons: +$45</li>

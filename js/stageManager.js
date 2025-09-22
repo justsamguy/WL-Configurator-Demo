@@ -16,8 +16,11 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
+import { state as appState, setState as setAppState } from './state.js';
+// helper from placeholders to recompute finish constraints when selections are set programmatically
+import { recomputeFinishConstraints } from './ui/placeholders.js';
 
-const state = {
+const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
   config: {
@@ -48,9 +51,15 @@ function formatPrice(centsOrUnits) {
 }
 
 function updateLivePrice() {
+  // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
+  const sidebarPrice = document.getElementById('price-bar');
+  if (sidebarPrice) {
+    sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+    return;
+  }
   const elAmount = $('#live-price .price-amount');
   if (!elAmount) return;
-  elAmount.textContent = formatPrice(state.config.price || 0);
+  elAmount.textContent = formatPrice(managerState.config.price || 0);
 }
 
 async function setStage(index, options = {}) {
@@ -58,35 +67,85 @@ async function setStage(index, options = {}) {
   if (index < 0 || index >= STAGES.length) return;
   // gating: normally prevent jumping forward past first incomplete required stage (model required)
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
-  if (index > state.current && !options.allowSkip) {
+  if (index > managerState.current && !options.allowSkip) {
     // require model selected to advance beyond 0
-    if (!state.config.model) {
-      // keep at current, optionally show a small banner (omitted here)
+    if (!managerState.config.model) {
+      // keep at current, optionally show a small banner
+      showBanner('Please select a model before proceeding.');
+      return;
+    }
+    // If attempting to move to the Finish stage (index 2), require both a wood
+    // (material) and a color selection. We check the shared app state which is
+    // updated by main.js when option-selected events occur.
+    try {
+      if (index >= 2) {
+        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+        if (!hasMaterial || !hasColor) {
+          showBanner('Please choose both a wood and a color before proceeding to Finish.');
+          return;
+        }
+        // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
+        // they are not already selected. This updates the shared app state and triggers UI restoration.
+        try {
+          const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
+          const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
+          const updates = {};
+          // Only set defaults if neither is selected to avoid overwriting user choices
+          if (!coatingSel) {
+            // fin-coat-02 is 2K Poly
+            updates['finish-coating'] = 'fin-coat-02';
+            const el = document.querySelector('.option-card[data-id="fin-coat-02"]');
+            if (el) el.setAttribute('aria-pressed', 'true');
+            // also update pricing via dispatch
+            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
+          }
+          if (!sheenSel) {
+            // fin-sheen-01 is Satin
+            updates['finish-sheen'] = 'fin-sheen-01';
+            const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
+            if (el2) el2.setAttribute('aria-pressed', 'true');
+            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
+          }
+          if (Object.keys(updates).length) {
+            // merge into shared selections.options map
+            const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
+            setAppState({ selections: { ...appState.selections, options: newOptions } });
+            // ensure disabled tiles / incompatibilities are computed immediately
+            try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
+          }
+        } catch (e) {
+          // ignore any DOM/state errors here; defaults are best-effort
+          console.warn('Failed to apply finish defaults:', e);
+        }
+      }
+    } catch (e) {
+      // if anything goes wrong reading appState, be conservative and block advance
+      showBanner('Please complete required selections before proceeding.');
       return;
     }
   }
-
-  state.current = index;
+  managerState.current = index;
   // treat optional stages as implicitly completed for gating decisions
-  const currentCompleted = !!state.completed[state.current] || OPTIONAL_STAGES.includes(state.current);
+  const currentCompleted = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
     const idx = Number(btn.getAttribute('data-stage-index'));
-    if (idx === state.current) {
+    if (idx === managerState.current) {
       btn.setAttribute('aria-current', 'step');
       btn.disabled = false;
     } else {
       btn.removeAttribute('aria-current');
       // allow revisiting previous stages
-      if (idx < state.current) {
+      if (idx < managerState.current) {
         btn.disabled = false;
       } else {
         // For future stages (idx > current):
         // - allow if that future stage is already completed (user previously finished it),
         // - or allow only the immediate next stage when the current stage is completed.
-        if (state.completed[idx]) {
+        if (managerState.completed[idx]) {
           btn.disabled = false;
-        } else if (idx === state.current + 1 && currentCompleted) {
+        } else if (idx === managerState.current + 1 && currentCompleted) {
           btn.disabled = false;
         } else {
           btn.disabled = true;
@@ -99,12 +158,12 @@ async function setStage(index, options = {}) {
   const prev = $('#prev-stage');
   const next = $('#next-stage');
   if (prev) {
-    prev.disabled = state.current === 0;
+    prev.disabled = managerState.current === 0;
     prev.classList.toggle('opacity-40', prev.disabled);
   }
   if (next) {
   // disable Next unless we're not at the last stage AND the current stage is completed
-  const atLast = state.current === STAGES.length - 1;
+  const atLast = managerState.current === STAGES.length - 1;
   // currentCompleted was computed above and already includes optional-stage handling
   const canAdvanceFromCurrent = currentCompleted;
   next.disabled = atLast || !canAdvanceFromCurrent;
@@ -116,7 +175,7 @@ async function setStage(index, options = {}) {
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
-    panel.style.display = idx === state.current ? '' : 'none';
+    panel.style.display = idx === managerState.current ? '' : 'none';
   });
 
   // Sidebar no longer contains a model selection placeholder; model tiles are loaded
@@ -125,7 +184,7 @@ async function setStage(index, options = {}) {
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Select Model stage, model tiles are hidden by default.
   try {
-    document.body.classList.toggle('show-model-tiles', state.current === 0);
+    document.body.classList.toggle('show-model-tiles', managerState.current === 0);
   } catch (e) {
     // document.body might not be available in some test contexts; ignore.
   }
@@ -145,91 +204,92 @@ async function setStage(index, options = {}) {
   try {
     const infos = document.querySelectorAll('#sidebar-info-root .sidebar-info');
     infos.forEach(sec => { sec.style.display = 'none'; });
-    const active = document.getElementById(`info-stage-${state.current}`);
+    const active = document.getElementById(`info-stage-${managerState.current}`);
     if (active) active.style.display = '';
   } catch (e) {
     // ignore if sidebar info root not present
   }
 
   // Special case: Select Model stage should be full-width and not show the sidebar.
-  // Move the stage-panel-0 into the main area and hide the sidebar while on stage 0.
+  // Special case: Select Model stage should be full-width and not show the sidebar.
+  // Use CSS (body.show-model-tiles) to reflow layout instead of moving DOM nodes.
   const sidebar = document.getElementById('app-sidebar');
-  const main = document.getElementById('app-main');
-  const panel0 = document.getElementById('stage-panel-0');
-  if (state.current === 0) {
+  const viewer = document.getElementById('viewer');
+  const viewerControls = document.getElementById('viewer-controls-container');
+  if (managerState.current === 0) {
+    // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
-    if (panel0 && main) {
-      // remember original parent so we can restore later
-      if (!panel0.__originalParent) panel0.__originalParent = panel0.parentElement;
-      // move the panel into main if it's not already there
-      // insert the panel after the top-stepper (if present) so it appears below
-      // the stage bar/heading and spans the full grid; fall back to inserting
-      // after the header if the stepper isn't present.
-      const header = document.getElementById('app-header');
-      const stepper = document.getElementById('top-stepper');
-      const insertionParent = header && header.parentElement;
-      if (panel0.parentElement !== insertionParent && insertionParent) {
-        panel0.style.display = '';
-        if (stepper && stepper.parentElement === insertionParent) {
-          // insert after the stepper element
-          insertionParent.insertBefore(panel0, stepper.nextSibling);
-        } else {
-          // fallback: insert directly after header
-          insertionParent.insertBefore(panel0, header.nextSibling);
-        }
-        // add fullwidth hook class to allow different styling
-        panel0.classList.add('fullwidth-model-stage');
-        // hide the viewer and viewer controls while selecting model
-        const viewer = document.getElementById('viewer');
-        if (viewer) viewer.style.display = 'none';
-        const viewerControls = document.getElementById('viewer-controls-container');
-        if (viewerControls) viewerControls.style.display = 'none';
-      }
-    }
-    // ensure the ModelSelection component is loaded into the panel's placeholder
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
+    // Move the Select Model panel out of the sidebar and into the main flow so
+    // it can span the full viewport. We restore it to its original container
+    // when leaving stage 0. This is a minimal, explicit reparent to avoid
+    // relying solely on timing-sensitive body class toggles.
     try {
+      const panel = document.getElementById('stage-panel-0');
+      const root = document.getElementById('stage-panels-root');
+      const header = document.getElementById('app-header');
+      if (panel && root && header) {
+        // remember that we moved it
+        if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
+        // insert after header so CSS selectors like #app-header + #stage-panel-0 apply
+        document.body.insertBefore(panel, header.nextSibling);
+      }
+      // ensure the ModelSelection component is loaded into the in-place panel placeholder
       await loadComponent('stage-0-placeholder', 'components/ModelSelection.html');
+      // Restore visual selections when entering model selection stage
+      setTimeout(() => {
+        try {
+          import('./ui/placeholders.js').then(({ initPlaceholderInteractions }) => {
+            // Call restore function if already initialized, otherwise it will be called during init
+            if (document.querySelector('.option-card[data-id^="mdl-"]')) {
+              // Trigger a statechange-like restoration
+              document.dispatchEvent(new CustomEvent('statechange', { detail: { state: appState } }));
+            }
+          });
+        } catch (e) {
+          console.warn('Failed to restore selections on stage change:', e);
+        }
+      }, 100); // Small delay to ensure DOM is ready
     } catch (e) {
       // ignore load errors
     }
   } else {
-    // restore sidebar and ensure panel0 is back in its original place
+    // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
-    if (panel0 && panel0.__originalParent && panel0.parentElement !== panel0.__originalParent) {
-      panel0.style.display = 'none';
-  // remove fullwidth styling
-  panel0.classList.remove('fullwidth-model-stage');
-  // restore viewer and viewer controls display
-  const viewer = document.getElementById('viewer');
-  if (viewer) viewer.style.display = '';
-  const viewerControls = document.getElementById('viewer-controls-container');
-  if (viewerControls) viewerControls.style.display = '';
-      panel0.__originalParent.appendChild(panel0);
-      // remove model selection content from the panel placeholder to avoid duplicate model tiles
-      try {
-        const ph = document.getElementById('stage-0-placeholder');
-        if (ph) ph.innerHTML = '';
-      } catch (e) {}
-    }
+    if (viewer) viewer.style.display = '';
+    if (viewerControls) viewerControls.style.display = '';
+    // Clean up the stage-0 placeholder to avoid duplicates (the component remains in-place)
+    try {
+      const ph = document.getElementById('stage-0-placeholder');
+      if (ph) ph.innerHTML = '';
+      // If we previously moved #stage-panel-0 out of the sidebar, put it back
+      const panel = document.getElementById('stage-panel-0');
+      const root = document.getElementById('stage-panels-root');
+      if (panel && root && panel.dataset.wlOrigParent === 'stage-panels-root') {
+        root.appendChild(panel);
+        delete panel.dataset.wlOrigParent;
+      }
+    } catch (e) {}
   }
 }
 
 function nextStage() {
   // If current stage isn't completed, show banner and block advancing
-  if (!state.completed[state.current]) {
+  if (!managerState.completed[managerState.current]) {
     showBanner('Please select an option before proceeding.');
     return;
   }
-  setStage(Math.min(state.current + 1, STAGES.length - 1));
+  setStage(Math.min(managerState.current + 1, STAGES.length - 1));
 }
 
 function prevStage() {
-  setStage(Math.max(state.current - 1, 0));
+  setStage(Math.max(managerState.current - 1, 0));
 }
 
 function markCompleted(index, completed = true) {
   if (index < 0 || index >= STAGES.length) return;
-  state.completed[index] = completed;
+  managerState.completed[index] = completed;
   // enable next stage if current completed
   const nextIdx = index + 1;
   const nextBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${nextIdx}']`);
@@ -256,10 +316,12 @@ function wireModelSelection() {
     // mark selected state (only for model cards)
     $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
     card.setAttribute('aria-pressed', 'true');
-    const id = card.getAttribute('data-id');
-    const price = Number(card.getAttribute('data-price')) || 0;
-    state.config.model = id;
-    state.config.price = price;
+  const id = card.getAttribute('data-id');
+  const price = Number(card.getAttribute('data-price')) || 0;
+  managerState.config.model = id;
+  managerState.config.price = price;
+  // Synchronize shared app state so viewer and other modules update from the canonical source
+  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: price, total: price + (appState.pricing.extras || 0) } }); } catch (e) {}
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button
@@ -269,9 +331,7 @@ function wireModelSelection() {
   // Selection should only mark the stage completed and enable the Next button;
   // advancing should happen only when the user clicks Next or a stage button.
     // If a viewer API exists, call it to load model
-    if (window.viewerLoadModel) {
-      window.viewerLoadModel(id).catch?.(err => console.warn('viewerLoadModel failed', err));
-    }
+    // viewer.js listens for 'statechange' and will update the displayed model accordingly
   });
 }
 
@@ -282,10 +342,23 @@ export function initStageManager() {
   updateLivePrice();
   // Mark current stage completed when options are selected elsewhere in the app
   document.addEventListener('option-selected', (ev) => {
-    // mark the active stage complete so Next becomes enabled
-    markCompleted(state.current, true);
+    // For the Materials stage (index 1) require both material and color to
+    // consider the stage complete. For other stages, marking on selection is fine.
+    if (managerState.current === 1) {
+      const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+      const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+      markCompleted(1, !!(hasMaterial && hasColor));
+    } else if (managerState.current === 2) {
+      // For Finish stage, require both a coating and a sheen to consider the stage complete.
+      const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
+      const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
+      markCompleted(2, !!(hasCoating && hasSheen));
+    } else {
+      // mark the active stage complete so Next becomes enabled
+      markCompleted(managerState.current, true);
+    }
     // run a UI update to refresh Next/Prev/button states
-    setStage(state.current);
+    setStage(managerState.current);
   });
 
   setStage(0);
@@ -304,6 +377,6 @@ function showBanner(message, timeout = 2500) {
 }
 
 // expose for debugging
-window.__wlStage = { state, setStage, nextStage, prevStage, initStageManager };
+window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
 
-export default { initStageManager, state, setStage };
+export default { initStageManager, state: managerState, setStage };

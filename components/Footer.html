@@ -1,28 +1,4 @@
 <!-- Bottom Summary Bar -->
-<footer class="col-span-full row-span-1 w-full bg-white border-t shadow fixed bottom-0 left-0 z-30 flex items-center justify-between px-12 py-4 max-h-20 lg:col-span-full lg:row-span-1">
-  <div class="flex items-center gap-8">
-    <span class="text-lg font-semibold">Total: <span id="footer-price" class="font-bold text-indigo-700">$12,480</span></span>
-  </div>
-  <button id="footer-next" class="btn btn-primary btn-lg">Next Step &rarr;</button>
+<footer class="col-span-full row-span-1 w-full bg-white border-t shadow flex items-center justify-between px-12 py-4 max-h-20 lg:col-span-full lg:row-span-1">
+  <!-- Footer content removed -->
 </footer>
-
-<script defer>
-  // Keep footer price in sync with sidebar price
-  document.addEventListener("statechange", () => {
-    const priceBar = document.getElementById("price-bar");
-    const footerPrice = document.getElementById("footer-price");
-    if (priceBar && footerPrice) {
-      footerPrice.textContent = priceBar.textContent.replace(/[^$\d,]/g, "");
-    }
-  });
-  // Footer next button triggers next stage
-  document.addEventListener("DOMContentLoaded", () => {
-    const nextBtn = document.getElementById("footer-next");
-    if (nextBtn) {
-      nextBtn.addEventListener("click", () => {
-        const nextStageBtn = document.getElementById("next-stage");
-        if (nextStageBtn && !nextStageBtn.disabled) nextStageBtn.click();
-      });
-    }
-  });
-</script>

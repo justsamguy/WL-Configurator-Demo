@@ -2,7 +2,7 @@
 // Three.js 3D viewer setup (uses ES module imports)
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { state } from './main.js'; // Import state from main.js
+import { state } from './state.js'; // Import shared state module to avoid circular imports
 
 let renderer, scene, camera, controls;
 let initialized = false;
