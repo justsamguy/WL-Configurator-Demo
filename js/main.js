@@ -10,6 +10,7 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
+import { computePrice } from './pricing.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
@@ -49,21 +50,19 @@ document.addEventListener('option-selected', (ev) => {
   // update selections: place under selections.options[category] when category provided, otherwise assume model
   if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
-    // extras should not be fully replaced by single-choice option price; it's sum of addon prices only
-    const newPricing = { ...state.pricing };
-    // Recompute total from base + extras
-    newPricing.total = newPricing.base + newPricing.extras;
-    setState({ selections: { ...state.selections, options: newOptions }, pricing: newPricing });
-    // animate price (no change expected unless addons changed)
+    // update selections first and then recompute price via computePrice
+    setState({ selections: { ...state.selections, options: newOptions } });
+    const p = computePrice(state);
     const from = state.pricing.total || state.pricing.base;
-    animatePrice(from, newPricing.total, 300, (val) => updatePriceUI(val));
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   } else {
     // assume model selection - set base price to model price
-    const newExtras = state.pricing.extras || 0;
-    const newTotal = price + newExtras;
+    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price } });
+    const p = computePrice(state);
     const from = state.pricing.total || state.pricing.base;
-    animatePrice(from, newTotal, 420, (val) => updatePriceUI(val));
-    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price, total: newTotal } });
+    animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: price, extras: p.extras, total: p.total } });
   }
 });
 
@@ -74,20 +73,12 @@ document.addEventListener('addon-toggled', (ev) => {
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
   const addonsArray = Array.from(selectedAddons);
-  // recompute extras as sum of addon prices plus any non-addon extras (should be zero here)
-  // We only have addon extras in this simplified app, so extras = sum(addon prices)
-  let extras = 0;
-  // try to find buttons in DOM to read prices for each selected addon
-  addonsArray.forEach(aid => {
-    const el = document.querySelector(`.option-card[data-id="${aid}"]`);
-    const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
-    extras += p;
-  });
-  const newPricing = { ...state.pricing, extras, total: state.pricing.base + extras };
-  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } }, pricing: newPricing });
-  // animate price change
+  // persist selections then compute price via pricing module
+  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
+  const p = computePrice(state);
+  setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
-  animatePrice(from, newPricing.total, 320, (val) => updatePriceUI(val));
+  animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
 });
 
 // initialize displayed price

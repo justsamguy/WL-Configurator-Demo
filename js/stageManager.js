@@ -19,6 +19,8 @@ import { loadComponent } from './app.js';
 import { state as appState, setState as setAppState } from './state.js';
 // helper from placeholders to recompute finish constraints when selections are set programmatically
 import { recomputeFinishConstraints } from './ui/placeholders.js';
+import { applyFinishDefaults } from './stages/finish.js';
+import { computePrice } from './pricing.js';
 
 const managerState = {
   current: 0,
@@ -54,7 +56,16 @@ function updateLivePrice() {
   // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
   const sidebarPrice = document.getElementById('price-bar');
   if (sidebarPrice) {
-    sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+    // compute authoritative price using shared state where possible
+    try {
+      const p = computePrice(appState);
+      sidebarPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      return;
+    } catch (e) {
+      // fallback
+      sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+      return;
+    }
     return;
   }
   const elAmount = $('#live-price .price-amount');
@@ -88,35 +99,10 @@ async function setStage(index, options = {}) {
         // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
         // they are not already selected. This updates the shared app state and triggers UI restoration.
         try {
-          const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
-          const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
-          const updates = {};
-          // Only set defaults if neither is selected to avoid overwriting user choices
-          if (!coatingSel) {
-            // fin-coat-02 is 2K Poly
-            updates['finish-coating'] = 'fin-coat-02';
-            const el = document.querySelector('.option-card[data-id="fin-coat-02"]');
-            if (el) el.setAttribute('aria-pressed', 'true');
-            // also update pricing via dispatch
-            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
-          }
-          if (!sheenSel) {
-            // fin-sheen-01 is Satin
-            updates['finish-sheen'] = 'fin-sheen-01';
-            const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
-            if (el2) el2.setAttribute('aria-pressed', 'true');
-            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
-          }
-          if (Object.keys(updates).length) {
-            // merge into shared selections.options map
-            const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
-            setAppState({ selections: { ...appState.selections, options: newOptions } });
-            // ensure disabled tiles / incompatibilities are computed immediately
-            try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
-          }
+          // delegate finish defaults to dedicated module
+          applyFinishDefaults(appState, setAppState);
         } catch (e) {
-          // ignore any DOM/state errors here; defaults are best-effort
-          console.warn('Failed to apply finish defaults:', e);
+          console.warn('Failed to apply finish defaults via module:', e);
         }
       }
     } catch (e) {

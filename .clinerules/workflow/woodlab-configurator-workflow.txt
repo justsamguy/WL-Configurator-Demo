@@ -15,6 +15,8 @@ alwaysApply: true
     - `js/app.js`: Provides utility functions, including `loadComponent` for fetching and injecting HTML components.
     - `js/viewer.js`: 3D scene logic (Three.js); initialized after `MainContent.html` is loaded.
     - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js); these modules attach logic to dynamically loaded content.
+     - `js/pricing.js`: Central pricing computation helper (computePrice) used by UI and stage manager.
+     - `js/stages/`: Directory for stage-specific logic (e.g., `finish.js`, `materials.js`) so all code affecting a single stage can live next to each other.
     - `components/`: Directory for reusable HTML components (e.g., `Header.html`, `StageBar.html`, `Sidebar.html`, `Footer.html`, `ModelSelection.html`, `ViewerControls.html`).
     - `pages/`: Directory for main application pages (e.g., `MainContent.html`, `Customize.html`, `Summary.html`).
     - `assets/`: All images, icons, and models (placeholders only).
@@ -38,6 +40,7 @@ alwaysApply: true
   - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
   - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
   - Only `main.js` mutates global state; all UI modules and HTML components observe state and dispatch `Event("statechange")` for updates.
+   - `js/main.js` is the canonical mutator of global state; UI modules and stage modules should prefer dispatching selection events (`option-selected`, `addon-toggled`) and let `js/main.js` update state. Stage helper modules may call `setState` in well-documented cases (e.g., applying sensible defaults), but avoid ad-hoc state mutation across the codebase.
   - Implement banners, tooltips, and help drawer per spec (see `/js/ui/banner.js` and related files).
 
 - **Export & Summary**

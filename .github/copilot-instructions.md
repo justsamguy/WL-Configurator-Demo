@@ -5,12 +5,12 @@ This document outlines the guidelines and conventions for developing the WoodLab
 ## Context
 
 - **Tech Stack:** Vanilla JS, Tailwind CSS v3, Three.js r160, jsPDF 2.5.1, html2canvas 1.5.1, Hero-icons.
-- **Key Directories:** `js/`, `css/`, `components/`, `pages/`, `assets/`.
-- **File Structure:** Strict adherence to the canonical layout defined in `workflow/woodlab-configurator-workflow.txt`.
-- **Data:** Use only hard-coded placeholder data and assets. No server code or external APIs.
-- **Deployment:** GitHub Pages.
+**Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`.
+**Maintain state management:** Only `js/main.js` should be the canonical mutator of global state; UI modules should avoid directly mutating the shared state object. Stage-specific helper modules (e.g., `js/stages/*`) may provide functions that call `setState` when explicitly needed but prefer dispatching selection events (`option-selected`, `addon-toggled`) and letting `js/main.js` perform the final state mutation.
+**Response Style**
 
-## Do
+- Provide concise diffs for changes.
+- Make minimal, targeted changes. When adding new modules under `js/stages/` or `js/pricing.js`, include a one-line description in this file explaining their purpose.
 
 - **Follow the locked tech stack:** Use only the specified libraries and frameworks.
 - **Adhere to the canonical file/folder layout:** Maintain the project's structure as defined.
