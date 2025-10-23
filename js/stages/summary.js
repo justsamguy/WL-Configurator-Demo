@@ -109,3 +109,14 @@ export function initSummaryActions() {
   if (exp) exp.addEventListener('click', async (ev) => { ev.preventDefault(); await exportPdf(); });
   if (rst) rst.addEventListener('click', (ev) => { ev.preventDefault(); restartConfig(); });
 }
+
+export function init() {
+  // Hook up summary actions
+  initSummaryActions();
+}
+
+export function restoreFromState(state) {
+  try {
+    populateSummaryPanel();
+  } catch (e) { /* ignore */ }
+}

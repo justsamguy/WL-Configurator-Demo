@@ -22,6 +22,13 @@ import { recomputeFinishConstraints } from './ui/placeholders.js';
 import { applyFinishDefaults } from './stages/finish.js';
 import { computePrice } from './pricing.js';
 import { showBanner } from './ui/banner.js';
+import { init as initModelStage } from './stages/model.js';
+import materialsStage, { init as initMaterialsStage } from './stages/materials.js';
+import finishStage, { init as initFinishStage } from './stages/finish.js';
+import dimensionsStage from './stages/dimensions.js';
+import legsStage from './stages/legs.js';
+import addonsStage from './stages/addons.js';
+import summaryStage from './stages/summary.js';
 
 const managerState = {
   current: 0,
@@ -241,6 +248,8 @@ async function setStage(index, options = {}) {
     } catch (e) {
       // ignore load errors
     }
+      // Restore model stage UI from app state
+      try { import('./stages/model.js').then(mod => mod.restoreFromState && mod.restoreFromState(appState)); } catch (e) {}
   } else {
     // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
@@ -258,6 +267,16 @@ async function setStage(index, options = {}) {
         delete panel.dataset.wlOrigParent;
       }
     } catch (e) {}
+      // Restore UI for non-model stages
+      try {
+        const s = appState;
+        if (managerState.current === 1) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
+        if (managerState.current === 2) finishStage.restoreFromState && finishStage.restoreFromState(s);
+        if (managerState.current === 3) dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
+        if (managerState.current === 4) legsStage.restoreFromState && legsStage.restoreFromState(s);
+        if (managerState.current === 5) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
+        if (managerState.current === 6) summaryStage.restoreFromState && summaryStage.restoreFromState(s);
+      } catch (e) { /* ignore */ }
   }
 }
 
@@ -294,38 +313,39 @@ function wireStageButtons() {
   if (next) next.addEventListener('click', nextStage);
 }
 
-function wireModelSelection() {
-  // Use event delegation so dynamically-inserted model option-cards are handled.
-  document.addEventListener('click', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.option-card[data-id^="mdl-"]');
-    if (!card) return;
-    if (card.hasAttribute('disabled')) return;
-    // mark selected state (only for model cards)
-    $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-    card.setAttribute('aria-pressed', 'true');
-  const id = card.getAttribute('data-id');
-  const price = Number(card.getAttribute('data-price')) || 0;
-  managerState.config.model = id;
-  managerState.config.price = price;
-  // Synchronize shared app state so viewer and other modules update from the canonical source
-  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: price, total: price + (appState.pricing.extras || 0) } }); } catch (e) {}
+// Model-stage interactions are handled by `js/stages/model.js`.
+// The module dispatches 'stage-model-selected' when a model is picked.
+
+export function initStageManager() {
+  // initial wiring
+  wireStageButtons();
+  // Initialize model stage module which wires option-card clicks for models
+  try {
+    initModelStage();
+  } catch (e) {
+    console.warn('Failed to initialize model stage module', e);
+  }
+  // Initialize remaining stage modules
+  try { initMaterialsStage(); } catch (e) { console.warn('Failed to init materials stage', e); }
+  try { initFinishStage(); } catch (e) { console.warn('Failed to init finish stage', e); }
+  try { dimensionsStage.init && dimensionsStage.init(); } catch (e) { /* ignore */ }
+  try { legsStage.init && legsStage.init(); } catch (e) { /* ignore */ }
+  try { addonsStage.init && addonsStage.init(); } catch (e) { /* ignore */ }
+  try { summaryStage.init && summaryStage.init(); } catch (e) { /* ignore */ }
+  // Listen for a model selection event from the model stage module to update managerState
+  document.addEventListener('stage-model-selected', (ev) => {
+    const { id, price } = ev.detail || {};
+    if (!id) return;
+    managerState.config.model = id;
+    managerState.config.price = Number(price) || 0;
+    // Also synchronize shared app state so viewer and other modules update
+    try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: Number(price) || 0, total: Number(price) || 0 + (appState.pricing.extras || 0) } }); } catch (e) {}
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button
     const materialBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
     if (materialBtn) materialBtn.disabled = false;
-  // Do not automatically advance to the next stage when a model is selected.
-  // Selection should only mark the stage completed and enable the Next button;
-  // advancing should happen only when the user clicks Next or a stage button.
-    // If a viewer API exists, call it to load model
-    // viewer.js listens for 'statechange' and will update the displayed model accordingly
   });
-}
-
-export function initStageManager() {
-  // initial wiring
-  wireStageButtons();
-  wireModelSelection();
   updateLivePrice();
   // Mark current stage completed when options are selected elsewhere in the app
   document.addEventListener('option-selected', (ev) => {

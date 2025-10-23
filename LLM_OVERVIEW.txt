@@ -71,6 +71,12 @@ Action list (short, assignable)
    - Replace DOM-based price lookups in `summaryTooltip.js` and `main.js` with calls to `js/pricing.js`.
    - Ensure `banner.js` is consumed by `stageManager.js` rather than duplicating banner code.
 
+  Status update (2025-10-23):
+  - Pricing centralization implemented and `js/pricing.js` is present and used by `main.js` and `js/ui/summaryTooltip.js`.
+  - `js/ui/summaryTooltip.js` now calls `computePrice(state)` for authoritative totals.
+  - `stageManager.js` now imports `showBanner` from `js/ui/banner.js` instead of its local duplicate.
+  - A new stage module `js/stages/model.js` was added to handle model selection interactions (exports `init()` and `restoreFromState()`) and `stageManager.js` delegates model selection to it.
+
 2) Medium (modularization)
    - Create `js/stages/` with per-stage files: `model.js`, `materials.js`, `finish.js`, `dimensions.js`, `legs.js`, `addons.js`, `summary.js`.
    - Move relevant functions from `placeholders.js` and `stageManager.js` into the appropriate stage files. Stage modules should export `init()` and `restoreFromState()`.

@@ -76,4 +76,39 @@ export function applyFinishDefaults(appState, setAppState) {
   }
 }
 
-export default { recomputeFinishConstraints, applyFinishDefaults };
+export function init() {
+  // Wire clicks for coatings and sheens to emit option-selected events (placeholders.js handles generic logic too)
+  document.addEventListener('click', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.option-card[data-category="finish-coating"], .option-card[data-category="finish-sheen"]');
+    if (!card) return;
+    if (card.hasAttribute('disabled')) return;
+    const category = card.getAttribute('data-category');
+    const id = card.getAttribute('data-id');
+    const price = Number(card.getAttribute('data-price')) || 0;
+    // set visual pressed
+    if (category) {
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
+      card.setAttribute('aria-pressed', 'true');
+    }
+    document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
+    try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
+  });
+}
+
+export function restoreFromState(state) {
+  try {
+    const opts = state && state.selections && state.selections.options ? state.selections.options : {};
+    ['finish-coating', 'finish-sheen'].forEach(cat => {
+      const id = opts[cat];
+      if (!id) return;
+      const el = document.querySelector(`.option-card[data-id="${id}"]`);
+      if (el) {
+        document.querySelectorAll(`.option-card[data-category="${cat}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
+        el.setAttribute('aria-pressed', 'true');
+      }
+    });
+    try { recomputeFinishConstraints(); } catch (e) {}
+  } catch (e) { /* ignore */ }
+}
+
+export default { recomputeFinishConstraints, applyFinishDefaults, init, restoreFromState };
