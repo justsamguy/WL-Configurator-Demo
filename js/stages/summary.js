@@ -1,5 +1,4 @@
 import { state } from '../state.js';
-import { setState } from '../state.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
 const hasHtml2Canvas = typeof html2canvas !== 'undefined';
@@ -86,19 +85,9 @@ async function exportPdf() {
 }
 
 function restartConfig() {
-  // Reset selections/pricing to initial shape and dispatch state change
-  setState({ selections: { model: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
-  // If a stage manager exists, try to navigate to stage 0
-  try {
-    const stageManager = window.stageManager || null;
-    if (stageManager && typeof stageManager.setStage === 'function') {
-      stageManager.setStage(0);
-    } else {
-      // Fallback: try to dispatch a custom event listeners (stageManager.initStageManager sets this up)
-      const ev = new CustomEvent('request-stage-change', { detail: { index: 0 } });
-      document.dispatchEvent(ev);
-    }
-  } catch (e) { /* ignore */ }
+  // Do not mutate global state here. Request a restart and let main.js handle
+  // the canonical state reset and stage navigation.
+  document.dispatchEvent(new CustomEvent('request-restart'));
 }
 
 export function initSummaryActions() {

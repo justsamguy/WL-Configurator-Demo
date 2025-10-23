@@ -6,7 +6,11 @@ This document outlines the guidelines and conventions for developing the WoodLab
 
 - **Tech Stack:** Vanilla JS, Tailwind CSS v3, Three.js r160, jsPDF 2.5.1, html2canvas 1.5.1, Hero-icons.
 **Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`.
-**Maintain state management:** Only `js/main.js` should be the canonical mutator of global state; UI modules should avoid directly mutating the shared state object. Stage-specific helper modules (e.g., `js/stages/*`) may provide functions that call `setState` when explicitly needed but prefer dispatching selection events (`option-selected`, `addon-toggled`) and letting `js/main.js` perform the final state mutation.
+**Maintain state management:** Only `js/main.js` MUST be the canonical mutator of global state. Stage-specific modules under `js/stages/` MUST NOT call `setState`/`setAppState` directly. Instead they should dispatch the agreed-upon events (for example `option-selected`, `addon-toggled`, `stage-model-selected`, or `request-restart`) and let `js/main.js` perform the final state mutation. This prevents cross-stage coupling and keeps stage code safe to edit in isolation.
+
+Notes on recent conventions:
+- `applyFinishDefaults(appState)` in `js/stages/finish.js` will dispatch `option-selected` events for any defaults and will NOT call `setState`.
+- The Summary action that resets the configuration now dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
 **Response Style**
 
 - Provide concise diffs for changes.

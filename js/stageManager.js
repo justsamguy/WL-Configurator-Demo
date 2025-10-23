@@ -16,7 +16,7 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
-import { state as appState, setState as setAppState } from './state.js';
+import { state as appState } from './state.js';
 // helper from placeholders to recompute finish constraints when selections are set programmatically
 import { recomputeFinishConstraints } from './ui/placeholders.js';
 import { applyFinishDefaults } from './stages/finish.js';
@@ -338,8 +338,6 @@ export function initStageManager() {
     if (!id) return;
     managerState.config.model = id;
     managerState.config.price = Number(price) || 0;
-    // Also synchronize shared app state so viewer and other modules update
-    try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: Number(price) || 0, total: Number(price) || 0 + (appState.pricing.extras || 0) } }); } catch (e) {}
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button

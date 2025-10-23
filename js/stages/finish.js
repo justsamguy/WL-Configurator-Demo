@@ -49,7 +49,11 @@ export function recomputeFinishConstraints() {
   }
 }
 
-export function applyFinishDefaults(appState, setAppState) {
+// applyFinishDefaults: ensure sensible defaults for the Finish stage.
+// IMPORTANT: This function must NOT mutate global app state directly. It
+// dispatches `option-selected` events for defaults; `js/main.js` is the
+// canonical mutator and will update shared state when those events are received.
+export function applyFinishDefaults(appState) {
   try {
     const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
     const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
@@ -67,8 +71,7 @@ export function applyFinishDefaults(appState, setAppState) {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
     }
     if (Object.keys(updates).length) {
-      const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
-      setAppState({ selections: { ...appState.selections, options: newOptions } });
+      // Do not mutate app state here. dispatches above will be handled by main.js
       try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
     }
   } catch (e) {

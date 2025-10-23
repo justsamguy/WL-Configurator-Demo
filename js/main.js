@@ -89,6 +89,22 @@ document.addEventListener('addon-toggled', async (ev) => {
   animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
 });
 
+// Request-based restart: stage modules should dispatch 'request-restart' and
+// main.js (the canonical mutator) will reset the shared state and navigate to
+// the first stage.
+document.addEventListener('request-restart', (ev) => {
+  try {
+    setState({ selections: { model: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+    const stageManager = window.stageManager || null;
+    if (stageManager && typeof stageManager.setStage === 'function') {
+      stageManager.setStage(0);
+    } else {
+      const ev2 = new CustomEvent('request-stage-change', { detail: { index: 0 } });
+      document.dispatchEvent(ev2);
+    }
+  } catch (e) { /* ignore */ }
+});
+
 // initialize displayed price
 document.addEventListener('DOMContentLoaded', () => updatePriceUI(state.pricing.total));
 
