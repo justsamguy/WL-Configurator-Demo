@@ -142,11 +142,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Render model and materials option cards from data files (if placeholders exist)
   try {
-    const { loadStageData } = await import('./stageData.js');
+    const { loadData } = await import('./dataLoader.js');
     const { renderOptionCards } = await import('./stageRenderer.js');
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
-      const models = await loadStageData('data/models.json');
+      const models = await loadData('data/models.json');
       // The ModelSelection component expects a deeper container; try to find model-row-grid(s)
       const modelGrids = document.querySelectorAll('.model-row-grid');
       if (modelGrids && modelGrids.length && models) {
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const materialsOptionsRoot = document.getElementById('materials-options');
     if (materialsOptionsRoot) {
-      const mats = await loadStageData('data/materials.json');
+      const mats = await loadData('data/materials.json');
       if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
     }
 
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const finishCoatingRoot = document.getElementById('finish-coating-options');
     const finishSheenRoot = document.getElementById('finish-sheen-options');
     if (finishCoatingRoot || finishSheenRoot) {
-      const finish = await loadStageData('data/finish.json');
+  const finish = await loadData('data/finish.json');
       if (finish) {
         if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
         if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
@@ -177,19 +177,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Render dimensions, legs, addons
     const dimsRoot = document.getElementById('dimensions-options');
     if (dimsRoot) {
-      const dims = await loadStageData('data/dimensions.json');
+  const dims = await loadData('data/dimensions.json');
       if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
     }
 
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
-      const legs = await loadStageData('data/legs.json');
+  const legs = await loadData('data/legs.json');
       if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
     }
 
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
-      const addons = await loadStageData('data/addons.json');
+  const addons = await loadData('data/addons.json');
       if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
     }
   } catch (e) {

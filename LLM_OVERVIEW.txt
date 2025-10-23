@@ -86,6 +86,10 @@ Action list (short, assignable)
    - Add `data/models.json`, `data/materials.json`, `data/finishes.json`, etc. Move `data-id`, `data-price`, labels and image paths into JSON.
    - Create `js/dataLoader.js` to fetch these JSON files (local fetch) and render `.option-card` elements into stage containers using safe, minimal templates.
 
+  Status update (2025-10-23):
+  - Data JSON files for models, materials, finish, dimensions, legs, and addons already exist under `data/` with placeholder images in `assets/images/`.
+  - Added `js/dataLoader.js` (simple cached loader) and updated `js/main.js` to use it when rendering option-cards via `js/stageRenderer.js`.
+
 4) Tests/docs
    - Add a `README` section documenting how to add an option (one change in JSON + image) and a short QA checklist.
 
