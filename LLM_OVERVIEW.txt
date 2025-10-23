@@ -1,0 +1,100 @@
+WoodLab Configurator — LLM Overview
+
+Purpose
+-------
+This file documents the current structure, responsibilities, and recommended refactors for the WoodLab Configurator demo project so future LLMs and developers can quickly understand state, stage separation, and next steps.
+
+High-level architecture
+----------------------
+- Tech stack: Vanilla JS, Tailwind CSS v3, Three.js (r160), jsPDF/html2canvas for export (not heavily used in this demo).
+- Client-only, static app; all logic runs in the browser and uses hard-coded assets and HTML fragments.
+
+Key files and responsibilities
+------------------------------
+- `js/state.js`
+  - Single global mutable state object `state` with `stage`, `selections`, and `pricing`.
+  - Exported helper `setState(patch)` merges patch into `state` and dispatches a `statechange` event.
+
+- `js/main.js`
+  - App bootstrap, component loading via `loadComponent`, initializes viewer, icons, and summary tooltip.
+  - Listens for `option-selected` and `addon-toggled` events to update `state` (pricing and selections) and update the visible price with animation.
+  - Calls `stageManager.initStageManager()` and other initializers.
+
+- `js/app.js`
+  - `loadComponent(containerId, componentPath)` and `processIncludes(root)` helpers for injecting HTML fragments.
+
+- `js/stageManager.js`
+  - Navigation, stage gating, enabling/disabling stage buttons, Prev/Next behavior.
+  - Maintains an internal `managerState` (current stage, completed array, config map) separate from `js/state.js`.
+  - Includes some stage-specific logic (e.g., applying finish defaults on jump to Finish) and reads/writes `js/state.js` to synchronize.
+
+- `js/viewer.js`
+  - Viewer initialization (Three.js), placeholder image strategy, model updates on `statechange`.
+  - `initViewer`, `updateModel`, `initViewerControls`, `resizeViewer` exported functions.
+
+- `js/ui/placeholders.js`
+  - Centralized option-card UI handling for all stages (selection toggling, addon toggling, restore visual selections, finish incompatibility rules, selection event dispatch).
+  - Exports `initPlaceholderInteractions()` and `recomputeFinishConstraints()`.
+
+- `js/ui/*` other utilities
+  - `banner.js` (showBanner), `icon.js` (loadIcon), `helpDrawer.js`, `summaryTooltip.js` (summary rendering using `state`).
+
+- `components/*.html`
+  - `ModelSelection.html`, `MaterialsPanel.html`, `StagePanels.html`, `Sidebar.html`, `Header.html`, `Footer.html`, `ViewerControls.html` contain the markup for the UI. `.option-card` elements embed `data-id`, `data-category`, and `data-price` attributes for options.
+
+Current state vs requested structure
+-----------------------------------
+Your goals:
+1. All code affecting a single stage in that stage's file.
+2. All data specific to a stage in its own config file.
+3. Multi-stage logic in higher-level or specific-use files.
+
+Where we are today:
+- Stage UI is split into per-stage HTML fragments (good).
+- Stage logic is NOT split into per-stage JS files. `js/ui/placeholders.js` centralizes per-stage UI behavior and `js/stageManager.js` mixes navigation with stage-specific defaults. Recommendation: create `js/stages/*.js` modules (see actions).
+- Stage data (IDs/prices/titles/images) is embedded inline in HTML `.option-card` elements, not stored in dedicated JSON files. Recommendation: extract to `data/*.json` and implement a small renderer.
+- Shared concerns (state, viewer, summary) are already centralized but some cross-module DOM price lookups and duplicated logic exist. Recommendation: centralize pricing calculation in `js/pricing.js` and use it across modules.
+
+Important patterns and constraints for future LLMs
+-------------------------------------------------
+- App is client-only — do not suggest server-side code or network requests to external APIs.
+- Use only the specified tech stack: Vanilla JS, Tailwind v3, Three.js r160, jsPDF, html2canvas, and Hero-icons. Avoid adding other frameworks or heavy libraries.
+- Global mutable state MUST go through `js/state.js`. Only `js/main.js` should mutate it directly where currently implemented; other modules should call `setState` and/or listen for `statechange`.
+- UI modules should be single-responsibility and observe `state` or dispatch standardized events: `option-selected` (detail: { id, price, category }), `addon-toggled` (detail: { id, price, checked }), and the `statechange` event from `setState`.
+- Keep placeholder assets and images as local 256x256 placeholders with `alt="placeholder"` where necessary.
+- Accessibility: Maintain `aria-pressed`, `aria-checked`, `role`, and `aria-live` usage as in the current code.
+
+Action list (short, assignable)
+-------------------------------
+1) Low-risk (implement first)
+   - Create `js/pricing.js` to centralize price computation (compute base/extras/total from `state` and option metadata).
+   - Replace DOM-based price lookups in `summaryTooltip.js` and `main.js` with calls to `js/pricing.js`.
+   - Ensure `banner.js` is consumed by `stageManager.js` rather than duplicating banner code.
+
+2) Medium (modularization)
+   - Create `js/stages/` with per-stage files: `model.js`, `materials.js`, `finish.js`, `dimensions.js`, `legs.js`, `addons.js`, `summary.js`.
+   - Move relevant functions from `placeholders.js` and `stageManager.js` into the appropriate stage files. Stage modules should export `init()` and `restoreFromState()`.
+   - Make `placeholders.js` a small utility used by stage modules for DOM behavior.
+
+3) Large (data-driven)
+   - Add `data/models.json`, `data/materials.json`, `data/finishes.json`, etc. Move `data-id`, `data-price`, labels and image paths into JSON.
+   - Create `js/dataLoader.js` to fetch these JSON files (local fetch) and render `.option-card` elements into stage containers using safe, minimal templates.
+
+4) Tests/docs
+   - Add a `README` section documenting how to add an option (one change in JSON + image) and a short QA checklist.
+
+How to use this file
+--------------------
+- LLMs: use this file as the canonical map of responsibilities before making edits. Follow the constraints and event patterns specified.
+- Developers: use the Action list to create small PRs. Start with the pricing module (low risk) to reduce duplication.
+
+Appendix: useful patterns to follow for edits
+--------------------------------------------
+- When moving code from `placeholders.js` to a stage file: ensure the module only wires DOM under the stage panel and uses `document.dispatchEvent(new CustomEvent('option-selected', ...))` for selections.
+- When migrating HTML to JSON, keep `data-id` values stable. Avoid changing existing IDs used in tests or deep links.
+- Prefer reading `state` via `import { state } from './state.js'` and avoid direct reassignments — use `setState` for updates.
+
+History & provenance
+--------------------
+- Analysis and recommendations generated by a code inspection of files in the repository on 2025-10-23.
+

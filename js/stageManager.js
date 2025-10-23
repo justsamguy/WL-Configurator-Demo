@@ -21,6 +21,7 @@ import { state as appState, setState as setAppState } from './state.js';
 import { recomputeFinishConstraints } from './ui/placeholders.js';
 import { applyFinishDefaults } from './stages/finish.js';
 import { computePrice } from './pricing.js';
+import { showBanner } from './ui/banner.js';
 
 const managerState = {
   current: 0,
@@ -350,17 +351,7 @@ export function initStageManager() {
   setStage(0);
 }
 
-function showBanner(message, timeout = 2500) {
-  const container = document.getElementById('banner-container') || document.body;
-  const banner = document.createElement('div');
-  banner.className = 'banner bg-gray-800 text-white px-4 py-2 rounded shadow-md mt-2';
-  banner.textContent = message;
-  container.appendChild(banner);
-  setTimeout(() => {
-    banner.classList.add('opacity-0');
-    setTimeout(() => banner.remove(), 300);
-  }, timeout);
-}
+// Use shared showBanner from ui/banner.js for consistent styling and accessibility.
 
 // expose for debugging
 window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
