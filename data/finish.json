@@ -1,0 +1,11 @@
+{
+  "coatings": [
+    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0 },
+    { "id": "fin-coat-02", "title": "2K Poly", "price": 120 }
+  ],
+  "sheens": [
+    { "id": "fin-sheen-01", "title": "Satin", "price": 0 },
+    { "id": "fin-sheen-02", "title": "Matte", "price": 30 },
+    { "id": "fin-sheen-03", "title": "Gloss", "price": 75 }
+  ]
+}

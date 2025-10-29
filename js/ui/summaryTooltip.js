@@ -1,6 +1,7 @@
 // Summary tooltip module
 // Shows a small tooltip/dialog listing current selections and price total.
 import { state } from '../state.js';
+import { computePrice } from '../pricing.js';
 
 function createTooltip() {
   let t = document.getElementById('summary-tooltip');
@@ -35,55 +36,40 @@ function formatSigned(n) {
   return `(${sign} ${formatCurrencyShort(Math.abs(v))})`;
 }
 
-function renderTooltip() {
+async function renderTooltip() {
   const tip = createTooltip();
   const content = document.getElementById('summary-tooltip-content');
   const total = document.getElementById('summary-tooltip-total');
   if (!content || !total) return;
-  // Build lines for base model and each option (including 0-cost items)
-  const lines = [];
   const s = state;
-  // Base model (use pricing.base for price if available)
-  if (s.selections && s.selections.model) {
-    const basePrice = (s.pricing && typeof s.pricing.base === 'number') ? s.pricing.base : 0;
-    lines.push(`<div class="flex justify-between items-center"><span><strong>Base model:</strong> ${s.selections.model}</span><span class="text-right ml-4">${formatCurrencyShort(basePrice)}</span></div>`);
+
+  // Use the centralized pricing module to compute an authoritative breakdown and total.
+  let priceData;
+  try {
+    priceData = await computePrice(s);
+  } catch (e) {
+    console.warn('summaryTooltip: computePrice failed', e);
+    priceData = { base: (s.pricing && s.pricing.base) || 0, extras: (s.pricing && s.pricing.extras) || 0, total: (s.pricing && s.pricing.total) || 0, breakdown: [] };
   }
 
-  const opts = s.selections && s.selections.options ? s.selections.options : {};
-  const keys = Object.keys(opts).filter(k => k && k.toLowerCase() !== 'model'); // skip duplicate model key if present
-  if (keys.length === 0) {
-    lines.push('<div class="text-gray-600">No options selected</div>');
-  } else {
-    keys.forEach(k => {
-      const v = opts[k];
-      // single-choice option stored as id string
-      if (Array.isArray(v)) {
-        if (v.length === 0) {
-          lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> none</span><span class="text-right ml-4">${formatSigned(0)}</span></div>`);
-        } else {
-          // For arrays (addons) list each id with its signed price and also show comma-separated names
-          const labels = v.join(', ');
-          // compute total price for this array
-          let arrSum = 0;
-          v.forEach(id => {
-            const el = document.querySelector(`.option-card[data-id="${id}"]`);
-            const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
-            arrSum += p;
-          });
-          lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> ${labels}</span><span class="text-right ml-4">${formatSigned(arrSum)}</span></div>`);
-        }
+  const lines = [];
+  if (priceData.breakdown && priceData.breakdown.length) {
+    priceData.breakdown.forEach(item => {
+      const label = item.id || item.type || 'item';
+      const price = Number(item.price) || 0;
+      // Show the base/model price as an absolute value, other items as signed additions
+      if (item.type === 'model') {
+        lines.push(`<div class="flex justify-between items-center"><span><strong>Base model:</strong> ${label}</span><span class="text-right ml-4">${formatCurrencyShort(price)}</span></div>`);
       } else {
-        const label = v || 'none';
-        // try to look up the option price from DOM (.option-card[data-id])
-        const el = document.querySelector(`.option-card[data-id="${v}"]`);
-        const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
-        lines.push(`<div class="flex justify-between items-center"><span><strong>${k}:</strong> ${label}</span><span class="text-right ml-4">${formatSigned(p)}</span></div>`);
+        lines.push(`<div class="flex justify-between items-center"><span><strong>${item.type}:</strong> ${label}</span><span class="text-right ml-4">${formatSigned(price)}</span></div>`);
       }
     });
+  } else {
+    lines.push('<div class="text-gray-600">No options selected</div>');
   }
 
   content.innerHTML = lines.join('');
-  total.textContent = formatCurrency(s.pricing && s.pricing.total ? s.pricing.total : s.pricing.base);
+  total.textContent = formatCurrency(priceData.total || 0);
 }
 
 let anchorButton = null;

@@ -16,9 +16,19 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
-import { state as appState, setState as setAppState } from './state.js';
+import { state as appState } from './state.js';
 // helper from placeholders to recompute finish constraints when selections are set programmatically
 import { recomputeFinishConstraints } from './ui/placeholders.js';
+import { applyFinishDefaults } from './stages/finish.js';
+import { computePrice } from './pricing.js';
+import { showBanner } from './ui/banner.js';
+import { init as initModelStage } from './stages/model.js';
+import materialsStage, { init as initMaterialsStage } from './stages/materials.js';
+import finishStage, { init as initFinishStage } from './stages/finish.js';
+import dimensionsStage from './stages/dimensions.js';
+import legsStage from './stages/legs.js';
+import addonsStage from './stages/addons.js';
+import summaryStage from './stages/summary.js';
 
 const managerState = {
   current: 0,
@@ -50,11 +60,20 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
-function updateLivePrice() {
+async function updateLivePrice() {
   // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
   const sidebarPrice = document.getElementById('price-bar');
   if (sidebarPrice) {
-    sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+    // compute authoritative price using shared state where possible
+    try {
+      const p = await computePrice(appState);
+      sidebarPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      return;
+    } catch (e) {
+      // fallback
+      sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+      return;
+    }
     return;
   }
   const elAmount = $('#live-price .price-amount');
@@ -88,35 +107,10 @@ async function setStage(index, options = {}) {
         // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
         // they are not already selected. This updates the shared app state and triggers UI restoration.
         try {
-          const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
-          const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
-          const updates = {};
-          // Only set defaults if neither is selected to avoid overwriting user choices
-          if (!coatingSel) {
-            // fin-coat-02 is 2K Poly
-            updates['finish-coating'] = 'fin-coat-02';
-            const el = document.querySelector('.option-card[data-id="fin-coat-02"]');
-            if (el) el.setAttribute('aria-pressed', 'true');
-            // also update pricing via dispatch
-            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
-          }
-          if (!sheenSel) {
-            // fin-sheen-01 is Satin
-            updates['finish-sheen'] = 'fin-sheen-01';
-            const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
-            if (el2) el2.setAttribute('aria-pressed', 'true');
-            document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
-          }
-          if (Object.keys(updates).length) {
-            // merge into shared selections.options map
-            const newOptions = { ...(appState.selections && appState.selections.options ? appState.selections.options : {}), ...updates };
-            setAppState({ selections: { ...appState.selections, options: newOptions } });
-            // ensure disabled tiles / incompatibilities are computed immediately
-            try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
-          }
+          // delegate finish defaults to dedicated module
+          applyFinishDefaults(appState, setAppState);
         } catch (e) {
-          // ignore any DOM/state errors here; defaults are best-effort
-          console.warn('Failed to apply finish defaults:', e);
+          console.warn('Failed to apply finish defaults via module:', e);
         }
       }
     } catch (e) {
@@ -254,6 +248,8 @@ async function setStage(index, options = {}) {
     } catch (e) {
       // ignore load errors
     }
+      // Restore model stage UI from app state
+      try { import('./stages/model.js').then(mod => mod.restoreFromState && mod.restoreFromState(appState)); } catch (e) {}
   } else {
     // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
@@ -271,6 +267,16 @@ async function setStage(index, options = {}) {
         delete panel.dataset.wlOrigParent;
       }
     } catch (e) {}
+      // Restore UI for non-model stages
+      try {
+        const s = appState;
+        if (managerState.current === 1) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
+        if (managerState.current === 2) finishStage.restoreFromState && finishStage.restoreFromState(s);
+        if (managerState.current === 3) dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
+        if (managerState.current === 4) legsStage.restoreFromState && legsStage.restoreFromState(s);
+        if (managerState.current === 5) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
+        if (managerState.current === 6) summaryStage.restoreFromState && summaryStage.restoreFromState(s);
+      } catch (e) { /* ignore */ }
   }
 }
 
@@ -307,38 +313,37 @@ function wireStageButtons() {
   if (next) next.addEventListener('click', nextStage);
 }
 
-function wireModelSelection() {
-  // Use event delegation so dynamically-inserted model option-cards are handled.
-  document.addEventListener('click', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.option-card[data-id^="mdl-"]');
-    if (!card) return;
-    if (card.hasAttribute('disabled')) return;
-    // mark selected state (only for model cards)
-    $all('.option-card[data-id^="mdl-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-    card.setAttribute('aria-pressed', 'true');
-  const id = card.getAttribute('data-id');
-  const price = Number(card.getAttribute('data-price')) || 0;
-  managerState.config.model = id;
-  managerState.config.price = price;
-  // Synchronize shared app state so viewer and other modules update from the canonical source
-  try { setAppState({ selections: { ...appState.selections, model: id }, pricing: { ...appState.pricing, base: price, total: price + (appState.pricing.extras || 0) } }); } catch (e) {}
+// Model-stage interactions are handled by `js/stages/model.js`.
+// The module dispatches 'stage-model-selected' when a model is picked.
+
+export function initStageManager() {
+  // initial wiring
+  wireStageButtons();
+  // Initialize model stage module which wires option-card clicks for models
+  try {
+    initModelStage();
+  } catch (e) {
+    console.warn('Failed to initialize model stage module', e);
+  }
+  // Initialize remaining stage modules
+  try { initMaterialsStage(); } catch (e) { console.warn('Failed to init materials stage', e); }
+  try { initFinishStage(); } catch (e) { console.warn('Failed to init finish stage', e); }
+  try { dimensionsStage.init && dimensionsStage.init(); } catch (e) { /* ignore */ }
+  try { legsStage.init && legsStage.init(); } catch (e) { /* ignore */ }
+  try { addonsStage.init && addonsStage.init(); } catch (e) { /* ignore */ }
+  try { summaryStage.init && summaryStage.init(); } catch (e) { /* ignore */ }
+  // Listen for a model selection event from the model stage module to update managerState
+  document.addEventListener('stage-model-selected', (ev) => {
+    const { id, price } = ev.detail || {};
+    if (!id) return;
+    managerState.config.model = id;
+    managerState.config.price = Number(price) || 0;
     markCompleted(0, true);
     updateLivePrice();
     // enable material stage button
     const materialBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
     if (materialBtn) materialBtn.disabled = false;
-  // Do not automatically advance to the next stage when a model is selected.
-  // Selection should only mark the stage completed and enable the Next button;
-  // advancing should happen only when the user clicks Next or a stage button.
-    // If a viewer API exists, call it to load model
-    // viewer.js listens for 'statechange' and will update the displayed model accordingly
   });
-}
-
-export function initStageManager() {
-  // initial wiring
-  wireStageButtons();
-  wireModelSelection();
   updateLivePrice();
   // Mark current stage completed when options are selected elsewhere in the app
   document.addEventListener('option-selected', (ev) => {
@@ -364,17 +369,7 @@ export function initStageManager() {
   setStage(0);
 }
 
-function showBanner(message, timeout = 2500) {
-  const container = document.getElementById('banner-container') || document.body;
-  const banner = document.createElement('div');
-  banner.className = 'banner bg-gray-800 text-white px-4 py-2 rounded shadow-md mt-2';
-  banner.textContent = message;
-  container.appendChild(banner);
-  setTimeout(() => {
-    banner.classList.add('opacity-0');
-    setTimeout(() => banner.remove(), 300);
-  }, timeout);
-}
+// Use shared showBanner from ui/banner.js for consistent styling and accessibility.
 
 // expose for debugging
 window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };

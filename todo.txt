@@ -3,3 +3,9 @@ I'd like the app to have the functions broken out this way. can you look at the 
 All code affecting a single stage in that stage's file (example - materials logic is separate from finish logic, which is different code from the summary page, each gets their own files.)
 All data specific to a stage is also in it's own config file (making it easy to locate and update the actual content displayed)
 all code affecting multiple stages in a higher-level or specific-use file (example - tile logic is handled separately and could be in a different file from the price total/summary box)
+
+Next refactor tasks:
+- Extract per-stage option data into `data/*.json` (materials, finish, dimensions, legs, addons, models).
+- Update components to render option-cards from config data instead of embedding prices/ids in HTML.
+- Move materials, dimensions, legs, and summary logic into `js/stages/*` modules.
+- Add unit tests for `js/pricing.js` and stage defaulting/helpers.

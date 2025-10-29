@@ -5,12 +5,16 @@ This document outlines the guidelines and conventions for developing the WoodLab
 ## Context
 
 - **Tech Stack:** Vanilla JS, Tailwind CSS v3, Three.js r160, jsPDF 2.5.1, html2canvas 1.5.1, Hero-icons.
-- **Key Directories:** `js/`, `css/`, `components/`, `pages/`, `assets/`.
-- **File Structure:** Strict adherence to the canonical layout defined in `workflow/woodlab-configurator-workflow.txt`.
-- **Data:** Use only hard-coded placeholder data and assets. No server code or external APIs.
-- **Deployment:** GitHub Pages.
+**Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`.
+**Maintain state management:** Only `js/main.js` MUST be the canonical mutator of global state. Stage-specific modules under `js/stages/` MUST NOT call `setState`/`setAppState` directly. Instead they should dispatch the agreed-upon events (for example `option-selected`, `addon-toggled`, `stage-model-selected`, or `request-restart`) and let `js/main.js` perform the final state mutation. This prevents cross-stage coupling and keeps stage code safe to edit in isolation.
 
-## Do
+Notes on recent conventions:
+- `applyFinishDefaults(appState)` in `js/stages/finish.js` will dispatch `option-selected` events for any defaults and will NOT call `setState`.
+- The Summary action that resets the configuration now dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
+**Response Style**
+
+- Provide concise diffs for changes.
+- Make minimal, targeted changes. When adding new modules under `js/stages/` or `js/pricing.js`, include a one-line description in this file explaining their purpose.
 
 - **Follow the locked tech stack:** Use only the specified libraries and frameworks.
 - **Adhere to the canonical file/folder layout:** Maintain the project's structure as defined.

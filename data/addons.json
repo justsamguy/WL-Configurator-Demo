@@ -1,0 +1,5 @@
+[
+  { "id": "addon-01", "title": "Assembly Service", "price": 45, "description": "On-site assembly" },
+  { "id": "addon-02", "title": "Protective Pads", "price": 25, "description": "Set of 4" },
+  { "id": "addon-03", "title": "Expedited Production", "price": 120, "description": "Rush 5-day lead", "disabled": true, "tooltip": "This add-on is currently unavailable due to high demand." }
+]

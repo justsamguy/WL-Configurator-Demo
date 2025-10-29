@@ -10,11 +10,20 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
+import { computePrice } from './pricing.js';
+import { populateSummaryPanel } from './stages/summary.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
   // main orchestrator can react to state changes here if needed.
   // ev.detail.state contains the latest state object.
+  // If the summary page is active, refresh its contents
+  try {
+    const summaryRoot = document.getElementById('summary-model-name');
+    if (summaryRoot) populateSummaryPanel();
+  } catch (e) {
+    // ignore
+  }
 });
 
 // Price animation helper used by the UI when updating the price display
@@ -42,52 +51,58 @@ function updatePriceUI(total) {
 }
 
 // Listen for placeholder selection events dispatched by placeholders.js
-document.addEventListener('option-selected', (ev) => {
+document.addEventListener('option-selected', async (ev) => {
   const { id, price } = ev.detail || { id: null, price: 0 };
   // option-selected is used for single-choice selections (model, material, finish, legs, dimensions)
   const category = ev.detail && ev.detail.category ? ev.detail.category : null;
   // update selections: place under selections.options[category] when category provided, otherwise assume model
   if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
-    // extras should not be fully replaced by single-choice option price; it's sum of addon prices only
-    const newPricing = { ...state.pricing };
-    // Recompute total from base + extras
-    newPricing.total = newPricing.base + newPricing.extras;
-    setState({ selections: { ...state.selections, options: newOptions }, pricing: newPricing });
-    // animate price (no change expected unless addons changed)
+    // update selections first and then recompute price via computePrice
+    setState({ selections: { ...state.selections, options: newOptions } });
+    const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
-    animatePrice(from, newPricing.total, 300, (val) => updatePriceUI(val));
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   } else {
     // assume model selection - set base price to model price
-    const newExtras = state.pricing.extras || 0;
-    const newTotal = price + newExtras;
+    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price } });
+    const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
-    animatePrice(from, newTotal, 420, (val) => updatePriceUI(val));
-    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price, total: newTotal } });
+    animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: price, extras: p.extras, total: p.total } });
   }
 });
 
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
-document.addEventListener('addon-toggled', (ev) => {
+document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
   const addonsArray = Array.from(selectedAddons);
-  // recompute extras as sum of addon prices plus any non-addon extras (should be zero here)
-  // We only have addon extras in this simplified app, so extras = sum(addon prices)
-  let extras = 0;
-  // try to find buttons in DOM to read prices for each selected addon
-  addonsArray.forEach(aid => {
-    const el = document.querySelector(`.option-card[data-id="${aid}"]`);
-    const p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
-    extras += p;
-  });
-  const newPricing = { ...state.pricing, extras, total: state.pricing.base + extras };
-  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } }, pricing: newPricing });
-  // animate price change
+  // persist selections then compute price via pricing module
+  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
+  const p = await computePrice(state);
+  setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
-  animatePrice(from, newPricing.total, 320, (val) => updatePriceUI(val));
+  animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+});
+
+// Request-based restart: stage modules should dispatch 'request-restart' and
+// main.js (the canonical mutator) will reset the shared state and navigate to
+// the first stage.
+document.addEventListener('request-restart', (ev) => {
+  try {
+    setState({ selections: { model: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+    const stageManager = window.stageManager || null;
+    if (stageManager && typeof stageManager.setStage === 'function') {
+      stageManager.setStage(0);
+    } else {
+      const ev2 = new CustomEvent('request-stage-change', { detail: { index: 0 } });
+      document.dispatchEvent(ev2);
+    }
+  } catch (e) { /* ignore */ }
 });
 
 // initialize displayed price
@@ -141,6 +156,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('Failed to initialize summary tooltip', e);
   }
 
+  // Render model and materials option cards from data files (if placeholders exist)
+  try {
+    const { loadData } = await import('./dataLoader.js');
+    const { renderOptionCards } = await import('./stageRenderer.js');
+    const modelsRoot = document.getElementById('stage-0-placeholder');
+    if (modelsRoot) {
+      const models = await loadData('data/models.json');
+      // The ModelSelection component expects a deeper container; try to find model-row-grid(s)
+      const modelGrids = document.querySelectorAll('.model-row-grid');
+      if (modelGrids && modelGrids.length && models) {
+        // distribute models across the first grid for simplicity
+        renderOptionCards(modelGrids[0], models, { category: null });
+      } else if (modelsRoot && models) {
+        renderOptionCards(modelsRoot, models, { category: null });
+      }
+    }
+
+    const materialsOptionsRoot = document.getElementById('materials-options');
+    if (materialsOptionsRoot) {
+      const mats = await loadData('data/materials.json');
+      if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
+    }
+
+    // Render finish stage (coatings + sheens)
+    const finishCoatingRoot = document.getElementById('finish-coating-options');
+    const finishSheenRoot = document.getElementById('finish-sheen-options');
+    if (finishCoatingRoot || finishSheenRoot) {
+  const finish = await loadData('data/finish.json');
+      if (finish) {
+        if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
+        if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
+      }
+    }
+
+    // Render dimensions, legs, addons
+    const dimsRoot = document.getElementById('dimensions-options');
+    if (dimsRoot) {
+  const dims = await loadData('data/dimensions.json');
+      if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
+    }
+
+    const legsRoot = document.getElementById('legs-options');
+    if (legsRoot) {
+  const legs = await loadData('data/legs.json');
+      if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
+    }
+
+    const addonsRoot = document.getElementById('addons-options');
+    if (addonsRoot) {
+  const addons = await loadData('data/addons.json');
+      if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
+    }
+  } catch (e) {
+    console.warn('Failed to render stage data from JSON files', e);
+  }
+
   // Initial state update to render the first stage (use setState to dispatch standardized event)
   setState({});
 
@@ -148,12 +219,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { default: stageManager } = await import('./stageManager.js');
     stageManager.initStageManager();
+  // expose for other modules (summary/restart) to programmatically change stage
+  window.stageManager = stageManager;
     console.log('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
   } catch (err) {
     console.warn('Failed to initialize stage manager from main.js', err);
   }
+
+  // If we loaded the Summary page markup, populate its panel now
+  try {
+    const hasSummary = document.getElementById('summary-model-name');
+    if (hasSummary) populateSummaryPanel();
+  } catch (e) { /* ignore */ }
+
+  // Initialize summary action handlers (capture/export/restart) if present
+  try {
+    const { initSummaryActions } = await import('./stages/summary.js');
+    if (document.getElementById('summary-model-name')) initSummaryActions();
+  } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
   try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
