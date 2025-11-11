@@ -159,55 +159,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards } = await import('./stageRenderer.js');
+    const { renderOptionCards, initDelegatedClickHandler } = await import('./stageRenderer.js');
+    const materialsStage = await import('./stages/materials.js');
+    const legsStage = await import('./stages/legs.js');
+    const addonsStage = await import('./stages/addons.js');
+    const dimensionsStage = await import('./stages/dimensions.js');
+    const finishStage = await import('./stages/finish.js');
+
+    // Initialize delegated click handler (single root listener for all option cards)
+    initDelegatedClickHandler();
+
+    // Render models
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
-      // The ModelSelection component expects a deeper container; try to find model-row-grid(s)
-      const modelGrids = document.querySelectorAll('.model-row-grid');
-      if (modelGrids && modelGrids.length && models) {
-        // distribute models across the first grid for simplicity
-        renderOptionCards(modelGrids[0], models, { category: null });
-      } else if (modelsRoot && models) {
-        renderOptionCards(modelsRoot, models, { category: null });
-      }
+      if (models) renderOptionCards(modelsRoot, models, { category: null });
     }
 
-    const materialsOptionsRoot = document.getElementById('materials-options');
-    if (materialsOptionsRoot) {
-      const mats = await loadData('data/materials.json');
-      if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
-    }
-
-    // Render finish stage (coatings + sheens)
-    const finishCoatingRoot = document.getElementById('finish-coating-options');
-    const finishSheenRoot = document.getElementById('finish-sheen-options');
-    if (finishCoatingRoot || finishSheenRoot) {
-  const finish = await loadData('data/finish.json');
-      if (finish) {
-        if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
-        if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
-      }
-    }
-
-    // Render dimensions, legs, addons
-    const dimsRoot = document.getElementById('dimensions-options');
-    if (dimsRoot) {
-  const dims = await loadData('data/dimensions.json');
-      if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
-    }
-
-    const legsRoot = document.getElementById('legs-options');
-    if (legsRoot) {
-  const legs = await loadData('data/legs.json');
-      if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
-    }
-
-    const addonsRoot = document.getElementById('addons-options');
-    if (addonsRoot) {
-  const addons = await loadData('data/addons.json');
-      if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
-    }
+    // Render all stages from their JSON data
+    if (materialsStage.renderStage) await materialsStage.renderStage();
+    if (finishStage.renderStage) await finishStage.renderStage();
+    if (dimensionsStage.renderStage) await dimensionsStage.renderStage();
+    if (legsStage.renderStage) await legsStage.renderStage();
+    if (addonsStage.renderStage) await addonsStage.renderStage();
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
   }

@@ -1,5 +1,6 @@
 [
-  { "id": "leg-sample-01", "title": "C Style", "price": 120, "image": "assets/images/Leg styles/C Style.jpg", "description": "Curved metal leg" },
-  { "id": "leg-sample-02", "title": "Cube", "price": 95, "image": "assets/images/Leg styles/Cube.jpg", "description": "Minimal square" },
-  { "id": "leg-sample-03", "title": "Tapered", "price": 140, "image": "assets/images/Leg styles/Tapered.jpg", "description": "Solid wood tapered" }
+  { "id": "leg-squared", "title": "Squared", "price": 120, "description": "Squared metal leg" },
+  { "id": "leg-x", "title": "X", "price": 110, "description": "X-braced leg" },
+  { "id": "leg-hourglass", "title": "Hourglass", "price": 140, "description": "Hourglass silhouette leg" },
+  { "id": "leg-custom", "title": "Custom", "price": null, "description": "Custom or specialty leg" }
 ]

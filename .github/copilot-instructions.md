@@ -5,12 +5,21 @@ This document outlines the guidelines and conventions for developing the WoodLab
 ## Context
 
 - **Tech Stack:** Vanilla JS, Tailwind CSS v3, Three.js r160, jsPDF 2.5.1, html2canvas 1.5.1, Hero-icons.
-**Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`.
+**Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`, `data/` (canonical JSON option data).
 **Maintain state management:** Only `js/main.js` MUST be the canonical mutator of global state. Stage-specific modules under `js/stages/` MUST NOT call `setState`/`setAppState` directly. Instead they should dispatch the agreed-upon events (for example `option-selected`, `addon-toggled`, `stage-model-selected`, or `request-restart`) and let `js/main.js` perform the final state mutation. This prevents cross-stage coupling and keeps stage code safe to edit in isolation.
+
+**Option rendering pattern (JSON-driven):**
+- All stage options are rendered from canonical JSON files in `data/` (e.g., `materials.json`, `finish.json`, `dimensions.json`, `legs.json`, `addons.json`).
+- Each stage module exports a `renderStage()` async function that reads its JSON and populates option containers via `stageRenderer.renderOptionCards()`.
+- A single delegated click handler in `stageRenderer.initDelegatedClickHandler()` (called from `main.js`) listens on `#stage-panels-root` and dispatches `option-selected` or `addon-toggled` events.
+- Each stage also exports a `restoreFromState(state)` function to restore selection state after navigation or reload.
+- No static HTML option cards should exist in component templates; only empty containers with `id="*-options"` remain.
 
 Notes on recent conventions:
 - `applyFinishDefaults(appState)` in `js/stages/finish.js` will dispatch `option-selected` events for any defaults and will NOT call `setState`.
 - The Summary action that resets the configuration now dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
+- Stage modules no longer have `init()` functions; `renderStage()` replaces rendering logic, and delegated handlers replace per-item click listeners.
+
 **Response Style**
 
 - Provide concise diffs for changes.
