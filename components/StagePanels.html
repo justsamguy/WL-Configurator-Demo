@@ -1,18 +1,3 @@
-<!-- Option Card Template (used for all stage rendering) -->
-<template id="option-card-tpl">
-  <button class="option-card" role="button" tabindex="0">
-    <div class="viewer-placeholder-img" style="height:64px;background:#f3f4f6;"></div>
-    <div class="title-price-row">
-      <div class="title"></div>
-      <div class="price-delta"></div>
-    </div>
-    <div class="description"></div>
-  </button>
-</template>
-
-<!-- Accessibility live region for status messages -->
-<div id="stage-status-live" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
-
 <!-- Stage Panels Placeholder: panels are identified by id="stage-panel-<index>" -->
 <div id="stage-panels-root" class="flex flex-col gap-4 px-6 py-6">
   <!-- Stage 0: Select Model -->
@@ -31,12 +16,53 @@
     <div id="finish-options" class="">
       <h4 class="text-sm font-semibold mb-2">Coating</h4>
       <div class="stage-options-grid mb-4" id="finish-coating-options">
-        <!-- Rendered by stages/finish.js from data/finish.json -->
+        <button class="option-card" data-id="fin-coat-01" data-category="finish-coating" data-price="0" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Natural Oil</div>
+            <div class="price-delta">+$0</div>
+          </div>
+          <div class="description">Natural penetrating oil finish</div>
+        </button>
+
+        <button class="option-card" data-id="fin-coat-02" data-category="finish-coating" data-price="120" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f2f7fb,#e6f1f8);height:64px"></div>
+          <div class="title-pressure-row title-price-row">
+            <div class="title">2K Poly</div>
+            <div class="price-delta">+$120</div>
+          </div>
+          <div class="description">Two-component polyurethane (durable)</div>
+        </button>
       </div>
 
       <h4 class="text-sm font-semibold mb-2">Sheen</h4>
       <div class="stage-options-grid" id="finish-sheen-options">
-        <!-- Rendered by stages/finish.js from data/finish.json -->
+        <button class="option-card" data-id="fin-sheen-01" data-category="finish-sheen" data-price="0" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Satin</div>
+            <div class="price-delta">+$0</div>
+          </div>
+          <div class="description">Medium sheen</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-02" data-category="finish-sheen" data-price="30" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f3f3f3,#e0e0e0);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Matte</div>
+            <div class="price-delta">+$30</div>
+          </div>
+          <div class="description">Low reflection matte</div>
+        </button>
+
+        <button class="option-card" data-id="fin-sheen-03" data-category="finish-sheen" data-price="75" aria-pressed="false">
+          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
+          <div class="title-price-row">
+            <div class="title">Gloss</div>
+            <div class="price-delta">+$75</div>
+          </div>
+          <div class="description">High gloss</div>
+        </button>
       </div>
     </div>
   </section>
@@ -45,7 +71,30 @@
   <section id="stage-panel-3" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Dimensions</h3>
     <div id="dimensions-options" class="stage-options-grid">
-      <!-- Rendered by stages/dimensions.js from data/dimensions.json -->
+      <button class="option-card" data-id="dim-sample-01" data-price="0" aria-pressed="false">
+        <div class="viewer-placeholder-img" style="background:#f3f4f6;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Small</div>
+          <div class="price-delta">+$0</div>
+        </div>
+        <div class="description">120 x 60 cm — Fast delivery</div>
+      </button>
+      <button class="option-card" data-id="dim-sample-02" data-price="150" aria-pressed="false">
+        <div class="viewer-placeholder-img" style="background:#f8fafc;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Medium</div>
+          <div class="price-delta">+$150</div>
+        </div>
+        <div class="description">180 x 90 cm</div>
+      </button>
+      <button class="option-card" data-id="dim-sample-03" data-price="300" aria-pressed="false">
+        <div class="viewer-placeholder-img" style="background:#ffffff;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Large</div>
+          <div class="price-delta">+$300</div>
+        </div>
+        <div class="description">240 x 100 cm</div>
+      </button>
     </div>
   </section>
 
@@ -53,13 +102,75 @@
   <section id="stage-panel-4" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Legs</h3>
     <div id="legs-options" class="stage-options-grid">
-      <!-- Rendered by stages/legs.js from data/legs.json -->
+      <button class="option-card" data-id="leg-squared" data-category="legs" data-price="120" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="Squared leg" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row">
+          <div class="title">Squared</div>
+          <div class="price-delta">+$120</div>
+        </div>
+        <div class="description">Squared metal leg</div>
+      </button>
+
+      <button class="option-card" data-id="leg-x" data-category="legs" data-price="110" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="X style leg" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row">
+          <div class="title">X</div>
+          <div class="price-delta">+$110</div>
+        </div>
+        <div class="description">X-braced leg</div>
+      </button>
+
+      <button class="option-card" data-id="leg-hourglass" data-category="legs" data-price="140" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="Hourglass leg" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row">
+          <div class="title">Hourglass</div>
+          <div class="price-delta">+$140</div>
+        </div>
+        <div class="description">Hourglass silhouette leg</div>
+      </button>
+
+      <button class="option-card" data-id="leg-custom" data-category="legs" data-price="0" aria-pressed="false">
+        <img src="assets/images/snapshot_placeholder.png" alt="Custom leg" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row">
+          <div class="title">Custom</div>
+          <div class="price-delta">TBD</div>
+        </div>
+        <div class="description">Custom or specialty leg</div>
+      </button>
     </div>
 
-    <!-- Tube Size tiles (rendered by stages/legs.js) -->
+    <!-- Tube Size tiles (new) -->
     <h4 class="text-sm font-semibold mt-4 mb-2">Tube size</h4>
     <div id="tube-size-options" class="stage-options-grid">
-      <!-- Rendered by stages/legs.js -->
+      <button class="option-card" data-id="tube-0.5x1" data-category="tube-size" data-price="0" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="½x1 inch tube" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row"><div class="title">½ × 1"</div><div class="price-delta">+</div></div>
+        <div class="description">Half by one inch</div>
+      </button>
+
+      <button class="option-card" data-id="tube-1x1" data-category="tube-size" data-price="0" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="1x1 inch tube" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row"><div class="title">1 × 1"</div><div class="price-delta">+</div></div>
+        <div class="description">Square 1" tube</div>
+      </button>
+
+      <button class="option-card" data-id="tube-2x1" data-category="tube-size" data-price="0" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="2x1 inch tube" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row"><div class="title">2 × 1"</div><div class="price-delta">+</div></div>
+        <div class="description">Rectangular 2×1" tube</div>
+      </button>
+
+      <button class="option-card" data-id="tube-3x1" data-category="tube-size" data-price="0" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="3x1 inch tube" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row"><div class="title">3 × 1"</div><div class="price-delta">+</div></div>
+        <div class="description">Rectangular 3×1" tube</div>
+      </button>
+
+      <button class="option-card" data-id="tube-4x2" data-category="tube-size" data-price="0" aria-pressed="false">
+        <img src="assets/images/model1_placeholder.png" alt="4x2 inch tube" class="viewer-placeholder-img" loading="lazy" />
+        <div class="title-price-row"><div class="title">4 × 2"</div><div class="price-delta">+</div></div>
+        <div class="description">Rectangular 4×2" tube</div>
+      </button>
     </div>
   </section>
 
@@ -67,7 +178,30 @@
   <section id="stage-panel-5" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Add‑ons</h3>
     <div id="addons-options" class="stage-options-grid">
-      <!-- Rendered by stages/addons.js from data/addons.json -->
+      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-01" data-price="45">
+        <div class="viewer-placeholder-img" style="background:#f1f5f9;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Assembly Service</div>
+          <div class="price-delta">+$45</div>
+        </div>
+        <div class="description">On-site assembly</div>
+      </button>
+      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-02" data-price="25">
+        <div class="viewer-placeholder-img" style="background:#fff7ed;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Protective Pads</div>
+          <div class="price-delta">+$25</div>
+        </div>
+        <div class="description">Set of 4</div>
+      </button>
+      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-03" data-price="120" disabled data-tooltip="This add-on is currently unavailable due to high demand.">
+        <div class="viewer-placeholder-img" style="background:#eef2ff;height:64px"></div>
+        <div class="title-price-row">
+          <div class="title">Expedited Production</div>
+          <div class="price-delta">+$120</div>
+        </div>
+        <div class="description">Rush 5-day lead</div>
+      </button>
     </div>
   </section>
 

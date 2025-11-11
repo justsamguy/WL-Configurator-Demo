@@ -1,7 +1,4 @@
 // Materials stage logic: validation and utilities
-import { renderOptionCards } from '../stageRenderer.js';
-import { loadData } from '../dataLoader.js';
-
 export function isMaterialsComplete(appState) {
   try {
     const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
@@ -12,26 +9,24 @@ export function isMaterialsComplete(appState) {
   }
 }
 
-/**
- * Render materials and color options into their respective containers.
- */
-export async function renderStage() {
-  try {
-    const materialsData = await loadData('data/materials.json');
-    const colorsData = await loadData('data/colors.json');
-    const materialsContainer = document.getElementById('materials-options');
-    const colorsContainer = document.getElementById('color-options');
-    
-    if (materialsContainer && materialsData) {
-      renderOptionCards(materialsContainer, materialsData, { category: 'material' });
+// Initialize materials stage interactions. This wires option-selected events for
+// single-choice material/color option-cards under the materials panel.
+export function init() {
+  // Delegate click handling for material and color option-cards
+  document.addEventListener('click', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.option-card[data-category="material"], .option-card[data-category="color"]');
+    if (!card) return;
+    if (card.hasAttribute('disabled')) return;
+    // Visual pressed state for category
+    const category = card.getAttribute('data-category');
+    if (category) {
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
+      card.setAttribute('aria-pressed', 'true');
+      const id = card.getAttribute('data-id');
+      const price = Number(card.getAttribute('data-price')) || 0;
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
     }
-    
-    if (colorsContainer && colorsData) {
-      renderOptionCards(colorsContainer, colorsData, { category: 'color' });
-    }
-  } catch (e) {
-    console.warn('Failed to render materials stage:', e);
-  }
+  });
 }
 
 export function restoreFromState(state) {
@@ -46,9 +41,7 @@ export function restoreFromState(state) {
         el.setAttribute('aria-pressed', 'true');
       }
     });
-  } catch (e) {
-    console.warn('Failed to restore materials stage from state:', e);
-  }
+  } catch (e) { /* ignore */ }
 }
 
-export default { isMaterialsComplete, renderStage, restoreFromState };
+export default { isMaterialsComplete, init, restoreFromState };

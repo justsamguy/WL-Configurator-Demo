@@ -1,58 +1,19 @@
-// Addons stage module — renders add-on options from JSON data
-// Add-ons are multi-select checkboxes
-import { renderOptionCards } from '../stageRenderer.js';
-import { loadData } from '../dataLoader.js';
-
-/**
- * Render add-on options into the addons-options container.
- * Each option card uses role="checkbox" and aria-checked for multi-select semantics.
- */
-export async function renderStage() {
-  try {
-    const addonsData = await loadData('data/addons.json');
-    const addonsContainer = document.getElementById('addons-options');
-    
-    if (addonsContainer && addonsData) {
-      addonsContainer.innerHTML = '';
-      addonsData.forEach(item => {
-        const btn = document.createElement('button');
-        btn.className = 'option-card';
-        btn.setAttribute('data-id', item.id);
-        btn.setAttribute('data-category', 'addon');
-        btn.setAttribute('role', 'checkbox');
-        btn.setAttribute('aria-checked', 'false');
-        if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
-        if (item.disabled) {
-          btn.setAttribute('disabled', 'true');
-          btn.setAttribute('aria-disabled', 'true');
-          if (item.tooltip) btn.setAttribute('data-tooltip', item.tooltip);
-        }
-
-        const titleRow = document.createElement('div');
-        titleRow.className = 'title-price-row';
-        const t = document.createElement('div');
-        t.className = 'title';
-        t.textContent = item.title || item.id;
-        const p = document.createElement('div');
-        p.className = 'price-delta';
-        p.textContent = item.price ? `+$${item.price}` : '+$0';
-        titleRow.appendChild(t);
-        titleRow.appendChild(p);
-        btn.appendChild(titleRow);
-
-        if (item.description) {
-          const d = document.createElement('div');
-          d.className = 'description';
-          d.textContent = item.description;
-          btn.appendChild(d);
-        }
-
-        addonsContainer.appendChild(btn);
-      });
-    }
-  } catch (e) {
-    console.warn('Failed to render addons stage:', e);
-  }
+// Addons stage module
+// Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
+export function init() {
+  document.addEventListener('click', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.option-card[data-category="addon"]');
+    if (!card) return;
+    if (card.hasAttribute('disabled')) return;
+    const id = card.getAttribute('data-id');
+    const price = Number(card.getAttribute('data-price')) || 0;
+    // toggle checked state
+    const was = card.getAttribute('aria-checked') === 'true';
+    const now = !was;
+    card.setAttribute('aria-checked', now ? 'true' : 'false');
+    card.classList.toggle('selected', now);
+    document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: now } }));
+  });
 }
 
 export function restoreFromState(state) {
@@ -64,9 +25,7 @@ export function restoreFromState(state) {
       c.setAttribute('aria-checked', checked ? 'true' : 'false');
       c.classList.toggle('selected', checked);
     });
-  } catch (e) {
-    console.warn('Failed to restore addons stage from state:', e);
-  }
+  } catch (e) { /* ignore */ }
 }
 
-export default { renderStage, restoreFromState };
+export default { init, restoreFromState };

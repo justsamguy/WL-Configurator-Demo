@@ -1,7 +1,4 @@
 // Finish stage specific logic: constraints and defaults
-import { renderOptionCards } from '../stageRenderer.js';
-import { loadData } from '../dataLoader.js';
-
 export function recomputeFinishConstraints() {
   try {
     const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
@@ -52,28 +49,6 @@ export function recomputeFinishConstraints() {
   }
 }
 
-/**
- * Render finish options (coatings and sheens) from JSON data.
- */
-export async function renderStage() {
-  try {
-    const finishData = await loadData('data/finish.json');
-    const coatingContainer = document.getElementById('finish-coating-options');
-    const sheenContainer = document.getElementById('finish-sheen-options');
-
-    if (finishData) {
-      if (finishData.coatings && coatingContainer) {
-        renderOptionCards(coatingContainer, finishData.coatings, { category: 'finish-coating' });
-      }
-      if (finishData.sheens && sheenContainer) {
-        renderOptionCards(sheenContainer, finishData.sheens, { category: 'finish-sheen' });
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to render finish stage:', e);
-  }
-}
-
 // applyFinishDefaults: ensure sensible defaults for the Finish stage.
 // IMPORTANT: This function must NOT mutate global app state directly. It
 // dispatches `option-selected` events for defaults; `js/main.js` is the
@@ -104,6 +79,25 @@ export function applyFinishDefaults(appState) {
   }
 }
 
+export function init() {
+  // Wire clicks for coatings and sheens to emit option-selected events (placeholders.js handles generic logic too)
+  document.addEventListener('click', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.option-card[data-category="finish-coating"], .option-card[data-category="finish-sheen"]');
+    if (!card) return;
+    if (card.hasAttribute('disabled')) return;
+    const category = card.getAttribute('data-category');
+    const id = card.getAttribute('data-id');
+    const price = Number(card.getAttribute('data-price')) || 0;
+    // set visual pressed
+    if (category) {
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
+      card.setAttribute('aria-pressed', 'true');
+    }
+    document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
+    try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
+  });
+}
+
 export function restoreFromState(state) {
   try {
     const opts = state && state.selections && state.selections.options ? state.selections.options : {};
@@ -117,9 +111,7 @@ export function restoreFromState(state) {
       }
     });
     try { recomputeFinishConstraints(); } catch (e) {}
-  } catch (e) {
-    console.warn('Failed to restore finish stage from state:', e);
-  }
+  } catch (e) { /* ignore */ }
 }
 
-export default { recomputeFinishConstraints, renderStage, applyFinishDefaults, restoreFromState };
+export default { recomputeFinishConstraints, applyFinishDefaults, init, restoreFromState };
