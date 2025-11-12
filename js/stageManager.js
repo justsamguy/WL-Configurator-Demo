@@ -172,6 +172,17 @@ async function setStage(index, options = {}) {
     panel.style.display = idx === managerState.current ? '' : 'none';
   });
 
+  // Also hide/show the MaterialsPanel (containing materials-options and color-options containers)
+  // only visible on stage 1 (Materials stage)
+  try {
+    const materialsPanel = document.getElementById('materials-panel');
+    if (materialsPanel) {
+      materialsPanel.style.display = managerState.current === 1 ? '' : 'none';
+    }
+  } catch (e) {
+    // ignore if materials panel not present
+  }
+
   // Sidebar no longer contains a model selection placeholder; model tiles are loaded
   // directly into the main stage panel when stage 0 is active.
 
@@ -196,12 +207,12 @@ async function setStage(index, options = {}) {
 
   // Show only the sidebar info section that corresponds to the active stage (if present)
   try {
-    const infos = document.querySelectorAll('#sidebar-info-root .sidebar-info');
+    const infos = document.querySelectorAll('#stage-info-root .sidebar-info');
     infos.forEach(sec => { sec.style.display = 'none'; });
     const active = document.getElementById(`info-stage-${managerState.current}`);
     if (active) active.style.display = '';
   } catch (e) {
-    // ignore if sidebar info root not present
+    // ignore if stage info root not present
   }
 
   // Special case: Select Model stage should be full-width and not show the sidebar.
