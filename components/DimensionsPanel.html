@@ -38,7 +38,6 @@
     <div class="axis-control-row">
       <div class="control-label mb-2">
         <label for="dim-length-input" class="text-sm font-semibold block">Length</label>
-        <p class="text-xs text-gray-500">Nominal long edge — ±12″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
         <button class="control-button decrement" data-axis="length" aria-label="Decrease length by 12 inches">
@@ -67,7 +66,6 @@
     <div class="axis-control-row">
       <div class="control-label mb-2">
         <label for="dim-width-input" class="text-sm font-semibold block">Width</label>
-        <p class="text-xs text-gray-500">Nominal short edge — ±6″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
         <button class="control-button decrement" data-axis="width" aria-label="Decrease width by 6 inches">
@@ -96,7 +94,6 @@
     <div class="axis-control-row">
       <div class="control-label mb-2">
         <label for="dim-height-select" class="text-sm font-semibold block">Height</label>
-        <p class="text-xs text-gray-500">Table height — choose standard, bar, or custom</p>
       </div>
       <div class="control-row flex items-center gap-2">
         <select id="dim-height-select" class="control-select" data-axis="height" aria-label="Height option">
@@ -124,21 +121,6 @@
         <div class="control-validation text-xs text-red-600 mt-1" data-axis="height-custom"></div>
       </div>
     </div>
-  </div>
-
-  <!-- Validation / Oversize Banners -->
-  <div id="dimensions-banners" class="mt-6 space-y-2">
-    <!-- Banners injected by JS -->
-  </div>
-
-  <!-- Action Row -->
-  <div class="action-row mt-8 flex justify-between items-center gap-4">
-    <button id="dim-reset-btn" class="reset-button text-sm text-gray-600 hover:text-gray-900 hover:underline transition">
-      Reset to Standard
-    </button>
-    <button id="dim-apply-next-btn" class="btn-primary px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-      Apply &amp; Next
-    </button>
   </div>
 
   <!-- Accessibility: aria-live region for dimension updates -->
