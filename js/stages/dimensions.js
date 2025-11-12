@@ -349,12 +349,14 @@ function selectPreset(preset, tileElement) {
     currentDimensions.length = v;
     const input = document.getElementById('dim-length-input');
     if (input) input.value = v;
+    updatePreviewSnapshot();
   });
   
   animateValue(currentDimensions.width, targetWidth, (v) => {
     currentDimensions.width = v;
     const input = document.getElementById('dim-width-input');
     if (input) input.value = v;
+    updatePreviewSnapshot();
   });
   
   currentDimensions.height = targetHeight;
@@ -364,8 +366,12 @@ function selectPreset(preset, tileElement) {
   updateUIControls();
   dispatchDimensionSelection();
   
-  // Update tile selection visual feedback
-  updateTileSelection();
+  // Delay tile selection update until after animations settle
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      updateTileSelection();
+    }, 300);
+  });
 }
 
 // Animate numeric value change
