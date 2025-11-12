@@ -9,8 +9,8 @@ const STAGES = [
   'Select Model',
   'Materials',
   'Finish',
-  'Dimensions',
   'Legs',
+  'Dimensions',
   'Add-ons',
   'Summary & Export'
 ];
