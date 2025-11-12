@@ -34,12 +34,6 @@ Notes on recent conventions:
 - **Introduce non-placeholder assets or data.**
 - **Suggest or run local verifying/testing commands** unless explicitly requested. Testing and verification must occur in a live server environment (GitHub Pages deployment) due to CDN dependencies.
 
-## Commands
-
-- **Install dependencies:** `npm i`
-- **Build:** `npm run build` (compiles Tailwind CSS)
-- **Run Dev Server:** (Not explicitly defined, but `npm i` suggests a local dev setup)
-- **Test:** Deploy to GitHub Pages and verify functionality.
 
 ## Security & Data Handling Boundaries
 
@@ -51,6 +45,8 @@ Notes on recent conventions:
 
 - Provide concise diffs for changes.
 - Make minimal, targeted changes.
+- **Test:** Stage, Commit, and Sync to GitHub. User to provide feedback on live deployment.
+
 
 ## Provenance
 

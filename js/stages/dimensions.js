@@ -103,7 +103,7 @@ function updateValidationMessage(axis) {
   if (!validateAxisValue(axis, value)) {
     const constraints = getConstraints();
     const range = constraints[axis];
-    validationEl.textContent = `Must be between ${range.min} and ${range.max} cm`;
+    validationEl.textContent = `Must be between ${range.min} and ${range.max}″`;
   } else {
     validationEl.textContent = '';
   }
@@ -237,7 +237,7 @@ function dispatchDimensionSelection() {
   // Announce to screen readers
   const liveRegion = document.getElementById('dim-live-region');
   if (liveRegion) {
-    liveRegion.textContent = `Dimensions set to ${currentDimensions.length} × ${currentDimensions.width} cm, height ${currentDimensions.height}`;
+    liveRegion.textContent = `Dimensions set to ${currentDimensions.length}″ × ${currentDimensions.width}″, height ${currentDimensions.height}`;
   }
 }
 
@@ -252,7 +252,7 @@ function initPresets() {
     const tile = document.createElement('button');
     tile.className = 'preset-tile flex-shrink-0 border-2 border-gray-200 rounded-lg p-3 hover:border-blue-500 transition focus-visible:outline-blue-500 focus-visible:outline-offset-2 cursor-pointer';
     tile.setAttribute('data-preset-id', preset.id);
-    tile.setAttribute('aria-label', `${preset.title}: ${preset.length} × ${preset.width} cm`);
+    tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
     
     tile.innerHTML = `
       <div class="flex flex-col items-center gap-2">
@@ -261,7 +261,7 @@ function initPresets() {
         </div>
         <div class="text-center">
           <div class="text-xs font-semibold">${preset.title}</div>
-          <div class="text-xs text-gray-600">${preset.length} × ${preset.width} cm</div>
+          <div class="text-xs text-gray-600">${preset.length}″ × ${preset.width}″</div>
           ${preset.description ? `<div class="text-xs text-gray-500">${preset.description}</div>` : ''}
           ${preset.price > 0 ? `<div class="text-xs font-medium text-green-700">+$${preset.price}</div>` : ''}
         </div>
@@ -511,7 +511,7 @@ export async function init() {
   
   // Check if panel is already in DOM; if not, this will be called again when it is
   if (!document.getElementById('dimensions-stage-panel')) {
-    console.warn('Dimensions panel not yet in DOM; deferring initialization');
+    // console.warn('Dimensions panel not yet in DOM; deferring initialization');
     // Wait a bit and retry
     setTimeout(init, 200);
     return;

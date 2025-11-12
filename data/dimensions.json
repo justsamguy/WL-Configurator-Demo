@@ -1,17 +1,17 @@
 {
   "presets": [
-    { "id": "dim-preset-01", "title": "Small", "price": 0, "description": "Fast delivery", "length": 120, "width": 60, "height": "standard", "lengthUnit": "cm" },
-    { "id": "dim-preset-02", "title": "Medium", "price": 150, "description": "", "length": 180, "width": 90, "height": "standard", "lengthUnit": "cm" },
-    { "id": "dim-preset-03", "title": "Large", "price": 300, "description": "", "length": 240, "width": 100, "height": "standard", "lengthUnit": "cm" }
+    { "id": "dim-preset-01", "title": "Small", "price": 0, "description": "Fast delivery", "length": 48, "width": 24, "height": "standard", "lengthUnit": "in" },
+    { "id": "dim-preset-02", "title": "Medium", "price": 150, "description": "", "length": 71, "width": 35, "height": "standard", "lengthUnit": "in" },
+    { "id": "dim-preset-03", "title": "Large", "price": 300, "description": "", "length": 94, "width": 39, "height": "standard", "lengthUnit": "in" }
   ],
   "constraints": {
-    "length": { "min": 60, "max": 300, "step": 30.48, "unit": "cm" },
-    "width": { "min": 30, "max": 150, "step": 15.24, "unit": "cm" },
-    "height": { "standard": 75, "bar": 105, "unit": "cm" }
+    "length": { "min": 24, "max": 118, "step": 12, "unit": "in" },
+    "width": { "min": 12, "max": 59, "step": 6, "unit": "in" },
+    "height": { "standard": 30, "bar": 41, "unit": "in" }
   },
   "oversizeThresholds": {
-    "length": { "threshold": 240, "message": "May affect lead time" },
-    "width": { "threshold": 100, "message": "May affect lead time" }
+    "length": { "threshold": 94, "message": "May affect lead time" },
+    "width": { "threshold": 39, "message": "May affect lead time" }
   }
 }
 

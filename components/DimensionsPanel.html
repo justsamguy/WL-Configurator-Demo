@@ -19,10 +19,10 @@
     <div class="axis-control-row">
       <div class="control-label mb-2">
         <label for="dim-length-input" class="text-sm font-medium block">Length</label>
-        <p class="text-xs text-gray-500">Nominal long edge — ±12" steps</p>
+        <p class="text-xs text-gray-500">Nominal long edge — ±12″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="length" aria-label="Decrease length" title="–12\"">
+        <button class="control-button decrement" data-axis="length" aria-label="Decrease length" title="–12″">
           <span>−</span>
         </button>
         <input
@@ -30,14 +30,14 @@
           id="dim-length-input"
           class="control-input"
           data-axis="length"
-          data-unit="cm"
+          data-unit="in"
           inputmode="decimal"
-          aria-label="Length in cm"
-          min="60"
-          max="300"
+          aria-label="Length in inches"
+          min="24"
+          max="118"
         />
-        <span class="control-unit text-sm text-gray-600">cm</span>
-        <button class="control-button increment" data-axis="length" aria-label="Increase length" title="+12\"">
+        <span class="control-unit text-sm text-gray-600">″</span>
+        <button class="control-button increment" data-axis="length" aria-label="Increase length" title="+12″">
           <span>+</span>
         </button>
         <label class="cut-to-toggle flex items-center gap-2 ml-4">
@@ -52,10 +52,10 @@
     <div class="axis-control-row">
       <div class="control-label mb-2">
         <label for="dim-width-input" class="text-sm font-medium block">Width</label>
-        <p class="text-xs text-gray-500">Nominal short edge — ±6" steps</p>
+        <p class="text-xs text-gray-500">Nominal short edge — ±6″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="width" aria-label="Decrease width" title="–6\"">
+        <button class="control-button decrement" data-axis="width" aria-label="Decrease width" title="–6″">
           <span>−</span>
         </button>
         <input
@@ -63,14 +63,14 @@
           id="dim-width-input"
           class="control-input"
           data-axis="width"
-          data-unit="cm"
+          data-unit="in"
           inputmode="decimal"
-          aria-label="Width in cm"
-          min="30"
-          max="150"
+          aria-label="Width in inches"
+          min="12"
+          max="59"
         />
-        <span class="control-unit text-sm text-gray-600">cm</span>
-        <button class="control-button increment" data-axis="width" aria-label="Increase width" title="+6\"">
+        <span class="control-unit text-sm text-gray-600">″</span>
+        <button class="control-button increment" data-axis="width" aria-label="Increase width" title="+6″">
           <span>+</span>
         </button>
         <label class="cut-to-toggle flex items-center gap-2 ml-4">
@@ -89,8 +89,8 @@
       </div>
       <div class="control-row flex items-center gap-2">
         <select id="dim-height-select" class="control-select" data-axis="height" aria-label="Height option">
-          <option value="standard">Standard (75 cm)</option>
-          <option value="bar">Bar Height (105 cm)</option>
+          <option value="standard">Standard (30″)</option>
+          <option value="bar">Bar Height (41″)</option>
           <option value="custom">Custom</option>
         </select>
       </div>
@@ -105,13 +105,13 @@
             id="dim-height-custom-input"
             class="control-input"
             data-axis="height-custom"
-            data-unit="cm"
+            data-unit="in"
             inputmode="decimal"
-            aria-label="Custom height in cm"
-            min="60"
-            max="120"
+            aria-label="Custom height in inches"
+            min="24"
+            max="47"
           />
-          <span class="control-unit text-sm text-gray-600">cm</span>
+          <span class="control-unit text-sm text-gray-600">″</span>
           <button class="control-button increment" data-axis="height-custom" aria-label="Increase custom height" title="+">
             <span>+</span>
           </button>
@@ -134,11 +134,11 @@
         <rect class="tabletop-rect" x="40" y="30" width="240" height="120" fill="#D2B48C" stroke="#8B7355" stroke-width="2" />
         <!-- Length label -->
         <text class="dimension-label length-label" x="160" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">
-          Length: <tspan class="length-value">120</tspan> cm
+          Length: <tspan class="length-value">48</tspan>″
         </text>
         <!-- Width label -->
         <text class="dimension-label width-label" x="20" y="90" text-anchor="middle" font-size="12" font-weight="bold" fill="#333" transform="rotate(-90 20 90)">
-          Width: <tspan class="width-value">60</tspan> cm
+          Width: <tspan class="width-value">24</tspan>″
         </text>
       </svg>
     </div>
