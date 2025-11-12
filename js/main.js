@@ -105,6 +105,22 @@ document.addEventListener('request-restart', (ev) => {
   } catch (e) { /* ignore */ }
 });
 
+// Handle stage change requests from UI modules (e.g., Apply & Next buttons)
+document.addEventListener('request-stage-change', (ev) => {
+  try {
+    const stageManager = window.stageManager || null;
+    if (!stageManager) return;
+    const { direction, index } = ev.detail || {};
+    if (typeof index === 'number') {
+      stageManager.setStage(index, { allowSkip: true });
+    } else if (direction === 'next') {
+      stageManager.nextStage && stageManager.nextStage();
+    } else if (direction === 'prev') {
+      stageManager.prevStage && stageManager.prevStage();
+    }
+  } catch (e) { /* ignore */ }
+});
+
 // initialize displayed price
 document.addEventListener('DOMContentLoaded', () => updatePriceUI(state.pricing.total));
 
@@ -179,6 +195,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
     }
 
+    // Render color swatches for the Materials stage from data/colors.json
+    const colorOptionsRoot = document.getElementById('color-options');
+    if (colorOptionsRoot) {
+      const colors = await loadData('data/colors.json');
+      if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
+    }
+
     // Render finish stage (coatings + sheens)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
     const finishSheenRoot = document.getElementById('finish-sheen-options');
@@ -191,12 +214,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Render dimensions, legs, addons
-    const dimsRoot = document.getElementById('dimensions-options');
-    if (dimsRoot) {
-  const dims = await loadData('data/dimensions.json');
-      if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
-    }
-
+    // Note: Dimensions stage uses a custom UI panel (DimensionsPanel.html) instead of option cards,
+    // so we skip rendering here. The dimensions panel is loaded dynamically by stageManager.
+    
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
   const legs = await loadData('data/legs.json');
@@ -242,4 +262,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
   try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
+
+  // Log successful app load with timestamp
+  console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
+  console.log('Last updated: 2025-11-12 14:39');
 });

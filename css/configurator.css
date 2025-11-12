@@ -1676,3 +1676,406 @@ p, label { font-size: 15px; color: #374151; }
   background-color: #2563eb; /* Blue 600 on hover */
   color: #ffffff;
 }
+
+/* ===== DIMENSIONS STAGE STYLES ===== */
+
+/* Dimensions panel container */
+.dimensions-panel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+/* Dimensions header */
+.dimensions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.status-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 9999px;
+}
+
+/* Presets row */
+.presets-row {
+  margin-bottom: 2rem;
+}
+
+.presets-list {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  scroll-behavior: smooth;
+}
+
+.preset-tile {
+  flex-shrink: 0;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.preset-tile:hover {
+  border-color: #3b82f6;
+}
+
+.preset-tile:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.preset-tile.active,
+.preset-tile[aria-pressed="true"] {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+/* Axis controls */
+.axis-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.axis-control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-label {
+  margin-bottom: 0.5rem;
+}
+
+.control-label label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: block;
+}
+
+.control-label p {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Control buttons (increment/decrement) */
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #374151;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.control-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.control-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Numeric inputs */
+.control-input {
+  flex: 1;
+  min-width: 80px;
+  max-width: 120px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  background-color: #ffffff;
+  color: #111827;
+  transition: all 0.2s ease;
+}
+
+.control-input:focus-visible {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.control-input:invalid {
+  border-color: #ef4444;
+}
+
+/* Control select for height */
+.control-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-select:focus-visible {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Control unit label */
+.control-unit {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  min-width: 30px;
+}
+
+/* "Cut to" checkbox toggle */
+.cut-to-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.cut-to-toggle input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.cut-to-toggle span {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Validation message */
+.control-validation {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  display: block;
+  min-height: 1.2rem;
+}
+
+/* Oversize banners */
+.oversize-banner {
+  background-color: #f3f4f6;
+  border-left: 4px solid #f59e0b;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.oversize-banner .font-semibold {
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.oversize-banner svg {
+  width: 1rem;
+  height: 1rem;
+  color: #f59e0b;
+}
+
+.oversize-banner p {
+  color: #374151;
+  margin-top: 0.25rem;
+}
+
+/* Live preview snapshot */
+.preview-snapshot {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.preview-snapshot.highlight {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.snapshot-svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+
+.dimension-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  fill: #333333;
+}
+
+/* Action row (buttons) */
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.reset-button {
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.reset-button:hover {
+  color: #111827;
+  text-decoration: underline;
+}
+
+.reset-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Primary button (Apply & Next) */
+.btn-primary {
+  padding: 0.5rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #9ca3af;
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Custom height input container (hidden by default) */
+#custom-height-container {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+#custom-height-container.hidden {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dimensions-panel-container {
+    padding: 0.75rem;
+  }
+  
+  .control-row {
+    flex-wrap: wrap;
+  }
+  
+  .control-input {
+    flex: 0 0 80px;
+  }
+  
+  .cut-to-toggle {
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+  
+  .action-row {
+    flex-direction: column-reverse;
+  }
+  
+  .btn-primary {
+    width: 100%;
+  }
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+

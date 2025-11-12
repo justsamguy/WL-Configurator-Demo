@@ -1,0 +1,99 @@
+# Dimensions Stage — Final GUI Design (visual, GUI-only)
+
+Goal
+----
+Provide a single, clear, and approachable control surface that lets users size a tabletop in three axes (Length, Width, Height) with quick presets, fine adjustments, and an optionally revealed "Cut to" custom input for exact dimensions. The panel must be scannable, keyboard friendly, and visually consistent with the existing tile/grid UI.
+
+High-level layout
+-----------------
+- Container: a vertical panel within the right rail (sidebar). Header row shows stage title "Dimensions" and a small status pill (e.g., "Required" / "Optional") at the right.
+- Visual hierarchy: Title -> Presets row -> Axis controls (Length, Width, Height) -> Validation / Oversize banners -> Live preview snapshot -> Action row (Reset to Standard / Apply & Next).
+- Use compact spacing so the panel fits without excessive scroll on desktop; allow vertical scroll for many controls on small screens.
+
+Presets row (top)
+------------------
+- Horizontal, single-line list of preset size tiles (3–4 presets). Each tile includes:
+  - 1:1 small thumbnail (256×256 placeholder) on left
+  - Bold label (e.g., "120 × 60 cm")
+  - Subtle price delta on right (if applicable)
+- Interaction: selecting a preset updates all three axis controls visually and shows a brief skeleton over the viewer.
+- Keyboard: focusable with Tab; Enter/Space selects.
+
+Axis controls (Length, Width, Height)
+-------------------------------------
+For each axis show a consistent row card with these elements from left→right:
+- Label & helper: "Length" + small description line (e.g., "Nominal long edge — +/- 12" steps")
+- Decrement button [ –12" ] (secondary button)
+- Numeric input field (center) showing current value with unit suffix (e.g., 120 cm or 48")
+  - This field supports direct typing and arrow key adjustments.
+  - Input shows inline validation hints beneath when out of range.
+- Increment button [ +12" ] (secondary button)
+- Optional checkbox toggle "Cut to" (reveals a compact custom input when checked)
+
+Visual and interaction details:
+- Buttons are pill-shaped with subtle shadow and hover states; disabled state dims to 40% and shows `aria-disabled` tooltip.
+- Numeric input uses monospaced digits, clear label, and visible focus ring (:focus-visible) — do not remove default outlines.
+- Step sizes:
+  - Length: +/- 12" (30.48 cm) per click
+  - Width: +/- 6" (15.24 cm) per click
+  - Height: preset dropdown (see below)
+- If the user types a custom value outside allowed range, show a red helper text and a 1px red outline under the field.
+
+Height control
+--------------
+- Presented as a compact dropdown with three choices: "Standard", "Bar height", "Custom".
+- If "Custom" is selected, reveal a numeric input similar to Length/Width with units and +/- controls.
+
+Validation / Oversize banners
+-----------------------------
+- If any axis exceeds a practical limit, show a stacked, inline, grayscale banner above the affected axis row: light gray background, bold heading "Oversize" and a one-line reason (e.g., "May affect lead time").
+- Banners stack vertically when multiple constraints apply.
+- Banners are informational (no modal) and include a small info icon with a hover tooltip.
+
+Live preview snapshot
+---------------------
+- Small, landscape-oriented snapshot box (approx 320×180) showing a 2D stylized top-down mock of the tabletop with annotated dimensions (Length × Width). Use placeholder imagery and a subtle border.
+- When a dimension changes, briefly highlight the corresponding side label on the preview (fade animation 300ms).
+
+Action row (bottom)
+--------------------
+- Left: subtle "Reset to Standard" text-button (clears custom values, returns presets)
+- Right: primary action "Apply & Next"—prominent, fills its content width on mobile, right-aligned on desktop.
+- Disabled state: "Apply & Next" is disabled until required values are valid.
+
+Accessibility notes (GUI-focused)
+---------------------------------
+- All interactive controls must be reachable via keyboard (Tab order follows visual order).
+- Buttons: use :focus-visible for keyboard outlines; do not remove native outlines.
+- Inputs: label each input visibly and with an associated off-screen aria-label for assistive tech.
+- Banners and validation messages: emit to an aria-live polite region so screen readers announce them.
+- Tooltips: accessible on focus and hover; avoid hover-only content.
+
+Micro‑interactions & feedback
+-----------------------------
+- Price/preview updates animate smoothly (count-up for price; 300ms fade/highlight for preview edges).
+- When a preset is selected, animate the axis values changing with a subtle tween rather than instantly.
+- Buttons show pressed state (scale 0.98) for 80ms to give tactile feedback.
+
+Responsive behavior
+-------------------
+- Desktop (≥1024px): panel remains as a right-rail column. Snapshot shown at top-right of the panel; actions on bottom-right.
+- Tablet (768–1023px): controls stack tighter; snapshot moves under axis controls; action buttons remain visible at bottom.
+- Mobile (<768px): panel becomes full-width stacked content; action buttons are large, full-width; the presets row becomes a horizontally scrollable pill list.
+
+Visual tokens & spacing
+-----------------------
+- Use the project's existing typography scale and grayscale palette.
+- Spacing: 12px between rows, 8px internal control padding, 16px outer padding for the panel.
+- Preset tiles: 8px gap between thumbnail and text; 10px corner radius.
+
+Summary of user flows (visual)
+------------------------------
+1. New user: sees presets row → taps a preset → axis values animate to preset → preview updates → taps "Apply & Next".
+2. Power user: types custom length → validation inline appears if needed → preview updates → uses "Cut to" to set exact cut dimension → applies.
+3. Edge case: user enters oversize → banner appears above axis → primary button remains enabled but shows a small warning badge informing of lead time change.
+
+Notes
+-----
+- This document focuses on GUI visuals and behaviors only; implementation details (event names, state shape) remain in code planning files.
+- Keep controls compact and consistent with the other stage panels (tile language and affordances match existing option-cards).

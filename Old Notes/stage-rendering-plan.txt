@@ -1,0 +1,123 @@
+Stage rendering migration plan — JSON-driven option rendering
+
+Overview
+- Goal: Remove duplicate option markup from `components/StagePanels.html` and render each stage's option tiles from canonical JSON (`data/*.json`). Keep `js/main.js` as the single state mutator. Implement an incremental, testable migration for all stages: Materials, Finish, Dimensions, Legs, Add-ons.
+- Assumptions: stage-specific JSON files exist (e.g., `data/materials.json`, `data/finish.json`, `data/dimensions.json`, `data/legs.json`, `data/addons.json`). Stage modules live in `js/stages/` and are responsible for rendering and emitting events, but must not mutate global state directly.
+
+JSON contract (recommended fields)
+- id (string) — unique identifier
+- title (string)
+- price (number | null) — numeric delta; null or undefined implies TBD
+- description (string | optional)
+- available (boolean, default true)
+- category (string | optional) — can be inferred from stage
+- image (string | optional)
+- meta (object | optional) — free-form for stage-specific data (e.g., color hex, finish type)
+
+Common shared work (applies to all stages)
+1) Add a reusable template to `components/StagePanels.html` near the options containers:
+   - `<template id="option-card-tpl">` containing the minimal option-card markup (title, price, description, image container).
+   - Keep a tiny placeholder/skeleton in HTML for slow-loading UX.
+2) Create or centralize small helpers (new file or small exports in `js/stageRenderer.js`):
+   - `renderOptions(container, items, opts)` — idempotent renderer to populate the container.
+   - `formatPrice(price)` — consistent price labels ("+$0", "TBD").
+   - `updateOptionUI(id, category, selected)` — sync aria and selected class.
+3) Use event delegation (attach once) on `#stage-panels-root` or a per-stage container:
+   - Single `click` handler that finds `.option-card` via `closest()`; ignores `disabled`.
+   - Dispatch a `CustomEvent('option-selected', { detail: { id, category } })`.
+4) Accessibility & focus handling:
+   - Ensure template uses `role`/`aria-pressed`/`aria-checked` consistently.
+   - Add an aria-live polite region for status messages.
+   - Preserve focus on re-render: capture activeElement `data-id`, re-focus equivalent.
+5) Defensive rendering:
+   - Renderers must be idempotent (clear and repopulate container) and avoid binding per-item listeners.
+   - Provide default values when JSON fields are missing.
+
+Stage-specific details & steps
+
+Materials
+- Data nuances: swatch colors, image thumbnails, texture previews, material variants.
+- Renderer specifics:
+  - Render swatch square or small thumbnail, `data-image` and `data-color` attributes.
+  - If a material affects the 3D viewer, dispatch `stage-model-selected` or a `material-selected` event with both id and viewerHint (e.g., texture key).
+- Accessibility checks: visually hidden labels for color swatches; ensure contrast.
+
+Finish
+- Two logical groups: coating (coating options) and sheen (sheen options).
+- Renderer specifics:
+  - Render sections within `#finish-options` for each subgroup (coating, sheen).
+  - Ensure `data-category` reflects subgroup: e.g., `finish-coating`, `finish-sheen`.
+- Business rule: coating selection may enable/disable certain sheens; renderer should reflect `available` flags from JSON or be updated from `main.js` after business logic runs.
+
+Dimensions
+- Items: sizes (Small, Medium, Large) and associated lead times.
+- Renderer specifics:
+  - Show dimensions and delivery lead time in description.
+  - Price may be relative; use `formatPrice` to keep consistent formatting.
+- Edge case: free-form custom dimensions should remain a separate control (do not convert to the template-driven matrix unless JSON exists for custom presets).
+
+Legs
+- More complex: leg style items plus a related sub-panel for `tube-size` tiles.
+- Renderer specifics:
+  - Render primary leg options in `#legs-options` using template.
+  - Render tube-size options in a separate pass into `#tube-size-options`.
+  - Use `data-group` or `data-subcategory` for multi-level grouping if helpful.
+- Note: Keep `leg-custom` as a special-case with `price: null` and disabled behavior if needed.
+
+Add‑ons
+- Role: checkboxes (multi-select). Use `role="checkbox"` and `aria-checked`.
+- Renderer specifics:
+  - Set `role="checkbox"` when creating nodes and set `aria-checked="false"` initially.
+  - Disabled add-ons must include `aria-disabled` and an accessible reason (aria-describedby referencing a hidden description or using aria-live announcements).
+
+Testing & verification
+- Per-stage smoke tests:
+  - After rendering stage data, assert container has expected count of `.option-card` nodes and that each has `data-id`.
+  - Verify clicking a tile dispatches `option-selected` with correct detail.
+- Accessibility checks:
+  - Keyboard navigation: Tab to first option, arrow/space/enter behavior if applicable.
+  - Screen reader announcements for disabled/unavailable actions.
+- Lint/build checks: Ensure no JS syntax errors after adding renderer helpers.
+
+Migration rollout (incremental)
+1) Pick one low-risk stage (recommend `legs`):
+   - Add template, implement `js/stages/legs.js` renderer to read `data/legs.json`, add delegated root click handler, update `main.js` to listen for `option-selected` if required.
+   - Remove the duplicated static cards from `components/StagePanels.html` for legs only.
+   - Smoke test, accessibility check.
+2) Repeat for `addons` (checkbox role) and `dimensions` (simple mapping).
+3) Do `finish` (multi-subgroup) next because it needs additional grouping logic.
+4) Finish with `materials` (viewer integration may require extra viewer hooks).
+
+Roll-back plan
+- Keep the original static HTML in the file under a commented region or in a temporary file until the stage passes smoke tests.
+- Revert to previous markup quickly via commit if regressions appear.
+
+Deliverables for each stage migration
+- Updated `components/StagePanels.html` (adds template; removes only that stage's duplicated cards)
+- Updated `js/stages/<stage>.js` with a `renderStage(container, data)` function
+- Optional small helpers in `js/stageRenderer.js` or `js/utils/ui.js`
+- Tests / smoke checks (simple script or manual test steps in the stage's plan)
+
+Acceptance criteria
+- All option tiles rendered from JSON data, with no duplicated static option markup left in `components/StagePanels.html` except placeholders/templating.
+- Clicking/toggling an option produces the same events and state changes as before.
+- Accessibility attributes maintained and keyboard interactions preserved.
+- No memory leaks or duplicate event listeners after repeated renders.
+
+Notes & references
+- Keep `js/main.js` as the sole mutator of global state per project convention.
+- Use event names already in repo (e.g., `option-selected`, `addon-toggled`, `request-restart`) to avoid breaking other modules.
+
+Migration checklist (copyable)
+- [ ] Add `#option-card-tpl` to `components/StagePanels.html` (single template)
+- [ ] Implement `renderOptions` helper
+- [ ] Implement delegated click handler on `#stage-panels-root`
+- [ ] Migrate `legs` stage and test
+- [ ] Migrate `addons` stage and test
+- [ ] Migrate `dimensions` stage and test
+- [ ] Migrate `finish` stage and test
+- [ ] Migrate `materials` stage and test
+- [ ] Remove remaining duplicated HTML
+- [ ] Run accessibility check and update ARIA as needed
+
+End of plan

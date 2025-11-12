@@ -11,10 +11,11 @@ This document outlines the guidelines and conventions for developing the WoodLab
 Notes on recent conventions:
 - `applyFinishDefaults(appState)` in `js/stages/finish.js` will dispatch `option-selected` events for any defaults and will NOT call `setState`.
 - The Summary action that resets the configuration now dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
-**Response Style**
+## Response Style
 
 - Provide concise diffs for changes.
 - Make minimal, targeted changes. When adding new modules under `js/stages/` or `js/pricing.js`, include a one-line description in this file explaining their purpose.
+- **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
 
 - **Follow the locked tech stack:** Use only the specified libraries and frameworks.
 - **Adhere to the canonical file/folder layout:** Maintain the project's structure as defined.
@@ -34,12 +35,6 @@ Notes on recent conventions:
 - **Introduce non-placeholder assets or data.**
 - **Suggest or run local verifying/testing commands** unless explicitly requested. Testing and verification must occur in a live server environment (GitHub Pages deployment) due to CDN dependencies.
 
-## Commands
-
-- **Install dependencies:** `npm i`
-- **Build:** `npm run build` (compiles Tailwind CSS)
-- **Run Dev Server:** (Not explicitly defined, but `npm i` suggests a local dev setup)
-- **Test:** Deploy to GitHub Pages and verify functionality.
 
 ## Security & Data Handling Boundaries
 
@@ -51,6 +46,8 @@ Notes on recent conventions:
 
 - Provide concise diffs for changes.
 - Make minimal, targeted changes.
+- **Test:** Stage, Commit, and Sync to GitHub. User to provide feedback on live deployment.
+
 
 ## Provenance
 

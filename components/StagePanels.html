@@ -15,148 +15,41 @@
     <h3 class="text-md font-semibold mb-2">Finish</h3>
     <div id="finish-options" class="">
       <h4 class="text-sm font-semibold mb-2">Coating</h4>
-      <div class="stage-options-grid mb-4" id="finish-coating-options">
-        <button class="option-card" data-id="fin-coat-01" data-category="finish-coating" data-price="0" aria-pressed="false">
-          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#F7F7F5,#E9F3EF);height:64px"></div>
-          <div class="title-price-row">
-            <div class="title">Natural Oil</div>
-            <div class="price-delta">+$0</div>
-          </div>
-          <div class="description">Natural penetrating oil finish</div>
-        </button>
-
-        <button class="option-card" data-id="fin-coat-02" data-category="finish-coating" data-price="120" aria-pressed="false">
-          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f2f7fb,#e6f1f8);height:64px"></div>
-          <div class="title-pressure-row title-price-row">
-            <div class="title">2K Poly</div>
-            <div class="price-delta">+$120</div>
-          </div>
-          <div class="description">Two-component polyurethane (durable)</div>
-        </button>
+      <div class="stage-options-grid mb-4" id="finish-coating-options" aria-live="polite" aria-atomic="true">
+        <!-- Option cards rendered at runtime from data/finish.json coatings via main.js -> stageRenderer.renderOptionCards -->
       </div>
 
       <h4 class="text-sm font-semibold mb-2">Sheen</h4>
-      <div class="stage-options-grid" id="finish-sheen-options">
-        <button class="option-card" data-id="fin-sheen-01" data-category="finish-sheen" data-price="0" aria-pressed="false">
-          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#e6f7ff,#bfe9ff);height:64px"></div>
-          <div class="title-price-row">
-            <div class="title">Satin</div>
-            <div class="price-delta">+$0</div>
-          </div>
-          <div class="description">Medium sheen</div>
-        </button>
-
-        <button class="option-card" data-id="fin-sheen-02" data-category="finish-sheen" data-price="30" aria-pressed="false">
-          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#f3f3f3,#e0e0e0);height:64px"></div>
-          <div class="title-price-row">
-            <div class="title">Matte</div>
-            <div class="price-delta">+$30</div>
-          </div>
-          <div class="description">Low reflection matte</div>
-        </button>
-
-        <button class="option-card" data-id="fin-sheen-03" data-category="finish-sheen" data-price="75" aria-pressed="false">
-          <div class="viewer-placeholder-img" style="background:linear-gradient(180deg,#fff2cc,#ffd27a);height:64px"></div>
-          <div class="title-price-row">
-            <div class="title">Gloss</div>
-            <div class="price-delta">+$75</div>
-          </div>
-          <div class="description">High gloss</div>
-        </button>
+      <div class="stage-options-grid" id="finish-sheen-options" aria-live="polite" aria-atomic="true">
+        <!-- Option cards rendered at runtime from data/finish.json sheens via main.js -> stageRenderer.renderOptionCards -->
       </div>
     </div>
   </section>
 
   <!-- Stage 3: Dimensions -->
   <section id="stage-panel-3" class="stage-panel" style="display: none;">
-    <h3 class="text-md font-semibold mb-2">Dimensions</h3>
-    <div id="dimensions-options" class="stage-options-grid">
-      <button class="option-card" data-id="dim-sample-01" data-price="0" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:#f3f4f6;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Small</div>
-          <div class="price-delta">+$0</div>
-        </div>
-        <div class="description">120 x 60 cm — Fast delivery</div>
-      </button>
-      <button class="option-card" data-id="dim-sample-02" data-price="150" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:#f8fafc;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Medium</div>
-          <div class="price-delta">+$150</div>
-        </div>
-        <div class="description">180 x 90 cm</div>
-      </button>
-      <button class="option-card" data-id="dim-sample-03" data-price="300" aria-pressed="false">
-        <div class="viewer-placeholder-img" style="background:#ffffff;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Large</div>
-          <div class="price-delta">+$300</div>
-        </div>
-        <div class="description">240 x 100 cm</div>
-      </button>
-    </div>
+    <div id="dimensions-panel-placeholder"></div>
   </section>
 
   <!-- Stage 4: Legs -->
   <section id="stage-panel-4" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Legs</h3>
-    <div id="legs-options" class="stage-options-grid">
-      <button class="option-card" data-id="leg-sample-01" data-category="legs" data-price="120" aria-pressed="false">
-        <img src="assets/images/Leg styles/C%20Style.jpg" alt="C style leg" class="viewer-placeholder-img" loading="lazy" />
-        <div class="title-price-row">
-          <div class="title">C Style</div>
-          <div class="price-delta">+$120</div>
-        </div>
-        <div class="description">Curved metal leg</div>
-      </button>
-      <button class="option-card" data-id="leg-sample-02" data-category="legs" data-price="95" aria-pressed="false">
-        <img src="assets/images/Leg styles/Cube.jpg" alt="Cube leg" class="viewer-placeholder-img" loading="lazy" />
-        <div class="title-price-row">
-          <div class="title">Cube</div>
-          <div class="price-delta">+$95</div>
-        </div>
-        <div class="description">Minimal square</div>
-      </button>
-      <button class="option-card" data-id="leg-sample-03" data-category="legs" data-price="140" aria-pressed="false">
-        <img src="assets/images/Leg styles/Tapered.jpg" alt="Tapered leg" class="viewer-placeholder-img" loading="lazy" />
-        <div class="title-price-row">
-          <div class="title">Tapered</div>
-          <div class="price-delta">+$140</div>
-        </div>
-        <div class="description">Solid wood tapered</div>
-      </button>
+    <div id="legs-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+      <!-- Option cards rendered at runtime from data/legs.json via main.js -> stageRenderer.renderOptionCards -->
+    </div>
+
+    <!-- Tube Size tiles (future: add data/tube-sizes.json and render dynamically) -->
+    <h4 class="text-sm font-semibold mt-4 mb-2">Tube size</h4>
+    <div id="tube-size-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+      <!-- Placeholder: tube size options would be rendered here once data/tube-sizes.json is available -->
     </div>
   </section>
 
   <!-- Stage 5: Add-ons -->
   <section id="stage-panel-5" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Add‑ons</h3>
-    <div id="addons-options" class="stage-options-grid">
-      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-01" data-price="45">
-        <div class="viewer-placeholder-img" style="background:#f1f5f9;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Assembly Service</div>
-          <div class="price-delta">+$45</div>
-        </div>
-        <div class="description">On-site assembly</div>
-      </button>
-      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-02" data-price="25">
-        <div class="viewer-placeholder-img" style="background:#fff7ed;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Protective Pads</div>
-          <div class="price-delta">+$25</div>
-        </div>
-        <div class="description">Set of 4</div>
-      </button>
-      <button class="option-card" data-category="addon" role="checkbox" aria-pressed="false" aria-checked="false" data-id="addon-03" data-price="120" disabled data-tooltip="This add-on is currently unavailable due to high demand.">
-        <div class="viewer-placeholder-img" style="background:#eef2ff;height:64px"></div>
-        <div class="title-price-row">
-          <div class="title">Expedited Production</div>
-          <div class="price-delta">+$120</div>
-        </div>
-        <div class="description">Rush 5-day lead</div>
-      </button>
+    <div id="addons-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+      <!-- Option cards rendered at runtime from data/addons.json via main.js -> stageRenderer.renderOptionCards (multi-select) -->
     </div>
   </section>
 

@@ -3,4 +3,9 @@
   { "id": "mat-02", "title": "Black Walnut", "price": 250, "image": "assets/images/Black_Walnut_Sample.jpg", "description": "Deep, rich color." },
   { "id": "mat-03", "title": "Siberian Elm", "price": 100, "image": "assets/images/Siberian_Elm_Sample.jpg", "description": "Balanced, neutral look." },
   { "id": "mat-04", "title": "Sycamore", "price": 150, "image": "assets/images/Sycamore_Sample.jpg", "description": "Light, versatile tone." }
+ ,
+  { "id": "mat-05", "title": "Ash", "price": 0, "image": "assets/images/model1_placeholder.png", "description": "Placeholder." },
+  { "id": "mat-06", "title": "Claro Walnut", "price": 0, "image": "assets/images/snapshot_placeholder.png", "description": "Placeholder." },
+  { "id": "mat-07", "title": "Maple", "price": 0, "image": "assets/images/1B345A.png", "description": "Placeholder." },
+  { "id": "mat-08", "title": "Other", "price": 0, "image": "assets/images/645E51.png", "description": "Placeholder." }
 ]

@@ -31,9 +31,11 @@
       <!-- Summary button placed inline with the price so it scrolls together and doesn't stick to the header -->
       <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
     </div>
-    <div data-include="components/StagePanels.html"></div>
-    <!-- Include the MaterialsPanel inside the scrollable area so its tiles can layout and scroll correctly -->
-    <div data-include="components/MaterialsPanel.html"></div>
+  <div data-include="components/StagePanels.html"></div>
+  <!-- Shared stage help/info (moved from MaterialsPanel to a shared component) -->
+  <div data-include="components/StageInfo.html"></div>
+  <!-- MaterialsPanel is still included for the option containers so they can be rendered into the sidebar -->
+  <div data-include="components/MaterialsPanel.html"></div>
   </div>
 
   <!-- Fixed bottom area reserved for truly fixed controls (left intentionally empty) -->

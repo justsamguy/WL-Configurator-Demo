@@ -8,6 +8,7 @@ alwaysApply: true
   - Edit project files: `index.html`, `css/configurator.css`, `js/main.js`, `js/viewer.js`, `js/app.js`, `js/ui/*.js`, `components/*.html`, `pages/*.html`, and any assets in `assets/`.
   - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/styles.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
   - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
+  - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
   - Strictly follow the canonical file/folder layout:
     - `index.html`: Minimal entry point; contains root `div` elements for dynamic content injection. All links must be relative.
     - `css/configurator.css`: Compiled Tailwind output.
