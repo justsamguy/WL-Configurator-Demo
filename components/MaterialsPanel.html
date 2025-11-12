@@ -1,51 +1,12 @@
-<!-- Sidebar info panels for each stage. Each section is shown only when its stage is active. -->
+<!-- Materials panel: only option containers (stage-specific help moved to components/StageInfo.html) -->
 <div id="materials-panel" class="">
-  <div id="sidebar-info-root">
-    <section id="info-stage-0" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Select Model — Tips</h3>
-      <p class="text-sm text-gray-600">Choose a base model to begin. You can preview models in the main viewer. Selecting a model will enable the Materials stage.</p>
-    </section>
+  <div id="materials-root">
+    <div id="materials-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
+      <!-- Option cards are rendered at runtime by js/main.js -> stageRenderer.renderOptionCards -->
+    </div>
 
-    <section id="info-stage-1" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Wood</h3>
-      <p class="text-sm text-gray-600">Select a wood species for your tabletop. Prices shown reflect the wood differential. You can compare samples and read short descriptions here.</p>
-
-      <!-- Tiles for wood species. Rendered dynamically from data/materials.json -->
-      <div id="materials-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
-        <!-- Option cards are rendered at runtime by js/main.js -> stageRenderer.renderOptionCards -->
-      </div>
-      <!-- Color swatches section (3-column grid) -->
-      <h3 class="text-md font-semibold mb-2 mt-6">Color</h3>
-      <p class="text-sm text-gray-600">Choose a color or custom finish. First tile is a custom option (extra cost); others are sample swatches.</p>
-
-      <div id="color-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
-        <!-- Color option cards rendered at runtime from data/colors.json via main.js -> stageRenderer.renderOptionCards -->
-      </div>
-    </section>
-
-    <section id="info-stage-2" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Finish</h3>
-      <p class="text-sm text-gray-600">Choose a finish to protect and style the surface. Higher gloss finishes may show wear differently over time.</p>
-    </section>
-
-    <section id="info-stage-3" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Dimensions</h3>
-      <p class="text-sm text-gray-600">Adjust the overall size to fit your space. Note: Larger sizes may affect lead time and price.</p>
-    </section>
-
-    <section id="info-stage-4" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Legs</h3>
-      <p class="text-sm text-gray-600">Pick a leg style that complements the tabletop. Prices vary by material and finish.</p>
-    </section>
-
-    <section id="info-stage-5" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Add-ons</h3>
-      <p class="text-sm text-gray-600">Optional extras such as protective pads, expedited production, or assembly are available here.</p>
-    </section>
-
-    <section id="info-stage-6" class="sidebar-info" style="display:none">
-      <h3 class="text-md font-semibold mb-2">Summary & Export</h3>
-      <p class="text-sm text-gray-600">Review your configuration, view a price breakdown, and export order details or a snapshot PDF.</p>
-    </section>
+    <div id="color-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
+      <!-- Color option cards rendered at runtime from data/colors.json via main.js -> stageRenderer.renderOptionCards -->
+    </div>
   </div>
 </div>
