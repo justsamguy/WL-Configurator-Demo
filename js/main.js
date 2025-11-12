@@ -179,6 +179,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
     }
 
+    // Render color swatches for the Materials stage from data/colors.json
+    const colorOptionsRoot = document.getElementById('color-options');
+    if (colorOptionsRoot) {
+      const colors = await loadData('data/colors.json');
+      if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
+    }
+
     // Render finish stage (coatings + sheens)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
     const finishSheenRoot = document.getElementById('finish-sheen-options');

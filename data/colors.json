@@ -1,0 +1,11 @@
+[
+  { "id": "color-01", "title": "Custom", "price": 100, "image": "assets/images/model1_placeholder.png", "description": "Upload or specify a custom color." },
+  { "id": "color-02", "title": "Swatch 1", "price": 0, "image": "assets/images/17B1E0.png", "description": "Placeholder." },
+  { "id": "color-03", "title": "Swatch 2", "price": 0, "image": "assets/images/1B345A.png", "description": "Placeholder." },
+  { "id": "color-04", "title": "Swatch 3", "price": 0, "image": "assets/images/3DACE1.png", "description": "Placeholder." },
+  { "id": "color-05", "title": "Swatch 4", "price": 0, "image": "assets/images/57C3E9.png", "description": "Placeholder." },
+  { "id": "color-06", "title": "Swatch 5", "price": 0, "image": "assets/images/645E51.png", "description": "Placeholder." },
+  { "id": "color-07", "title": "Swatch 6", "price": 0, "image": "assets/images/AEDCE7.png", "description": "Placeholder." },
+  { "id": "color-08", "title": "Swatch 7", "price": 0, "image": "assets/images/snapshot_placeholder.png", "description": "Placeholder." },
+  { "id": "color-09", "title": "Swatch 8", "price": 0, "image": "assets/images/model2.png", "description": "Placeholder." }
+]
