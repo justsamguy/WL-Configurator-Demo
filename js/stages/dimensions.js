@@ -48,6 +48,13 @@ function initializeFromState(appState) {
         // Support custom dimension objects
         currentDimensions = { ...currentDimensions, ...dimSel };
       }
+    } else if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
+      // No previous selection; select first available preset
+      const firstPreset = dimensionsData.presets[0];
+      currentDimensions.length = firstPreset.length;
+      currentDimensions.width = firstPreset.width;
+      currentDimensions.height = firstPreset.height;
+      currentDimensions.heightCustom = firstPreset.height === 'custom' ? firstPreset.heightCustom : null;
     }
   } catch (e) {
     console.warn('Failed to initialize dimensions from state:', e);
@@ -269,33 +276,7 @@ function initPresets() {
     `;
     
     tile.addEventListener('click', () => {
-      // Animate values to preset
-      const targetLength = preset.length;
-      const targetWidth = preset.width;
-      const targetHeight = preset.height;
-      
-      animateValue(currentDimensions.length, targetLength, (v) => {
-        currentDimensions.length = v;
-        const input = document.getElementById('dim-length-input');
-        if (input) input.value = v;
-      });
-      
-      animateValue(currentDimensions.width, targetWidth, (v) => {
-        currentDimensions.width = v;
-        const input = document.getElementById('dim-width-input');
-        if (input) input.value = v;
-      });
-      
-      currentDimensions.height = targetHeight;
-      currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
-      
-      // Update UI and dispatch
-      updateUIControls();
-      dispatchDimensionSelection();
-      
-      // Visual feedback on preset tile
-      document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
-      tile.classList.add('border-blue-500', 'bg-blue-50');
+      selectPreset(preset, tile);
     });
     
     // Mark as selected if matches current state
@@ -309,6 +290,37 @@ function initPresets() {
     
     presetsContainer.appendChild(tile);
   });
+}
+
+// Select a preset and apply its values
+function selectPreset(preset, tileElement) {
+  // Animate values to preset
+  const targetLength = preset.length;
+  const targetWidth = preset.width;
+  const targetHeight = preset.height;
+  
+  animateValue(currentDimensions.length, targetLength, (v) => {
+    currentDimensions.length = v;
+    const input = document.getElementById('dim-length-input');
+    if (input) input.value = v;
+  });
+  
+  animateValue(currentDimensions.width, targetWidth, (v) => {
+    currentDimensions.width = v;
+    const input = document.getElementById('dim-width-input');
+    if (input) input.value = v;
+  });
+  
+  currentDimensions.height = targetHeight;
+  currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
+  
+  // Update UI and dispatch
+  updateUIControls();
+  dispatchDimensionSelection();
+  
+  // Visual feedback on preset tile
+  document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
+  tileElement.classList.add('border-blue-500', 'bg-blue-50');
 }
 
 // Animate numeric value change
@@ -531,6 +543,16 @@ export async function init() {
   
   // Initial UI update
   updateUIControls();
+  
+  // Auto-select first preset if no previous selection
+  const dimSel = state && state.selections && state.selections.options && state.selections.options.dimensions;
+  if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
+    const firstTile = document.querySelector('[data-preset-id]');
+    if (firstTile) {
+      const firstPreset = dimensionsData.presets[0];
+      selectPreset(firstPreset, firstTile);
+    }
+  }
 }
 
 // Restore state when dimensions stage becomes active
