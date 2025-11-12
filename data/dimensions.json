@@ -1,5 +1,17 @@
-[
-  { "id": "dim-sample-01", "title": "Small", "price": 0, "description": "120 x 60 cm — Fast delivery" },
-  { "id": "dim-sample-02", "title": "Medium", "price": 150, "description": "180 x 90 cm" },
-  { "id": "dim-sample-03", "title": "Large", "price": 300, "description": "240 x 100 cm" }
-]
+{
+  "presets": [
+    { "id": "dim-preset-01", "title": "Small", "price": 0, "description": "Fast delivery", "length": 120, "width": 60, "height": "standard", "lengthUnit": "cm" },
+    { "id": "dim-preset-02", "title": "Medium", "price": 150, "description": "", "length": 180, "width": 90, "height": "standard", "lengthUnit": "cm" },
+    { "id": "dim-preset-03", "title": "Large", "price": 300, "description": "", "length": 240, "width": 100, "height": "standard", "lengthUnit": "cm" }
+  ],
+  "constraints": {
+    "length": { "min": 60, "max": 300, "step": 30.48, "unit": "cm" },
+    "width": { "min": 30, "max": 150, "step": 15.24, "unit": "cm" },
+    "height": { "standard": 75, "bar": 105, "unit": "cm" }
+  },
+  "oversizeThresholds": {
+    "length": { "threshold": 240, "message": "May affect lead time" },
+    "width": { "threshold": 100, "message": "May affect lead time" }
+  }
+}
+

@@ -1,0 +1,159 @@
+<!-- Dimensions Stage Panel -->
+<div id="dimensions-stage-panel" class="dimensions-panel-container">
+  <!-- Header -->
+  <div class="dimensions-header flex justify-between items-center mb-6">
+    <h3 class="text-md font-semibold">Dimensions</h3>
+    <span class="status-pill text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-full">Required</span>
+  </div>
+
+  <!-- Presets Row -->
+  <div class="presets-row mb-8">
+    <div class="presets-list flex gap-3 overflow-x-auto pb-2" id="dimensions-presets">
+      <!-- Preset tiles rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Axis Controls -->
+  <div class="axis-controls space-y-6">
+    <!-- Length Control -->
+    <div class="axis-control-row">
+      <div class="control-label mb-2">
+        <label for="dim-length-input" class="text-sm font-medium block">Length</label>
+        <p class="text-xs text-gray-500">Nominal long edge — ±12" steps</p>
+      </div>
+      <div class="control-row flex items-center gap-2">
+        <button class="control-button decrement" data-axis="length" aria-label="Decrease length" title="–12\"">
+          <span>−</span>
+        </button>
+        <input
+          type="number"
+          id="dim-length-input"
+          class="control-input"
+          data-axis="length"
+          data-unit="cm"
+          inputmode="decimal"
+          aria-label="Length in cm"
+          min="60"
+          max="300"
+        />
+        <span class="control-unit text-sm text-gray-600">cm</span>
+        <button class="control-button increment" data-axis="length" aria-label="Increase length" title="+12\"">
+          <span>+</span>
+        </button>
+        <label class="cut-to-toggle flex items-center gap-2 ml-4">
+          <input type="checkbox" class="cut-to-check" data-axis="length" />
+          <span class="text-xs text-gray-600">Cut to</span>
+        </label>
+      </div>
+      <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
+    </div>
+
+    <!-- Width Control -->
+    <div class="axis-control-row">
+      <div class="control-label mb-2">
+        <label for="dim-width-input" class="text-sm font-medium block">Width</label>
+        <p class="text-xs text-gray-500">Nominal short edge — ±6" steps</p>
+      </div>
+      <div class="control-row flex items-center gap-2">
+        <button class="control-button decrement" data-axis="width" aria-label="Decrease width" title="–6\"">
+          <span>−</span>
+        </button>
+        <input
+          type="number"
+          id="dim-width-input"
+          class="control-input"
+          data-axis="width"
+          data-unit="cm"
+          inputmode="decimal"
+          aria-label="Width in cm"
+          min="30"
+          max="150"
+        />
+        <span class="control-unit text-sm text-gray-600">cm</span>
+        <button class="control-button increment" data-axis="width" aria-label="Increase width" title="+6\"">
+          <span>+</span>
+        </button>
+        <label class="cut-to-toggle flex items-center gap-2 ml-4">
+          <input type="checkbox" class="cut-to-check" data-axis="width" />
+          <span class="text-xs text-gray-600">Cut to</span>
+        </label>
+      </div>
+      <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
+    </div>
+
+    <!-- Height Control (Dropdown) -->
+    <div class="axis-control-row">
+      <div class="control-label mb-2">
+        <label for="dim-height-select" class="text-sm font-medium block">Height</label>
+        <p class="text-xs text-gray-500">Table height — choose standard, bar, or custom</p>
+      </div>
+      <div class="control-row flex items-center gap-2">
+        <select id="dim-height-select" class="control-select" data-axis="height" aria-label="Height option">
+          <option value="standard">Standard (75 cm)</option>
+          <option value="bar">Bar Height (105 cm)</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <!-- Custom height input (hidden by default) -->
+      <div id="custom-height-container" class="mt-3 hidden">
+        <div class="control-row flex items-center gap-2">
+          <button class="control-button decrement" data-axis="height-custom" aria-label="Decrease custom height" title="–">
+            <span>−</span>
+          </button>
+          <input
+            type="number"
+            id="dim-height-custom-input"
+            class="control-input"
+            data-axis="height-custom"
+            data-unit="cm"
+            inputmode="decimal"
+            aria-label="Custom height in cm"
+            min="60"
+            max="120"
+          />
+          <span class="control-unit text-sm text-gray-600">cm</span>
+          <button class="control-button increment" data-axis="height-custom" aria-label="Increase custom height" title="+">
+            <span>+</span>
+          </button>
+        </div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="height-custom"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Validation / Oversize Banners -->
+  <div id="dimensions-banners" class="mt-6 space-y-2">
+    <!-- Banners injected by JS -->
+  </div>
+
+  <!-- Live Preview Snapshot -->
+  <div class="preview-snapshot mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <div class="snapshot-content flex flex-col items-center">
+      <svg class="snapshot-svg w-full h-40" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Stylized top-down view of tabletop -->
+        <rect class="tabletop-rect" x="40" y="30" width="240" height="120" fill="#D2B48C" stroke="#8B7355" stroke-width="2" />
+        <!-- Length label -->
+        <text class="dimension-label length-label" x="160" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">
+          Length: <tspan class="length-value">120</tspan> cm
+        </text>
+        <!-- Width label -->
+        <text class="dimension-label width-label" x="20" y="90" text-anchor="middle" font-size="12" font-weight="bold" fill="#333" transform="rotate(-90 20 90)">
+          Width: <tspan class="width-value">60</tspan> cm
+        </text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Action Row -->
+  <div class="action-row mt-8 flex justify-between items-center gap-4">
+    <button id="dim-reset-btn" class="reset-button text-sm text-gray-600 hover:text-gray-900 hover:underline transition">
+      Reset to Standard
+    </button>
+    <button id="dim-apply-next-btn" class="btn-primary px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+      Apply &amp; Next
+    </button>
+  </div>
+
+  <!-- Accessibility: aria-live region for dimension updates -->
+  <div id="dim-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+</div>

@@ -105,6 +105,22 @@ document.addEventListener('request-restart', (ev) => {
   } catch (e) { /* ignore */ }
 });
 
+// Handle stage change requests from UI modules (e.g., Apply & Next buttons)
+document.addEventListener('request-stage-change', (ev) => {
+  try {
+    const stageManager = window.stageManager || null;
+    if (!stageManager) return;
+    const { direction, index } = ev.detail || {};
+    if (typeof index === 'number') {
+      stageManager.setStage(index, { allowSkip: true });
+    } else if (direction === 'next') {
+      stageManager.nextStage && stageManager.nextStage();
+    } else if (direction === 'prev') {
+      stageManager.prevStage && stageManager.prevStage();
+    }
+  } catch (e) { /* ignore */ }
+});
+
 // initialize displayed price
 document.addEventListener('DOMContentLoaded', () => updatePriceUI(state.pricing.total));
 
@@ -198,12 +214,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Render dimensions, legs, addons
-    const dimsRoot = document.getElementById('dimensions-options');
-    if (dimsRoot) {
-  const dims = await loadData('data/dimensions.json');
-      if (dims) renderOptionCards(dimsRoot, dims, { category: 'dimensions' });
-    }
-
+    // Note: Dimensions stage uses a custom UI panel (DimensionsPanel.html) instead of option cards,
+    // so we skip rendering here. The dimensions panel is loaded dynamically by stageManager.
+    
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
   const legs = await loadData('data/legs.json');

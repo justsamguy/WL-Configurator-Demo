@@ -283,7 +283,16 @@ async function setStage(index, options = {}) {
         const s = appState;
         if (managerState.current === 1) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
         if (managerState.current === 2) finishStage.restoreFromState && finishStage.restoreFromState(s);
-        if (managerState.current === 3) dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
+        if (managerState.current === 3) {
+          // Load dimensions panel component if not already loaded
+          const dimPh = document.getElementById('dimensions-panel-placeholder');
+          if (dimPh && dimPh.innerHTML === '') {
+            await loadComponent('dimensions-panel-placeholder', 'components/DimensionsPanel.html');
+            // Initialize dimensions stage now that the panel is loaded
+            if (dimensionsStage.init) await dimensionsStage.init();
+          }
+          dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
+        }
         if (managerState.current === 4) legsStage.restoreFromState && legsStage.restoreFromState(s);
         if (managerState.current === 5) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
         if (managerState.current === 6) summaryStage.restoreFromState && summaryStage.restoreFromState(s);
