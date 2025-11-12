@@ -8,7 +8,8 @@
 
   <!-- Presets Row -->
   <div class="presets-row mb-8">
-    <div class="presets-list flex gap-3 overflow-x-auto pb-2" id="dimensions-presets">
+    <h3 class="text-md font-semibold mb-3">Popular Options</h3>
+    <div class="stage-options-grid" id="dimensions-presets" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); display: grid;">
       <!-- Preset tiles rendered by JS -->
     </div>
   </div>
@@ -18,12 +19,12 @@
     <!-- Length Control -->
     <div class="axis-control-row">
       <div class="control-label mb-2">
-        <label for="dim-length-input" class="text-sm font-medium block">Length</label>
+        <label for="dim-length-input" class="text-sm font-semibold block">Length</label>
         <p class="text-xs text-gray-500">Nominal long edge — ±12″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="length" aria-label="Decrease length" title="–12″">
-          <span>−</span>
+        <button class="control-button decrement" data-axis="length" aria-label="Decrease length by 12 inches">
+          <span>−12″</span>
         </button>
         <input
           type="number"
@@ -37,13 +38,9 @@
           max="118"
         />
         <span class="control-unit text-sm text-gray-600">″</span>
-        <button class="control-button increment" data-axis="length" aria-label="Increase length" title="+12″">
-          <span>+</span>
+        <button class="control-button increment" data-axis="length" aria-label="Increase length by 12 inches">
+          <span>+12″</span>
         </button>
-        <label class="cut-to-toggle flex items-center gap-2 ml-4">
-          <input type="checkbox" class="cut-to-check" data-axis="length" />
-          <span class="text-xs text-gray-600">Cut to</span>
-        </label>
       </div>
       <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
     </div>
@@ -51,12 +48,12 @@
     <!-- Width Control -->
     <div class="axis-control-row">
       <div class="control-label mb-2">
-        <label for="dim-width-input" class="text-sm font-medium block">Width</label>
+        <label for="dim-width-input" class="text-sm font-semibold block">Width</label>
         <p class="text-xs text-gray-500">Nominal short edge — ±6″ steps</p>
       </div>
       <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="width" aria-label="Decrease width" title="–6″">
-          <span>−</span>
+        <button class="control-button decrement" data-axis="width" aria-label="Decrease width by 6 inches">
+          <span>−6″</span>
         </button>
         <input
           type="number"
@@ -70,13 +67,9 @@
           max="59"
         />
         <span class="control-unit text-sm text-gray-600">″</span>
-        <button class="control-button increment" data-axis="width" aria-label="Increase width" title="+6″">
-          <span>+</span>
+        <button class="control-button increment" data-axis="width" aria-label="Increase width by 6 inches">
+          <span>+6″</span>
         </button>
-        <label class="cut-to-toggle flex items-center gap-2 ml-4">
-          <input type="checkbox" class="cut-to-check" data-axis="width" />
-          <span class="text-xs text-gray-600">Cut to</span>
-        </label>
       </div>
       <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
     </div>
@@ -84,7 +77,7 @@
     <!-- Height Control (Dropdown) -->
     <div class="axis-control-row">
       <div class="control-label mb-2">
-        <label for="dim-height-select" class="text-sm font-medium block">Height</label>
+        <label for="dim-height-select" class="text-sm font-semibold block">Height</label>
         <p class="text-xs text-gray-500">Table height — choose standard, bar, or custom</p>
       </div>
       <div class="control-row flex items-center gap-2">

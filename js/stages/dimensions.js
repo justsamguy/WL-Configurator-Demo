@@ -12,10 +12,7 @@ let currentDimensions = {
   heightCustom: null
 };
 
-let cutToValues = {
-  length: null,
-  width: null
-};
+
 
 // Load dimensions data from JSON
 async function loadDimensionsData() {
@@ -241,9 +238,7 @@ function dispatchDimensionSelection() {
     length: currentDimensions.length,
     width: currentDimensions.width,
     height: currentDimensions.height,
-    heightCustom: currentDimensions.heightCustom,
-    cutToLength: cutToValues.length,
-    cutToWidth: cutToValues.width
+    heightCustom: currentDimensions.heightCustom
   };
   
   const heightPrice = getHeightPrice();
@@ -273,22 +268,14 @@ function initPresets() {
   
   dimensionsData.presets.forEach(preset => {
     const tile = document.createElement('button');
-    tile.className = 'preset-tile flex-shrink-0 border-2 border-gray-200 rounded-lg p-3 hover:border-blue-500 transition focus-visible:outline-blue-500 focus-visible:outline-offset-2 cursor-pointer';
+    tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
     
     tile.innerHTML = `
-      <div class="flex flex-col items-center gap-2">
-        <div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-          <span>256×256</span>
-        </div>
-        <div class="text-center">
-          <div class="text-xs font-semibold">${preset.title}</div>
-          <div class="text-xs text-gray-600">${preset.length}″ × ${preset.width}″</div>
-          ${preset.description ? `<div class="text-xs text-gray-500">${preset.description}</div>` : ''}
-          ${preset.price > 0 ? `<div class="text-xs font-medium text-green-700">+$${preset.price}</div>` : ''}
-        </div>
-      </div>
+      <img src="assets/images/preset_placeholder.png" alt="${preset.title} placeholder" class="viewer-placeholder-img" />
+      <div class="title">${preset.title}</div>
+      <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
     
     tile.addEventListener('click', () => {
@@ -301,7 +288,7 @@ function initPresets() {
       currentDimensions.width === preset.width &&
       currentDimensions.height === preset.height
     ) {
-      tile.classList.add('border-blue-500', 'bg-blue-50');
+      tile.setAttribute('aria-pressed', 'true');
     }
     
     presetsContainer.appendChild(tile);
@@ -335,8 +322,8 @@ function selectPreset(preset, tileElement) {
   dispatchDimensionSelection();
   
   // Visual feedback on preset tile
-  document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
-  tileElement.classList.add('border-blue-500', 'bg-blue-50');
+  document.querySelectorAll('.option-card').forEach(t => t.removeAttribute('aria-pressed'));
+  tileElement.setAttribute('aria-pressed', 'true');
 }
 
 // Animate numeric value change
@@ -480,16 +467,6 @@ function initHeightSelect() {
 }
 
 // Wire up "Cut to" checkboxes
-function initCutToToggles() {
-  document.addEventListener('change', (ev) => {
-    const checkbox = ev.target.closest('.cut-to-check');
-    if (!checkbox) return;
-    
-    const axis = checkbox.getAttribute('data-axis');
-    cutToValues[axis] = checkbox.checked ? currentDimensions[axis] : null;
-    dispatchDimensionSelection();
-  });
-}
 
 // Wire up Reset button
 function initResetButton() {
@@ -503,12 +480,11 @@ function initResetButton() {
       height: 'standard',
       heightCustom: null
     };
-    cutToValues = { length: null, width: null };
     
     updateUIControls();
     
     // Clear preset selections
-    document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
+    document.querySelectorAll('.option-card').forEach(t => t.removeAttribute('aria-pressed'));
   });
 }
 
@@ -553,7 +529,6 @@ export async function init() {
   initAxisControls();
   initNumericInputs();
   initHeightSelect();
-  initCutToToggles();
   initResetButton();
   initApplyButton();
   
