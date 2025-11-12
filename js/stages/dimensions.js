@@ -266,6 +266,7 @@ function initPresets() {
   
   presetsContainer.innerHTML = '';
   
+  // Add preset tiles
   dimensionsData.presets.forEach(preset => {
     const tile = document.createElement('button');
     tile.className = 'option-card flex-shrink-0';
@@ -282,17 +283,61 @@ function initPresets() {
       selectPreset(preset, tile);
     });
     
-    // Mark as selected if matches current state
+    presetsContainer.appendChild(tile);
+  });
+  
+  // Add "Custom" tile
+  const customTile = document.createElement('button');
+  customTile.className = 'option-card flex-shrink-0';
+  customTile.setAttribute('data-preset-id', 'custom');
+  customTile.setAttribute('aria-label', 'Custom dimensions');
+  
+  customTile.innerHTML = `
+    <img src="assets/images/preset_placeholder.png" alt="Custom dimensions placeholder" class="viewer-placeholder-img" />
+    <div class="title">Custom</div>
+    <div class="description">Your custom size</div>
+  `;
+  
+  customTile.addEventListener('click', () => {
+    // Custom tile is read-only, just ensure it's selected
+    updateTileSelection();
+  });
+  
+  presetsContainer.appendChild(customTile);
+  
+  // Initial selection
+  updateTileSelection();
+}
+
+// Update tile selection based on current dimensions
+// Shows preset tile if dimensions match, otherwise shows Custom
+function updateTileSelection() {
+  if (!dimensionsData) return;
+  
+  // Check if current dimensions match any preset
+  let matchingPreset = null;
+  for (const preset of dimensionsData.presets) {
     if (
       currentDimensions.length === preset.length &&
       currentDimensions.width === preset.width &&
       currentDimensions.height === preset.height
     ) {
-      tile.setAttribute('aria-pressed', 'true');
+      matchingPreset = preset;
+      break;
     }
-    
-    presetsContainer.appendChild(tile);
-  });
+  }
+  
+  // Remove .selected from all tiles
+  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+  
+  // Add .selected to the matching tile or custom
+  if (matchingPreset) {
+    const tile = document.querySelector(`[data-preset-id="${matchingPreset.id}"]`);
+    if (tile) tile.classList.add('selected');
+  } else {
+    const customTile = document.querySelector('[data-preset-id="custom"]');
+    if (customTile) customTile.classList.add('selected');
+  }
 }
 
 // Select a preset and apply its values
@@ -321,9 +366,8 @@ function selectPreset(preset, tileElement) {
   updateUIControls();
   dispatchDimensionSelection();
   
-  // Visual feedback on preset tile
-  document.querySelectorAll('.option-card').forEach(t => t.removeAttribute('aria-pressed'));
-  tileElement.setAttribute('aria-pressed', 'true');
+  // Update tile selection visual feedback
+  updateTileSelection();
 }
 
 // Animate numeric value change
@@ -374,6 +418,7 @@ function initAxisControls() {
         updateOversizeBanners();
         updatePreviewSnapshot();
         updateApplyButtonState();
+        updateTileSelection();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -385,6 +430,7 @@ function initAxisControls() {
         updateOversizeBanners();
         updatePreviewSnapshot();
         updateApplyButtonState();
+        updateTileSelection();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -418,6 +464,7 @@ function initNumericInputs() {
         updateOversizeBanners();
         updatePreviewSnapshot();
         updateApplyButtonState();
+        updateTileSelection();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -427,6 +474,7 @@ function initNumericInputs() {
         updateOversizeBanners();
         updatePreviewSnapshot();
         updateApplyButtonState();
+        updateTileSelection();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -483,8 +531,8 @@ function initResetButton() {
     
     updateUIControls();
     
-    // Clear preset selections
-    document.querySelectorAll('.option-card').forEach(t => t.removeAttribute('aria-pressed'));
+    // Clear tile selections
+    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
   });
 }
 
