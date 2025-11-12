@@ -274,7 +274,6 @@ function initPresets() {
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
     
     tile.innerHTML = `
-      <img src="assets/images/preset_placeholder.png" alt="${preset.title} placeholder" class="viewer-placeholder-img" />
       <div class="title">${preset.title}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
@@ -293,7 +292,6 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
-    <img src="assets/images/preset_placeholder.png" alt="Custom dimensions placeholder" class="viewer-placeholder-img" />
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;
