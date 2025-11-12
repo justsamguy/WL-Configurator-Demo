@@ -7,7 +7,7 @@
   "constraints": {
     "length": { "min": 24, "max": 118, "step": 12, "unit": "in" },
     "width": { "min": 12, "max": 59, "step": 6, "unit": "in" },
-    "height": { "standard": 30, "bar": 41, "unit": "in" }
+    "height": { "standard": 30, "bar": 42, "unit": "in" }
   },
   "oversizeThresholds": {
     "length": { "threshold": 94, "message": "May affect lead time" },

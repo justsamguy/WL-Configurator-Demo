@@ -77,6 +77,10 @@ function validateAxisValue(axis, value) {
     if (!range) return true;
     return value >= range.min && value <= range.max;
   }
+  if (axis === 'height-custom') {
+    // Custom height range: 16" to 50"
+    return value >= 16 && value <= 50;
+  }
   return true;
 }
 
@@ -220,6 +224,16 @@ function updateApplyButtonState() {
   }
 }
 
+// Calculate height price adjustment based on current height selection
+function getHeightPrice() {
+  if (currentDimensions.height === 'bar') {
+    return 120;
+  } else if (currentDimensions.height === 'custom') {
+    return 250;
+  }
+  return 0; // standard
+}
+
 // Dispatch option-selected event to trigger state update in main.js
 function dispatchDimensionSelection() {
   const payload = {
@@ -232,10 +246,12 @@ function dispatchDimensionSelection() {
     cutToWidth: cutToValues.width
   };
   
+  const heightPrice = getHeightPrice();
+  
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
       id: 'dimensions-custom',
-      price: 0, // Price adjustment would be computed separately based on presets
+      price: heightPrice,
       category: 'dimensions',
       payload
     }
