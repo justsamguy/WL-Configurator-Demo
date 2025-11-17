@@ -1,0 +1,27 @@
+Materials:
+Reorder wood species
+re-price wood 
+Get pictures of Maple and another burled wood
+update wood descriptions
+
+
+Re-order colors
+update color descriptions
+get color examples of all colors (even if not material)
+
+Finish:
+Make 2K Poly first tile, +$0, and default selection
+Make satin default selection
+Make Oil +$10
+
+Legs:
+Increase design list to current standards
+only show available designs based on selected model
+only show available tube sizes if at least one design using it is visible
+Get model examples of all designs and tube sizes
+grey out unavailable tube sizes based on leg style with tooltip on hover (example: "only compatible with [x]")
+add leg finish below tube size
+get list of standard leg colors
+
+Addons:
+Brainstorm list of addons
