@@ -6,23 +6,7 @@
     <span class="status-pill text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-full">Required</span>
   </div>
 
-  <!-- Live Preview Snapshot -->
-  <div class="preview-snapshot mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-    <div class="snapshot-content flex flex-col items-center">
-      <svg class="snapshot-svg w-full h-40" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
-        <!-- Stylized top-down view of tabletop -->
-        <rect class="tabletop-rect" x="40" y="30" width="240" height="120" fill="#D2B48C" stroke="#8B7355" stroke-width="2" />
-        <!-- Length label -->
-        <text class="dimension-label length-label" x="160" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">
-          Length: <tspan class="length-value">48</tspan>″
-        </text>
-        <!-- Width label -->
-        <text class="dimension-label width-label" x="20" y="90" text-anchor="middle" font-size="12" font-weight="bold" fill="#333" transform="rotate(-90 20 90)">
-          Width: <tspan class="width-value">24</tspan>″
-        </text>
-      </svg>
-    </div>
-  </div>
+
 
   <!-- Presets Row -->
   <div class="presets-row mb-8">
@@ -34,8 +18,8 @@
 
   <!-- Axis Controls -->
   <div class="axis-controls space-y-6">
-    <!-- Length Control -->
-    <div class="axis-control-row">
+    <!-- Length Control (hidden until Custom selected) -->
+    <div id="length-control-row" class="axis-control-row hidden">
       <div class="control-label mb-2">
         <label for="dim-length-input" class="text-sm font-semibold block">Length</label>
       </div>
@@ -62,8 +46,8 @@
       <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
     </div>
 
-    <!-- Width Control -->
-    <div class="axis-control-row">
+    <!-- Width Control (hidden until Custom selected) -->
+    <div id="width-control-row" class="axis-control-row hidden">
       <div class="control-label mb-2">
         <label for="dim-width-input" class="text-sm font-semibold block">Width</label>
       </div>

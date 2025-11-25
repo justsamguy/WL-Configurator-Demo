@@ -149,23 +149,36 @@ function updateOversizeBanners() {
   });
 }
 
-// Update preview snapshot
-function updatePreviewSnapshot() {
-  const lengthLabel = document.querySelector('.length-value');
-  const widthLabel = document.querySelector('.width-value');
+// Show/hide custom dimension controls based on selection
+function updateCustomFieldVisibility() {
+  const lengthRow = document.getElementById('length-control-row');
+  const widthRow = document.getElementById('width-control-row');
   
-  if (lengthLabel && currentDimensions.length) {
-    lengthLabel.textContent = currentDimensions.length;
-  }
-  if (widthLabel && currentDimensions.width) {
-    widthLabel.textContent = currentDimensions.width;
-  }
-  
-  // Trigger subtle highlight animation
-  const snapshot = document.querySelector('.preview-snapshot');
-  if (snapshot) {
-    snapshot.classList.add('highlight');
-    setTimeout(() => snapshot.classList.remove('highlight'), 300);
+  if (currentDimensions.length !== null && currentDimensions.width !== null) {
+    // Check if current dimensions match a preset
+    let isCustom = true;
+    if (dimensionsData) {
+      for (const preset of dimensionsData.presets) {
+        if (currentDimensions.length === preset.length && currentDimensions.width === preset.width) {
+          isCustom = false;
+          break;
+        }
+      }
+    }
+    
+    if (isCustom) {
+      // Show custom fields
+      if (lengthRow) lengthRow.classList.remove('hidden');
+      if (widthRow) widthRow.classList.remove('hidden');
+    } else {
+      // Hide custom fields
+      if (lengthRow) lengthRow.classList.add('hidden');
+      if (widthRow) widthRow.classList.add('hidden');
+    }
+  } else {
+    // Hide if no dimensions set
+    if (lengthRow) lengthRow.classList.add('hidden');
+    if (widthRow) widthRow.classList.add('hidden');
   }
 }
 
@@ -199,7 +212,7 @@ function updateUIControls() {
   updateValidationMessage('width');
   updateValidationMessage('height-custom');
   updateOversizeBanners();
-  updatePreviewSnapshot();
+  updateCustomFieldVisibility();
   updateApplyButtonState();
 }
 
@@ -349,14 +362,12 @@ function selectPreset(preset, tileElement) {
     currentDimensions.length = v;
     const input = document.getElementById('dim-length-input');
     if (input) input.value = v;
-    updatePreviewSnapshot();
   });
   
   animateValue(currentDimensions.width, targetWidth, (v) => {
     currentDimensions.width = v;
     const input = document.getElementById('dim-width-input');
     if (input) input.value = v;
-    updatePreviewSnapshot();
   });
   
   currentDimensions.height = targetHeight;
@@ -420,9 +431,8 @@ function initAxisControls() {
         document.getElementById('dim-length-input').value = newVal;
         updateValidationMessage('length');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
-        updateTileSelection();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -432,9 +442,8 @@ function initAxisControls() {
         document.getElementById('dim-width-input').value = newVal;
         updateValidationMessage('width');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
-        updateTileSelection();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -466,9 +475,8 @@ function initNumericInputs() {
         currentDimensions.length = value;
         updateValidationMessage('length');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
-        updateTileSelection();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -476,9 +484,8 @@ function initNumericInputs() {
         currentDimensions.width = value;
         updateValidationMessage('width');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
-        updateTileSelection();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -586,16 +593,6 @@ export async function init() {
   
   // Initial UI update
   updateUIControls();
-  
-  // Auto-select first preset if no previous selection
-  const dimSel = state && state.selections && state.selections.options && state.selections.options.dimensions;
-  if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
-    const firstTile = document.querySelector('[data-preset-id]');
-    if (firstTile) {
-      const firstPreset = dimensionsData.presets[0];
-      selectPreset(firstPreset, firstTile);
-    }
-  }
 }
 
 // Restore state when dimensions stage becomes active

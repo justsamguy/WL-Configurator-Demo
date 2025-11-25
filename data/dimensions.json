@@ -1,8 +1,8 @@
 {
   "presets": [
-    { "id": "dim-preset-01", "title": "Small", "price": 0, "description": "Fast delivery", "length": 48, "width": 24, "height": "standard", "lengthUnit": "in" },
-    { "id": "dim-preset-02", "title": "Medium", "price": 150, "description": "", "length": 71, "width": 35, "height": "standard", "lengthUnit": "in" },
-    { "id": "dim-preset-03", "title": "Large", "price": 300, "description": "", "length": 94, "width": 39, "height": "standard", "lengthUnit": "in" }
+    { "id": "dim-preset-01", "title": "4-6 seater", "price": 0, "description": "Fast delivery", "length": 48, "width": 24, "height": "standard", "lengthUnit": "in" },
+    { "id": "dim-preset-02", "title": "6-8 seater", "price": 150, "description": "", "length": 71, "width": 35, "height": "standard", "lengthUnit": "in" },
+    { "id": "dim-preset-03", "title": "8-10 seater", "price": 300, "description": "", "length": 94, "width": 39, "height": "standard", "lengthUnit": "in" }
   ],
   "constraints": {
     "length": { "min": 24, "max": 118, "step": 12, "unit": "in" },
