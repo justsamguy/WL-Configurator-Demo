@@ -155,16 +155,11 @@ function updateCustomFieldVisibility() {
   const lengthRow = document.getElementById('length-control-row');
   const widthRow = document.getElementById('width-control-row');
   
-  console.log('updateCustomFieldVisibility() called. selectedTileId:', selectedTileId);
-  console.log('lengthRow exists:', !!lengthRow, 'widthRow exists:', !!widthRow);
-  
   // Show length/width fields only if "custom" tile is selected
   if (selectedTileId === 'custom') {
-    console.log('Custom tile selected - showing fields');
     if (lengthRow) lengthRow.classList.remove('hidden');
     if (widthRow) widthRow.classList.remove('hidden');
   } else {
-    console.log('Preset tile selected - hiding fields');
     if (lengthRow) lengthRow.classList.add('hidden');
     if (widthRow) widthRow.classList.add('hidden');
   }
@@ -260,14 +255,8 @@ function dispatchDimensionSelection() {
 
 // Wire up preset selection
 function initPresets() {
-  console.log('initPresets() called. dimensionsData available:', !!dimensionsData);
   const presetsContainer = document.getElementById('dimensions-presets');
-  console.log('presetsContainer found:', !!presetsContainer);
-  
-  if (!presetsContainer || !dimensionsData) {
-    console.warn('initPresets early return - container or data missing');
-    return;
-  }
+  if (!presetsContainer || !dimensionsData) return;
   
   presetsContainer.innerHTML = '';
   
@@ -302,10 +291,8 @@ function initPresets() {
   `;
   
   customTile.addEventListener('click', () => {
-    console.log('Custom tile clicked');
     // Custom tile selection
     selectedTileId = 'custom';
-    console.log('selectedTileId set to:', selectedTileId);
     document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
     customTile.classList.add('selected');
     updateCustomFieldVisibility();
@@ -321,8 +308,6 @@ function updateTileSelection() {
 
 // Select a preset and apply its values
 function selectPreset(preset, tileElement) {
-  console.log('selectPreset() called with preset:', preset.id);
-  
   currentDimensions.length = preset.length;
   currentDimensions.width = preset.width;
   currentDimensions.height = preset.height;
@@ -330,8 +315,6 @@ function selectPreset(preset, tileElement) {
   
   // Mark this preset as selected
   selectedTileId = preset.id;
-  console.log('selectedTileId set to:', selectedTileId);
-  
   document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
   if (tileElement) tileElement.classList.add('selected');
   
@@ -548,25 +531,19 @@ function initApplyButton() {
 // Initialize the dimensions stage
 // This is called after the DimensionsPanel component is loaded into the DOM
 export async function init() {
-  console.log('Dimensions stage init() called');
-  
   // Load data first
   const data = await loadDimensionsData();
   if (!data) {
     console.error('Failed to load dimensions data');
     return;
   }
-  console.log('Dimensions data loaded successfully');
   
   // Check if panel is already in DOM; if not, this will be called again when it is
   if (!document.getElementById('dimensions-stage-panel')) {
-    console.log('Dimensions panel not yet in DOM; retrying in 200ms');
     // Wait a bit and retry
     setTimeout(init, 200);
     return;
   }
-  
-  console.log('Dimensions panel found in DOM, initializing...');
   
   // Initialize from current state
   initializeFromState(state);
@@ -581,8 +558,6 @@ export async function init() {
   
   // Initial UI update
   updateUIControls();
-  
-  console.log('Dimensions stage initialization complete. selectedTileId:', selectedTileId);
 }
 
 // Restore state when dimensions stage becomes active
