@@ -186,7 +186,6 @@ function updateCustomFieldVisibility() {
 function updateUIControls() {
   const lengthInput = document.getElementById('dim-length-input');
   const widthInput = document.getElementById('dim-width-input');
-  const heightSelect = document.getElementById('dim-height-select');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
   
@@ -196,9 +195,7 @@ function updateUIControls() {
   if (widthInput && currentDimensions.width !== null) {
     widthInput.value = currentDimensions.width;
   }
-  if (heightSelect) {
-    heightSelect.value = currentDimensions.height || 'standard';
-  }
+  
   if (currentDimensions.height === 'custom') {
     if (customHeightContainer) customHeightContainer.classList.remove('hidden');
     if (heightCustomInput && currentDimensions.heightCustom) {
@@ -213,6 +210,7 @@ function updateUIControls() {
   updateValidationMessage('height-custom');
   updateOversizeBanners();
   updateCustomFieldVisibility();
+  updateHeightButtonSelection();
   updateApplyButtonState();
 }
 
@@ -353,54 +351,17 @@ function updateTileSelection() {
 
 // Select a preset and apply its values
 function selectPreset(preset, tileElement) {
-  // Animate values to preset
-  const targetLength = preset.length;
-  const targetWidth = preset.width;
-  const targetHeight = preset.height;
-  
-  animateValue(currentDimensions.length, targetLength, (v) => {
-    currentDimensions.length = v;
-    const input = document.getElementById('dim-length-input');
-    if (input) input.value = v;
-  });
-  
-  animateValue(currentDimensions.width, targetWidth, (v) => {
-    currentDimensions.width = v;
-    const input = document.getElementById('dim-width-input');
-    if (input) input.value = v;
-  });
-  
-  currentDimensions.height = targetHeight;
+  currentDimensions.length = preset.length;
+  currentDimensions.width = preset.width;
+  currentDimensions.height = preset.height;
   currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
   
   // Update UI and dispatch
   updateUIControls();
   dispatchDimensionSelection();
   
-  // Delay tile selection update until after animations settle
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      updateTileSelection();
-    }, 300);
-  });
-}
-
-// Animate numeric value change
-function animateValue(from, to, onUpdate, duration = 300) {
-  if (from === null) from = to;
-  if (from === to) {
-    onUpdate(to);
-    return;
-  }
-  const start = performance.now();
-  const delta = to - from;
-  function tick(now) {
-    const t = Math.min(1, (now - start) / duration);
-    const value = Math.round(from + delta * t);
-    onUpdate(value);
-    if (t < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
+  // Update tile selection
+  updateTileSelection();
 }
 
 // Wire up increment/decrement buttons
@@ -499,30 +460,73 @@ function initNumericInputs() {
   });
 }
 
-// Wire up height dropdown
-function initHeightSelect() {
-  const select = document.getElementById('dim-height-select');
-  if (!select) return;
+// Wire up height buttons
+function initHeightButtons() {
+  const heightOptions = document.getElementById('height-options');
+  if (!heightOptions) return;
   
-  select.addEventListener('change', (ev) => {
-    const value = ev.target.value;
-    currentDimensions.height = value;
-    currentDimensions.heightCustom = null;
+  // Height options: standard, bar, custom
+  const heights = [
+    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0 },
+    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120 },
+    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250 }
+  ];
+  
+  heightOptions.innerHTML = '';
+  
+  heights.forEach(height => {
+    const button = document.createElement('button');
+    button.className = 'option-card';
+    button.setAttribute('data-height-id', height.id);
+    button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
-    const customContainer = document.getElementById('custom-height-container');
-    if (value === 'custom') {
-      if (customContainer) customContainer.classList.remove('hidden');
-      currentDimensions.heightCustom = 90; // Default custom height
-      const customInput = document.getElementById('dim-height-custom-input');
-      if (customInput) customInput.value = 90;
-    } else {
-      if (customContainer) customContainer.classList.add('hidden');
-    }
+    button.innerHTML = `
+      <div class="title">${height.title} ${height.subtitle}</div>
+      <div class="description">+$${height.price}</div>
+    `;
     
-    updateValidationMessage('height-custom');
-    updateApplyButtonState();
-    dispatchDimensionSelection();
+    button.addEventListener('click', () => {
+      selectHeight(height.id);
+    });
+    
+    heightOptions.appendChild(button);
   });
+  
+  // Update selection on init
+  updateHeightButtonSelection();
+}
+
+// Select a height option
+function selectHeight(heightId) {
+  currentDimensions.height = heightId;
+  currentDimensions.heightCustom = null;
+  
+  const customContainer = document.getElementById('custom-height-container');
+  if (heightId === 'custom') {
+    if (customContainer) customContainer.classList.remove('hidden');
+    currentDimensions.heightCustom = 90; // Default custom height
+    const customInput = document.getElementById('dim-height-custom-input');
+    if (customInput) customInput.value = 90;
+  } else {
+    if (customContainer) customContainer.classList.add('hidden');
+  }
+  
+  updateHeightButtonSelection();
+  updateValidationMessage('height-custom');
+  updateApplyButtonState();
+  dispatchDimensionSelection();
+}
+
+// Update height button selection state
+function updateHeightButtonSelection() {
+  document.querySelectorAll('[data-height-id]').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  
+  const activeBtn = document.querySelector(`[data-height-id="${currentDimensions.height}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('selected');
+  }
 }
 
 // Wire up "Cut to" checkboxes
@@ -587,7 +591,7 @@ export async function init() {
   initPresets();
   initAxisControls();
   initNumericInputs();
-  initHeightSelect();
+  initHeightButtons();
   initResetButton();
   initApplyButton();
   

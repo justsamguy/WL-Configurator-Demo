@@ -74,21 +74,23 @@
       <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
     </div>
 
-    <!-- Height Control (Dropdown) -->
+    <!-- Height Control (Horizontal Buttons) -->
     <div class="axis-control-row">
-      <div class="control-label mb-2">
-        <label for="dim-height-select" class="text-sm font-semibold block">Height</label>
+      <div class="control-label mb-3">
+        <span class="text-sm font-semibold block">Height</span>
       </div>
-      <div class="control-row flex items-center gap-2">
-        <select id="dim-height-select" class="control-select" data-axis="height" aria-label="Height option">
-          <option value="standard">Standard (30″) — +$0</option>
-          <option value="bar">Bar Height (42″) — +$120</option>
-          <option value="custom">Custom — +$250</option>
-        </select>
+      <div id="height-options" class="stage-options-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); display: grid;">
+        <!-- Height option buttons rendered by JS -->
       </div>
       <!-- Custom height input (hidden by default) -->
       <div id="custom-height-container" class="mt-3 hidden">
+        <div class="control-label mb-2">
+          <label for="dim-height-custom-input" class="text-sm font-semibold block">Custom Height</label>
+        </div>
         <div class="control-row flex items-center gap-2">
+          <button class="control-button decrement" data-axis="height-custom" aria-label="Decrease height by 5 inches">
+            <span class="font-normal">−5″</span>
+          </button>
           <input
             type="number"
             id="dim-height-custom-input"
@@ -101,6 +103,9 @@
             max="50"
           />
           <span class="control-unit text-sm text-gray-600">″</span>
+          <button class="control-button increment" data-axis="height-custom" aria-label="Increase height by 5 inches">
+            <span class="font-normal">+5″</span>
+          </button>
         </div>
         <div class="control-validation text-xs text-red-600 mt-1" data-axis="height-custom"></div>
       </div>
