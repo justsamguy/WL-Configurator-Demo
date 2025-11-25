@@ -11,6 +11,7 @@ let currentDimensions = {
   height: 'standard',
   heightCustom: null
 };
+let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 
 
 
@@ -154,29 +155,11 @@ function updateCustomFieldVisibility() {
   const lengthRow = document.getElementById('length-control-row');
   const widthRow = document.getElementById('width-control-row');
   
-  if (currentDimensions.length !== null && currentDimensions.width !== null) {
-    // Check if current dimensions match a preset
-    let isCustom = true;
-    if (dimensionsData) {
-      for (const preset of dimensionsData.presets) {
-        if (currentDimensions.length === preset.length && currentDimensions.width === preset.width) {
-          isCustom = false;
-          break;
-        }
-      }
-    }
-    
-    if (isCustom) {
-      // Show custom fields
-      if (lengthRow) lengthRow.classList.remove('hidden');
-      if (widthRow) widthRow.classList.remove('hidden');
-    } else {
-      // Hide custom fields
-      if (lengthRow) lengthRow.classList.add('hidden');
-      if (widthRow) widthRow.classList.add('hidden');
-    }
+  // Show length/width fields only if "custom" tile is selected
+  if (selectedTileId === 'custom') {
+    if (lengthRow) lengthRow.classList.remove('hidden');
+    if (widthRow) widthRow.classList.remove('hidden');
   } else {
-    // Hide if no dimensions set
     if (lengthRow) lengthRow.classList.add('hidden');
     if (widthRow) widthRow.classList.add('hidden');
   }
@@ -308,45 +291,19 @@ function initPresets() {
   `;
   
   customTile.addEventListener('click', () => {
-    // Custom tile is read-only, just ensure it's selected
-    updateTileSelection();
+    // Custom tile selection
+    selectedTileId = 'custom';
+    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+    customTile.classList.add('selected');
+    updateCustomFieldVisibility();
   });
   
   presetsContainer.appendChild(customTile);
-  
-  // Initial selection
-  updateTileSelection();
 }
 
-// Update tile selection based on current dimensions
-// Shows preset tile if dimensions match, otherwise shows Custom
+// Update custom field visibility based on manual tile selection
 function updateTileSelection() {
-  if (!dimensionsData) return;
-  
-  // Check if current dimensions match any preset
-  let matchingPreset = null;
-  for (const preset of dimensionsData.presets) {
-    if (
-      currentDimensions.length === preset.length &&
-      currentDimensions.width === preset.width &&
-      currentDimensions.height === preset.height
-    ) {
-      matchingPreset = preset;
-      break;
-    }
-  }
-  
-  // Remove .selected from all tiles
-  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
-  
-  // Add .selected to the matching tile or custom
-  if (matchingPreset) {
-    const tile = document.querySelector(`[data-preset-id="${matchingPreset.id}"]`);
-    if (tile) tile.classList.add('selected');
-  } else {
-    const customTile = document.querySelector('[data-preset-id="custom"]');
-    if (customTile) customTile.classList.add('selected');
-  }
+  updateCustomFieldVisibility();
 }
 
 // Select a preset and apply its values
@@ -356,12 +313,17 @@ function selectPreset(preset, tileElement) {
   currentDimensions.height = preset.height;
   currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
   
+  // Mark this preset as selected
+  selectedTileId = preset.id;
+  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+  if (tileElement) tileElement.classList.add('selected');
+  
   // Update UI and dispatch
   updateUIControls();
   dispatchDimensionSelection();
   
-  // Update tile selection
-  updateTileSelection();
+  // Update field visibility
+  updateCustomFieldVisibility();
 }
 
 // Wire up increment/decrement buttons
