@@ -17,65 +17,68 @@
   </div>
 
   <!-- Axis Controls -->
-  <div class="axis-controls space-y-6">
-    <!-- Length Control (hidden until Custom selected) -->
-    <div id="length-control-row" class="axis-control-row hidden">
-      <div class="control-label mb-2">
-        <label for="dim-length-input" class="text-sm font-semibold block">Length</label>
+  <div class="axis-controls">
+    <!-- Length & Width Controls (side-by-side, wrapping on small screens) -->
+    <div id="dimensions-custom-wrapper" class="flex flex-wrap gap-6 mb-6 hidden">
+      <!-- Length Control -->
+      <div id="length-control-row" class="axis-control-row flex-1 min-w-0">
+        <div class="control-label mb-2">
+          <label for="dim-length-input" class="text-sm font-semibold block">Length</label>
+        </div>
+        <div class="control-row flex items-center gap-2">
+          <button class="control-button decrement" data-axis="length" aria-label="Decrease length by 12 inches">
+            <span class="font-normal">−12″</span>
+          </button>
+          <input
+            type="number"
+            id="dim-length-input"
+            class="control-input"
+            data-axis="length"
+            data-unit="in"
+            inputmode="decimal"
+            aria-label="Length in inches"
+            min="24"
+            max="118"
+          />
+          <span class="control-unit text-sm text-gray-600">″</span>
+          <button class="control-button increment" data-axis="length" aria-label="Increase length by 12 inches">
+            <span class="font-normal">+12″</span>
+          </button>
+        </div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
       </div>
-      <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="length" aria-label="Decrease length by 12 inches">
-          <span class="font-normal">−12″</span>
-        </button>
-        <input
-          type="number"
-          id="dim-length-input"
-          class="control-input"
-          data-axis="length"
-          data-unit="in"
-          inputmode="decimal"
-          aria-label="Length in inches"
-          min="24"
-          max="118"
-        />
-        <span class="control-unit text-sm text-gray-600">″</span>
-        <button class="control-button increment" data-axis="length" aria-label="Increase length by 12 inches">
-          <span class="font-normal">+12″</span>
-        </button>
-      </div>
-      <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
-    </div>
 
-    <!-- Width Control (hidden until Custom selected) -->
-    <div id="width-control-row" class="axis-control-row hidden">
-      <div class="control-label mb-2">
-        <label for="dim-width-input" class="text-sm font-semibold block">Width</label>
+      <!-- Width Control -->
+      <div id="width-control-row" class="axis-control-row flex-1 min-w-0">
+        <div class="control-label mb-2">
+          <label for="dim-width-input" class="text-sm font-semibold block">Width</label>
+        </div>
+        <div class="control-row flex items-center gap-2">
+          <button class="control-button decrement" data-axis="width" aria-label="Decrease width by 6 inches">
+            <span class="font-normal">−6″</span>
+          </button>
+          <input
+            type="number"
+            id="dim-width-input"
+            class="control-input"
+            data-axis="width"
+            data-unit="in"
+            inputmode="decimal"
+            aria-label="Width in inches"
+            min="12"
+            max="59"
+          />
+          <span class="control-unit text-sm text-gray-600">″</span>
+          <button class="control-button increment" data-axis="width" aria-label="Increase width by 6 inches">
+            <span class="font-normal">+6″</span>
+          </button>
+        </div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
       </div>
-      <div class="control-row flex items-center gap-2">
-        <button class="control-button decrement" data-axis="width" aria-label="Decrease width by 6 inches">
-          <span class="font-normal">−6″</span>
-        </button>
-        <input
-          type="number"
-          id="dim-width-input"
-          class="control-input"
-          data-axis="width"
-          data-unit="in"
-          inputmode="decimal"
-          aria-label="Width in inches"
-          min="12"
-          max="59"
-        />
-        <span class="control-unit text-sm text-gray-600">″</span>
-        <button class="control-button increment" data-axis="width" aria-label="Increase width by 6 inches">
-          <span class="font-normal">+6″</span>
-        </button>
-      </div>
-      <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
     </div>
 
     <!-- Height Control (Horizontal Buttons) -->
-    <div class="axis-control-row">
+    <div class="axis-control-row mb-6">
       <div class="control-label mb-3">
         <span class="text-sm font-semibold block">Height</span>
       </div>

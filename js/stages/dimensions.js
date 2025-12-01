@@ -155,16 +155,13 @@ function updateOversizeBanners() {
 
 // Show/hide custom dimension controls based on selection
 function updateCustomFieldVisibility() {
-  const lengthRow = document.getElementById('length-control-row');
-  const widthRow = document.getElementById('width-control-row');
+  const wrapper = document.getElementById('dimensions-custom-wrapper');
   
   // Show length/width fields only if "custom" tile is selected
   if (selectedTileId === 'custom') {
-    if (lengthRow) lengthRow.classList.remove('hidden');
-    if (widthRow) widthRow.classList.remove('hidden');
+    if (wrapper) wrapper.classList.remove('hidden');
   } else {
-    if (lengthRow) lengthRow.classList.add('hidden');
-    if (widthRow) widthRow.classList.add('hidden');
+    if (wrapper) wrapper.classList.add('hidden');
   }
 }
 
