@@ -33,7 +33,6 @@ Make Oil +$10
 Make matte and gloss +0
 
 Legs:
-Increase design list to current standards
 only show available designs based on selected model
 only show available tube sizes if at least one design using it is visible
 Get model examples of all designs and tube sizes
