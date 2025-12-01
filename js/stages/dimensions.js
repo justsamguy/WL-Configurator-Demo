@@ -462,17 +462,17 @@ function initHeightButtons() {
 function selectHeight(heightId) {
   currentDimensions.height = heightId;
   currentDimensions.heightCustom = null;
-  
+
   const customContainer = document.getElementById('custom-height-container');
   if (heightId === 'custom') {
     if (customContainer) customContainer.classList.remove('hidden');
-    currentDimensions.heightCustom = 90; // Default custom height
+    currentDimensions.heightCustom = 40; // Default custom height
     const customInput = document.getElementById('dim-height-custom-input');
-    if (customInput) customInput.value = 90;
+    if (customInput) customInput.value = 40;
   } else {
     if (customContainer) customContainer.classList.add('hidden');
   }
-  
+
   updateHeightButtonSelection();
   updateValidationMessage('height-custom');
   updateApplyButtonState();
