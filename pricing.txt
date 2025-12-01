@@ -1,0 +1,5 @@
+Dining/Conference Table: 
+72 long is +0. Every 12" increment up to 120" is an additional +500. from 120-132 is +1000, then +500 for every increment up to 192". 
+36 wide is +0. Every 6" Increment up to 52" is an additional +500. from 52-58 is +1000, then +500 for every increment up to 70.
+
+Coffee Table:
