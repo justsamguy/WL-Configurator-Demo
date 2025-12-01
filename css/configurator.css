@@ -26,6 +26,10 @@ body {
   overflow: hidden; /* Hide page-level overflow; internal panels will scroll instead */
 }
 
+/* Utility helpers */
+/* Simple `.hidden` helper used by JS to toggle visibility of UI rows. */
+.hidden { display: none !important; }
+
 /* Root grid layout controlled via .app-root to avoid relying on Tailwind arbitrary utilities */
 .app-root {
   display: grid;
