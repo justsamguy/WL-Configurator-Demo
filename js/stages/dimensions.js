@@ -41,10 +41,12 @@ function initializeFromState(appState) {
           currentDimensions.width = preset.width;
           currentDimensions.height = preset.height;
           currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
+          selectedTileId = preset.id;
         }
       } else if (typeof dimSel === 'object') {
         // Support custom dimension objects
         currentDimensions = { ...currentDimensions, ...dimSel };
+        selectedTileId = 'custom';
       }
     } else if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
       // No previous selection; select first available preset
@@ -53,6 +55,7 @@ function initializeFromState(appState) {
       currentDimensions.width = firstPreset.width;
       currentDimensions.height = firstPreset.height;
       currentDimensions.heightCustom = firstPreset.height === 'custom' ? firstPreset.heightCustom : null;
+      selectedTileId = firstPreset.id;
     }
   } catch (e) {
     console.warn('Failed to initialize dimensions from state:', e);
