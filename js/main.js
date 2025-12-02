@@ -223,6 +223,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
     }
 
+    const tubeSizesRoot = document.getElementById('tube-size-options');
+    if (tubeSizesRoot) {
+  const tubeSizes = await loadData('data/tube-sizes.json');
+      if (tubeSizes) renderOptionCards(tubeSizesRoot, tubeSizes, { category: 'tube-size' });
+    }
+
+    const legFinishRoot = document.getElementById('leg-finish-options');
+    if (legFinishRoot) {
+  const legFinish = await loadData('data/leg-finish.json');
+      if (legFinish) renderOptionCards(legFinishRoot, legFinish, { category: 'leg-finish' });
+    }
+
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
@@ -265,5 +277,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-02 16:35');
+  console.log('Last updated: 2025-12-02 17:45');
 });

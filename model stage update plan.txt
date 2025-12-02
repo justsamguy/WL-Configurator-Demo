@@ -1,6 +1,6 @@
 The app's navigation stages are to be modified so the user picks a model first, then a design (instead of a single-stage model select). 
-A new stage called "Models" will be added as the first stage, and showcase different tables. The current model stage will be renamed "designs" and show the model's design choices as they currently are.
-different models have different price points, so their respective designs will need to be priced individually even if the design is shared with other models.
+A new stage called "Models" will be added as the first stage, and showcase different tables. The current model stage will be renamed "designs" and show the model's design choices using the existing tile layout.
+different models have different price points, so their respective designs will need to be priced individually even if a design is identical across models.
 
 Models:
 coffee 

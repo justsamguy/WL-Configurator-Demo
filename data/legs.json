@@ -4,5 +4,6 @@
   { "id": "leg-sample-03", "title": "Hourglass", "price": 130, "image": "assets/images/Leg styles/Hourglass.jpg", "description": "Sculptured hourglass profile" },
   { "id": "leg-sample-04", "title": "Squared", "price": 110, "image": "assets/images/Leg styles/Squared.jpg", "description": "Clean squared edges" },
   { "id": "leg-sample-05", "title": "Tapered", "price": 140, "image": "assets/images/Leg styles/Tapered.jpg", "description": "Solid wood tapered" },
-  { "id": "leg-sample-06", "title": "X Style", "price": 125, "image": "assets/images/Leg styles/X Style.jpg", "description": "Geometric X-frame design" }
+  { "id": "leg-sample-06", "title": "X Style", "price": 125, "image": "assets/images/Leg styles/X Style.jpg", "description": "Geometric X-frame design" },
+  { "id": "leg-sample-07", "title": "Custom", "price": 0, "image": "assets/images/Leg styles/placeholder.png", "description": "Custom leg design" }
 ]

@@ -1,0 +1,6 @@
+[
+  { "id": "tube-1x0.5", "title": "1×½\"", "price": 0, "image": "assets/images/placeholder.png", "description": "1 by half inch tube" },
+  { "id": "tube-1x1", "title": "1×1\"", "price": 15, "image": "assets/images/placeholder.png", "description": "1 by 1 inch tube" },
+  { "id": "tube-1x3", "title": "1×3\"", "price": 25, "image": "assets/images/placeholder.png", "description": "1 by 3 inch tube" },
+  { "id": "tube-2x4", "title": "2×4\"", "price": 40, "image": "assets/images/placeholder.png", "description": "2 by 4 inch tube" }
+]

@@ -14,7 +14,6 @@ only show available designs based on selected model
 only show available tube sizes if at least one design using it is visible
 Get model examples of all designs and tube sizes
 grey out unavailable tube sizes based on leg style with tooltip on hover (example: "only compatible with [x]")
-add leg finish below tube size
 get list of standard leg colors
 
 Addons:
