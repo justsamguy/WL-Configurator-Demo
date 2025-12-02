@@ -2113,15 +2113,23 @@ p, label { font-size: 15px; color: #374151; }
 /* By default, both sections are hidden */
 #models-stage-section,
 #designs-stage-section {
-  display: none;
+  display: none !important;
 }
 
-/* Show models section when on Models stage (stage index 0) */
+/* Show models section ONLY when on Models stage (stage index 0) */
 body.stage-0 #models-stage-section {
-  display: block;
+  display: block !important;
 }
 
-/* Show designs section when on Designs stage (stage index 1) */
+body.stage-0 #designs-stage-section {
+  display: none !important;
+}
+
+/* Show designs section ONLY when on Designs stage (stage index 1) */
+body.stage-1 #models-stage-section {
+  display: none !important;
+}
+
 body.stage-1 #designs-stage-section {
-  display: block;
+  display: block !important;
 }
