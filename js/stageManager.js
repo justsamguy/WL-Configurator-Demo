@@ -248,7 +248,11 @@ async function setStage(index, options = {}) {
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Models stage (now index 0), model tiles are hidden by default.
   try {
-    document.body.classList.toggle('show-model-tiles', managerState.current === 0);
+    document.body.classList.toggle('show-model-tiles', managerState.current === 0 || managerState.current === 1);
+    // Add stage-specific classes for CSS visibility control
+    for (let i = 0; i < STAGES.length; i++) {
+      document.body.classList.toggle(`stage-${i}`, managerState.current === i);
+    }
   } catch (e) {
     // document.body might not be available in some test contexts; ignore.
   }
