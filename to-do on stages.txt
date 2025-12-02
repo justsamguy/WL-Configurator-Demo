@@ -1,36 +1,13 @@
 Materials:
-Reorder wood species: Black Walnut, (Spalted) Maple, American Elm, Siberian Elm, the rest remain in order.
-re-price wood: +0 for elms and sycamore, +500 for Walnut and Maple, +1000 for claro, +0 for other
 Get pictures of Maple and another burled wood
-update wood descriptions:
-Renowned for it's deep brown tones and it's superior hardness and durability, Black Walnut is one of the most popular wood species in the furniture & woodworking world.
-American Elm is a light, slightly less dense hardwood that often shows long contours in its grain, accompanied with very open grain pores. 
-Siberian Elm is lighter hardwood like it's American cousin, but often is found with small patches of burled grains all throughout the wood.
-Sycamore wood has varying caramel and tan tones that tend to blend in harmony throughout the piece. A unique, feather-like pattern is often seen in the grain.
-Ash is a very light wood that tends to be on the soft side. It's ideal for projects that require a light-colored wood finish.
-Claro Walnut is a variety of Black Walnut that comes from northern California. Because of growing conditions, the wood boasts extraordinary figure and burling and ideal grain tones.
-Spalted Maple is a lighter Hardwood that, when aged and dried correctly, results in a beautiful, busy scene in the grain. It's figure makes it ideal as a focal point, with detailed movement in the grain lines.
-If you don't see the wood you like, let us know what you have in mind for your project and we will quote the wood cost for you in addition to the project.
+
 
 
 
 Re-order colors
-update color descriptions:
-Multi-Blue is a tried and true combo for resin projects thanks to the water-like essence that flows between the wood grains. This elegant color pallete has traveled in national and international projects both past and present. Ocean+Maui+Caribbean
-Multi-Grey is a popular choice for many modern, toned-down interiors, and is often the go-to for designers and owners alike. It brings the wood and room together as a centerpiece, and complements as a side piece. Caviar+Dolphin+Pearl
-(add this option) Our Copper Blend is a beautiful and timeless way to add a splash of color to a table while matching the tone of Walnut, or contrasting lighter woods. Pineapple+Espresso+Pineapple 
-Multi-Green is a pallette that brings a splash of life and color to a room. This color set goes well in businesses and offices, fitting with the wood and giving the room a continuous theme. Jungle+Emerald+Candy Apple
-Our translucent Dark Grey is ideal when a consistent, subtle color is needed. It blends with both darker and lighter woods without creating distractions or sacrificing the beauty of a finished piece. Dolphin+Caviar
-Caviar Black is our darkest translucent color. Unlike Solid Black, it shows the traditional epoxy figure through the pigment's glittery highlights while still maintaining it's deep black color.
-Solid Black is a good color when a statement is needed, whether it is one of subtlety with darker woods, or contrast with lighter ones. 
-
 get color examples of all colors (even if not material)
 
-Finish:
-Make 2K Poly first tile, +$0, and default selection
-Make satin default selection
-Make Oil +$10
-Make matte and gloss +0
+
 
 Legs:
 only show available designs based on selected model

@@ -1,11 +1,11 @@
 {
   "coatings": [
-    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "Natural penetrating oil finish" },
-    { "id": "fin-coat-02", "title": "2K Poly", "price": 120, "description": "Two-component polyurethane (durable)" }
+    { "id": "fin-coat-02", "title": "2K Poly", "price": 0, "description": "Two-component polyurethane (durable)" },
+    { "id": "fin-coat-01", "title": "Natural Oil", "price": 10, "description": "Natural penetrating oil finish" }
   ],
   "sheens": [
     { "id": "fin-sheen-01", "title": "Satin", "price": 0, "description": "Medium sheen" },
-    { "id": "fin-sheen-02", "title": "Matte", "price": 30, "description": "Low reflection matte" },
-    { "id": "fin-sheen-03", "title": "Gloss", "price": 75, "description": "High gloss" }
+    { "id": "fin-sheen-02", "title": "Matte", "price": 0, "description": "Low reflection matte" },
+    { "id": "fin-sheen-03", "title": "Gloss", "price": 0, "description": "High gloss" }
   ]
 }
