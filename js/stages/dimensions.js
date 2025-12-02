@@ -11,11 +11,9 @@ let currentDimensions = {
   height: 'standard',
   heightCustom: null
 };
+let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 
-let cutToValues = {
-  length: null,
-  width: null
-};
+
 
 // Load dimensions data from JSON
 async function loadDimensionsData() {
@@ -43,11 +41,21 @@ function initializeFromState(appState) {
           currentDimensions.width = preset.width;
           currentDimensions.height = preset.height;
           currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
+          selectedTileId = preset.id;
         }
       } else if (typeof dimSel === 'object') {
         // Support custom dimension objects
         currentDimensions = { ...currentDimensions, ...dimSel };
+        selectedTileId = 'custom';
       }
+    } else if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
+      // No previous selection; select first available preset
+      const firstPreset = dimensionsData.presets[0];
+      currentDimensions.length = firstPreset.length;
+      currentDimensions.width = firstPreset.width;
+      currentDimensions.height = firstPreset.height;
+      currentDimensions.heightCustom = firstPreset.height === 'custom' ? firstPreset.heightCustom : null;
+      selectedTileId = firstPreset.id;
     }
   } catch (e) {
     console.warn('Failed to initialize dimensions from state:', e);
@@ -69,6 +77,10 @@ function validateAxisValue(axis, value) {
     const range = constraints[axis];
     if (!range) return true;
     return value >= range.min && value <= range.max;
+  }
+  if (axis === 'height-custom') {
+    // Custom height range: 16" to 50"
+    return value >= 16 && value <= 50;
   }
   return true;
 }
@@ -141,23 +153,15 @@ function updateOversizeBanners() {
   });
 }
 
-// Update preview snapshot
-function updatePreviewSnapshot() {
-  const lengthLabel = document.querySelector('.length-value');
-  const widthLabel = document.querySelector('.width-value');
+// Show/hide custom dimension controls based on selection
+function updateCustomFieldVisibility() {
+  const wrapper = document.getElementById('dimensions-custom-wrapper');
   
-  if (lengthLabel && currentDimensions.length) {
-    lengthLabel.textContent = currentDimensions.length;
-  }
-  if (widthLabel && currentDimensions.width) {
-    widthLabel.textContent = currentDimensions.width;
-  }
-  
-  // Trigger subtle highlight animation
-  const snapshot = document.querySelector('.preview-snapshot');
-  if (snapshot) {
-    snapshot.classList.add('highlight');
-    setTimeout(() => snapshot.classList.remove('highlight'), 300);
+  // Show length/width fields only if "custom" tile is selected
+  if (selectedTileId === 'custom') {
+    if (wrapper) wrapper.classList.remove('hidden');
+  } else {
+    if (wrapper) wrapper.classList.add('hidden');
   }
 }
 
@@ -165,7 +169,6 @@ function updatePreviewSnapshot() {
 function updateUIControls() {
   const lengthInput = document.getElementById('dim-length-input');
   const widthInput = document.getElementById('dim-width-input');
-  const heightSelect = document.getElementById('dim-height-select');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
   
@@ -175,9 +178,7 @@ function updateUIControls() {
   if (widthInput && currentDimensions.width !== null) {
     widthInput.value = currentDimensions.width;
   }
-  if (heightSelect) {
-    heightSelect.value = currentDimensions.height || 'standard';
-  }
+  
   if (currentDimensions.height === 'custom') {
     if (customHeightContainer) customHeightContainer.classList.remove('hidden');
     if (heightCustomInput && currentDimensions.heightCustom) {
@@ -191,7 +192,8 @@ function updateUIControls() {
   updateValidationMessage('width');
   updateValidationMessage('height-custom');
   updateOversizeBanners();
-  updatePreviewSnapshot();
+  updateCustomFieldVisibility();
+  updateHeightButtonSelection();
   updateApplyButtonState();
 }
 
@@ -213,6 +215,16 @@ function updateApplyButtonState() {
   }
 }
 
+// Calculate height price adjustment based on current height selection
+function getHeightPrice() {
+  if (currentDimensions.height === 'bar') {
+    return 120;
+  } else if (currentDimensions.height === 'custom') {
+    return 250;
+  }
+  return 0; // standard
+}
+
 // Dispatch option-selected event to trigger state update in main.js
 function dispatchDimensionSelection() {
   const payload = {
@@ -220,15 +232,15 @@ function dispatchDimensionSelection() {
     length: currentDimensions.length,
     width: currentDimensions.width,
     height: currentDimensions.height,
-    heightCustom: currentDimensions.heightCustom,
-    cutToLength: cutToValues.length,
-    cutToWidth: cutToValues.width
+    heightCustom: currentDimensions.heightCustom
   };
+  
+  const heightPrice = getHeightPrice();
   
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
       id: 'dimensions-custom',
-      price: 0, // Price adjustment would be computed separately based on presets
+      price: heightPrice,
       category: 'dimensions',
       payload
     }
@@ -248,85 +260,70 @@ function initPresets() {
   
   presetsContainer.innerHTML = '';
   
+  // Add preset tiles
   dimensionsData.presets.forEach(preset => {
     const tile = document.createElement('button');
-    tile.className = 'preset-tile flex-shrink-0 border-2 border-gray-200 rounded-lg p-3 hover:border-blue-500 transition focus-visible:outline-blue-500 focus-visible:outline-offset-2 cursor-pointer';
+    tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
     
     tile.innerHTML = `
-      <div class="flex flex-col items-center gap-2">
-        <div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-          <span>256×256</span>
-        </div>
-        <div class="text-center">
-          <div class="text-xs font-semibold">${preset.title}</div>
-          <div class="text-xs text-gray-600">${preset.length}″ × ${preset.width}″</div>
-          ${preset.description ? `<div class="text-xs text-gray-500">${preset.description}</div>` : ''}
-          ${preset.price > 0 ? `<div class="text-xs font-medium text-green-700">+$${preset.price}</div>` : ''}
-        </div>
-      </div>
+      <div class="title">${preset.title}</div>
+      <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
     
     tile.addEventListener('click', () => {
-      // Animate values to preset
-      const targetLength = preset.length;
-      const targetWidth = preset.width;
-      const targetHeight = preset.height;
-      
-      animateValue(currentDimensions.length, targetLength, (v) => {
-        currentDimensions.length = v;
-        const input = document.getElementById('dim-length-input');
-        if (input) input.value = v;
-      });
-      
-      animateValue(currentDimensions.width, targetWidth, (v) => {
-        currentDimensions.width = v;
-        const input = document.getElementById('dim-width-input');
-        if (input) input.value = v;
-      });
-      
-      currentDimensions.height = targetHeight;
-      currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
-      
-      // Update UI and dispatch
-      updateUIControls();
-      dispatchDimensionSelection();
-      
-      // Visual feedback on preset tile
-      document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
-      tile.classList.add('border-blue-500', 'bg-blue-50');
+      selectPreset(preset, tile);
     });
-    
-    // Mark as selected if matches current state
-    if (
-      currentDimensions.length === preset.length &&
-      currentDimensions.width === preset.width &&
-      currentDimensions.height === preset.height
-    ) {
-      tile.classList.add('border-blue-500', 'bg-blue-50');
-    }
     
     presetsContainer.appendChild(tile);
   });
+  
+  // Add "Custom" tile
+  const customTile = document.createElement('button');
+  customTile.className = 'option-card flex-shrink-0';
+  customTile.setAttribute('data-preset-id', 'custom');
+  customTile.setAttribute('aria-label', 'Custom dimensions');
+  
+  customTile.innerHTML = `
+    <div class="title">Custom</div>
+    <div class="description">Your custom size</div>
+  `;
+  
+  customTile.addEventListener('click', () => {
+    // Custom tile selection
+    selectedTileId = 'custom';
+    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+    customTile.classList.add('selected');
+    updateCustomFieldVisibility();
+  });
+  
+  presetsContainer.appendChild(customTile);
 }
 
-// Animate numeric value change
-function animateValue(from, to, onUpdate, duration = 300) {
-  if (from === null) from = to;
-  if (from === to) {
-    onUpdate(to);
-    return;
-  }
-  const start = performance.now();
-  const delta = to - from;
-  function tick(now) {
-    const t = Math.min(1, (now - start) / duration);
-    const value = Math.round(from + delta * t);
-    onUpdate(value);
-    if (t < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
+// Update custom field visibility based on manual tile selection
+function updateTileSelection() {
+  updateCustomFieldVisibility();
+}
+
+// Select a preset and apply its values
+function selectPreset(preset, tileElement) {
+  currentDimensions.length = preset.length;
+  currentDimensions.width = preset.width;
+  currentDimensions.height = preset.height;
+  currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
+  
+  // Mark this preset as selected
+  selectedTileId = preset.id;
+  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+  if (tileElement) tileElement.classList.add('selected');
+  
+  // Update UI and dispatch
+  updateUIControls();
+  dispatchDimensionSelection();
+  
+  // Update field visibility
+  updateCustomFieldVisibility();
 }
 
 // Wire up increment/decrement buttons
@@ -357,8 +354,8 @@ function initAxisControls() {
         document.getElementById('dim-length-input').value = newVal;
         updateValidationMessage('length');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -368,8 +365,8 @@ function initAxisControls() {
         document.getElementById('dim-width-input').value = newVal;
         updateValidationMessage('width');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -401,8 +398,8 @@ function initNumericInputs() {
         currentDimensions.length = value;
         updateValidationMessage('length');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'width') {
@@ -410,8 +407,8 @@ function initNumericInputs() {
         currentDimensions.width = value;
         updateValidationMessage('width');
         updateOversizeBanners();
-        updatePreviewSnapshot();
         updateApplyButtonState();
+        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
     } else if (axis === 'height-custom') {
@@ -425,43 +422,76 @@ function initNumericInputs() {
   });
 }
 
-// Wire up height dropdown
-function initHeightSelect() {
-  const select = document.getElementById('dim-height-select');
-  if (!select) return;
+// Wire up height buttons
+function initHeightButtons() {
+  const heightOptions = document.getElementById('height-options');
+  if (!heightOptions) return;
   
-  select.addEventListener('change', (ev) => {
-    const value = ev.target.value;
-    currentDimensions.height = value;
-    currentDimensions.heightCustom = null;
+  // Height options: standard, bar, custom
+  const heights = [
+    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0 },
+    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120 },
+    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250 }
+  ];
+  
+  heightOptions.innerHTML = '';
+  
+  heights.forEach(height => {
+    const button = document.createElement('button');
+    button.className = 'option-card';
+    button.setAttribute('data-height-id', height.id);
+    button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
-    const customContainer = document.getElementById('custom-height-container');
-    if (value === 'custom') {
-      if (customContainer) customContainer.classList.remove('hidden');
-      currentDimensions.heightCustom = 90; // Default custom height
-      const customInput = document.getElementById('dim-height-custom-input');
-      if (customInput) customInput.value = 90;
-    } else {
-      if (customContainer) customContainer.classList.add('hidden');
-    }
+    button.innerHTML = `
+      <div class="title">${height.title} ${height.subtitle}</div>
+      <div class="description">+$${height.price}</div>
+    `;
     
-    updateValidationMessage('height-custom');
-    updateApplyButtonState();
-    dispatchDimensionSelection();
+    button.addEventListener('click', () => {
+      selectHeight(height.id);
+    });
+    
+    heightOptions.appendChild(button);
   });
+  
+  // Update selection on init
+  updateHeightButtonSelection();
+}
+
+// Select a height option
+function selectHeight(heightId) {
+  currentDimensions.height = heightId;
+  currentDimensions.heightCustom = null;
+
+  const customContainer = document.getElementById('custom-height-container');
+  if (heightId === 'custom') {
+    if (customContainer) customContainer.classList.remove('hidden');
+    currentDimensions.heightCustom = 40; // Default custom height
+    const customInput = document.getElementById('dim-height-custom-input');
+    if (customInput) customInput.value = 40;
+  } else {
+    if (customContainer) customContainer.classList.add('hidden');
+  }
+
+  updateHeightButtonSelection();
+  updateValidationMessage('height-custom');
+  updateApplyButtonState();
+  dispatchDimensionSelection();
+}
+
+// Update height button selection state
+function updateHeightButtonSelection() {
+  document.querySelectorAll('[data-height-id]').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  
+  const activeBtn = document.querySelector(`[data-height-id="${currentDimensions.height}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('selected');
+  }
 }
 
 // Wire up "Cut to" checkboxes
-function initCutToToggles() {
-  document.addEventListener('change', (ev) => {
-    const checkbox = ev.target.closest('.cut-to-check');
-    if (!checkbox) return;
-    
-    const axis = checkbox.getAttribute('data-axis');
-    cutToValues[axis] = checkbox.checked ? currentDimensions[axis] : null;
-    dispatchDimensionSelection();
-  });
-}
 
 // Wire up Reset button
 function initResetButton() {
@@ -475,12 +505,11 @@ function initResetButton() {
       height: 'standard',
       heightCustom: null
     };
-    cutToValues = { length: null, width: null };
     
     updateUIControls();
     
-    // Clear preset selections
-    document.querySelectorAll('.preset-tile').forEach(t => t.classList.remove('border-blue-500', 'bg-blue-50'));
+    // Clear tile selections
+    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
   });
 }
 
@@ -511,7 +540,6 @@ export async function init() {
   
   // Check if panel is already in DOM; if not, this will be called again when it is
   if (!document.getElementById('dimensions-stage-panel')) {
-    // console.warn('Dimensions panel not yet in DOM; deferring initialization');
     // Wait a bit and retry
     setTimeout(init, 200);
     return;
@@ -524,8 +552,7 @@ export async function init() {
   initPresets();
   initAxisControls();
   initNumericInputs();
-  initHeightSelect();
-  initCutToToggles();
+  initHeightButtons();
   initResetButton();
   initApplyButton();
   

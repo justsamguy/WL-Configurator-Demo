@@ -15,7 +15,7 @@ Notes on recent conventions:
 
 - Provide concise diffs for changes.
 - Make minimal, targeted changes. When adding new modules under `js/stages/` or `js/pricing.js`, include a one-line description in this file explaining their purpose.
-- **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
+- **IMPORTANT:** After each requested edit to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
 
 - **Follow the locked tech stack:** Use only the specified libraries and frameworks.
 - **Adhere to the canonical file/folder layout:** Maintain the project's structure as defined.
