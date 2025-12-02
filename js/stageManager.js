@@ -113,6 +113,16 @@ async function setStage(index, options = {}) {
           console.warn('Failed to apply finish defaults via module:', e);
         }
       }
+      // If attempting to move to Add-ons or beyond (index >= 5), require legs, tube-size, and leg-finish
+      if (index >= 5) {
+        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
+        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+        if (!hasLegs || !hasTubeSize || !hasLegFinish) {
+          showBanner('Please complete all leg selections (style, tube size, and finish) before proceeding.');
+          return;
+        }
+      }
     } catch (e) {
       // if anything goes wrong reading appState, be conservative and block advance
       showBanner('Please complete required selections before proceeding.');
