@@ -4,7 +4,7 @@
 
 export const state = {
   stage: 1,
-  selections: { model: null, options: {} },
+  selections: { model: null, design: null, options: {} },
   pricing: { base: 0, extras: 0, total: 0 }
 };
 
