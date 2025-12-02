@@ -1,11 +1,10 @@
 [
-  { "id": "mat-01", "title": "American Elm", "price": 0, "image": "assets/images/Wood Samples/American_Elm_Sample.jpg", "description": "Warm tone, open grain." },
-  { "id": "mat-02", "title": "Black Walnut", "price": 250, "image": "assets/images/Wood Samples/Black_Walnut_Sample.jpg", "description": "Deep, rich color." },
-  { "id": "mat-03", "title": "Siberian Elm", "price": 100, "image": "assets/images/Wood Samples/Siberian_Elm_Sample.jpg", "description": "Balanced, neutral look." },
-  { "id": "mat-04", "title": "Sycamore", "price": 150, "image": "assets/images/Wood Samples/Sycamore_Sample.jpg", "description": "Light, versatile tone." }
- ,
-  { "id": "mat-05", "title": "Ash", "price": 0, "image": "assets/images/Wood Samples/Ash Sample (to be updated).jpg", "description": "Ash wood sample." },
-  { "id": "mat-06", "title": "Claro Walnut", "price": 0, "image": "assets/images/Wood Samples/Claro Walnut Sample 1x1.jpg", "description": "Claro walnut sample." },
-  { "id": "mat-07", "title": "Maple", "price": 0, "image": "assets/images/Wood Samples/Spalted Maple Sample 2 1x1.jpg", "description": "Spalted maple sample." },
-  { "id": "mat-08", "title": "Other", "price": 0, "image": "assets/images/645E51.png", "description": "Placeholder." }
+  { "id": "mat-01", "title": "Black Walnut", "price": 500, "image": "assets/images/Wood Samples/Black_Walnut_Sample.jpg", "description": "Renowned for its deep brown tones and superior hardness and durability, Black Walnut is one of the most popular wood species in the furniture & woodworking world." },
+  { "id": "mat-02", "title": "Spalted Maple", "price": 500, "image": "assets/images/Wood Samples/Spalted Maple Sample 2 1x1.jpg", "description": "Spalted Maple is a lighter hardwood that, when aged and dried correctly, results in a beautiful, busy scene in the grain. Its figure makes it ideal as a focal point, with detailed movement in the grain lines." },
+  { "id": "mat-03", "title": "American Elm", "price": 0, "image": "assets/images/Wood Samples/American_Elm_Sample.jpg", "description": "American Elm is a light, slightly less dense hardwood that often shows long contours in its grain, accompanied with very open grain pores." },
+  { "id": "mat-04", "title": "Siberian Elm", "price": 0, "image": "assets/images/Wood Samples/Siberian_Elm_Sample.jpg", "description": "Siberian Elm is lighter hardwood like its American cousin, but often is found with small patches of burled grains all throughout the wood." },
+  { "id": "mat-05", "title": "Sycamore", "price": 0, "image": "assets/images/Wood Samples/Sycamore_Sample.jpg", "description": "Sycamore wood has varying caramel and tan tones that tend to blend in harmony throughout the piece. A unique, feather-like pattern is often seen in the grain." },
+  { "id": "mat-06", "title": "Ash", "price": 0, "image": "assets/images/Wood Samples/Ash Sample (to be updated).jpg", "description": "Ash is a very light wood that tends to be on the soft side. It's ideal for projects that require a light-colored wood finish." },
+  { "id": "mat-07", "title": "Claro Walnut", "price": 1000, "image": "assets/images/Wood Samples/Claro Walnut Sample 1x1.jpg", "description": "Claro Walnut is a variety of Black Walnut that comes from northern California. Because of growing conditions, the wood boasts extraordinary figure and burling and ideal grain tones." },
+  { "id": "mat-08", "title": "Other", "price": 0, "image": "assets/images/645E51.png", "description": "If you don't see the wood you like, let us know what you have in mind for your project and we will quote the wood cost for you in addition to the project." }
 ]
