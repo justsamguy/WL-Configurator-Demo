@@ -138,13 +138,11 @@ async function setStage(index, options = {}) {
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
   if (index > managerState.current && !options.allowSkip) {
     // require model selected to advance beyond stage 0 (Models)
-    if (!appState.selections.model) {
-      showBanner('Please select a model before proceeding.');
+    if (managerState.current <= 0 && !appState.selections.model) {
       return;
     }
     // require design selected to advance beyond stage 1 (Designs)
-    if (index > 1 && !appState.selections.design) {
-      showBanner('Please select a design before proceeding.');
+    if (managerState.current <= 1 && !appState.selections.design) {
       return;
     }
     // If attempting to move to the Materials stage (index 2), validate as before
