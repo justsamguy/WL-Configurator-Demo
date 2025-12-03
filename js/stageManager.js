@@ -49,7 +49,7 @@ const managerState = {
 };
 
 // Stages that are optional (no selection required to advance)
-const OPTIONAL_STAGES = [7]; // index 7 = 'Add-ons'
+const OPTIONAL_STAGES = [6]; // index 6 = 'Add-ons'
 
 function $(sel) {
   return document.querySelector(sel);
