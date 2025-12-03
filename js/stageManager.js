@@ -442,15 +442,28 @@ export function initStageManager() {
         const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
         markCompleted(3, !!(hasCoating && hasSheen));
       } else if (managerState.current === 4) {
-        // Dimensions stage (index 4): require at least one dimension selection (length, width, or height)
-        const hasDimensions = !!(appState.selections && appState.selections.options && appState.selections.options.dimensions);
-        markCompleted(4, !!hasDimensions);
+        // Dimensions stage (index 4): require a preset or custom dimensions selection
+        // Check if a preset tile is selected or custom dimensions are provided
+        const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
+        // dimOption is set when any dimension selection is made (preset or custom)
+        markCompleted(4, !!dimOption);
       } else if (managerState.current === 5) {
         // Legs stage (index 5): require legs, tube-size, AND leg-finish all selected
+        // Check all three on every selection event
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
         const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-        markCompleted(5, !!(hasLegs && hasTubeSize && hasLegFinish));
+        const isLegStageComplete = !!(hasLegs && hasTubeSize && hasLegFinish);
+        markCompleted(5, isLegStageComplete);
+      }
+      
+      // Also check legs stage completion if any legs-related category is selected (for button enable/disable on transitions)
+      if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
+        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
+        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+        const isLegStageComplete = !!(hasLegs && hasTubeSize && hasLegFinish);
+        markCompleted(5, isLegStageComplete);
       }
       // Stage 6 (Add-ons) is optional, so it's never marked as requiring completion
       // Stage 7 (Summary) is terminal; completion not tracked here
