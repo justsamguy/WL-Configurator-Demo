@@ -142,7 +142,8 @@ async function setStage(index, options = {}) {
       return;
     }
     // require design selected to advance beyond stage 1 (Designs)
-    if (managerState.current <= 1 && !appState.selections.design) {
+    // But only gate if we're trying to advance PAST the Designs stage (stage 1)
+    if (managerState.current === 1 && index > 1 && !appState.selections.design) {
       return;
     }
     // If attempting to move to the Materials stage (index 2), validate as before
