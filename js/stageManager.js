@@ -165,8 +165,8 @@ async function setStage(index, options = {}) {
           console.warn('Failed to apply finish defaults via module:', e);
         }
       }
-      // If attempting to move to Legs or beyond (index >= 5), require legs, tube-size, and leg-finish
-      if (index >= 5) {
+      // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
+      if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
         const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
