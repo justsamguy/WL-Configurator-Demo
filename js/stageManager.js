@@ -409,44 +409,65 @@ export function initStageManager() {
   try { legsStage.init && legsStage.init(); } catch (e) { /* ignore */ }
   try { addonsStage.init && addonsStage.init(); } catch (e) { /* ignore */ }
   try { summaryStage.init && summaryStage.init(); } catch (e) { /* ignore */ }
-  // Mark Models stage completed when a model is selected
+  // Mark stages completed only when ALL required selections are made
   document.addEventListener('option-selected', (ev) => {
     const { category } = ev.detail || {};
-    // Models stage (index 0): mark complete when model is selected
-    if (category === 'model') {
-      markCompleted(0, true);
-      // enable designs stage button
-      const designBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
-      if (designBtn) designBtn.disabled = false;
-      // Don't call setStage here; let user click Next or the Designs button to navigate
-      return;
+    
+    try {
+      // Models stage (index 0): mark complete only when model is selected
+      if (category === 'model') {
+        const hasModel = !!(appState.selections && appState.selections.model);
+        markCompleted(0, !!hasModel);
+        // Don't call setStage here; let user click Next or the Designs button to navigate
+        return;
+      }
+      
+      // Designs stage (index 1): mark complete only when design is selected
+      if (category === 'design') {
+        const hasDesign = !!(appState.selections && appState.selections.design);
+        markCompleted(1, !!hasDesign);
+        // Don't call setStage here; let user click Next or the Materials button to navigate
+        return;
+      }
+      
+      // For all other stages, validate completion based on current stage and update accordingly
+      if (managerState.current === 2) {
+        // Materials stage (index 2): require both material and color
+        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+        markCompleted(2, !!(hasMaterial && hasColor));
+      } else if (managerState.current === 3) {
+        // Finish stage (index 3): require both a coating and a sheen
+        const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
+        const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
+        markCompleted(3, !!(hasCoating && hasSheen));
+      } else if (managerState.current === 4) {
+        // Dimensions stage (index 4): require at least one dimension selection (length, width, or height)
+        const hasDimensions = !!(appState.selections && appState.selections.options && appState.selections.options.dimensions);
+        markCompleted(4, !!hasDimensions);
+      } else if (managerState.current === 5) {
+        // Legs stage (index 5): require legs, tube-size, AND leg-finish all selected
+        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
+        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+        markCompleted(5, !!(hasLegs && hasTubeSize && hasLegFinish));
+      }
+      // Stage 6 (Add-ons) is optional, so it's never marked as requiring completion
+      // Stage 7 (Summary) is terminal; completion not tracked here
+      
+      // run a UI update to refresh Next/Prev/button states
+      setStage(managerState.current);
+    } catch (e) {
+      console.warn('Error in option-selected handler:', e);
     }
-    // Designs stage (index 1): mark complete when design is selected
-    if (category === 'design') {
-      markCompleted(1, true);
-      // enable materials stage button
-      const materialsBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='2']`);
-      if (materialsBtn) materialsBtn.disabled = false;
-      // Don't call setStage here; let user click Next or the Materials button to navigate
-      return;
+  });
+
+  // Handle addon-toggled events (addons are optional, so this just updates UI)
+  document.addEventListener('addon-toggled', () => {
+    // Addons stage is optional, but update UI state in case user is on that stage
+    if (managerState.current === 6) {
+      setStage(managerState.current);
     }
-    // For the Materials stage (index 2) require both material and color to
-    // consider the stage complete. For other stages, marking on selection is fine.
-    if (managerState.current === 2) {
-      const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
-      const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-      markCompleted(2, !!(hasMaterial && hasColor));
-    } else if (managerState.current === 3) {
-      // For Finish stage, require both a coating and a sheen to consider the stage complete.
-      const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
-      const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
-      markCompleted(3, !!(hasCoating && hasSheen));
-    } else if (managerState.current > 1 && category !== 'model' && category !== 'design') {
-      // mark the active stage complete so Next becomes enabled (skip for model/design selections)
-      markCompleted(managerState.current, true);
-    }
-    // run a UI update to refresh Next/Prev/button states (only for non-model/design stages)
-    setStage(managerState.current);
   });
 
   updateLivePrice();
