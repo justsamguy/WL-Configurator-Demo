@@ -10,8 +10,8 @@ const STAGES = [
   'Designs',
   'Materials',
   'Finish',
-  'Legs',
   'Dimensions',
+  'Legs',
   'Add-ons',
   'Summary & Export'
 ];
@@ -49,7 +49,7 @@ const managerState = {
 };
 
 // Stages that are optional (no selection required to advance)
-const OPTIONAL_STAGES = [6]; // index 6 = 'Add-ons'
+const OPTIONAL_STAGES = [7]; // index 7 = 'Add-ons'
 
 function $(sel) {
   return document.querySelector(sel);
@@ -165,8 +165,8 @@ async function setStage(index, options = {}) {
           console.warn('Failed to apply finish defaults via module:', e);
         }
       }
-      // If attempting to move to Add-ons or beyond (index >= 6), require legs, tube-size, and leg-finish
-      if (index >= 6) {
+      // If attempting to move to Legs or beyond (index >= 5), require legs, tube-size, and leg-finish
+      if (index >= 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
         const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
