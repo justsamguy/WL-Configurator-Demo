@@ -422,6 +422,8 @@ export function initStageManager() {
       // enable designs stage button
       const designBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='1']`);
       if (designBtn) designBtn.disabled = false;
+      // Don't call setStage here; let user click Next or the Designs button to navigate
+      return;
     }
     // Designs stage (index 1): mark complete when design is selected
     if (category === 'design') {
@@ -429,6 +431,8 @@ export function initStageManager() {
       // enable materials stage button
       const materialsBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='2']`);
       if (materialsBtn) materialsBtn.disabled = false;
+      // Don't call setStage here; let user click Next or the Materials button to navigate
+      return;
     }
     // For the Materials stage (index 2) require both material and color to
     // consider the stage complete. For other stages, marking on selection is fine.
@@ -445,7 +449,7 @@ export function initStageManager() {
       // mark the active stage complete so Next becomes enabled (skip for model/design selections)
       markCompleted(managerState.current, true);
     }
-    // run a UI update to refresh Next/Prev/button states
+    // run a UI update to refresh Next/Prev/button states (only for non-model/design stages)
     setStage(managerState.current);
   });
 
