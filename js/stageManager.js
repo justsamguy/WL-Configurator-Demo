@@ -152,7 +152,6 @@ async function setStage(index, options = {}) {
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
         if (!hasMaterial || !hasColor) {
-          showBanner('Please choose both a wood and a color before proceeding to Finish.');
           return;
         }
         // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
@@ -170,13 +169,11 @@ async function setStage(index, options = {}) {
         const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
         const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
         if (!hasLegs || !hasTubeSize || !hasLegFinish) {
-          showBanner('Please complete all leg selections (style, tube size, and finish) before proceeding.');
           return;
         }
       }
     } catch (e) {
       // if anything goes wrong reading appState, be conservative and block advance
-      showBanner('Please complete required selections before proceeding.');
       return;
     }
   }
@@ -360,9 +357,8 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
-  // If current stage isn't completed, show banner and block advancing
+  // If current stage isn't completed, block advancing
   if (!managerState.completed[managerState.current]) {
-    showBanner('Please select an option before proceeding.');
     return;
   }
   setStage(Math.min(managerState.current + 1, STAGES.length - 1));
