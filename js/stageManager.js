@@ -324,7 +324,7 @@ async function setStage(index, options = {}) {
           delete panel.dataset.wlOrigParent;
         }
       }
-    } catch (e) {}
+    } catch (e) { /* ignore DOM restoration errors */ }
     // Restore UI for non-model stages
     try {
       const s = appState;

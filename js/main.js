@@ -1,8 +1,4 @@
 // WoodLab Configurator - main.js
-// WoodLab Configurator - main.js
-// App bootstrap and global state management
-
-// WoodLab Configurator - main.js
 // App bootstrap and global state management
 
 import { loadComponent } from './app.js';
@@ -293,5 +289,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-03 15:38');
+  console.log('Last updated: 2025-12-03 16:45');
 });

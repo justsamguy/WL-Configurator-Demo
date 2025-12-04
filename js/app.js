@@ -20,7 +20,6 @@ export async function loadComponent(containerId, componentPath) {
     }
     const html = await response.text();
     container.innerHTML = html;
-    console.log(`Component '${componentPath}' loaded into '${containerId}'.`);
     // Resolve any nested data-include elements inside the newly-inserted content
     try {
       await processIncludes(container);
@@ -51,7 +50,6 @@ export async function processIncludes(root = document) {
       node.removeAttribute('data-include');
       // process nested includes inside the newly injected content
       await processIncludes(node);
-      console.log(`Included '${path}' into element`, node);
     } catch (err) {
       console.error(`Error including '${path}':`, err);
     }

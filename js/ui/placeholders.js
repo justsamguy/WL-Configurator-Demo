@@ -1,20 +1,6 @@
 // UI helpers for placeholder option cards: click handlers, price animation, and loading skeleton
 // No imports here to avoid circular module dependency with main.js
 
-// Simple price animation helper: counts to target in duration ms
-function animatePrice(from, to, duration = 400, onUpdate) {
-  const start = performance.now();
-  const delta = to - from;
-  function tick(now) {
-    const t = Math.min(1, (now - start) / duration);
-    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOutQuad-like
-    const value = Math.round(from + delta * eased);
-    onUpdate(value);
-    if (t < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
 // Update the price UI in the sidebar
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');

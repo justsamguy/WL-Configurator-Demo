@@ -2,7 +2,7 @@ import { state } from '../state.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
 const hasHtml2Canvas = typeof html2canvas !== 'undefined';
-const hasJsPDF = typeof window.jspdf !== 'undefined' || typeof window.jspdf !== 'undefined';
+const hasJsPDF = typeof window.jsPDF !== 'undefined';
 
 export function populateSummaryPanel() {
   const modelName = document.getElementById('summary-model-name');
