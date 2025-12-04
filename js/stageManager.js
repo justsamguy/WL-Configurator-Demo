@@ -215,24 +215,6 @@ async function setStage(index, options = {}) {
     }
   });
 
-  // Prev/Next
-  const prev = $('#prev-stage');
-  const next = $('#next-stage');
-  if (prev) {
-    prev.disabled = managerState.current === 0;
-    prev.classList.toggle('opacity-40', prev.disabled);
-  }
-  if (next) {
-  // disable Next unless we're not at the last stage AND the current stage is completed
-  const atLast = managerState.current === STAGES.length - 1;
-  // currentCompleted was computed above and already includes optional-stage handling
-  const canAdvanceFromCurrent = currentCompleted;
-  next.disabled = atLast || !canAdvanceFromCurrent;
-  next.classList.toggle('opacity-40', next.disabled);
-  // hide Next entirely on the final Summary & Export stage
-  next.style.display = atLast ? 'none' : '';
-  }
-
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
@@ -391,10 +373,6 @@ function wireStageButtons() {
     const idx = Number(btn.getAttribute('data-stage-index'));
     btn.addEventListener('click', () => setStage(idx));
   });
-  const prev = $('#prev-stage');
-  const next = $('#next-stage');
-  if (prev) prev.addEventListener('click', prevStage);
-  if (next) next.addEventListener('click', nextStage);
 }
 
 export function initStageManager() {
