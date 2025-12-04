@@ -172,6 +172,9 @@ async function setStage(index, options = {}) {
           return;
         }
       }
+      // Once all required selections through stage 5 (Legs) are complete, stages 6 (Add-ons) and 7 (Summary)
+      // are fully unlocked and can be freely navigated between and back to previous stages.
+      // No additional gating is needed for indices 6 and 7.
     } catch (e) {
       // if anything goes wrong reading appState, be conservative and block advance
       return;
@@ -180,6 +183,10 @@ async function setStage(index, options = {}) {
   managerState.current = index;
   // treat optional stages as implicitly completed for gating decisions
   const currentCompleted = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
+  // Check if all required stages (0-5) are complete to unlock Add-ons (6) and Summary (7) for free navigation
+  const allRequiredStagesComplete = managerState.completed[0] && managerState.completed[1] && managerState.completed[2] && 
+                                    managerState.completed[3] && managerState.completed[4] && managerState.completed[5];
+  
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
     const idx = Number(btn.getAttribute('data-stage-index'));
@@ -193,9 +200,11 @@ async function setStage(index, options = {}) {
         btn.disabled = false;
       } else {
         // For future stages (idx > current):
-        // - allow if that future stage is already completed (user previously finished it),
-        // - or allow only the immediate next stage when the current stage is completed.
-        if (managerState.completed[idx]) {
+        // - if all required stages (0-5) are complete, allow free access to Add-ons (6) and Summary (7)
+        // - otherwise, allow if that future stage is already completed or only the immediate next stage when current is completed
+        if (idx >= 6 && allRequiredStagesComplete) {
+          btn.disabled = false;
+        } else if (managerState.completed[idx]) {
           btn.disabled = false;
         } else if (idx === managerState.current + 1 && currentCompleted) {
           btn.disabled = false;
