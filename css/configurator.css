@@ -332,6 +332,11 @@ header .site-logo {
     grid-row: 2 / 3;
   }
 
+  #top-stepper {
+    grid-column: 1 / -1;
+    grid-row: 2 / 3;
+  }
+
   main {
     grid-column: 1 / 2; /* Viewer in first column */
     grid-row: 3 / 4; /* In the main content row */
