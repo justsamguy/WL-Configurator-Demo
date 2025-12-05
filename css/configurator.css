@@ -810,30 +810,83 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 /* Legs stage: 1:1 image display for leg designs */
+#legs-options .option-card {
+  padding: 6px;
+  min-height: 60px;
+}
+
 #legs-options .viewer-placeholder-img {
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
-  padding: 8px;
+  padding: 4px;
   box-sizing: border-box;
+  margin-bottom: 4px;
 }
 
-/* Tube size: no images */
+#legs-options .option-card .title {
+  font-size: 12px;
+}
+
+#legs-options .option-card .price-delta {
+  font-size: 10px;
+}
+
+#legs-options .option-card .description {
+  font-size: 10px;
+}
+
+/* Tube size: no images, 50% reduction */
+#tube-size-options .option-card {
+  padding: 6px;
+  min-height: 60px;
+}
+
 #tube-size-options .viewer-placeholder-img {
   display: none;
 }
 
-/* Leg finish: 1:1 image display for future color swatches */
+#tube-size-options .option-card .title {
+  font-size: 12px;
+}
+
+#tube-size-options .option-card .price-delta {
+  font-size: 10px;
+}
+
+#tube-size-options .option-card .description {
+  font-size: 10px;
+}
+
+/* Leg finish: 1:1 image display for future color swatches, 50% reduction */
+#leg-finish-options .option-card {
+  padding: 6px;
+  min-height: 60px;
+}
+
 #leg-finish-options .viewer-placeholder-img {
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
-  padding: 8px;
+  padding: 4px;
   box-sizing: border-box;
+  margin-bottom: 4px;
+}
+
+#leg-finish-options .option-card .title {
+  font-size: 12px;
+}
+
+#leg-finish-options .option-card .price-delta {
+  font-size: 10px;
+}
+
+#leg-finish-options .option-card .description {
+  font-size: 10px;
 }
 
 @media (max-width: 1100px) {
