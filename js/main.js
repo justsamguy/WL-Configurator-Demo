@@ -8,6 +8,7 @@ import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // I
 import { state, setState } from './state.js';
 import { computePrice } from './pricing.js';
 import { populateSummaryPanel } from './stages/summary.js';
+import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
@@ -46,6 +47,43 @@ function updatePriceUI(total) {
   el.appendChild(usd);
 }
 
+/**
+ * Update legs and tube size options based on selected model
+ * Filters legs to only show those compatible with the model
+ * Filters tube sizes to only show those used by visible legs and compatible with model
+ */
+async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes) {
+  if (!modelId) return;
+  
+  const { renderOptionCards } = await import('./stageRenderer.js');
+  const { recomputeTubeSizeConstraints } = await import('./stages/legs.js');
+  
+  // Filter legs: only show designs compatible with this model (and not hidden)
+  const visibleLegs = getVisibleLegs(modelId, allLegs);
+  
+  // Render filtered legs
+  const legsRoot = document.getElementById('legs-options');
+  if (legsRoot) {
+    renderOptionCards(legsRoot, visibleLegs, { category: 'legs' });
+  }
+  
+  // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
+  const availableTubeSizes = getAvailableTubeSizes(modelId, visibleLegs, allTubeSizes);
+  
+  // Render filtered tube sizes
+  const tubeSizesRoot = document.getElementById('tube-size-options');
+  if (tubeSizesRoot) {
+    renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size' });
+  }
+  
+  // Recompute tube size constraints based on current leg selection
+  try {
+    recomputeTubeSizeConstraints();
+  } catch (e) {
+    console.warn('Failed to recompute constraints:', e);
+  }
+}
+
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
 document.addEventListener('option-selected', async (ev) => {
   const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
@@ -58,6 +96,17 @@ document.addEventListener('option-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+    
+    // Update legs and tube size options based on the selected model
+    try {
+      const allLegs = window._allLegsData || [];
+      const allTubeSizes = window._allTubeSizesData || [];
+      if (allLegs.length > 0 && allTubeSizes.length > 0) {
+        updateLegsOptionsForModel(id, allLegs, allTubeSizes);
+      }
+    } catch (e) {
+      console.warn('Failed to update legs options:', e);
+    }
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
@@ -229,17 +278,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Note: Dimensions stage uses a custom UI panel (DimensionsPanel.html) instead of option cards,
     // so we skip rendering here. The dimensions panel is loaded dynamically by stageManager.
     
+    // Load and store legs and tube sizes data for filtering
+    let allLegs = [];
+    let allTubeSizes = [];
+    
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
-  const legs = await loadData('data/legs.json');
-      if (legs) renderOptionCards(legsRoot, legs, { category: 'legs' });
+  allLegs = await loadData('data/legs.json');
+      if (allLegs) renderOptionCards(legsRoot, allLegs, { category: 'legs' });
     }
 
     const tubeSizesRoot = document.getElementById('tube-size-options');
     if (tubeSizesRoot) {
-  const tubeSizes = await loadData('data/tube-sizes.json');
-      if (tubeSizes) renderOptionCards(tubeSizesRoot, tubeSizes, { category: 'tube-size' });
+  allTubeSizes = await loadData('data/tube-sizes.json');
+      if (allTubeSizes) renderOptionCards(tubeSizesRoot, allTubeSizes, { category: 'tube-size' });
     }
+    
+    // Store for use in model-change filtering
+    window._allLegsData = allLegs;
+    window._allTubeSizesData = allTubeSizes;
 
     const legFinishRoot = document.getElementById('leg-finish-options');
     if (legFinishRoot) {
@@ -289,5 +346,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-04 09:15');
+  console.log('Last updated: 2025-12-04 14:30');
 });

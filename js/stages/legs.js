@@ -1,5 +1,8 @@
 // Legs stage module
 // Handles single-choice legs options, tube size, and leg finish (color)
+// With model-based filtering and incompatibility constraints
+import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
+
 export function init() {
   document.addEventListener('click', (ev) => {
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
@@ -12,6 +15,8 @@ export function init() {
       const id = legCard.getAttribute('data-id');
       const price = Number(legCard.getAttribute('data-price')) || 0;
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'legs' } }));
+      // Recompute tube size constraints when leg changes
+      recomputeTubeSizeConstraints();
     } else if (tubeSizeCard && !tubeSizeCard.hasAttribute('disabled')) {
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       tubeSizeCard.setAttribute('aria-pressed', 'true');
@@ -26,6 +31,43 @@ export function init() {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'leg-finish' } }));
     }
   });
+}
+
+/**
+ * Recompute tube size constraints based on selected leg and model
+ */
+export function recomputeTubeSizeConstraints() {
+  try {
+    const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
+    const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
+    
+    // Get currently selected model from model cards (may be in sidebar or stage panel)
+    const selectedModelEl = document.querySelector('.option-card[data-id^="mdl-"][aria-pressed="true"]');
+    const selectedModelId = selectedModelEl && selectedModelEl.getAttribute('data-id');
+    
+    // Clear all tube size constraints first
+    document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
+      el.removeAttribute('data-disabled-by');
+      el.removeAttribute('data-tooltip');
+      el.removeAttribute('disabled');
+    });
+    
+    // Apply constraints if both leg and model are selected
+    if (selectedLegId && selectedModelId) {
+      document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
+        const tubeId = el.getAttribute('data-id');
+        const reasons = getTubeIncompatibilityReasons(tubeId, selectedLegId, selectedModelId);
+        
+        if (reasons.length > 0) {
+          el.setAttribute('disabled', 'true');
+          el.setAttribute('data-disabled-by', reasons.join('||'));
+          el.setAttribute('data-tooltip', `Only compatible with ${reasons.join(', ')}`);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to recompute tube size constraints:', e);
+  }
 }
 
 export function restoreFromState(state) {

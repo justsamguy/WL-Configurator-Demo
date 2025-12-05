@@ -10,11 +10,8 @@ get color examples of all colors (even if not material)
 
 
 Legs:
-only show available designs based on selected model
-only show available tube sizes if at least one design using it is visible
-Get model examples of all designs and tube sizes
-grey out unavailable tube sizes based on leg style with tooltip on hover (example: "only compatible with [x]")
 get list of standard leg colors
+Get model examples of all designs and tube sizes
 
 Addons:
 Brainstorm list of addons
