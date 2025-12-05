@@ -816,15 +816,14 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #legs-options .viewer-placeholder-img {
-  width: 60px;
-  height: 60px;
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 120px;
+  aspect-ratio: auto;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
   box-sizing: border-box;
   margin-bottom: 4px;
-  flex-shrink: 0;
 }
 
 #legs-options .option-card .title {
@@ -868,15 +867,14 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #leg-finish-options .viewer-placeholder-img {
-  width: 60px;
-  height: 60px;
-  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: 120px;
+  aspect-ratio: auto;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
   box-sizing: border-box;
   margin-bottom: 4px;
-  flex-shrink: 0;
 }
 
 #leg-finish-options .option-card .title {
