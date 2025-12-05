@@ -809,6 +809,33 @@ body.show-model-tiles #stage-panel-0 #model-options,
   margin-bottom: 5px;
 }
 
+/* Legs stage: 1:1 image display for leg designs */
+#legs-options .viewer-placeholder-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background-color: #f3f4f6;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* Tube size: no images */
+#tube-size-options .viewer-placeholder-img {
+  display: none;
+}
+
+/* Leg finish: 1:1 image display for future color swatches */
+#leg-finish-options .viewer-placeholder-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background-color: #f3f4f6;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
 @media (max-width: 1100px) {
   #stage-panel-0 #model-options { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
 }
