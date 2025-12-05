@@ -816,26 +816,27 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #legs-options .viewer-placeholder-img {
-  width: 100%;
-  height: auto;
+  width: 60px;
+  height: 60px;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
   box-sizing: border-box;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 #legs-options .option-card .title {
-  font-size: 12px;
+  font-size: 14px;
 }
 
 #legs-options .option-card .price-delta {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #legs-options .option-card .description {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Tube size: no images, 50% reduction */
@@ -849,15 +850,15 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #tube-size-options .option-card .title {
-  font-size: 12px;
+  font-size: 14px;
 }
 
 #tube-size-options .option-card .price-delta {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #tube-size-options .option-card .description {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Leg finish: 1:1 image display for future color swatches, 50% reduction */
@@ -867,26 +868,27 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #leg-finish-options .viewer-placeholder-img {
-  width: 100%;
-  height: auto;
+  width: 60px;
+  height: 60px;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
   box-sizing: border-box;
   margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 #leg-finish-options .option-card .title {
-  font-size: 12px;
+  font-size: 14px;
 }
 
 #leg-finish-options .option-card .price-delta {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 #leg-finish-options .option-card .description {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 1100px) {
