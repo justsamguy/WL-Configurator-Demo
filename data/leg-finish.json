@@ -1,11 +1,10 @@
 [
   { "id": "leg-finish-01", "title": "Matte Black", "price": 0, "color": "#1a1a1a", "image": "assets/images/placeholder.png", "description": "Matte black finish" },
-  { "id": "leg-finish-02", "title": "Deep Red", "price": 15, "color": "#8B0000", "image": "assets/images/placeholder.png", "description": "Deep red finish" },
-  { "id": "leg-finish-03", "title": "Forest Green", "price": 15, "color": "#228B22", "image": "assets/images/placeholder.png", "description": "Forest green finish" },
-  { "id": "leg-finish-04", "title": "Navy Blue", "price": 15, "color": "#000080", "image": "assets/images/placeholder.png", "description": "Navy blue finish" },
-  { "id": "leg-finish-05", "title": "Charcoal Gray", "price": 10, "color": "#36454F", "image": "assets/images/placeholder.png", "description": "Charcoal gray finish" },
-  { "id": "leg-finish-06", "title": "Burnt Orange", "price": 15, "color": "#CC5500", "image": "assets/images/placeholder.png", "description": "Burnt orange finish" },
-  { "id": "leg-finish-07", "title": "Pearl White", "price": 10, "color": "#F5F5F5", "image": "assets/images/placeholder.png", "description": "Pearl white finish" },
-  { "id": "leg-finish-08", "title": "Champagne Gold", "price": 20, "color": "#F0E68C", "image": "assets/images/placeholder.png", "description": "Champagne gold finish" },
-  { "id": "leg-finish-09", "title": "Bronze Copper", "price": 20, "color": "#B87333", "image": "assets/images/placeholder.png", "description": "Bronze copper finish" }
+  { "id": "leg-finish-02", "title": "Satin Black", "price": 10, "color": "#2a2a2a", "image": "assets/images/placeholder.png", "description": "Satin black finish" },
+  { "id": "leg-finish-03", "title": "Raw Metal", "price": 15, "color": "#c0c0c0", "image": "assets/images/placeholder.png", "description": "Raw metal finish" },
+  { "id": "leg-finish-04", "title": "Gunmetal Grey", "price": 15, "color": "#414141", "image": "assets/images/placeholder.png", "description": "Gunmetal grey finish" },
+  { "id": "leg-finish-05", "title": "Titanium Silver", "price": 15, "color": "#d3d3d3", "image": "assets/images/placeholder.png", "description": "Titanium silver finish" },
+  { "id": "leg-finish-06", "title": "Oil Rubbed Bronze", "price": 20, "color": "#704214", "image": "assets/images/placeholder.png", "description": "Oil rubbed bronze finish" },
+  { "id": "leg-finish-07", "title": "Satin Bronze", "price": 20, "color": "#906b47", "image": "assets/images/placeholder.png", "description": "Satin bronze finish" },
+  { "id": "leg-finish-08", "title": "Custom", "price": 0, "color": "#808080", "image": "assets/images/placeholder.png", "description": "Custom finish" }
 ]
