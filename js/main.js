@@ -1,8 +1,4 @@
 // WoodLab Configurator - main.js
-// WoodLab Configurator - main.js
-// App bootstrap and global state management
-
-// WoodLab Configurator - main.js
 // App bootstrap and global state management
 
 import { loadComponent } from './app.js';
@@ -50,13 +46,29 @@ function updatePriceUI(total) {
   el.appendChild(usd);
 }
 
-// Listen for placeholder selection events dispatched by placeholders.js
+// Listen for placeholder selection events dispatched by placeholders.js and stage modules
 document.addEventListener('option-selected', async (ev) => {
-  const { id, price } = ev.detail || { id: null, price: 0 };
-  // option-selected is used for single-choice selections (model, material, finish, legs, dimensions)
-  const category = ev.detail && ev.detail.category ? ev.detail.category : null;
-  // update selections: place under selections.options[category] when category provided, otherwise assume model
-  if (category) {
+  const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
+  
+  // Handle model selection (category: 'model')
+  if (category === 'model') {
+    // When model changes, clear design selection
+    setState({ selections: { ...state.selections, model: id, design: null }, pricing: { ...state.pricing, base: 0 } });
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  }
+  // Handle design selection (category: 'design')
+  else if (category === 'design') {
+    setState({ selections: { ...state.selections, design: id } });
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  }
+  // Handle other category selections (material, finish, legs, dimensions, color, etc.)
+  else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
     // update selections first and then recompute price via computePrice
     setState({ selections: { ...state.selections, options: newOptions } });
@@ -65,7 +77,7 @@ document.addEventListener('option-selected', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   } else {
-    // assume model selection - set base price to model price
+    // Legacy: assume model selection - set base price to model price
     setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price } });
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
@@ -94,7 +106,7 @@ document.addEventListener('addon-toggled', async (ev) => {
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
-    setState({ selections: { model: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+    setState({ selections: { model: null, design: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
       stageManager.setStage(0);
@@ -277,5 +289,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-02 17:50');
+  console.log('Last updated: 2025-12-04 09:15');
 });

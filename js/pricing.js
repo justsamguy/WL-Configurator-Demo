@@ -25,23 +25,23 @@ export async function computePrice(state) {
       }
     }
 
-    // Base model (try data file, then DOM)
-    if (state.selections && state.selections.model) {
+    // Base design price: lookup from designs.json using model ID and design ID
+    // If design is selected, use its price; otherwise base is 0
+    if (state.selections && state.selections.design && state.selections.model) {
+      const designId = state.selections.design;
       const modelId = state.selections.model;
-      const modelsData = await _loadDataOnce('data/models.json');
+      const designsData = await _loadDataOnce('data/designs.json');
       let p = 0;
-      if (modelsData && Array.isArray(modelsData)) {
-        const m = modelsData.find(x => x.id === modelId);
-        if (m) p = Number(m.price || 0);
-      }
-      if (!p) {
-        const el = document.querySelector(`.option-card[data-id="${modelId}"]`);
-        p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+      if (designsData && Array.isArray(designsData)) {
+        const d = designsData.find(x => x.id === designId);
+        if (d && d.prices && d.prices[modelId]) {
+          p = Number(d.prices[modelId]);
+        }
       }
       if (typeof p === 'number' && p > 0) base = p;
-      breakdown.push({ id: modelId, type: 'model', price: base });
+      breakdown.push({ id: designId, type: 'design', price: base });
     } else if (base > 0) {
-      breakdown.push({ id: 'base', type: 'model', price: base });
+      breakdown.push({ id: 'base', type: 'design', price: base });
     }
 
     // Single-choice categories to include in breakdown

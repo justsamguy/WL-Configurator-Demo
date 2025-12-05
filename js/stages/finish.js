@@ -110,7 +110,7 @@ export function restoreFromState(state) {
         el.setAttribute('aria-pressed', 'true');
       }
     });
-    try { recomputeFinishConstraints(); } catch (e) {}
+    try { recomputeFinishConstraints(); } catch (e) { /* ignore constraint update */ }
   } catch (e) { /* ignore */ }
 }
 

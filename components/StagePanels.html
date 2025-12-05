@@ -1,17 +1,22 @@
 <!-- Stage Panels Placeholder: panels are identified by id="stage-panel-<index>" -->
 <div id="stage-panels-root" class="flex flex-col gap-4 px-6 py-6">
-  <!-- Stage 0: Select Model -->
+  <!-- Stage 0: Models -->
   <section id="stage-panel-0" class="stage-panel">
     <div id="stage-0-placeholder"></div>
   </section>
 
-  <!-- Stage 1: Materials -->
+  <!-- Stage 1: Designs -->
   <section id="stage-panel-1" class="stage-panel" style="display: none;">
+    <div id="stage-1-placeholder"></div>
+  </section>
+
+  <!-- Stage 2: Materials -->
+  <section id="stage-panel-2" class="stage-panel" style="display: none;">
     <!-- Materials options are provided via components/MaterialsPanel.html (included in the sidebar) -->
   </section>
 
-  <!-- Stage 2: Finish -->
-  <section id="stage-panel-2" class="stage-panel" style="display: none;">
+  <!-- Stage 3: Finish -->
+  <section id="stage-panel-3" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Finish</h3>
     <div id="finish-options" class="">
       <h4 class="text-sm font-semibold mb-2">Coating</h4>
@@ -26,13 +31,13 @@
     </div>
   </section>
 
-  <!-- Stage 3: Dimensions -->
-  <section id="stage-panel-3" class="stage-panel" style="display: none;">
+  <!-- Stage 4: Dimensions -->
+  <section id="stage-panel-4" class="stage-panel" style="display: none;">
     <div id="dimensions-panel-placeholder"></div>
   </section>
 
-  <!-- Stage 4: Legs -->
-  <section id="stage-panel-4" class="stage-panel" style="display: none;">
+  <!-- Stage 5: Legs -->
+  <section id="stage-panel-5" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Legs</h3>
     <div id="legs-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
       <!-- Option cards rendered at runtime from data/legs.json via main.js -> stageRenderer.renderOptionCards -->
@@ -51,16 +56,16 @@
     </div>
   </section>
 
-  <!-- Stage 5: Add-ons -->
-  <section id="stage-panel-5" class="stage-panel" style="display: none;">
+  <!-- Stage 6: Add-ons -->
+  <section id="stage-panel-6" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Add‑ons</h3>
     <div id="addons-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
       <!-- Option cards rendered at runtime from data/addons.json via main.js -> stageRenderer.renderOptionCards (multi-select) -->
     </div>
   </section>
 
-  <!-- Stage 6: Summary & Export -->
-  <section id="stage-panel-6" class="stage-panel" style="display: none;">
+  <!-- Stage 7: Summary & Export -->
+  <section id="stage-panel-7" class="stage-panel" style="display: none;">
     <h3 class="text-md font-semibold mb-2">Summary &amp; Export</h3>
     <div id="summary-panel" class="grid grid-cols-1 gap-4">
       <div class="text-sm text-gray-700">

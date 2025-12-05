@@ -1,76 +1,84 @@
 <div class="flex flex-col gap-6 px-8 py-8">
-  <h2 class="text-lg font-semibold mb-4">Select Model</h2>
-
-  <!-- Row 1: -->
-  <div class="model-row">
-    <h3 class="text-md font-medium mb-3 text-gray-700">Popular Designs</h3>
+  <!-- Models Stage Section -->
+  <div id="models-stage-section">
+    <h2 class="text-lg font-semibold mb-4">Select Your Model</h2>
     <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-01" data-price="12480" aria-pressed="false">
-        <img src="assets/images/model1_placeholder.png" alt="Model 1 placeholder" class="viewer-placeholder-img" />
-        <div class="title">Classic rectangular</div>
-        <div class="description">Starting from $12,480</div>
+      <button class="option-card" data-id="mdl-coffee" aria-pressed="false">
+        <img src="assets/images/coffee_placeholder.png" alt="Coffee Table placeholder" class="viewer-placeholder-img" />
+        <div class="title">Coffee Table</div>
+        <div class="description">Compact, intimate seating solution.</div>
       </button>
-      <button class="option-card" data-id="mdl-02" data-price="12900" aria-pressed="false">
-        <img src="assets/images/model2.png" alt="Model 2" class="viewer-placeholder-img" />
-        <div class="title">Farmhouse style</div>
-        <div class="description">Starting from $12,900</div>
+      <button class="option-card" data-id="mdl-dining" aria-pressed="false">
+        <img src="assets/images/dining_placeholder.png" alt="Dining Table" class="viewer-placeholder-img" />
+        <div class="title">Dining Table</div>
+        <div class="description">Spacious, family-friendly.</div>
       </button>
-      <button class="option-card" data-id="mdl-05" data-price="13500" aria-pressed="false">
-        <img src="assets/images/model2.png" alt="Model 5" class="viewer-placeholder-img" />
-        <div class="title">Large dining</div>
-        <div class="description">Starting from $13,500</div>
+      <button class="option-card" data-id="mdl-conference" aria-pressed="false">
+        <img src="assets/images/conference_placeholder.png" alt="Conference Table" class="viewer-placeholder-img" />
+        <div class="title">Conference Table</div>
+        <div class="description">Professional, boardroom style.</div>
       </button>
     </div>
   </div>
 
-  <!-- Row 2: -->
-  <div class="model-row">
-    <h3 class="text-md font-medium mb-3 text-gray-700">Dining Options</h3>
-    <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-03" data-price="11450" aria-pressed="false">
-        <img src="assets/images/model3.svg" alt="Model 3" class="viewer-placeholder-img" />
-        <div class="title">Compact round</div>
-        <div class="description">Starting from $11,450</div>
-      </button>
-      <button class="option-card" data-id="mdl-08" data-price="14800" aria-pressed="false">
-        <img src="assets/images/model2.png" alt="Model 8" class="viewer-placeholder-img" />
-        <div class="title">Executive</div>
-        <div class="description">Starting from $14,800</div>
-      </button>
+  <!-- Designs Stage Section -->
+  <div id="designs-stage-section">
+    <h2 class="text-lg font-semibold mb-4">Select Your Design</h2>
+    
+    <!-- River Design -->
+    <div class="model-row">
+      <h3 class="text-md font-medium mb-3 text-gray-700">Classic Designs</h3>
+      <div class="model-row-grid">
+        <button class="option-card" data-id="des-river" aria-pressed="false">
+          <img src="assets/images/river_placeholder.png" alt="River design" class="viewer-placeholder-img" />
+          <div class="title">River</div>
+          <div class="description">Flowing edge design</div>
+        </button>
+        <button class="option-card" data-id="des-slab" aria-pressed="false">
+          <img src="assets/images/slab_placeholder.png" alt="Slab design" class="viewer-placeholder-img" />
+          <div class="title">Slab</div>
+          <div class="description">Clean, minimalist</div>
+        </button>
+        <button class="option-card" data-id="des-encasement" aria-pressed="false">
+          <img src="assets/images/encasement_placeholder.png" alt="Encasement design" class="viewer-placeholder-img" />
+          <div class="title">Encasement</div>
+          <div class="description">Structured edges</div>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Row 3: -->
-  <div class="model-row">
-    <h3 class="text-md font-medium mb-3 text-gray-700">Conference Tables</h3>
-    <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-04" data-price="9800" aria-pressed="false">
-        <img src="assets/images/model1_placeholder.png" alt="Model 4 placeholder" class="viewer-placeholder-img" />
-        <div class="title">Small desk</div>
-        <div class="description">Starting from $9,800</div>
-      </button>
-      <button class="option-card" data-id="mdl-06" data-price="7600" aria-pressed="false">
-        <img src="assets/images/model3.svg" alt="Model 6" class="viewer-placeholder-img" />
-        <div class="title">Accent table</div>
-        <div class="description">Starting from $7,600</div>
-      </button>
-      <button class="option-card" data-id="mdl-07" data-price="10200" aria-pressed="false">
-        <img src="assets/images/model1_placeholder.png" alt="Model 7" class="viewer-placeholder-img" />
-        <div class="title">Console style</div>
-        <div class="description">Starting from $10,200</div>
-      </button>
+    <!-- Custom & Exclusive Designs -->
+    <div class="model-row">
+      <h3 class="text-md font-medium mb-3 text-gray-700">Premium Options</h3>
+      <div class="model-row-grid">
+        <button class="option-card" data-id="des-custom" aria-pressed="false">
+          <img src="assets/images/custom_placeholder.png" alt="Custom design" class="viewer-placeholder-img" />
+          <div class="title">Custom</div>
+          <div class="description">Bespoke design</div>
+        </button>
+        <button class="option-card" data-id="des-keystone" aria-pressed="false">
+          <img src="assets/images/keystone_placeholder.png" alt="Keystone design" class="viewer-placeholder-img" />
+          <div class="title">Keystone</div>
+          <div class="description">Conference exclusive</div>
+        </button>
+        <button class="option-card" data-id="des-signature" aria-pressed="false">
+          <img src="assets/images/signature_placeholder.png" alt="Signature design" class="viewer-placeholder-img" />
+          <div class="title">Signature</div>
+          <div class="description">Coffee exclusive</div>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Row 4: Compact Options -->
-  <div class="model-row">
-    <h3 class="text-md font-medium mb-3 text-gray-700">Compact Options</h3>
-    <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-09" data-price="8900" aria-pressed="false">
-        <img src="assets/images/model3.svg" alt="Model 9" class="viewer-placeholder-img" />
-        <div class="title">Round small</div>
-        <div class="description">Starting from $8,900</div>
-      </button>
+    <!-- Round Design -->
+    <div class="model-row">
+      <h3 class="text-md font-medium mb-3 text-gray-700">Special Shapes</h3>
+      <div class="model-row-grid">
+        <button class="option-card" data-id="des-round" aria-pressed="false">
+          <img src="assets/images/round_placeholder.png" alt="Round design" class="viewer-placeholder-img" />
+          <div class="title">Round</div>
+          <div class="description">Circular option</div>
+        </button>
+      </div>
     </div>
   </div>
 </div>

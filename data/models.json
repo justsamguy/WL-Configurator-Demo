@@ -1,6 +1,5 @@
 [
-  { "id": "mdl-01", "title": "Classic rectangular", "price": 12480, "image": "assets/images/model1_placeholder.png", "description": "Starting from $12,480" },
-  { "id": "mdl-02", "title": "Farmhouse style", "price": 12900, "image": "assets/images/model2.png", "description": "Starting from $12,900" },
-  { "id": "mdl-03", "title": "Compact round", "price": 11450, "image": "assets/images/model3.svg", "description": "Starting from $11,450" },
-  { "id": "mdl-04", "title": "Small desk", "price": 9800, "image": "assets/images/model1_placeholder.png", "description": "Starting from $9,800" }
+  { "id": "mdl-coffee", "title": "Coffee Table", "image": "assets/images/coffee_placeholder.png", "description": "Compact, intimate seating solution." },
+  { "id": "mdl-dining", "title": "Dining Table", "image": "assets/images/dining_placeholder.png", "description": "Spacious, family-friendly." },
+  { "id": "mdl-conference", "title": "Conference Table", "image": "assets/images/conference_placeholder.png", "description": "Professional, boardroom style." }
 ]
