@@ -4,9 +4,9 @@
 export const LEG_COMPATIBILITY = {
   // Model compatibility: which leg designs are available for each model
   modelToLegs: {
-    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07'],
-    'mdl-dining': ['leg-sample-03', 'leg-sample-06', 'leg-sample-07'],
-    'mdl-conference': ['leg-sample-03', 'leg-sample-06', 'leg-sample-07']
+    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-07'],
+    'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07'],
+    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07']
   },
   // Tube size compatibility: which tube sizes are compatible with each leg design
   legToTubes: {
