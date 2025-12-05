@@ -1,17 +1,6 @@
-Materials:
+Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
+
 Get picture of wood for custom choice
-
-
-
-
-Re-order colors
 get color examples of all colors (even if not material)
-
-
-
-Legs:
-get list of standard leg colors
-Get model examples of all designs and tube sizes
-
-Addons:
+Get examples of all designs and tube sizes
 Brainstorm list of addons
