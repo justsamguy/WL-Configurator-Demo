@@ -164,12 +164,23 @@ async function setStage(index, options = {}) {
         }
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
+      // (unless "none" leg is selected, which doesn't require tube-size or leg-finish)
       if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-        if (!hasLegs || !hasTubeSize || !hasLegFinish) {
+        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const isNoneLeg = legId === 'leg-none';
+        
+        if (!hasLegs) {
           return;
+        }
+        
+        // If not "none" leg, require tube-size and leg-finish
+        if (!isNoneLeg) {
+          const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+          const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+          if (!hasTubeSize || !hasLegFinish) {
+            return;
+          }
         }
       }
       // Once all required selections through stage 5 (Legs) are complete, stages 6 (Add-ons) and 7 (Summary)
@@ -435,21 +446,42 @@ export function initStageManager() {
         // dimOption is set when any dimension selection is made (preset or custom)
         markCompleted(4, !!dimOption);
       } else if (managerState.current === 5) {
-        // Legs stage (index 5): require legs, tube-size, AND leg-finish all selected
-        // Check all three on every selection event
+        // Legs stage (index 5): require legs selected, and tube-size & leg-finish unless "none" leg is selected
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-        const isLegStageComplete = !!(hasLegs && hasTubeSize && hasLegFinish);
+        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const isNoneLeg = legId === 'leg-none';
+        
+        let isLegStageComplete = false;
+        if (hasLegs) {
+          if (isNoneLeg) {
+            // "none" leg requires no additional selections
+            isLegStageComplete = true;
+          } else {
+            // Other legs require tube-size and leg-finish
+            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+          }
+        }
         markCompleted(5, isLegStageComplete);
       }
       
       // Also check legs stage completion if any legs-related category is selected (for button enable/disable on transitions)
       if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-        const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-        const isLegStageComplete = !!(hasLegs && hasTubeSize && hasLegFinish);
+        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const isNoneLeg = legId === 'leg-none';
+        
+        let isLegStageComplete = false;
+        if (hasLegs) {
+          if (isNoneLeg) {
+            isLegStageComplete = true;
+          } else {
+            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+          }
+        }
         markCompleted(5, isLegStageComplete);
       }
       // Stage 6 (Add-ons) is optional, so it's never marked as requiring completion
