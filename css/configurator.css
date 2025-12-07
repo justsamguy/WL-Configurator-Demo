@@ -549,6 +549,18 @@ body.show-model-tiles #stage-panel-0 #model-options,
   }
 }
 
+/* Base styles for all stage panels */
+.stage-panel {
+  display: none;
+  width: 100%;
+}
+
+/* Stage panels 0 and 1 (Models and Designs) are shown by default when inside stage-panels-root */
+#stage-panel-0,
+#stage-panel-1 {
+  display: block;
+}
+
 /* Model selection stage layout */
 #stage-panel-0 {
   max-width: none;
@@ -2287,13 +2299,20 @@ body.stage-1 #designs-stage-section > div {
   width: 100%;
 }
 
-/* When stage-panel-1 is positioned after header (full-width stage mode), ensure it has proper sizing */
-#app-header + #stage-panel-1 {
-  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+/* When stage-panel-0 or stage-panel-1 are positioned in full-width mode (moved out of sidebar) */
+/* Apply proper sizing based on body class (stage-0 or stage-1) */
+body.stage-0 #stage-panel-0,
+body.stage-1 #stage-panel-1 {
+  position: relative;
+  height: auto;
+  min-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+  width: 100%;
+  margin: 0;
   padding: 0;
 }
 
-#app-header + #stage-panel-1 #designs-stage-section {
+body.stage-0 #stage-panel-0 #models-stage-section,
+body.stage-1 #stage-panel-1 #designs-stage-section {
   height: 100%;
   padding: 2rem;
 }

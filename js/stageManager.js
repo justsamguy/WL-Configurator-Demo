@@ -294,11 +294,13 @@ async function setStage(index, options = {}) {
       const panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
       const header = document.getElementById('app-header');
+      const topStepper = document.getElementById('top-stepper');
       if (panel && root && header) {
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
-        // insert after header so CSS selectors like #app-header + #stage-panel-0 apply
-        document.body.insertBefore(panel, header.nextSibling);
+        // insert after header or top-stepper so it sits in the proper flow
+        const insertAfter = topStepper || header;
+        document.body.insertBefore(panel, insertAfter.nextSibling);
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
