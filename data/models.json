@@ -1,5 +1,5 @@
 [
-  { "id": "mdl-coffee", "title": "Coffee Table", "image": "assets/images/coffee_placeholder.png", "description": "Compact, intimate seating solution." },
-  { "id": "mdl-dining", "title": "Dining Table", "image": "assets/images/dining_placeholder.png", "description": "Spacious, family-friendly." },
-  { "id": "mdl-conference", "title": "Conference Table", "image": "assets/images/conference_placeholder.png", "description": "Professional, boardroom style." }
+  { "id": "mdl-coffee", "title": "Coffee Table", "image": "assets/images/model1_placeholder.png", "description": "Compact, intimate seating solution." },
+  { "id": "mdl-dining", "title": "Dining Table", "image": "assets/images/model1_placeholder.png", "description": "Spacious, family-friendly." },
+  { "id": "mdl-conference", "title": "Conference Table", "image": "assets/images/model1_placeholder.png", "description": "Professional, boardroom style." }
 ]
