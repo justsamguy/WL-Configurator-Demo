@@ -226,6 +226,90 @@ async function setStage(index, options = {}) {
     }
   });
 
+  // Special handling for Models (0) and Designs (1) stages: move panel for full-width display
+  // Do this BEFORE setting display styles so the panel is in the correct location
+  const sidebar = document.getElementById('app-sidebar');
+  const viewer = document.getElementById('viewer');
+  const viewerControls = document.getElementById('viewer-controls-container');
+  if (managerState.current === 0 || managerState.current === 1) {
+    // hide sidebar and viewer chrome; CSS will make the stage panel span full width
+    if (sidebar) sidebar.style.display = 'none';
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
+    // Move the Models/Designs panel out of the sidebar and into the main flow so
+    // it can span the full viewport. We restore it to its original container
+    // when leaving these stages.
+    try {
+      const panelId = `stage-panel-${managerState.current}`;
+      const panel = document.getElementById(panelId);
+      const root = document.getElementById('stage-panels-root');
+      const header = document.getElementById('app-header');
+      const topStepper = document.getElementById('top-stepper');
+      if (panel && root && header) {
+        // remember that we moved it
+        if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
+        // insert after header or top-stepper so it sits in the proper flow
+        const insertAfter = topStepper || header;
+        document.body.insertBefore(panel, insertAfter.nextSibling);
+      }
+      const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
+      await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
+      // Restore visual selections when entering model/design selection stage
+      setTimeout(() => {
+        try {
+          if (managerState.current === 0) {
+            modelsStageModule.restoreFromState && modelsStageModule.restoreFromState(appState);
+          } else if (managerState.current === 1) {
+            designsStageModule.restoreFromState && designsStageModule.restoreFromState(appState);
+          }
+        } catch (e) {
+          console.warn('Failed to restore selections on stage change:', e);
+        }
+      }, 100); // Small delay to ensure DOM is ready
+    } catch (e) {
+      // ignore load errors
+    }
+  } else {
+    // restore sidebar and viewer/chrome visibility
+    if (sidebar) sidebar.style.display = '';
+    if (viewer) viewer.style.display = '';
+    if (viewerControls) viewerControls.style.display = '';
+    // Clean up the stage placeholders to avoid duplicates
+    try {
+      for (let i = 0; i <= 1; i++) {
+        const ph = document.getElementById(`stage-${i}-placeholder`);
+        if (ph) ph.innerHTML = '';
+        // If we previously moved stage panel out of the sidebar, put it back
+        const panel = document.getElementById(`stage-panel-${i}`);
+        const root = document.getElementById('stage-panels-root');
+        if (panel && root && panel.dataset.wlOrigParent === 'stage-panels-root') {
+          root.appendChild(panel);
+          delete panel.dataset.wlOrigParent;
+        }
+      }
+    } catch (e) { /* ignore DOM restoration errors */ }
+    // Restore UI for non-model stages
+    try {
+      const s = appState;
+      if (managerState.current === 2) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
+      if (managerState.current === 3) finishStage.restoreFromState && finishStage.restoreFromState(s);
+      if (managerState.current === 4) {
+        // Load dimensions panel component if not already loaded
+        const dimPh = document.getElementById('dimensions-panel-placeholder');
+        if (dimPh && dimPh.innerHTML === '') {
+          await loadComponent('dimensions-panel-placeholder', 'components/DimensionsPanel.html');
+          // Initialize dimensions stage now that the panel is loaded
+          if (dimensionsStage.init) await dimensionsStage.init();
+        }
+        dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
+      }
+      if (managerState.current === 5) legsStage.restoreFromState && legsStage.restoreFromState(s);
+      if (managerState.current === 6) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
+      if (managerState.current === 7) summaryStage.restoreFromState && summaryStage.restoreFromState(s);
+    } catch (e) { /* ignore */ }
+  }
+
+  // NOW set display styles for all panels (after moving them if needed)
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
