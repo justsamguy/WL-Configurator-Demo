@@ -4,9 +4,9 @@
 export const LEG_COMPATIBILITY = {
   // Model compatibility: which leg designs are available for each model
   modelToLegs: {
-    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-07'],
-    'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07'],
-    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07']
+    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-07', 'leg-none'],
+    'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07', 'leg-none'],
+    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07', 'leg-none']
   },
   // Tube size compatibility: which tube sizes are compatible with each leg design
   legToTubes: {
@@ -16,7 +16,8 @@ export const LEG_COMPATIBILITY = {
     'leg-sample-04': ['tube-1x3', 'tube-2x4'],   // Squared
     'leg-sample-05': ['tube-1x3', 'tube-2x4'],   // Tapered
     'leg-sample-06': ['tube-1x3', 'tube-2x4'],   // X Style
-    'leg-sample-07': ['tube-1x0.5', 'tube-1x1', 'tube-1x3', 'tube-2x4'] // Custom
+    'leg-sample-07': ['tube-1x0.5', 'tube-1x1', 'tube-1x3', 'tube-2x4'], // Custom
+    'leg-none': [] // No tubes needed for no legs
   },
   // Model tube restrictions: some models cannot use certain tube sizes
   modelToTubes: {

@@ -47,10 +47,12 @@ export async function computePrice(state) {
     // Single-choice categories to include in breakdown
     const singleCategories = [
       { key: 'material', label: 'material' },
+      { key: 'color', label: 'color' },
       { key: 'finish-coating', label: 'finish-coating' },
       { key: 'finish-sheen', label: 'finish-sheen' },
       { key: 'dimensions', label: 'dimensions' },
-      { key: 'legs', label: 'legs' }
+      { key: 'legs', label: 'legs' },
+      { key: 'tube-size', label: 'tube-size' }
     ];
 
     // For each category try to resolve price from corresponding data files
@@ -62,9 +64,11 @@ export async function computePrice(state) {
         // map key to data path
         let path = null;
         if (cat.key === 'material') path = 'data/materials.json';
+        else if (cat.key === 'color') path = 'data/colors.json';
         else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen') path = 'data/finish.json';
         else if (cat.key === 'dimensions') path = 'data/dimensions.json';
         else if (cat.key === 'legs') path = 'data/legs.json';
+        else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';
 
         if (path) {
           const d = await _loadDataOnce(path);

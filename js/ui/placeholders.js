@@ -5,11 +5,7 @@
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;
-  el.textContent = `$${total.toLocaleString()} `;
-  const usd = document.createElement('span');
-  usd.className = 'text-xs font-normal';
-  usd.textContent = 'USD';
-  el.appendChild(usd);
+  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
 }
 
 // Create a full-screen loading skeleton over the viewer area

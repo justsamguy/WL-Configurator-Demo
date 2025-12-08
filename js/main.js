@@ -40,11 +40,7 @@ function animatePrice(from, to, duration = 400, onUpdate) {
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;
-  el.textContent = `$${total.toLocaleString()} `;
-  const usd = document.createElement('span');
-  usd.className = 'text-xs font-normal';
-  usd.textContent = 'USD';
-  el.appendChild(usd);
+  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
 }
 
 /**
@@ -346,5 +342,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 23:25');
+  console.log('Last updated: 2025-12-08 23:45');
 });

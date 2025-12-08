@@ -80,6 +80,8 @@ export function restoreFromState(state) {
       if (el) {
         document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
         el.setAttribute('aria-pressed', 'true');
+        // Update UI visibility based on selected leg
+        updateLegsUIVisibility(legId);
       }
     }
 
@@ -100,6 +102,9 @@ export function restoreFromState(state) {
         el.setAttribute('aria-pressed', 'true');
       }
     }
+
+    // Recompute constraints after restoring
+    recomputeTubeSizeConstraints();
   } catch (e) { /* ignore */ }
 }
 
