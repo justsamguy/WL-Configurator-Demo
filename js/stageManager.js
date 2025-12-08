@@ -236,23 +236,22 @@ async function setStage(index, options = {}) {
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
     if (viewerControls) viewerControls.style.display = 'none';
-    // Move the Models/Designs panel out of the sidebar and into the main flow so
-    // it can span the full viewport. We restore it to its original container
+    // Move the Models/Designs panel out of the sidebar and into the main content area
+    // so it can span the full viewport. We restore it to its original container
     // when leaving these stages.
     try {
       const panelId = `stage-panel-${managerState.current}`;
       const panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
-      const header = document.getElementById('app-header');
-      const topStepper = document.getElementById('top-stepper');
-      if (panel && root && header) {
+      const mainContent = document.getElementById('app-main');
+      if (panel && root && mainContent) {
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
-        // insert after header or top-stepper so it sits in the proper flow
-        const insertAfter = topStepper || header;
-        document.body.insertBefore(panel, insertAfter.nextSibling);
-        // Clear inline display style so CSS !important rule takes effect for full-width display
+        // Clear any previous inline display style
         panel.style.display = '';
+        // Move the panel into the main content area for full-width display
+        mainContent.innerHTML = '';
+        mainContent.appendChild(panel);
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
