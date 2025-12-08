@@ -131,6 +131,20 @@ document.addEventListener('option-selected', async (ev) => {
   }
 });
 
+// Handle "none" leg selection - clear dependent selections without dispatching events with null ids
+document.addEventListener('legs-none-selected', async (ev) => {
+  try {
+    // Clear tube-size and leg-finish selections without triggering price recomputation loops
+    setState({ selections: { ...state.selections, options: { ...state.selections.options, 'tube-size': undefined, 'leg-finish': undefined } } });
+    const p = await computePrice(state);
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+  } catch (e) {
+    console.warn('Failed to handle legs-none-selected:', e);
+  }
+});
+
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
@@ -357,5 +371,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 18:45');
+  console.log('Last updated: 2025-12-08 20:15');
 });

@@ -17,6 +17,10 @@ export function init() {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'legs' } }));
       // Hide/show tube size and leg finish sections based on whether "none" is selected
       updateLegsUIVisibility(id);
+      // If "leg-none" is selected, also clear the dependent tube-size and leg-finish selections in state
+      if (id === 'leg-none') {
+        document.dispatchEvent(new CustomEvent('legs-none-selected'));
+      }
       // Recompute tube size constraints when leg changes
       recomputeTubeSizeConstraints();
     } else if (tubeSizeCard && !tubeSizeCard.hasAttribute('disabled')) {
@@ -127,11 +131,6 @@ export function updateLegsUIVisibility(legId) {
     document.querySelectorAll('.option-card[data-category="leg-finish"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
     });
-    // Dispatch events to update state when clearing selections due to "leg-none"
-    document.dispatchEvent(new CustomEvent('option-selected', 
-      { detail: { id: null, price: 0, category: 'tube-size' } }));
-    document.dispatchEvent(new CustomEvent('option-selected', 
-      { detail: { id: null, price: 0, category: 'leg-finish' } }));
   } else {
     // Show tube size and leg finish sections
     if (tubeSizeContainer) tubeSizeContainer.style.display = '';
