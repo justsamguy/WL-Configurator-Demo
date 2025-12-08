@@ -31,7 +31,7 @@ export function populateSummaryPanel() {
   total.textContent = s.pricing && s.pricing.total ? `$${s.pricing.total}` : '$0';
 }
 
-export default { populateSummaryPanel };
+export default { populateSummaryPanel, init, initSummaryActions, restoreFromState };
 
 function formatCurrency(val) {
   if (typeof val !== 'number') return '$0';

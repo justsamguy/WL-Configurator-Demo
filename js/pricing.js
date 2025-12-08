@@ -52,7 +52,8 @@ export async function computePrice(state) {
       { key: 'finish-sheen', label: 'finish-sheen' },
       { key: 'dimensions', label: 'dimensions' },
       { key: 'legs', label: 'legs' },
-      { key: 'tube-size', label: 'tube-size' }
+      { key: 'tube-size', label: 'tube-size' },
+      { key: 'leg-finish', label: 'leg-finish' }
     ];
 
     // For each category try to resolve price from corresponding data files
@@ -69,6 +70,7 @@ export async function computePrice(state) {
         else if (cat.key === 'dimensions') path = 'data/dimensions.json';
         else if (cat.key === 'legs') path = 'data/legs.json';
         else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';
+        else if (cat.key === 'leg-finish') path = 'data/leg-finish.json';
 
         if (path) {
           const d = await _loadDataOnce(path);

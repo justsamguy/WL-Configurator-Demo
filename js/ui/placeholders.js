@@ -165,12 +165,12 @@ export function initPlaceholderInteractions() {
 
     // Toggle behavior for addons (multi-select checkboxes)
     if (category === 'addon') {
-      const wasPressed = btn.getAttribute('aria-pressed') === 'true';
-      const nowPressed = !wasPressed;
-      btn.setAttribute('aria-pressed', nowPressed ? 'true' : 'false');
-      btn.setAttribute('aria-checked', nowPressed ? 'true' : 'false');
+      const wasChecked = btn.getAttribute('aria-checked') === 'true';
+      const nowChecked = !wasChecked;
+      btn.setAttribute('aria-checked', nowChecked ? 'true' : 'false');
+      btn.classList.toggle('selected', nowChecked);
       // Dispatch an addon-toggled event
-      document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowPressed } }));
+      document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowChecked } }));
     } else {
       // Default: single-select behavior - only clear selections within the same implicit category
       // Determine implicit category from id prefix if explicit category wasn't provided
