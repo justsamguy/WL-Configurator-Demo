@@ -52,5 +52,4 @@ export function renderOptionCards(container, data = [], opts = {}) {
   });
 }
 
-export { renderOptionCards };
 export default { renderOptionCards };

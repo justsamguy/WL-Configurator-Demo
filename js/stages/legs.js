@@ -139,5 +139,4 @@ export function updateLegsUIVisibility(legId) {
   }
 }
 
-export { updateLegsUIVisibility, recomputeTubeSizeConstraints };
 export default { init, restoreFromState, updateLegsUIVisibility, recomputeTubeSizeConstraints };
