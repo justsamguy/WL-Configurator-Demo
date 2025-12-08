@@ -127,6 +127,11 @@ export function updateLegsUIVisibility(legId) {
     document.querySelectorAll('.option-card[data-category="leg-finish"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
     });
+    // Dispatch events to update state when clearing selections due to "leg-none"
+    document.dispatchEvent(new CustomEvent('option-selected', 
+      { detail: { id: null, price: 0, category: 'tube-size' } }));
+    document.dispatchEvent(new CustomEvent('option-selected', 
+      { detail: { id: null, price: 0, category: 'leg-finish' } }));
   } else {
     // Show tube size and leg finish sections
     if (tubeSizeContainer) tubeSizeContainer.style.display = '';

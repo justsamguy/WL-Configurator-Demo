@@ -259,6 +259,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
+    // Render designs stage from data/designs.json
+    // Try to find design grids in the designs section (supports multiple rows)
+    const designsSection = document.getElementById('designs-stage-section');
+    if (designsSection) {
+      const designs = await loadData('data/designs.json');
+      if (designs) {
+        // Clear existing design option cards and render from data
+        const designGrids = designsSection.querySelectorAll('.model-row-grid');
+        if (designGrids && designGrids.length) {
+          // For now, render all designs into the first grid; can be enhanced to filter by model
+          renderOptionCards(designGrids[0], designs, { category: null });
+        }
+      }
+    }
+
     // Render finish stage (coatings + sheens)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
     const finishSheenRoot = document.getElementById('finish-sheen-options');
@@ -342,5 +357,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 15:30');
+  console.log('Last updated: 2025-12-08 18:45');
 });

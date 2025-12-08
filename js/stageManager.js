@@ -159,6 +159,19 @@ async function setStage(index, options = {}) {
         try {
           // delegate finish defaults to dedicated module
           applyFinishDefaults(appState);
+          // Ensure visual state is updated on DOM after defaults applied
+          setTimeout(() => {
+            try {
+              const coatingEl = document.querySelector('.option-card[data-id="fin-coat-02"]');
+              const sheenEl = document.querySelector('.option-card[data-id="fin-sheen-01"]');
+              if (coatingEl && !appState.selections.options?.['finish-coating']) {
+                coatingEl.setAttribute('aria-pressed', 'true');
+              }
+              if (sheenEl && !appState.selections.options?.['finish-sheen']) {
+                sheenEl.setAttribute('aria-pressed', 'true');
+              }
+            } catch (e) { /* ignore */ }
+          }, 100);
         } catch (e) {
           console.warn('Failed to apply finish defaults via module:', e);
         }
