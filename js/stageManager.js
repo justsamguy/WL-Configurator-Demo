@@ -251,6 +251,8 @@ async function setStage(index, options = {}) {
         // insert after header or top-stepper so it sits in the proper flow
         const insertAfter = topStepper || header;
         document.body.insertBefore(panel, insertAfter.nextSibling);
+        // Clear inline display style so CSS !important rule takes effect for full-width display
+        panel.style.display = '';
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
