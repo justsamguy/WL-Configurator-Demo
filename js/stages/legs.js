@@ -5,12 +5,15 @@ import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, i
 import { state } from '../state.js';
 
 export function init() {
+  console.log('[Legs] init() STARTED');
+  console.log('[Legs] Adding click listener to document');
   document.addEventListener('click', (ev) => {
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
     const tubeSizeCard = ev.target.closest && ev.target.closest('.option-card[data-category="tube-size"]');
     const legFinishCard = ev.target.closest && ev.target.closest('.option-card[data-category="leg-finish"]');
 
     if (legCard && !legCard.hasAttribute('disabled')) {
+      console.log('[Legs] Leg card clicked:', legCard.getAttribute('data-id'));
       document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       legCard.setAttribute('aria-pressed', 'true');
       const id = legCard.getAttribute('data-id');
