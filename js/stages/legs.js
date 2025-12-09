@@ -26,9 +26,7 @@ export function init() {
       recomputeTubeSizeConstraints();
     } else if (tubeSizeCard) {
       // Check if the tube size card is disabled; if so, don't allow selection
-      console.log('[Legs] Tube size card clicked:', tubeSizeCard.getAttribute('data-id'), 'disabled:', tubeSizeCard.hasAttribute('disabled'));
       if (tubeSizeCard.hasAttribute('disabled')) {
-        console.log('[Legs] Blocking selection of disabled tube size');
         return; // Block selection of disabled tube sizes
       }
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
@@ -49,14 +47,18 @@ export function init() {
 /**
  * Recompute tube size constraints based on selected leg and model
  * Similar pattern to recomputeFinishConstraints: manages disabled states and tooltips
+ * @param {Object} appState - Optional application state; uses imported global state if not provided
  */
-export function recomputeTubeSizeConstraints() {
+export function recomputeTubeSizeConstraints(appState) {
   try {
+    // Use provided state or fall back to imported global state
+    const currentState = appState || state;
+    
     const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
     const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
     
     // Get the selected model from application state (more reliable than searching DOM)
-    const selectedModelId = state.selections && state.selections.model;
+    const selectedModelId = currentState.selections && currentState.selections.model;
     
     console.log('[Legs] recomputeTubeSizeConstraints - selectedLeg:', selectedLegId, 'selectedModel:', selectedModelId);
     
@@ -136,6 +138,10 @@ export function recomputeTubeSizeConstraints() {
 
 export function restoreFromState(state) {
   try {
+    console.log('[Legs] restoreFromState called with state:', state);
+    console.log('[Legs] state.selections:', state && state.selections);
+    console.log('[Legs] state.selections.model:', state && state.selections && state.selections.model);
+    
     const legId = state && state.selections && state.selections.options && state.selections.options.legs;
     if (legId) {
       const el = document.querySelector(`.option-card[data-id="${legId}"]`);
@@ -166,7 +172,7 @@ export function restoreFromState(state) {
     }
 
     // Recompute constraints after restoring
-    recomputeTubeSizeConstraints();
+    recomputeTubeSizeConstraints(state);
   } catch (e) { /* ignore */ }
 }
 
