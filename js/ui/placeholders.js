@@ -177,6 +177,7 @@ export function initPlaceholderInteractions() {
       let implicitCategory = '';
       if (!category && id) {
         if (id.startsWith('mdl-')) implicitCategory = 'model';
+        else if (id.startsWith('des-')) implicitCategory = 'design';
         else if (id.startsWith('mat-')) implicitCategory = 'material';
         else if (id.startsWith('fin-coat-')) implicitCategory = 'finish-coating';
         else if (id.startsWith('fin-sheen-')) implicitCategory = 'finish-sheen';

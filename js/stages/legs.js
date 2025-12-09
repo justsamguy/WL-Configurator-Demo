@@ -60,8 +60,6 @@ export function recomputeTubeSizeConstraints(appState) {
     // Get the selected model from application state (more reliable than searching DOM)
     const selectedModelId = currentState.selections && currentState.selections.model;
     
-    console.log('[Legs] recomputeTubeSizeConstraints - selectedLeg:', selectedLegId, 'selectedModel:', selectedModelId);
-    
     // Helper: get list of disabled-by sources from element
     function _getDisabledByList(el) {
       const raw = el.getAttribute('data-disabled-by') || '';
@@ -78,7 +76,6 @@ export function recomputeTubeSizeConstraints(appState) {
       el.setAttribute('data-disabled-by', list.join('||'));
       el.setAttribute('disabled', 'true');
       el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
-      console.log('[Legs] Disabled tube', el.getAttribute('data-id'), 'because of:', sourceTitle);
     }
     
     // Helper: clear all disabled-by sources from element
@@ -120,8 +117,6 @@ export function recomputeTubeSizeConstraints(appState) {
         }
       });
       
-      console.log('[Legs] Disabled', disabledCount, 'tube sizes. Currently selected:', currentlySelectedTubeId, 'was disabled:', selectedTubeWasDisabled);
-      
       // If the currently selected tube size is now incompatible, clear the selection and notify state
       if (selectedTubeWasDisabled && currentlySelectedTubeId) {
         if (currentlySelectedTubeEl) {
@@ -138,10 +133,6 @@ export function recomputeTubeSizeConstraints(appState) {
 
 export function restoreFromState(state) {
   try {
-    console.log('[Legs] restoreFromState called with state:', state);
-    console.log('[Legs] state.selections:', state && state.selections);
-    console.log('[Legs] state.selections.model:', state && state.selections && state.selections.model);
-    
     const legId = state && state.selections && state.selections.options && state.selections.options.legs;
     if (legId) {
       const el = document.querySelector(`.option-card[data-id="${legId}"]`);

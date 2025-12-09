@@ -86,10 +86,8 @@ document.addEventListener('option-selected', async (ev) => {
   
   // Handle model selection (category: 'model')
   if (category === 'model') {
-    console.log('[Main] Model selected:', id);
     // When model changes, clear design selection
     setState({ selections: { ...state.selections, model: id, design: null }, pricing: { ...state.pricing, base: 0 } });
-    console.log('[Main] After setState, state.selections:', state.selections);
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
@@ -387,5 +385,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 22:50');
+  console.log('Last updated: 2025-12-08 23:00');
 });
