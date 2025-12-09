@@ -9,7 +9,12 @@ export const state = {
 };
 
 export function setState(patch) {
+  const oldModel = state.selections.model;
   Object.assign(state, patch);
+  const newModel = state.selections.model;
+  if (oldModel !== newModel) {
+    console.log('[State] Model changed from', oldModel, 'to', newModel, 'via setState patch:', patch);
+  }
   // dispatch a CustomEvent so listeners can access the latest state via import
   document.dispatchEvent(new CustomEvent('statechange', { detail: { state } }));
 }
