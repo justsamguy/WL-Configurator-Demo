@@ -4,21 +4,27 @@
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
 
 export function init() {
+  console.log('Legs stage init() called');
   document.addEventListener('click', (ev) => {
+    console.log('Click event detected in legs stage', ev.target);
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
     const tubeSizeCard = ev.target.closest && ev.target.closest('.option-card[data-category="tube-size"]');
     const legFinishCard = ev.target.closest && ev.target.closest('.option-card[data-category="leg-finish"]');
 
     if (legCard && !legCard.hasAttribute('disabled')) {
+      console.log('Leg card clicked:', legCard.getAttribute('data-id'));
       document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       legCard.setAttribute('aria-pressed', 'true');
       const id = legCard.getAttribute('data-id');
       const price = Number(legCard.getAttribute('data-price')) || 0;
+      console.log('Dispatching option-selected for:', id);
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'legs' } }));
       // Hide/show tube size and leg finish sections based on whether "none" is selected
+      console.log('About to call updateLegsUIVisibility with:', id);
       updateLegsUIVisibility(id);
       // If "leg-none" is selected, also clear the dependent tube-size and leg-finish selections in state
       if (id === 'leg-none') {
+        console.log('leg-none detected, dispatching legs-none-selected');
         document.dispatchEvent(new CustomEvent('legs-none-selected'));
       }
       // Recompute tube size constraints when leg changes
