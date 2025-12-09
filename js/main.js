@@ -86,6 +86,12 @@ document.addEventListener('option-selected', async (ev) => {
   const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
   console.log('[Main] option-selected event:', { id, category, price }, 'current state:', state.selections);
   
+  // Ignore events with null or undefined category (malformed events)
+  if (!category) {
+    console.warn('[Main] Ignoring malformed option-selected event with null/undefined category');
+    return;
+  }
+  
   // Handle model selection (category: 'model')
   if (category === 'model') {
     // When model changes, clear design selection
@@ -123,13 +129,6 @@ document.addEventListener('option-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
-  } else {
-    // Legacy: assume model selection - set base price to model price
-    setState({ selections: { ...state.selections, model: id }, pricing: { ...state.pricing, base: price } });
-    const p = await computePrice(state);
-    const from = state.pricing.total || state.pricing.base;
-    animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
-    setState({ pricing: { ...state.pricing, base: price, extras: p.extras, total: p.total } });
   }
 });
 
@@ -387,5 +386,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 23:15');
+  console.log('Last updated: 2025-12-08 23:45');
 });
