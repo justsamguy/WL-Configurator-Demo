@@ -1,20 +1,14 @@
-Materials:
+Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
+
+set the conditional visibility of model-specific designs
+set the conditional visibility of dimension options
+
+fix the warning prompt for model changes so it appears as a dialog box in front of the rest of the app
+
 Get picture of wood for custom choice
-
-
-
-
-Re-order colors
 get color examples of all colors (even if not material)
-
-
-
-Legs:
-only show available designs based on selected model
-only show available tube sizes if at least one design using it is visible
-Get model examples of all designs and tube sizes
-grey out unavailable tube sizes based on leg style with tooltip on hover (example: "only compatible with [x]")
-get list of standard leg colors
-
-Addons:
+Get examples of all designs and tube sizes
 Brainstorm list of addons
+
+ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
+create a csv-friendly export option

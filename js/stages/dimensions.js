@@ -48,15 +48,10 @@ function initializeFromState(appState) {
         currentDimensions = { ...currentDimensions, ...dimSel };
         selectedTileId = 'custom';
       }
-    } else if (!dimSel && dimensionsData && dimensionsData.presets.length > 0) {
-      // No previous selection; select first available preset
-      const firstPreset = dimensionsData.presets[0];
-      currentDimensions.length = firstPreset.length;
-      currentDimensions.width = firstPreset.width;
-      currentDimensions.height = firstPreset.height;
-      currentDimensions.heightCustom = firstPreset.height === 'custom' ? firstPreset.heightCustom : null;
-      selectedTileId = firstPreset.id;
     }
+    // Note: Do NOT auto-select first preset if no selection exists.
+    // Stages should require explicit user selection; this respects the principle
+    // that stage modules do not mutate state without user action.
   } catch (e) {
     console.warn('Failed to initialize dimensions from state:', e);
   }

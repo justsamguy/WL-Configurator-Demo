@@ -23,6 +23,7 @@ export function restoreFromState(state) {
       const id = c.getAttribute('data-id');
       const checked = arr.includes(id);
       c.setAttribute('aria-checked', checked ? 'true' : 'false');
+      c.setAttribute('aria-pressed', checked ? 'true' : 'false');
       c.classList.toggle('selected', checked);
     });
   } catch (e) { /* ignore */ }

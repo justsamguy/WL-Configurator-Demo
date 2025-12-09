@@ -5,11 +5,7 @@
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;
-  el.textContent = `$${total.toLocaleString()} `;
-  const usd = document.createElement('span');
-  usd.className = 'text-xs font-normal';
-  usd.textContent = 'USD';
-  el.appendChild(usd);
+  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
 }
 
 // Create a full-screen loading skeleton over the viewer area
@@ -169,18 +165,19 @@ export function initPlaceholderInteractions() {
 
     // Toggle behavior for addons (multi-select checkboxes)
     if (category === 'addon') {
-      const wasPressed = btn.getAttribute('aria-pressed') === 'true';
-      const nowPressed = !wasPressed;
-      btn.setAttribute('aria-pressed', nowPressed ? 'true' : 'false');
-      btn.setAttribute('aria-checked', nowPressed ? 'true' : 'false');
+      const wasChecked = btn.getAttribute('aria-checked') === 'true';
+      const nowChecked = !wasChecked;
+      btn.setAttribute('aria-checked', nowChecked ? 'true' : 'false');
+      btn.classList.toggle('selected', nowChecked);
       // Dispatch an addon-toggled event
-      document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowPressed } }));
+      document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: nowChecked } }));
     } else {
       // Default: single-select behavior - only clear selections within the same implicit category
       // Determine implicit category from id prefix if explicit category wasn't provided
       let implicitCategory = '';
       if (!category && id) {
         if (id.startsWith('mdl-')) implicitCategory = 'model';
+        else if (id.startsWith('des-')) implicitCategory = 'design';
         else if (id.startsWith('mat-')) implicitCategory = 'material';
         else if (id.startsWith('fin-coat-')) implicitCategory = 'finish-coating';
         else if (id.startsWith('fin-sheen-')) implicitCategory = 'finish-sheen';

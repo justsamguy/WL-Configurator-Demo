@@ -31,7 +31,7 @@ export function populateSummaryPanel() {
   total.textContent = s.pricing && s.pricing.total ? `$${s.pricing.total}` : '$0';
 }
 
-export default { populateSummaryPanel };
+export default { populateSummaryPanel, init, initSummaryActions, restoreFromState };
 
 function formatCurrency(val) {
   if (typeof val !== 'number') return '$0';
@@ -57,11 +57,20 @@ async function captureSnapshot() {
 }
 
 async function exportPdf() {
-  // Capture snapshot first then write a simple pdf with image + summary text
+  // Ensure snapshot is captured before exporting
   if (!hasJsPDF || !hasHtml2Canvas) {
     console.warn('jsPDF or html2canvas not available');
     return;
   }
+  
+  // Check if snapshot needs to be captured first
+  const imgEl = document.getElementById('snapshot-img');
+  const placeholder = document.getElementById('snapshot-placeholder');
+  if (!imgEl || imgEl.style.display === 'none' || !imgEl.src) {
+    // Auto-capture if not already done
+    await captureSnapshot();
+  }
+  
   const dataUrl = await captureSnapshot();
   if (!dataUrl) return;
   try {

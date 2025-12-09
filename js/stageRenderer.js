@@ -9,7 +9,13 @@ export function renderOptionCards(container, data = [], opts = {}) {
     btn.setAttribute('data-id', item.id);
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
-    btn.setAttribute('aria-pressed', 'false');
+    // Use aria-checked for multi-select (addon) category, aria-pressed for single-select
+    const isMultiSelect = opts.category === 'addon';
+    if (isMultiSelect) {
+      btn.setAttribute('aria-checked', 'false');
+    } else {
+      btn.setAttribute('aria-pressed', 'false');
+    }
     if (item.disabled) {
       btn.setAttribute('disabled', 'true');
       if (item.tooltip) btn.setAttribute('data-tooltip', item.tooltip);
