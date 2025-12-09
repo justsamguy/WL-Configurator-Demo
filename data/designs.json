@@ -3,7 +3,7 @@
   { "id": "des-slab", "title": "Slab", "image": "assets/images/model1_placeholder.png", "description": "Clean, minimalist", "prices": { "mdl-coffee": 11200, "mdl-dining": 13600, "mdl-conference": 16000 } },
   { "id": "des-encasement", "title": "Encasement", "image": "assets/images/model1_placeholder.png", "description": "Structured edges", "prices": { "mdl-coffee": 10500, "mdl-dining": 12900, "mdl-conference": 15300 } },
   { "id": "des-custom", "title": "Custom", "image": "assets/images/model1_placeholder.png", "description": "Bespoke design", "prices": { "mdl-coffee": 12000, "mdl-dining": 14400, "mdl-conference": 16800 } },
-  { "id": "des-keystone", "title": "Keystone", "image": "assets/images/keystone_placeholder.png", "description": "Conference exclusive", "prices": { "mdl-conference": 17200 } },
-  { "id": "des-signature", "title": "Signature", "image": "assets/images/signature_placeholder.png", "description": "Coffee exclusive", "prices": { "mdl-coffee": 11500 } },
-  { "id": "des-round", "title": "Round", "image": "assets/images/round_placeholder.png", "description": "Circular option", "prices": { "mdl-coffee": 12800, "mdl-dining": 15200 } }
+  { "id": "des-keystone", "title": "Keystone", "image": "assets/images/model1_placeholder.png", "description": "Conference exclusive", "prices": { "mdl-conference": 17200 } },
+  { "id": "des-signature", "title": "Signature", "image": "assets/images/model1_placeholder.png", "description": "Coffee exclusive", "prices": { "mdl-coffee": 11500 } },
+  { "id": "des-round", "title": "Round", "image": "assets/images/model1_placeholder.png", "description": "Circular option", "prices": { "mdl-coffee": 12800, "mdl-dining": 15200 } }
 ]
