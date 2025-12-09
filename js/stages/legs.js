@@ -2,6 +2,7 @@
 // Handles single-choice legs options, tube size, and leg finish (color)
 // With model-based filtering and incompatibility constraints
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
+import { state } from '../state.js';
 
 export function init() {
   document.addEventListener('click', (ev) => {
@@ -54,39 +55,8 @@ export function recomputeTubeSizeConstraints() {
     const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
     const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
     
-    // Get currently selected model from model cards (may be in sidebar or stage panel)
-    // Check both main content and sidebar for model cards
-    let selectedModelEl = document.querySelector('.option-card[data-id^="mdl-"][aria-pressed="true"]');
-    let selectedModelId = selectedModelEl && selectedModelEl.getAttribute('data-id');
-    
-    // If not found in main area, try searching for any model card marked as pressed anywhere
-    if (!selectedModelId) {
-      const allModelCards = document.querySelectorAll('.option-card[data-category="model"]');
-      console.log('[Legs] Searching in', allModelCards.length, 'model cards with category attribute');
-      for (const card of allModelCards) {
-        if (card.getAttribute('aria-pressed') === 'true') {
-          selectedModelId = card.getAttribute('data-id');
-          selectedModelEl = card;
-          console.log('[Legs] Found model via category search:', selectedModelId);
-          break;
-        }
-      }
-    }
-    
-    // Also check for any card with data-id^="mdl-"
-    if (!selectedModelId) {
-      const allMdlCards = document.querySelectorAll('[data-id^="mdl-"]');
-      console.log('[Legs] Searching in', allMdlCards.length, 'cards with mdl- prefix');
-      for (const card of allMdlCards) {
-        console.log('[Legs]   Card:', card.getAttribute('data-id'), 'aria-pressed:', card.getAttribute('aria-pressed'));
-        if (card.getAttribute('aria-pressed') === 'true') {
-          selectedModelId = card.getAttribute('data-id');
-          selectedModelEl = card;
-          console.log('[Legs] Found model via mdl- prefix search:', selectedModelId);
-          break;
-        }
-      }
-    }
+    // Get the selected model from application state (more reliable than searching DOM)
+    const selectedModelId = state.selections && state.selections.model;
     
     console.log('[Legs] recomputeTubeSizeConstraints - selectedLeg:', selectedLegId, 'selectedModel:', selectedModelId);
     
