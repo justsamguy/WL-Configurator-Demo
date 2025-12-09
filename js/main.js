@@ -145,6 +145,20 @@ document.addEventListener('legs-none-selected', async (ev) => {
   }
 });
 
+// Handle tube size cleared due to incompatibility with newly selected leg
+document.addEventListener('tube-size-cleared-due-to-incompatibility', async (ev) => {
+  try {
+    // Clear the tube-size selection from state and recompute price
+    setState({ selections: { ...state.selections, options: { ...state.selections.options, 'tube-size': undefined } } });
+    const p = await computePrice(state);
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+  } catch (e) {
+    console.warn('Failed to handle tube-size-cleared-due-to-incompatibility:', e);
+  }
+});
+
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
@@ -371,5 +385,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 22:15');
+  console.log('Last updated: 2025-12-08 22:25');
 });

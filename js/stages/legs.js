@@ -23,7 +23,11 @@ export function init() {
       }
       // Recompute tube size constraints when leg changes
       recomputeTubeSizeConstraints();
-    } else if (tubeSizeCard && !tubeSizeCard.hasAttribute('disabled')) {
+    } else if (tubeSizeCard) {
+      // Check if the tube size card is disabled; if so, don't allow selection
+      if (tubeSizeCard.hasAttribute('disabled')) {
+        return; // Block selection of disabled tube sizes
+      }
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       tubeSizeCard.setAttribute('aria-pressed', 'true');
       const id = tubeSizeCard.getAttribute('data-id');
@@ -49,8 +53,21 @@ export function recomputeTubeSizeConstraints() {
     const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
     
     // Get currently selected model from model cards (may be in sidebar or stage panel)
-    const selectedModelEl = document.querySelector('.option-card[data-id^="mdl-"][aria-pressed="true"]');
-    const selectedModelId = selectedModelEl && selectedModelEl.getAttribute('data-id');
+    // Check both main content and sidebar for model cards
+    let selectedModelEl = document.querySelector('.option-card[data-id^="mdl-"][aria-pressed="true"]');
+    let selectedModelId = selectedModelEl && selectedModelEl.getAttribute('data-id');
+    
+    // If not found in main area, try searching for any model card marked as pressed anywhere
+    if (!selectedModelId) {
+      const allModelCards = document.querySelectorAll('.option-card[data-category="model"]');
+      for (const card of allModelCards) {
+        if (card.getAttribute('aria-pressed') === 'true') {
+          selectedModelId = card.getAttribute('data-id');
+          selectedModelEl = card;
+          break;
+        }
+      }
+    }
     
     // Helper: get list of disabled-by sources from element
     function _getDisabledByList(el) {
@@ -85,6 +102,10 @@ export function recomputeTubeSizeConstraints() {
     
     // Apply constraints if both leg and model are selected
     if (selectedLegId && selectedModelId) {
+      const currentlySelectedTubeEl = document.querySelector('.option-card[data-category="tube-size"][aria-pressed="true"]');
+      const currentlySelectedTubeId = currentlySelectedTubeEl && currentlySelectedTubeEl.getAttribute('data-id');
+      let selectedTubeWasDisabled = false;
+      
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
         const tubeId = el.getAttribute('data-id');
         const reasons = getTubeIncompatibilityReasons(tubeId, selectedLegId, selectedModelId);
@@ -93,7 +114,21 @@ export function recomputeTubeSizeConstraints() {
         reasons.forEach(reason => {
           addDisabledBy(el, reason);
         });
+        
+        // Track if the currently selected tube size was just disabled
+        if (tubeId === currentlySelectedTubeId && reasons.length > 0) {
+          selectedTubeWasDisabled = true;
+        }
       });
+      
+      // If the currently selected tube size is now incompatible, clear the selection and notify state
+      if (selectedTubeWasDisabled && currentlySelectedTubeId) {
+        if (currentlySelectedTubeEl) {
+          currentlySelectedTubeEl.setAttribute('aria-pressed', 'false');
+        }
+        // Dispatch event to clear the incompatible tube size from state
+        document.dispatchEvent(new CustomEvent('tube-size-cleared-due-to-incompatibility'));
+      }
     }
   } catch (e) {
     console.warn('Failed to recompute tube size constraints:', e);

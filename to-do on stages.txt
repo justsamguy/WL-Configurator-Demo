@@ -1,8 +1,9 @@
 Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
 
 set the conditional visibility of model-specific designs
+set the conditional visibility of dimension options
 
-fix the warning prompt for model changes so it appears in a more pretty way
+fix the warning prompt for model changes so it appears as a dialog box in front of the rest of the app
 
 Get picture of wood for custom choice
 get color examples of all colors (even if not material)
