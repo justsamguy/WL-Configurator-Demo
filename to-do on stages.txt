@@ -1,5 +1,9 @@
 Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
 
+set the conditional visibility of model-specific designs
+
+fix the warning prompt for model changes so it appears in a more pretty way
+
 Get picture of wood for custom choice
 get color examples of all colors (even if not material)
 Get examples of all designs and tube sizes

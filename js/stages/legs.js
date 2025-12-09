@@ -4,27 +4,21 @@
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
 
 export function init() {
-  console.log('Legs stage init() called');
   document.addEventListener('click', (ev) => {
-    console.log('Click event detected in legs stage', ev.target);
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
     const tubeSizeCard = ev.target.closest && ev.target.closest('.option-card[data-category="tube-size"]');
     const legFinishCard = ev.target.closest && ev.target.closest('.option-card[data-category="leg-finish"]');
 
     if (legCard && !legCard.hasAttribute('disabled')) {
-      console.log('Leg card clicked:', legCard.getAttribute('data-id'));
       document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       legCard.setAttribute('aria-pressed', 'true');
       const id = legCard.getAttribute('data-id');
       const price = Number(legCard.getAttribute('data-price')) || 0;
-      console.log('Dispatching option-selected for:', id);
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'legs' } }));
       // Hide/show tube size and leg finish sections based on whether "none" is selected
-      console.log('About to call updateLegsUIVisibility with:', id);
       updateLegsUIVisibility(id);
       // If "leg-none" is selected, also clear the dependent tube-size and leg-finish selections in state
       if (id === 'leg-none') {
-        console.log('leg-none detected, dispatching legs-none-selected');
         document.dispatchEvent(new CustomEvent('legs-none-selected'));
       }
       // Recompute tube size constraints when leg changes
@@ -47,6 +41,7 @@ export function init() {
 
 /**
  * Recompute tube size constraints based on selected leg and model
+ * Similar pattern to recomputeFinishConstraints: manages disabled states and tooltips
  */
 export function recomputeTubeSizeConstraints() {
   try {
@@ -57,11 +52,35 @@ export function recomputeTubeSizeConstraints() {
     const selectedModelEl = document.querySelector('.option-card[data-id^="mdl-"][aria-pressed="true"]');
     const selectedModelId = selectedModelEl && selectedModelEl.getAttribute('data-id');
     
-    // Clear all tube size constraints first
-    document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
+    // Helper: get list of disabled-by sources from element
+    function _getDisabledByList(el) {
+      const raw = el.getAttribute('data-disabled-by') || '';
+      return raw ? raw.split('||').filter(Boolean) : [];
+    }
+    
+    // Helper: add a source to the disabled-by list and mark element as disabled
+    function addDisabledBy(el, sourceTitle) {
+      if (!el) return;
+      const title = (sourceTitle || '').trim();
+      if (!title) return;
+      const list = _getDisabledByList(el);
+      if (!list.includes(title)) list.push(title);
+      el.setAttribute('data-disabled-by', list.join('||'));
+      el.setAttribute('disabled', 'true');
+      el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
+    }
+    
+    // Helper: clear all disabled-by sources from element
+    function clearAllDisabledBy(el) {
+      if (!el) return;
       el.removeAttribute('data-disabled-by');
       el.removeAttribute('data-tooltip');
       el.removeAttribute('disabled');
+    }
+    
+    // Clear all tube size constraints first
+    document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
+      clearAllDisabledBy(el);
     });
     
     // Apply constraints if both leg and model are selected
@@ -70,11 +89,10 @@ export function recomputeTubeSizeConstraints() {
         const tubeId = el.getAttribute('data-id');
         const reasons = getTubeIncompatibilityReasons(tubeId, selectedLegId, selectedModelId);
         
-        if (reasons.length > 0) {
-          el.setAttribute('disabled', 'true');
-          el.setAttribute('data-disabled-by', reasons.join('||'));
-          el.setAttribute('data-tooltip', `Only compatible with ${reasons.join(', ')}`);
-        }
+        // reasons is an array of incompatible sources (e.g., ["Cube", "model"])
+        reasons.forEach(reason => {
+          addDisabledBy(el, reason);
+        });
       });
     }
   } catch (e) {
@@ -130,14 +148,12 @@ export function updateLegsUIVisibility(legId) {
   const tubeSizeHeading = tubeSizeOptions?.previousElementSibling;
   const legFinishHeading = legFinishOptions?.previousElementSibling;
   
-  console.log('updateLegsUIVisibility called with legId:', legId, { tubeSizeHeading, tubeSizeOptions, legFinishHeading, legFinishOptions });
-  
   if (legId === 'leg-none') {
     // Hide tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) { tubeSizeHeading.style.display = 'none'; console.log('Hidden tubeSizeHeading'); }
-    if (tubeSizeOptions) { tubeSizeOptions.style.display = 'none'; console.log('Hidden tubeSizeOptions'); }
-    if (legFinishHeading) { legFinishHeading.style.display = 'none'; console.log('Hidden legFinishHeading'); }
-    if (legFinishOptions) { legFinishOptions.style.display = 'none'; console.log('Hidden legFinishOptions'); }
+    if (tubeSizeHeading) tubeSizeHeading.style.display = 'none';
+    if (tubeSizeOptions) tubeSizeOptions.style.display = 'none';
+    if (legFinishHeading) legFinishHeading.style.display = 'none';
+    if (legFinishOptions) legFinishOptions.style.display = 'none';
     // Clear any existing selections when "none" is chosen
     document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
@@ -147,10 +163,10 @@ export function updateLegsUIVisibility(legId) {
     });
   } else {
     // Show tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) { tubeSizeHeading.style.display = ''; console.log('Showed tubeSizeHeading'); }
-    if (tubeSizeOptions) { tubeSizeOptions.style.display = ''; console.log('Showed tubeSizeOptions'); }
-    if (legFinishHeading) { legFinishHeading.style.display = ''; console.log('Showed legFinishHeading'); }
-    if (legFinishOptions) { legFinishOptions.style.display = ''; console.log('Showed legFinishOptions'); }
+    if (tubeSizeHeading) tubeSizeHeading.style.display = '';
+    if (tubeSizeOptions) tubeSizeOptions.style.display = '';
+    if (legFinishHeading) legFinishHeading.style.display = '';
+    if (legFinishOptions) legFinishOptions.style.display = '';
   }
 }
 
