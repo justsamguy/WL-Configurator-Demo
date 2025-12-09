@@ -182,28 +182,22 @@
 
   <div id="legs-section" class="mb-6">
     <h3 class="text-md font-semibold mb-2 capitalize">Legs</h3>
-    <div class="grid grid-cols-1 gap-4">
-      <!-- Static placeholders for legs -->
-      <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="leg-01" data-category="legs" data-price="120">
-        <img src="assets/images/Leg styles/C%20Style.jpg" alt="C style leg" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
-        <div class="flex-1 text-left">
-          <div class="flex justify-between items-center">
-            <span class="label text-sm font-medium">C Style</span>
-            <span class="text-xs text-gray-600">+$120</span>
-          </div>
-          <div class="text-xs text-gray-500">Curved metal leg.</div>
-        </div>
-      </button>
-      <button class="option-card border rounded-lg p-3 flex items-center gap-3 transition" data-id="leg-02" data-category="legs" data-price="95">
-        <img src="assets/images/Leg styles/Cube.jpg" alt="Cube leg" class="w-20 h-20 object-cover rounded-md bg-gray-100" loading="lazy" />
-        <div class="flex-1 text-left">
-          <div class="flex justify-between items-center">
-            <span class="label text-sm font-medium">Cube</span>
-            <span class="text-xs text-gray-600">+$95</span>
-          </div>
-          <div class="text-xs text-gray-500">Minimal square profile.</div>
-        </div>
-      </button>
+    <div id="legs-options" class="grid grid-cols-1 gap-4">
+      <!-- Legs will be populated from data/legs.json filtered by model -->
+    </div>
+  </div>
+
+  <div id="tube-size-section" class="mb-6">
+    <h4 class="text-md font-semibold mb-2 capitalize">Tube Size</h4>
+    <div id="tube-size-options" class="grid grid-cols-1 gap-4">
+      <!-- Tube sizes will be populated from data/tube-sizes.json -->
+    </div>
+  </div>
+
+  <div id="leg-finish-section" class="mb-6">
+    <h4 class="text-md font-semibold mb-2 capitalize">Leg Color</h4>
+    <div id="leg-finish-options" class="grid grid-cols-1 gap-4">
+      <!-- Leg finish colors will be populated from data/leg-finish.json -->
     </div>
   </div>
 </div>
