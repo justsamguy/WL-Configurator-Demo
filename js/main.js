@@ -9,6 +9,7 @@ import { state, setState } from './state.js';
 import { computePrice } from './pricing.js';
 import { populateSummaryPanel } from './stages/summary.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
+import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
@@ -52,7 +53,6 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes) {
   if (!modelId) return;
   
   const { renderOptionCards } = await import('./stageRenderer.js');
-  const { recomputeTubeSizeConstraints } = await import('./stages/legs.js');
   
   // Filter legs: only show designs compatible with this model (and not hidden)
   const visibleLegs = getVisibleLegs(modelId, allLegs);
@@ -385,5 +385,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 23:05');
+  console.log('Last updated: 2025-12-08 23:15');
 });
