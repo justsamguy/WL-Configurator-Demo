@@ -117,13 +117,21 @@ export function restoreFromState(state) {
  * If "leg-none" is selected, hide both sections; otherwise show them
  */
 export function updateLegsUIVisibility(legId) {
-  const tubeSizeContainer = document.querySelector('#tube-size-options')?.parentElement;
-  const legFinishContainer = document.querySelector('#leg-finish-options')?.parentElement;
+  const tubeSizeOptions = document.querySelector('#tube-size-options');
+  const legFinishOptions = document.querySelector('#leg-finish-options');
+  
+  // Find the h4 headings before these containers
+  const tubeSizeHeading = tubeSizeOptions?.previousElementSibling;
+  const legFinishHeading = legFinishOptions?.previousElementSibling;
+  
+  console.log('updateLegsUIVisibility called with legId:', legId, { tubeSizeHeading, tubeSizeOptions, legFinishHeading, legFinishOptions });
   
   if (legId === 'leg-none') {
-    // Hide tube size and leg finish sections
-    if (tubeSizeContainer) tubeSizeContainer.style.display = 'none';
-    if (legFinishContainer) legFinishContainer.style.display = 'none';
+    // Hide tube size and leg finish sections (both heading and container)
+    if (tubeSizeHeading) { tubeSizeHeading.style.display = 'none'; console.log('Hidden tubeSizeHeading'); }
+    if (tubeSizeOptions) { tubeSizeOptions.style.display = 'none'; console.log('Hidden tubeSizeOptions'); }
+    if (legFinishHeading) { legFinishHeading.style.display = 'none'; console.log('Hidden legFinishHeading'); }
+    if (legFinishOptions) { legFinishOptions.style.display = 'none'; console.log('Hidden legFinishOptions'); }
     // Clear any existing selections when "none" is chosen
     document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
@@ -132,9 +140,11 @@ export function updateLegsUIVisibility(legId) {
       c.setAttribute('aria-pressed', 'false');
     });
   } else {
-    // Show tube size and leg finish sections
-    if (tubeSizeContainer) tubeSizeContainer.style.display = '';
-    if (legFinishContainer) legFinishContainer.style.display = '';
+    // Show tube size and leg finish sections (both heading and container)
+    if (tubeSizeHeading) { tubeSizeHeading.style.display = ''; console.log('Showed tubeSizeHeading'); }
+    if (tubeSizeOptions) { tubeSizeOptions.style.display = ''; console.log('Showed tubeSizeOptions'); }
+    if (legFinishHeading) { legFinishHeading.style.display = ''; console.log('Showed legFinishHeading'); }
+    if (legFinishOptions) { legFinishOptions.style.display = ''; console.log('Showed legFinishOptions'); }
   }
 }
 
