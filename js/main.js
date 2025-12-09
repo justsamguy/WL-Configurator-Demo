@@ -13,6 +13,7 @@ import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
+  console.log('[Main] State changed:', ev.detail.state.selections);
   // main orchestrator can react to state changes here if needed.
   // ev.detail.state contains the latest state object.
   // If the summary page is active, refresh its contents
@@ -83,6 +84,7 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes) {
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
 document.addEventListener('option-selected', async (ev) => {
   const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
+  console.log('[Main] option-selected event:', { id, category, price }, 'current state:', state.selections);
   
   // Handle model selection (category: 'model')
   if (category === 'model') {

@@ -6,6 +6,7 @@ import { state } from '../state.js';
 
 export function init() {
   console.log('[Legs] init() STARTED');
+  console.log('[Legs] Module-level state at init time:', { ...state });
   console.log('[Legs] Adding click listener to document');
   document.addEventListener('click', (ev) => {
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
@@ -26,6 +27,7 @@ export function init() {
         document.dispatchEvent(new CustomEvent('legs-none-selected'));
       }
       // Recompute tube size constraints when leg changes
+      console.log('[Legs] Leg clicked, calling recomputeTubeSizeConstraints() without state parameter, module-level state.selections:', state.selections);
       recomputeTubeSizeConstraints();
     } else if (tubeSizeCard) {
       // Check if the tube size card is disabled; if so, don't allow selection
@@ -56,6 +58,7 @@ export function recomputeTubeSizeConstraints(appState) {
   try {
     // Use provided state or fall back to imported global state
     const currentState = appState || state;
+    console.log('[Legs] recomputeTubeSizeConstraints - appState provided?', !!appState, 'appState:', appState, 'falling back to module state:', !appState);
     
     const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
     const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
@@ -141,6 +144,7 @@ export function recomputeTubeSizeConstraints(appState) {
 
 export function restoreFromState(state) {
   try {
+    console.log('[Legs] restoreFromState called with state.selections:', state.selections);
     const legId = state && state.selections && state.selections.options && state.selections.options.legs;
     if (legId) {
       const el = document.querySelector(`.option-card[data-id="${legId}"]`);

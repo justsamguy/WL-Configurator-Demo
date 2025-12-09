@@ -305,6 +305,7 @@ async function setStage(index, options = {}) {
     // Restore UI for non-model stages
     try {
       const s = appState;
+      console.log('[StageManager] Restoring stage', managerState.current, 'with state:', s.selections);
       if (managerState.current === 2) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
       if (managerState.current === 3) finishStage.restoreFromState && finishStage.restoreFromState(s);
       if (managerState.current === 4) {
@@ -317,7 +318,10 @@ async function setStage(index, options = {}) {
         }
         dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
       }
-      if (managerState.current === 5) legsStage.restoreFromState && legsStage.restoreFromState(s);
+      if (managerState.current === 5) {
+        console.log('[StageManager] Entering Legs stage (5), state.selections.model:', s.selections.model);
+        legsStage.restoreFromState && legsStage.restoreFromState(s);
+      }
       if (managerState.current === 6) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
       if (managerState.current === 7) summaryStage.restoreFromState && summaryStage.restoreFromState(s);
     } catch (e) { /* ignore */ }
