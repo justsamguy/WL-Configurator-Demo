@@ -116,6 +116,7 @@ export function getTubeIncompatibilityReasons(tubeId, selectedLegId, modelId) {
     reasons.push(modelTitle);
   }
   
+  console.log('[LegCompat] getTubeIncompatibilityReasons for tube:', tubeId, 'leg:', selectedLegId, 'model:', modelId, '-> reasons:', reasons);
   return reasons;
 }
 

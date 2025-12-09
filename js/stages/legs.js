@@ -60,6 +60,8 @@ export function recomputeTubeSizeConstraints(appState) {
     // Get the selected model from application state (more reliable than searching DOM)
     const selectedModelId = currentState.selections && currentState.selections.model;
     
+    console.log('[Legs] recomputeTubeSizeConstraints called - leg:', selectedLegId, 'model:', selectedModelId);
+    
     // Helper: get list of disabled-by sources from element
     function _getDisabledByList(el) {
       const raw = el.getAttribute('data-disabled-by') || '';
@@ -98,6 +100,8 @@ export function recomputeTubeSizeConstraints(appState) {
       let selectedTubeWasDisabled = false;
       let disabledCount = 0;
       
+      console.log('[Legs] Applying constraints for leg:', selectedLegId, 'model:', selectedModelId);
+      
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
         const tubeId = el.getAttribute('data-id');
         const reasons = getTubeIncompatibilityReasons(tubeId, selectedLegId, selectedModelId);
@@ -108,6 +112,7 @@ export function recomputeTubeSizeConstraints(appState) {
         });
         
         if (reasons.length > 0) {
+          console.log('[Legs] Disabled:', tubeId, 'reasons:', reasons);
           disabledCount++;
         }
         
