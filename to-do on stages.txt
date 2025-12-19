@@ -3,7 +3,6 @@ Change designs to become presets of the selected model, so the user can navigate
 set the conditional visibility of model-specific designs
 set the conditional visibility of dimension options
 
-fix the warning prompt for model changes so it appears as a dialog box in front of the rest of the app
 
 Get picture of wood for custom choice
 get color examples of all colors (even if not material)
@@ -12,3 +11,5 @@ Brainstorm list of addons
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
+
+rebuild entire app to use react code

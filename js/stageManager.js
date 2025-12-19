@@ -66,33 +66,63 @@ function formatPrice(centsOrUnits) {
 
 function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 'Confirm') {
   return new Promise((resolve) => {
-    const dialog = document.createElement('div');
-    dialog.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
-    dialog.innerHTML = `
-      <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm">
-        <p class="text-gray-800 mb-6">${message}</p>
-        <div class="flex justify-end gap-3">
-          <button class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded" id="confirm-cancel">${cancelText}</button>
-          <button class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded" id="confirm-ok">${confirmText}</button>
-        </div>
+    // Create overlay that blocks all interaction with elements behind it
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-40';
+    overlay.style.pointerEvents = 'auto'; // Ensure overlay blocks clicks
+    
+    // Create dialog container
+    const dialogContainer = document.createElement('div');
+    dialogContainer.className = 'fixed inset-0 flex items-center justify-center z-50';
+    dialogContainer.style.pointerEvents = 'none'; // Container itself doesn't block
+    
+    // Create dialog box
+    const dialogBox = document.createElement('div');
+    dialogBox.className = 'bg-white rounded-xl shadow-2xl p-8 max-w-md w-11/12';
+    dialogBox.style.pointerEvents = 'auto'; // Dialog box is interactive
+    dialogBox.innerHTML = `
+      <p class="text-gray-800 text-base mb-8">${message}</p>
+      <div class="flex justify-end gap-3">
+        <button class="px-5 py-2 text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg font-medium transition" id="confirm-cancel">${cancelText}</button>
+        <button class="px-5 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition" id="confirm-ok">${confirmText}</button>
       </div>
     `;
-    document.body.appendChild(dialog);
+    
+    dialogContainer.appendChild(dialogBox);
     
     const onCancel = () => {
-      dialog.remove();
+      overlay.remove();
+      dialogContainer.remove();
       resolve(false);
     };
     const onConfirm = () => {
-      dialog.remove();
+      overlay.remove();
+      dialogContainer.remove();
       resolve(true);
     };
     
-    dialog.querySelector('#confirm-cancel').addEventListener('click', onCancel);
-    dialog.querySelector('#confirm-ok').addEventListener('click', onConfirm);
-    dialog.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') onCancel();
+    // Prevent clicking on overlay from closing dialog (user must click Cancel button)
+    overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
     });
+    
+    // Close on Escape key
+    const handleKeydown = (e) => {
+      if (e.key === 'Escape') {
+        onCancel();
+        document.removeEventListener('keydown', handleKeydown);
+      }
+    };
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialogContainer);
+    
+    dialogBox.querySelector('#confirm-cancel').addEventListener('click', onCancel);
+    dialogBox.querySelector('#confirm-ok').addEventListener('click', onConfirm);
+    document.addEventListener('keydown', handleKeydown);
+    
+    // Focus the confirm button for better UX
+    dialogBox.querySelector('#confirm-ok').focus();
   });
 }
 
