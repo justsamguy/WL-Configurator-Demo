@@ -68,12 +68,14 @@ function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 'Confir
   return new Promise((resolve) => {
     // Create overlay that blocks all interaction with elements behind it
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-gray-900 bg-opacity-50 z-40';
+    overlay.className = 'fixed inset-0 bg-gray-900 bg-opacity-50';
+    overlay.style.zIndex = '9999';
     overlay.style.pointerEvents = 'auto'; // Ensure overlay blocks clicks
     
     // Create dialog container
     const dialogContainer = document.createElement('div');
-    dialogContainer.className = 'fixed inset-0 flex items-center justify-center z-50';
+    dialogContainer.className = 'fixed inset-0 flex items-center justify-center';
+    dialogContainer.style.zIndex = '10000';
     dialogContainer.style.pointerEvents = 'none'; // Container itself doesn't block
     
     // Create dialog box
