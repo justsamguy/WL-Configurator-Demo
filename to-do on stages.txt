@@ -6,8 +6,9 @@ set the conditional visibility of dimension options
 fix the warning prompt for model changes so it appears as a dialog box in front of the rest of the app
 
 Get picture of wood for custom choice
-get color examples of all colors (even if not material)
-Get examples of all designs and tube sizes
+Change finish sheen to a 3-point slider from "less shiny" to "more shiny" and remove the logic restricting the sheen depednging on the coating.
+Get examples of tube sizes
+Add "tripod" base option that only shows when a round design is selected
 Brainstorm list of addons
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
