@@ -260,15 +260,6 @@ async function setStage(index, options = {}) {
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
-    // If we're moving to a different stage 0/1 panel, first restore the previous one
-    if (managerState.current === 1) {
-      const prevPanel = document.getElementById('stage-panel-0');
-      const root = document.getElementById('stage-panels-root');
-      if (prevPanel && root && prevPanel.parentElement === document.getElementById('app-main')) {
-        root.appendChild(prevPanel);
-      }
-    }
-    
     // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
@@ -278,9 +269,22 @@ async function setStage(index, options = {}) {
     // when leaving these stages.
     try {
       const panelId = `stage-panel-${managerState.current}`;
-      const panel = document.getElementById(panelId);
+      let panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
+      
+      // If panel is not found, it might still be in mainContent from a previous stage
+      // Try to restore any displaced panels first
+      if (!panel && root && mainContent) {
+        // Check if any stage-panel is currently in mainContent that shouldn't be
+        const displacePanel = mainContent.querySelector('[id^="stage-panel-"]');
+        if (displacePanel && displacePanel.id !== panelId) {
+          root.appendChild(displacePanel);
+        }
+        // Now try to find the target panel again
+        panel = document.getElementById(panelId);
+      }
+      
       if (panel && root && mainContent) {
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
@@ -314,16 +318,28 @@ async function setStage(index, options = {}) {
     if (sidebar) sidebar.style.display = '';
     if (viewer) viewer.style.display = '';
     if (viewerControls) viewerControls.style.display = '';
-    // Clean up the stage placeholders to avoid duplicates
+    // Clean up the stage placeholders to avoid duplicates and restore panels
     try {
       for (let i = 0; i <= 1; i++) {
+        const panelId = `stage-panel-${i}`;
         const ph = document.getElementById(`stage-${i}-placeholder`);
         if (ph) ph.innerHTML = '';
+        
         // If we previously moved stage panel out of the sidebar, put it back
-        const panel = document.getElementById(`stage-panel-${i}`);
+        let panel = document.getElementById(panelId);
         const root = document.getElementById('stage-panels-root');
-        if (panel && root && panel.dataset.wlOrigParent === 'stage-panels-root') {
-          root.appendChild(panel);
+        const mainContent = document.getElementById('app-main');
+        
+        // Check both locations for the panel
+        if (!panel && mainContent) {
+          panel = mainContent.querySelector(`#${panelId}`);
+        }
+        
+        // Restore panel to root if it's not there already
+        if (panel && root) {
+          if (panel.parentElement !== root) {
+            root.appendChild(panel);
+          }
           delete panel.dataset.wlOrigParent;
         }
       }
