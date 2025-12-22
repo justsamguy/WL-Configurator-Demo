@@ -273,7 +273,10 @@ async function setStage(index, options = {}) {
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
       if (!panel) {
-        console.warn(`[setStage] Panel not found with ID: ${panelId}`);
+        console.warn(`[setStage] Panel not found with ID: ${panelId}. stage-panels-root exists:`, !!root);
+        if (root) {
+          console.warn('[setStage] Available panels in root:', Array.from(root.querySelectorAll('[id^="stage-panel-"]')).map(el => el.id));
+        }
       }
       if (panel && root && mainContent) {
         // remember that we moved it
@@ -283,6 +286,8 @@ async function setStage(index, options = {}) {
         // Move the panel into the main content area for full-width display
         mainContent.innerHTML = '';
         mainContent.appendChild(panel);
+      } else if (!mainContent) {
+        console.warn('[setStage] mainContent (app-main) not found');
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       // Use requestAnimationFrame to ensure DOM has updated before loading component
