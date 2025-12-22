@@ -260,6 +260,15 @@ async function setStage(index, options = {}) {
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
+    // If we're moving to a different stage 0/1 panel, first restore the previous one
+    if (managerState.current === 1) {
+      const prevPanel = document.getElementById('stage-panel-0');
+      const root = document.getElementById('stage-panels-root');
+      if (prevPanel && root && prevPanel.parentElement === document.getElementById('app-main')) {
+        root.appendChild(prevPanel);
+      }
+    }
+    
     // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
@@ -272,12 +281,6 @@ async function setStage(index, options = {}) {
       const panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
-      if (!panel) {
-        console.warn(`[setStage] Panel not found with ID: ${panelId}. stage-panels-root exists:`, !!root);
-        if (root) {
-          console.warn('[setStage] Available panels in root:', Array.from(root.querySelectorAll('[id^="stage-panel-"]')).map(el => el.id));
-        }
-      }
       if (panel && root && mainContent) {
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
@@ -286,16 +289,10 @@ async function setStage(index, options = {}) {
         // Move the panel into the main content area for full-width display
         mainContent.innerHTML = '';
         mainContent.appendChild(panel);
-      } else if (!mainContent) {
-        console.warn('[setStage] mainContent (app-main) not found');
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       // Use requestAnimationFrame to ensure DOM has updated before loading component
       await new Promise(resolve => requestAnimationFrame(resolve));
-      const placeholder = document.getElementById(`stage-${managerState.current}-placeholder`);
-      if (!placeholder) {
-        console.warn(`[setStage] Placeholder not found with ID: stage-${managerState.current}-placeholder`);
-      }
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {
