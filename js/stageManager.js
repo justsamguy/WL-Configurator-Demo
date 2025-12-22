@@ -406,6 +406,10 @@ function prevStage() {
   setStage(Math.max(managerState.current - 1, 0));
 }
 
+function getCurrentStage() {
+  return managerState.current;
+}
+
 function markCompleted(index, completed = true) {
   if (index < 0 || index >= STAGES.length) return;
   managerState.completed[index] = completed;
@@ -547,4 +551,4 @@ export function initStageManager() {
 // expose for debugging
 window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
 
-export default { initStageManager, state: managerState, setStage };
+export default { initStageManager, state: managerState, setStage, getCurrentStage };
