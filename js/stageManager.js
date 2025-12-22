@@ -68,8 +68,8 @@ function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 'Confir
   return new Promise((resolve) => {
     // Create modal backdrop
     const modal = document.createElement('div');
-    modal.className = 'bg-black bg-opacity-40';
-    modal.style.cssText = 'position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000;';
+    modal.className = 'bg-black bg-opacity-70';
+    modal.style.cssText = 'position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10000; pointer-events: auto;';
     
     // Create dialog box
     const dialogBox = document.createElement('div');
