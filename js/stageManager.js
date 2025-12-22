@@ -272,6 +272,9 @@ async function setStage(index, options = {}) {
       const panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
+      if (!panel) {
+        console.warn(`[setStage] Panel not found with ID: ${panelId}`);
+      }
       if (panel && root && mainContent) {
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
@@ -282,6 +285,12 @@ async function setStage(index, options = {}) {
         mainContent.appendChild(panel);
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
+      // Use requestAnimationFrame to ensure DOM has updated before loading component
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const placeholder = document.getElementById(`stage-${managerState.current}-placeholder`);
+      if (!placeholder) {
+        console.warn(`[setStage] Placeholder not found with ID: stage-${managerState.current}-placeholder`);
+      }
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {

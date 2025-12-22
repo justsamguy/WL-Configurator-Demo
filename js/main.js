@@ -116,7 +116,7 @@ document.addEventListener('option-selected', async (ev) => {
     try {
       const stageManager = window.stageManager;
       if (stageManager && stageManager.getCurrentStage && stageManager.getCurrentStage() > 0) {
-        stageManager.setStage(0, { skipConfirm: true });
+        await stageManager.setStage(0, { skipConfirm: true });
       }
     } catch (e) {
       console.warn('Failed to navigate back to Models stage:', e);
@@ -396,5 +396,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-22 11:30');
+  console.log('Last updated: 2025-12-22 11:45');
 });
