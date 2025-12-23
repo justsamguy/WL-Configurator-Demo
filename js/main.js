@@ -7,6 +7,16 @@ import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
 import { computePrice } from './pricing.js';
+
+// Helper function to filter designs by model compatibility
+function filterDesignsByModel(designs, modelId) {
+  if (!modelId) return designs; // Show all designs if no model selected
+
+  return designs.filter(design => {
+    // Check if this design has pricing for the selected model
+    return design.prices && design.prices[modelId];
+  });
+}
 import { populateSummaryPanel } from './stages/summary.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
 import { recomputeTubeSizeConstraints } from './stages/legs.js';
@@ -327,16 +337,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
-// Helper function to filter designs by model compatibility
-function filterDesignsByModel(designs, modelId) {
-  if (!modelId) return designs; // Show all designs if no model selected
-
-  return designs.filter(design => {
-    // Check if this design has pricing for the selected model
-    return design.prices && design.prices[modelId];
-  });
-}
-
 // Render designs stage from data/designs.json
 // Try to find design grids in the designs section (supports multiple rows)
 const designsSection = document.getElementById('designs-stage-section');
@@ -439,5 +439,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 15:23');
+  console.log('Last updated: 2025-12-23 16:06');
 });
