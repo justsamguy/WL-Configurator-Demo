@@ -94,8 +94,19 @@ document.addEventListener('option-selected', async (ev) => {
   
   // Handle model selection (category: 'model')
   if (category === 'model') {
-    // When model changes, clear design selection
-    setState({ selections: { ...state.selections, model: id, design: null }, pricing: { ...state.pricing, base: 0 } });
+    // When model changes, clear ALL selections (design and all options)
+    setState({ 
+      selections: { 
+        model: id, 
+        design: null, 
+        options: {} 
+      }, 
+      pricing: { base: 0, extras: 0, total: 0 } 
+    });
+    
+    // Clear visual state for design tiles
+    document.querySelectorAll('.option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
@@ -428,5 +439,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 14:31');
+  console.log('Last updated: 2025-12-23 14:56');
 });

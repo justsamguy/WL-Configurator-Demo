@@ -1,4 +1,6 @@
-Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
+Change designs to become configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles live in a "build your own" section that uses the existing one-stage-at-a-time approach.
+
+
 
 
 Get picture of wood for custom choice

@@ -480,6 +480,50 @@ async function setStage(index, options = {}) {
   } catch (e) {
     // ignore if stage info root not present
   }
+  
+  // After entering a stage, check if pre-selected options make it complete
+  // This ensures stages with defaults (like Finish) are properly marked as complete
+  setTimeout(() => {
+    try {
+      if (managerState.current === 2) {
+        // Materials stage: check if both material and color are selected
+        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
+        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
+        markCompleted(2, !!(hasMaterial && hasColor));
+      } else if (managerState.current === 3) {
+        // Finish stage: check if coating, sheen, and tint are all selected
+        const hasCoating = !!(appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
+        const hasSheen = !!(appState.selections && appState.selections.options && appState.selections.options['finish-sheen']);
+        const hasTint = !!(appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
+        markCompleted(3, !!(hasCoating && hasSheen && hasTint));
+      } else if (managerState.current === 4) {
+        // Dimensions stage: check if dimensions are selected
+        const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
+        markCompleted(4, !!dimOption);
+      } else if (managerState.current === 5) {
+        // Legs stage: check if legs are selected (and tube-size/leg-finish if not "none")
+        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
+        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const isNoneLeg = legId === 'leg-none';
+        
+        let isLegStageComplete = false;
+        if (hasLegs) {
+          if (isNoneLeg) {
+            isLegStageComplete = true;
+          } else {
+            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
+            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
+            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+          }
+        }
+        markCompleted(5, isLegStageComplete);
+      }
+      // Update button states after checking completion
+      setStage(managerState.current);
+    } catch (e) {
+      console.warn('Failed to check stage completion after entering stage:', e);
+    }
+  }, 150);
 }
 
 function nextStage() {
