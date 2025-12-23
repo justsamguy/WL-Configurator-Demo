@@ -292,7 +292,18 @@ async function setStage(index, options = {}) {
         console.log(`[setStage] Panel found after cleanup:`, !!panel);
       }
       
-      if (panel && root && mainContent) {
+      // If panel doesn't exist (e.g., StagePanels.html hasn't loaded yet or sidebar is hidden),
+      // create it dynamically in mainContent for stages 0 and 1
+      if (!panel && mainContent) {
+        console.log(`[setStage] Panel ${panelId} not found, creating it dynamically in mainContent`);
+        panel = document.createElement('section');
+        panel.id = panelId;
+        panel.className = 'stage-panel';
+        panel.innerHTML = `<div id="stage-${managerState.current}-placeholder"></div>`;
+        mainContent.innerHTML = '';
+        mainContent.appendChild(panel);
+        console.log(`[setStage] Created panel ${panelId} in mainContent`);
+      } else if (panel && mainContent) {
         console.log(`[setStage] Appending panel ${panelId} to mainContent`);
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
@@ -308,6 +319,7 @@ async function setStage(index, options = {}) {
       } else {
         console.warn(`[setStage] Could not append panel - panel:`, !!panel, 'root:', !!root, 'mainContent:', !!mainContent);
       }
+      
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       // Use requestAnimationFrame to ensure DOM has updated before loading component
       await new Promise(resolve => requestAnimationFrame(resolve));
@@ -315,19 +327,21 @@ async function setStage(index, options = {}) {
       
       // Ensure the placeholder exists before loading component
       const placeholderId = `stage-${managerState.current}-placeholder`;
-      const placeholder = document.getElementById(placeholderId);
-      if (!placeholder) {
+      let placeholder = document.getElementById(placeholderId);
+      if (!placeholder && panel) {
         console.log(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
         panel.innerHTML = `<div id="${placeholderId}"></div>`;
+        placeholder = document.getElementById(placeholderId);
       }
       
       // If the placeholder is empty, load the component
-      const targetPh = document.getElementById(placeholderId);
-      if (targetPh && targetPh.innerHTML.trim() === '') {
+      if (placeholder && placeholder.innerHTML.trim() === '') {
         console.log(`[setStage] Placeholder ${placeholderId} is empty, loading component`);
         await loadComponent(placeholderId, componentPath);
-      } else {
+      } else if (placeholder) {
         console.log(`[setStage] Placeholder ${placeholderId} already has content, skipping loadComponent`);
+      } else {
+        console.warn(`[setStage] Could not find or create placeholder ${placeholderId}`);
       }
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {
