@@ -483,7 +483,7 @@ async function setStage(index, options = {}) {
   
   // After entering a stage, check if pre-selected options make it complete
   // This ensures stages with defaults (like Finish) are properly marked as complete
-  setTimeout(() => {
+  // setTimeout(() => { // REMOVED: This causes infinite loop when combined with setStage calls
     try {
       if (managerState.current === 2) {
         // Materials stage: check if both material and color are selected
@@ -522,7 +522,7 @@ async function setStage(index, options = {}) {
     } catch (e) {
       console.warn('Failed to check stage completion after entering stage:', e);
     }
-  }, 150);
+  // }, 150);
 }
 
 function nextStage() {
@@ -660,7 +660,7 @@ export function initStageManager() {
       // Stage 7 (Summary) is terminal; completion not tracked here
       
       // run a UI update to refresh Next/Prev/button states
-      setStage(managerState.current);
+      // setStage(managerState.current); // REMOVED: This causes infinite loop when triggered by state changes
     } catch (e) {
       console.warn('Error in option-selected handler:', e);
     }
