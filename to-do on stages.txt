@@ -1,6 +1,6 @@
 Change designs to become configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles live in a "build your own" section that uses the existing one-stage-at-a-time approach.
 
-
+remove all redundant stage headers/descriptions
 
 
 Get picture of wood for custom choice

@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards } = await import('./stageRenderer.js');
+    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
@@ -439,5 +439,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 15:12');
+  console.log('Last updated: 2025-12-23 15:23');
 });
