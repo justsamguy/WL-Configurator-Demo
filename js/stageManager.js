@@ -309,7 +309,15 @@ async function setStage(index, options = {}) {
       // Use requestAnimationFrame to ensure DOM has updated before loading component
       await new Promise(resolve => requestAnimationFrame(resolve));
       console.log(`[setStage] Loading component for stage ${managerState.current}`);
-      await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
+      
+      // Ensure the placeholder exists before loading component
+      const placeholderId = `stage-${managerState.current}-placeholder`;
+      if (!document.getElementById(placeholderId)) {
+        console.log(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
+        panel.innerHTML = `<div id="${placeholderId}"></div>`;
+      }
+      
+      await loadComponent(placeholderId, componentPath);
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {
         try {
@@ -336,7 +344,11 @@ async function setStage(index, options = {}) {
       for (let i = 0; i <= 1; i++) {
         const panelId = `stage-panel-${i}`;
         const ph = document.getElementById(`stage-${i}-placeholder`);
-        if (ph) ph.innerHTML = '';
+        // Do NOT clear innerHTML here if we are just switching between stage 0 and 1,
+        // as they share the same component and clearing it might cause flicker or issues
+        // if the DOM hasn't fully updated.
+        // However, when exiting to stage 2+, we should clean up.
+        if (ph && managerState.current > 1) ph.innerHTML = '';
         
         // If we previously moved stage panel out of the sidebar, put it back
         let panel = document.getElementById(panelId);
