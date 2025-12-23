@@ -100,7 +100,7 @@ document.addEventListener('option-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
-    
+
     // Update legs and tube size options based on the selected model
     try {
       const allLegs = window._allLegsData || [];
@@ -111,7 +111,26 @@ document.addEventListener('option-selected', async (ev) => {
     } catch (e) {
       console.warn('Failed to update legs options:', e);
     }
-    
+
+    // Re-render designs filtered by the newly selected model
+    try {
+      const designsSection = document.getElementById('designs-stage-section');
+      if (designsSection) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderOptionCards } = await import('./stageRenderer.js');
+        const designs = await loadData('data/designs.json');
+        if (designs) {
+          const designGrids = designsSection.querySelectorAll('.model-row-grid');
+          if (designGrids && designGrids.length) {
+            const filteredDesigns = filterDesignsByModel(designs, id);
+            renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to re-render designs after model change:', e);
+    }
+
     // If user selected a model from a stage other than 0 (Models), navigate back to Models stage
     try {
       const stageManager = window.stageManager;
@@ -297,20 +316,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
-    // Render designs stage from data/designs.json
-    // Try to find design grids in the designs section (supports multiple rows)
-    const designsSection = document.getElementById('designs-stage-section');
-    if (designsSection) {
-      const designs = await loadData('data/designs.json');
-      if (designs) {
-        // Clear existing design option cards and render from data
-        const designGrids = designsSection.querySelectorAll('.model-row-grid');
-        if (designGrids && designGrids.length) {
-          // For now, render all designs into the first grid; can be enhanced to filter by model
-          renderOptionCards(designGrids[0], designs, { category: null });
-        }
-      }
+// Helper function to filter designs by model compatibility
+function filterDesignsByModel(designs, modelId) {
+  if (!modelId) return designs; // Show all designs if no model selected
+
+  return designs.filter(design => {
+    // Check if this design has pricing for the selected model
+    return design.prices && design.prices[modelId];
+  });
+}
+
+// Render designs stage from data/designs.json
+// Try to find design grids in the designs section (supports multiple rows)
+const designsSection = document.getElementById('designs-stage-section');
+if (designsSection) {
+  const designs = await loadData('data/designs.json');
+  if (designs) {
+    // Clear existing design option cards and render from data
+    const designGrids = designsSection.querySelectorAll('.model-row-grid');
+    if (designGrids && designGrids.length) {
+      // Filter designs based on currently selected model
+      const currentModel = state.selections && state.selections.model;
+      const filteredDesigns = filterDesignsByModel(designs, currentModel);
+      renderOptionCards(designGrids[0], filteredDesigns, { category: null });
     }
+  }
+}
 
     // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
@@ -397,5 +428,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 14:15');
+  console.log('Last updated: 2025-12-23 14:31');
 });

@@ -1,18 +1,14 @@
 Change designs to become presets of the selected model, so the user can navigate all customization stages with pre-selected options ready to customize - include a "start from scratch" option that uses the traditional one-stage-at-a-time approach
 
-set the conditional visibility of model-specific designs
-set the conditional visibility of dimension options
-
 
 Get picture of wood for custom choice
 get color examples of all colors (even if not material)
 Get examples of all designs and tube sizes
-Brainstorm list of addons
 
+Brainstorm list of addons
+make addons a scrollable list-style of full-width dropdown tiles that then reveal options within
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
-
 rebuild entire app to use react code
 
-make addons a scrollable list-style of full-width dropdown tiles that then reveal options within
