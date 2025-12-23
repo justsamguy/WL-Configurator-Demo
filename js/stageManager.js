@@ -351,6 +351,8 @@ async function setStage(index, options = {}) {
             modelsStageModule.restoreFromState && modelsStageModule.restoreFromState(appState);
           } else if (managerState.current === 1) {
             // Re-render designs filtered by selected model
+            // Design filtering is data-driven: designs are shown based on their "prices" object in data/designs.json
+            // If a design has a price for the selected model ID, it will be displayed
             try {
               const designsSection = document.getElementById('designs-stage-section');
               if (designsSection) {
@@ -364,6 +366,7 @@ async function setStage(index, options = {}) {
                     const selectedModel = appState.selections && appState.selections.model;
                     const filteredDesigns = designs.filter(design => {
                       if (!selectedModel) return true;
+                      // Design is available if it has pricing for this model
                       return design.prices && design.prices[selectedModel];
                     });
                     renderOptionCards(designGrids[0], filteredDesigns, { category: null });

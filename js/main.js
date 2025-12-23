@@ -8,7 +8,31 @@ import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // I
 import { state, setState } from './state.js';
 import { computePrice } from './pricing.js';
 
-// Helper function to filter designs by model compatibility
+/**
+ * Filter designs by model compatibility
+ * 
+ * This function determines which designs are available for a given model by checking
+ * the "prices" object in each design's data (from data/designs.json).
+ * 
+ * Design Availability Rules:
+ * - A design is available for a model if it has a price entry for that model's ID
+ * - Example: { "prices": { "mdl-coffee": 10800, "mdl-dining": 13200 } }
+ *   This design is available for Coffee and Dining tables, but NOT Conference tables
+ * 
+ * To Configure Design Availability:
+ * 1. Open data/designs.json
+ * 2. For each design, add/remove model IDs in the "prices" object
+ * 3. Model IDs: "mdl-coffee", "mdl-dining", "mdl-conference"
+ * 
+ * Examples:
+ * - Universal design (all models): { "prices": { "mdl-coffee": X, "mdl-dining": Y, "mdl-conference": Z } }
+ * - Exclusive design (one model): { "prices": { "mdl-coffee": X } }
+ * - Partial availability: { "prices": { "mdl-coffee": X, "mdl-dining": Y } }
+ * 
+ * @param {Array} designs - Array of design objects from data/designs.json
+ * @param {string} modelId - The selected model ID (e.g., "mdl-coffee")
+ * @returns {Array} Filtered array of designs compatible with the selected model
+ */
 function filterDesignsByModel(designs, modelId) {
   if (!modelId) return designs; // Show all designs if no model selected
 
@@ -439,5 +463,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 16:06');
+  console.log('Last updated: 2025-12-23 16:32');
 });
