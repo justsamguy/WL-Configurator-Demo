@@ -334,12 +334,13 @@ async function setStage(index, options = {}) {
         placeholder = document.getElementById(placeholderId);
       }
       
-      // If the placeholder is empty, load the component
-      if (placeholder && placeholder.innerHTML.trim() === '') {
-        console.log(`[setStage] Placeholder ${placeholderId} is empty, loading component`);
+      // Ensure the placeholder has the expected component structure (e.g. .model-row-grid)
+      const hasGrid = placeholder && placeholder.querySelector('.model-row-grid');
+      if (placeholder && !hasGrid) {
+        console.log(`[setStage] Placeholder ${placeholderId} missing grid structure, loading component`);
         await loadComponent(placeholderId, componentPath);
       } else if (placeholder) {
-        console.log(`[setStage] Placeholder ${placeholderId} already has content, skipping loadComponent`);
+        console.log(`[setStage] Placeholder ${placeholderId} already has component structure, skipping loadComponent`);
       } else {
         console.warn(`[setStage] Could not find or create placeholder ${placeholderId}`);
       }
