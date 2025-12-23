@@ -6,7 +6,7 @@ alwaysApply: true
 
 - **Development Workflow Process**
   - Edit project files: `index.html`, `css/configurator.css`, `js/main.js`, `js/viewer.js`, `js/app.js`, `js/ui/*.js`, `components/*.html`, `pages/*.html`, and any assets in `assets/`.
-  - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/styles.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
+  - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/configurator.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
   - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
   - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
   - Strictly follow the canonical file/folder layout:
@@ -20,6 +20,7 @@ alwaysApply: true
      - `js/stages/`: Directory for stage-specific logic (e.g., `finish.js`, `materials.js`) so all code affecting a single stage can live next to each other.
     - `components/`: Directory for reusable HTML components (e.g., `Header.html`, `StageBar.html`, `Sidebar.html`, `Footer.html`, `ModelSelection.html`, `ViewerControls.html`).
     - `pages/`: Directory for main application pages (e.g., `MainContent.html`, `Customize.html`, `Summary.html`).
+    - `data/`: Directory for stage data as JSON files (e.g., `models.json`, `materials.json`, `finish.json`).
     - `assets/`: All images, icons, and models (placeholders only).
   - Any changes made to the file structure should be updated here in the clinerules as well.
 
@@ -28,20 +29,16 @@ alwaysApply: true
   - Recommendation: Commit changes and deploy to verify functionality.
   - Next steps: Ensure accessibility, responsiveness, and debug issues as needed.
   - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
+  - Test: Stage, commit, and sync to GitHub. User to provide feedback on live deployment.
 
-- **Build & Deployment**
-  - Run `npm i` to install Tailwind and dev tooling.
-  - `npm run build` compiles Tailwind to `css/configurator.css` (JIT, purge unused) and does **not** minify JS.
-  - Commit the `/` tree to the `gh-pages` branch.
-  - Ensure `.nojekyll` is present and all links are relative.
-  - Verify at `https://<user>.github.io/WoodLab/index.html`.
 
 - **Component & UI Guidelines**
   - UI/UX must match the three-stage wizard, 3D viewer, sidebar, summary/export, and help drawer as described in the guidelines.
   - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
   - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
   - Only `main.js` mutates global state; all UI modules and HTML components observe state and dispatch `Event("statechange")` for updates.
-   - `js/main.js` is the canonical mutator of global state; UI modules and stage modules should prefer dispatching selection events (`option-selected`, `addon-toggled`) and let `js/main.js` update state. Stage helper modules may call `setState` in well-documented cases (e.g., applying sensible defaults), but avoid ad-hoc state mutation across the codebase.
+   - `js/main.js` is the canonical mutator of global state; UI modules and stage modules should prefer dispatching selection events (`option-selected`, `addon-toggled`, `stage-model-selected`, `request-restart`) and let `js/main.js` update state. Stage helper modules may call `setState` in well-documented cases (e.g., applying sensible defaults), but avoid ad-hoc state mutation across the codebase.
+   - Notes on recent conventions: `applyFinishDefaults(appState)` in `js/stages/finish.js` dispatches `option-selected` events for defaults and does NOT call `setState`. The Summary action that resets the configuration dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
   - Implement banners, tooltips, and help drawer per spec (see `/js/ui/banner.js` and related files).
 
 - **Export & Summary**

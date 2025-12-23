@@ -128,7 +128,7 @@ document.addEventListener('option-selected', async (ev) => {
       const designsSection = document.getElementById('designs-stage-section');
       if (designsSection) {
         const { loadData } = await import('./dataLoader.js');
-        const { renderOptionCards } = await import('./stageRenderer.js');
+        const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
         const designs = await loadData('data/designs.json');
         if (designs) {
           const designGrids = designsSection.querySelectorAll('.model-row-grid');
@@ -400,7 +400,7 @@ if (designsSection) {
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
-      if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
+      if (addons) renderAddonsDropdown(addonsRoot, addons);
     }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
@@ -439,5 +439,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 14:56');
+  console.log('Last updated: 2025-12-23 15:12');
 });
