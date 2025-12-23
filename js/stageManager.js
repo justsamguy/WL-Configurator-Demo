@@ -299,8 +299,11 @@ async function setStage(index, options = {}) {
         // Clear any previous inline display style
         panel.style.display = '';
         // Move the panel into the main content area for full-width display
-        mainContent.innerHTML = '';
-        mainContent.appendChild(panel);
+        // IMPORTANT: Do not clear mainContent.innerHTML if the panel is already there
+        if (panel.parentElement !== mainContent) {
+          mainContent.innerHTML = '';
+          mainContent.appendChild(panel);
+        }
         console.log(`[setStage] Panel appended. Parent now:`, panel.parentElement?.id);
       } else {
         console.warn(`[setStage] Could not append panel - panel:`, !!panel, 'root:', !!root, 'mainContent:', !!mainContent);
@@ -312,12 +315,20 @@ async function setStage(index, options = {}) {
       
       // Ensure the placeholder exists before loading component
       const placeholderId = `stage-${managerState.current}-placeholder`;
-      if (!document.getElementById(placeholderId)) {
+      const placeholder = document.getElementById(placeholderId);
+      if (!placeholder) {
         console.log(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
         panel.innerHTML = `<div id="${placeholderId}"></div>`;
       }
       
-      await loadComponent(placeholderId, componentPath);
+      // If the placeholder is empty, load the component
+      const targetPh = document.getElementById(placeholderId);
+      if (targetPh && targetPh.innerHTML.trim() === '') {
+        console.log(`[setStage] Placeholder ${placeholderId} is empty, loading component`);
+        await loadComponent(placeholderId, componentPath);
+      } else {
+        console.log(`[setStage] Placeholder ${placeholderId} already has content, skipping loadComponent`);
+      }
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {
         try {
