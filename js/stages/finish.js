@@ -57,6 +57,7 @@ export function applyFinishDefaults(appState) {
   try {
     const coatingSel = appState.selections.options && appState.selections.options['finish-coating'];
     const sheenSel = appState.selections.options && appState.selections.options['finish-sheen'];
+    const tintSel = appState.selections.options && appState.selections.options['finish-tint'];
     const updates = {};
     if (!coatingSel) {
       updates['finish-coating'] = 'fin-coat-02';
@@ -70,6 +71,12 @@ export function applyFinishDefaults(appState) {
       if (el2) el2.setAttribute('aria-pressed', 'true');
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
     }
+    if (!tintSel) {
+      updates['finish-tint'] = 'fin-tint-01';
+      const el3 = document.querySelector('.option-card[data-id="fin-tint-01"]');
+      if (el3) el3.setAttribute('aria-pressed', 'true');
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-tint-01', price: Number(el3 ? el3.getAttribute('data-price') : 0), category: 'finish-tint' } }));
+    }
     if (Object.keys(updates).length) {
       // Do not mutate app state here. dispatches above will be handled by main.js
       try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
@@ -80,9 +87,9 @@ export function applyFinishDefaults(appState) {
 }
 
 export function init() {
-  // Wire clicks for coatings and sheens to emit option-selected events (placeholders.js handles generic logic too)
+  // Wire clicks for coatings, sheens, and tints to emit option-selected events (placeholders.js handles generic logic too)
   document.addEventListener('click', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.option-card[data-category="finish-coating"], .option-card[data-category="finish-sheen"]');
+    const card = ev.target.closest && ev.target.closest('.option-card[data-category="finish-coating"], .option-card[data-category="finish-sheen"], .option-card[data-category="finish-tint"]');
     if (!card) return;
     if (card.hasAttribute('disabled')) return;
     const category = card.getAttribute('data-category');
@@ -101,7 +108,7 @@ export function init() {
 export function restoreFromState(state) {
   try {
     const opts = state && state.selections && state.selections.options ? state.selections.options : {};
-    ['finish-coating', 'finish-sheen'].forEach(cat => {
+    ['finish-coating', 'finish-sheen', 'finish-tint'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;
       const el = document.querySelector(`.option-card[data-id="${id}"]`);

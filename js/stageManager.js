@@ -563,10 +563,11 @@ export function initStageManager() {
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
         markCompleted(2, !!(hasMaterial && hasColor));
       } else if (managerState.current === 3) {
-        // Finish stage (index 3): require both a coating and a sheen
+        // Finish stage (index 3): require coating, sheen, and tint
         const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
         const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
-        markCompleted(3, !!(hasCoating && hasSheen));
+        const hasTint = !!(appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
+        markCompleted(3, !!(hasCoating && hasSheen && hasTint));
       } else if (managerState.current === 4) {
         // Dimensions stage (index 4): require a preset or custom dimensions selection
         // Check if a preset tile is selected or custom dimensions are provided

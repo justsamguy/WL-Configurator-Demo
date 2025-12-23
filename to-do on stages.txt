@@ -9,9 +9,10 @@ get color examples of all colors (even if not material)
 Get examples of all designs and tube sizes
 Brainstorm list of addons
 
-add tint option to finish: clear, natural, darken
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
 
 rebuild entire app to use react code
+
+make addons a scrollable list-style of full-width dropdown tiles that then reveal options within
