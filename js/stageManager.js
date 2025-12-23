@@ -505,7 +505,7 @@ async function setStage(index, options = {}) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
-        
+
         let isLegStageComplete = false;
         if (hasLegs) {
           if (isNoneLeg) {
@@ -518,8 +518,7 @@ async function setStage(index, options = {}) {
         }
         markCompleted(5, isLegStageComplete);
       }
-      // Update button states after checking completion
-      setStage(managerState.current);
+      // Update button states after checking completion (buttons are updated via markCompleted)
     } catch (e) {
       console.warn('Failed to check stage completion after entering stage:', e);
     }
