@@ -260,6 +260,7 @@ async function setStage(index, options = {}) {
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
+    console.log(`[setStage] Entering stage ${managerState.current} - moving panel to mainContent`);
     // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
@@ -273,19 +274,26 @@ async function setStage(index, options = {}) {
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
       
+      console.log(`[setStage] Looking for panel: ${panelId}`);
+      console.log(`[setStage] Panel found:`, !!panel, panel?.parentElement?.id);
+      
       // If panel is not found, it might still be in mainContent from a previous stage
       // Try to restore any displaced panels first
       if (!panel && root && mainContent) {
+        console.log(`[setStage] Panel not found by ID, searching in mainContent`);
         // Check if any stage-panel is currently in mainContent that shouldn't be
         const displacePanel = mainContent.querySelector('[id^="stage-panel-"]');
         if (displacePanel && displacePanel.id !== panelId) {
+          console.log(`[setStage] Found displaced panel: ${displacePanel.id}, restoring to root`);
           root.appendChild(displacePanel);
         }
         // Now try to find the target panel again
         panel = document.getElementById(panelId);
+        console.log(`[setStage] Panel found after cleanup:`, !!panel);
       }
       
       if (panel && root && mainContent) {
+        console.log(`[setStage] Appending panel ${panelId} to mainContent`);
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
         // Clear any previous inline display style
@@ -293,10 +301,14 @@ async function setStage(index, options = {}) {
         // Move the panel into the main content area for full-width display
         mainContent.innerHTML = '';
         mainContent.appendChild(panel);
+        console.log(`[setStage] Panel appended. Parent now:`, panel.parentElement?.id);
+      } else {
+        console.warn(`[setStage] Could not append panel - panel:`, !!panel, 'root:', !!root, 'mainContent:', !!mainContent);
       }
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       // Use requestAnimationFrame to ensure DOM has updated before loading component
       await new Promise(resolve => requestAnimationFrame(resolve));
+      console.log(`[setStage] Loading component for stage ${managerState.current}`);
       await loadComponent(`stage-${managerState.current}-placeholder`, componentPath);
       // Restore visual selections when entering model/design selection stage
       setTimeout(() => {
@@ -314,6 +326,7 @@ async function setStage(index, options = {}) {
       // ignore load errors
     }
   } else {
+    console.log(`[setStage] Exiting stages 0/1, restoring sidebar (now at stage ${managerState.current})`);
     // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
     if (viewer) viewer.style.display = '';
@@ -330,20 +343,30 @@ async function setStage(index, options = {}) {
         const root = document.getElementById('stage-panels-root');
         const mainContent = document.getElementById('app-main');
         
+        console.log(`[setStage restore] Checking panel ${panelId}: found=`, !!panel, 'parent=', panel?.parentElement?.id);
+        
         // Check both locations for the panel
         if (!panel && mainContent) {
           panel = mainContent.querySelector(`#${panelId}`);
+          console.log(`[setStage restore] Found ${panelId} in mainContent:`, !!panel);
         }
         
         // Restore panel to root if it's not there already
         if (panel && root) {
           if (panel.parentElement !== root) {
+            console.log(`[setStage restore] Restoring ${panelId} from ${panel.parentElement?.id} to root`);
             root.appendChild(panel);
+          } else {
+            console.log(`[setStage restore] ${panelId} already in root`);
           }
           delete panel.dataset.wlOrigParent;
+        } else {
+          console.warn(`[setStage restore] Could not restore ${panelId}: panel=`, !!panel, 'root=', !!root);
         }
       }
-    } catch (e) { /* ignore DOM restoration errors */ }
+    } catch (e) { 
+      console.error('[setStage restore] Error:', e);
+    }
     // Restore UI for non-model stages
     try {
       const s = appState;
