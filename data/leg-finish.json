@@ -1,7 +1,7 @@
 [
   { "id": "leg-finish-01", "title": "Matte Black", "price": 0, "color": "#1a1a1a", "image": "assets/images/Leg styles/Leg Colors/Matte Black.jpg", "description": "Matte black finish" },
   { "id": "leg-finish-02", "title": "Satin Black", "price": 0, "color": "#2a2a2a", "image": "assets/images/Leg styles/Leg Colors/Satin Black.jpg", "description": "Satin black finish" },
-  { "id": "leg-finish-03", "title": "Oil Rubbed Bronze", "price": 0, "color": "#704214", "image": "assets/images/model1_placeholder.png", "description": "Oil rubbed bronze finish" },
+  { "id": "leg-finish-03", "title": "Oil Rubbed Bronze", "price": 0, "color": "#704214", "image": "assets/images/Leg Styles/Leg Colors/Oil Rubbed Bronze.png", "description": "Oil rubbed bronze finish" },
   { "id": "leg-finish-04", "title": "Satin Bronze", "price": 0, "color": "#906b47", "image": "assets/images/model1_placeholder.png", "description": "Satin bronze finish" },
   { "id": "leg-finish-05", "title": "Gunmetal Grey", "price": 0, "color": "#414141", "image": "assets/images/Leg styles/Leg Colors/Gunmetal Grey.jpg", "description": "Gunmetal grey finish" },
   { "id": "leg-finish-06", "title": "Titanium Silver", "price": 0, "color": "#d3d3d3", "image": "assets/images/Leg styles/Leg Colors/Titanium Silver.jpg", "description": "Titanium silver finish" },
