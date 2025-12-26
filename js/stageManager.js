@@ -613,6 +613,18 @@ export function initStageManager() {
       if (category === 'model') {
         const hasModel = !!(appState.selections && appState.selections.model);
         markCompleted(0, !!hasModel);
+        
+        // When model changes, all other selections are cleared by main.js
+        // Reset completion status for all dependent stages (1-5)
+        markCompleted(1, false); // Designs
+        markCompleted(2, false); // Materials
+        markCompleted(3, false); // Finish
+        markCompleted(4, false); // Dimensions
+        markCompleted(5, false); // Legs
+        
+        // Update button states to reflect the reset completion status
+        setStage(managerState.current, { skipConfirm: true });
+        
         // Don't call setStage here; let user click Next or the Designs button to navigate
         return;
       }
@@ -621,6 +633,10 @@ export function initStageManager() {
       if (category === 'design') {
         const hasDesign = !!(appState.selections && appState.selections.design);
         markCompleted(1, !!hasDesign);
+        
+        // Update button states to reflect the new completion status
+        setStage(managerState.current, { skipConfirm: true });
+        
         // Don't call setStage here; let user click Next or the Materials button to navigate
         return;
       }

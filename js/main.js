@@ -463,5 +463,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-23 16:32');
+  console.log('Last updated: 2025-12-25 18:26');
 });
