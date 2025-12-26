@@ -1,5 +1,5 @@
 [
-  {"id": "mdl-coffee", "title": "Coffee Table", "image": "assets/images/Black Walnut Multi-Grey Round Coffee Table.jpg", "description": "Compact, intimate seating solution."},
-  {"id": "mdl-dining", "title": "Dining Table", "image": "assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.JPG", "description": "Spacious, family-friendly."},
+  {"id": "mdl-coffee", "title": "Coffee Table", "image": "assets/images/Walnut Solid White Coffee.jpg", "description": "Compact, intimate seating solution."},
+  {"id": "mdl-dining", "title": "Dining Table", "image": "assets/images/Walnut Multi-Grey Dining Table.jpg", "description": "Spacious, family-friendly."},
   {"id": "mdl-conference", "title": "Conference Table", "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg", "description": "Professional, boardroom style."}
 ]

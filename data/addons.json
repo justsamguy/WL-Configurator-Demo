@@ -11,5 +11,6 @@
   { "title": "Wireless Charging", "options": [{ "id": "addon-wireless-charging", "title": "Wireless Charging", "price": 300 }] },
   { "title": "Ethernet Connectivity", "options": [{ "id": "addon-ethernet", "title": "Ethernet Connectivity", "price": 100 }] },
   { "title": "Innerlighting", "options": [{ "id": "addon-lighting-none", "title": "None", "price": 0 }, { "id": "addon-lighting-white", "title": "White-tunable", "price": 400 }, { "id": "addon-lighting-color-basic", "title": "Color Basic", "price": 500 }, { "id": "addon-lighting-color-fx", "title": "Color +FX", "price": 600 }, { "id": "addon-lighting-custom", "title": "Custom Lighting", "price": 800 }] },
-  { "title": "Custom Tech", "options": [{ "id": "addon-custom-tech", "title": "Custom Tech (Quoted Separately)", "price": 0 }] }
+  { "title": "Custom Tech", "options": [{ "id": "addon-custom-tech", "title": "Custom Tech (Quoted Separately)", "price": 0 }] },
+  { "title": "Rounded Corners", "options": [{ "id": "addon-rounded-corners", "title": "Rounded Corners", "price": 150 }] }
 ]

@@ -1,4 +1,4 @@
-Get picture of wood for custom choice
+Add cookie design to dining and coffee, use the cookie dining table photo
 Change finish sheen to a 3-point slider from "less shiny" to "more shiny" and remove the logic restricting the sheen depednging on the coating.
 Get examples of tube sizes (maybe also a 3-point slider with a simple preview)
 Add "tripod" base option that only shows when a round design is selected
@@ -8,6 +8,6 @@ Change designs to become configured presets, so the user can navigate all custom
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
-rebuild entire app to use react code
-
 add the browser warning to save progress
+
+rebuild entire app to use react code

@@ -2384,7 +2384,7 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .addons-dropdown-tile.expanded .addons-dropdown-content {
-  max-height: 200px;
+  max-height: 400px;
 }
 
 .addons-dropdown-options {
@@ -2392,16 +2392,21 @@ body.stage-1 #designs-stage-section > div {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  overflow-y: auto;
+  max-height: 300px;
 }
 
 .addons-dropdown-option {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border-radius: 0.375rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid #e5e7eb;
 }
 
 .addons-dropdown-option:hover {
