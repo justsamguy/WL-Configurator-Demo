@@ -509,8 +509,8 @@ function initHeightButtons() {
   
   // Height options: standard, bar, custom
   const heights = [
-    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0 },
-    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120 },
+    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0, image: 'assets/images/Generated Sitting Height.png' },
+    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120, image: 'assets/images/Generated Standing Height.png' },
     { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250 }
   ];
   
@@ -523,6 +523,7 @@ function initHeightButtons() {
     button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
     button.innerHTML = `
+      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
       <div class="title">${height.title} ${height.subtitle}</div>
       <div class="description">+$${height.price}</div>
     `;
