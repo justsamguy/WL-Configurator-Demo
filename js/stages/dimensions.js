@@ -12,6 +12,7 @@ let currentDimensions = {
   heightCustom: null
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
+let lastKnownModel = null; // Track the model to detect changes
 
 
 
@@ -28,9 +29,48 @@ async function loadDimensionsData() {
   }
 }
 
+// Reset dimensions to default state
+function resetDimensions() {
+  currentDimensions = {
+    length: null,
+    width: null,
+    height: 'standard',
+    heightCustom: null
+  };
+  selectedTileId = null;
+  
+  // Clear UI selections
+  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+  
+  // Clear validation messages and banners
+  const bannersContainer = document.getElementById('dimensions-banners');
+  if (bannersContainer) bannersContainer.innerHTML = '';
+  
+  document.querySelectorAll('.control-validation').forEach(el => el.textContent = '');
+  
+  // Reset input fields
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const heightCustomInput = document.getElementById('dim-height-custom-input');
+  if (lengthInput) lengthInput.value = '';
+  if (widthInput) widthInput.value = '';
+  if (heightCustomInput) heightCustomInput.value = '';
+  
+  console.log('[Dimensions] Reset dimensions state');
+}
+
 // Initialize current dimensions from preset if available
 function initializeFromState(appState) {
   try {
+    // Check if model has changed since last initialization
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Dimensions] Model changed from', lastKnownModel, 'to', currentModel, '- resetting dimensions');
+      resetDimensions();
+      lastKnownModel = currentModel;
+      return; // Don't restore old dimensions when model changes
+    }
+    
     const dimSel = appState && appState.selections && appState.selections.options && appState.selections.options.dimensions;
     if (dimSel && dimensionsData) {
       // dimSel is expected to be a preset ID or custom object
@@ -57,9 +97,38 @@ function initializeFromState(appState) {
   }
 }
 
-// Get constraints from data
+// Get model-specific constraints based on selected model
 function getConstraints() {
   if (!dimensionsData) return null;
+  
+  // Get the currently selected model from state
+  const selectedModel = state && state.selections && state.selections.model;
+  
+  // Define model-specific constraints
+  const modelConstraints = {
+    'mdl-coffee': {
+      length: { min: 48, max: 100, step: 12, unit: "in" },
+      width: { min: 20, max: 48, step: 6, unit: "in" },
+      height: { min: 14, max: 22, standard: 18, bar: 20, unit: "in" }
+    },
+    'mdl-dining': {
+      length: { min: 72, max: 144, step: 12, unit: "in" },
+      width: { min: 30, max: 70, step: 6, unit: "in" },
+      height: { min: 26, max: 46, standard: 30, bar: 42, unit: "in" }
+    },
+    'mdl-conference': {
+      length: { min: 72, max: 200, step: 12, unit: "in" },
+      width: { min: 42, max: 75, step: 6, unit: "in" },
+      height: { min: 26, max: 42, standard: 30, bar: 36, unit: "in" }
+    }
+  };
+  
+  // Return model-specific constraints if model is selected, otherwise use default
+  if (selectedModel && modelConstraints[selectedModel]) {
+    return modelConstraints[selectedModel];
+  }
+  
+  // Fallback to default constraints from data
   return dimensionsData.constraints;
 }
 
@@ -248,6 +317,19 @@ function dispatchDimensionSelection() {
   }
 }
 
+// Filter presets based on model-specific constraints
+function filterPresetsByModel(presets) {
+  const constraints = getConstraints();
+  if (!constraints) return presets;
+  
+  return presets.filter(preset => {
+    // Check if preset dimensions are within model constraints
+    const lengthValid = preset.length >= constraints.length.min && preset.length <= constraints.length.max;
+    const widthValid = preset.width >= constraints.width.min && preset.width <= constraints.width.max;
+    return lengthValid && widthValid;
+  });
+}
+
 // Wire up preset selection
 function initPresets() {
   const presetsContainer = document.getElementById('dimensions-presets');
@@ -255,8 +337,11 @@ function initPresets() {
   
   presetsContainer.innerHTML = '';
   
-  // Add preset tiles
-  dimensionsData.presets.forEach(preset => {
+  // Filter presets based on selected model constraints
+  const filteredPresets = filterPresetsByModel(dimensionsData.presets);
+  
+  // Add preset tiles (only those valid for the selected model)
+  filteredPresets.forEach(preset => {
     const tile = document.createElement('button');
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
@@ -558,6 +643,16 @@ export async function init() {
 // Restore state when dimensions stage becomes active
 export function restoreFromState(appState) {
   try {
+    // Check if model has changed and reset if needed
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Dimensions] Model changed in restoreFromState - resetting');
+      resetDimensions();
+      lastKnownModel = currentModel;
+      // Re-initialize presets for the new model
+      initPresets();
+    }
+    
     initializeFromState(appState);
     updateUIControls();
   } catch (e) {

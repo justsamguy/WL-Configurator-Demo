@@ -1,7 +1,6 @@
 <div class="flex flex-col gap-6 px-8 py-8">
   <!-- Models Stage Section -->
   <div id="models-stage-section">
-    <h2 class="text-lg font-semibold mb-4">Select Your Model</h2>
     <div class="model-row-grid">
       <button class="option-card" data-id="mdl-coffee" aria-pressed="false">
         <img src="assets/images/model1_placeholder.png" alt="Coffee Table placeholder" class="viewer-placeholder-img" />
@@ -22,63 +21,14 @@
   </div>
 
   <!-- Designs Stage Section -->
+  <!-- Note: Design options are dynamically rendered from data/designs.json and filtered based on selected model.
+       Each design's availability is determined by the "prices" object - if a design has pricing for a specific
+       model ID (e.g., "mdl-coffee", "mdl-dining", "mdl-conference"), it will be shown for that model.
+       To add a new design: add it to data/designs.json with appropriate pricing for each compatible model.
+       To make a design exclusive to one model: only include that model's ID in the prices object. -->
   <div id="designs-stage-section">
-    <h2 class="text-lg font-semibold mb-4">Select Your Design</h2>
-    
-    <!-- River Design -->
-    <div class="model-row">
-      <h3 class="text-md font-medium mb-3 text-gray-700">Classic Designs</h3>
-      <div class="model-row-grid">
-        <button class="option-card" data-id="des-river" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="River design" class="viewer-placeholder-img" />
-          <div class="title">River</div>
-          <div class="description">Flowing edge design</div>
-        </button>
-        <button class="option-card" data-id="des-slab" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Slab design" class="viewer-placeholder-img" />
-          <div class="title">Slab</div>
-          <div class="description">Clean, minimalist</div>
-        </button>
-        <button class="option-card" data-id="des-encasement" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Encasement design" class="viewer-placeholder-img" />
-          <div class="title">Encasement</div>
-          <div class="description">Structured edges</div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Custom & Exclusive Designs -->
-    <div class="model-row">
-      <h3 class="text-md font-medium mb-3 text-gray-700">Premium Options</h3>
-      <div class="model-row-grid">
-        <button class="option-card" data-id="des-custom" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Custom design" class="viewer-placeholder-img" />
-          <div class="title">Custom</div>
-          <div class="description">Bespoke design</div>
-        </button>
-        <button class="option-card" data-id="des-keystone" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Keystone design" class="viewer-placeholder-img" />
-          <div class="title">Keystone</div>
-          <div class="description">Conference exclusive</div>
-        </button>
-        <button class="option-card" data-id="des-signature" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Signature design" class="viewer-placeholder-img" />
-          <div class="title">Signature</div>
-          <div class="description">Coffee exclusive</div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Round Design -->
-    <div class="model-row">
-      <h3 class="text-md font-medium mb-3 text-gray-700">Special Shapes</h3>
-      <div class="model-row-grid">
-        <button class="option-card" data-id="des-round" aria-pressed="false">
-          <img src="assets/images/model1_placeholder.png" alt="Round design" class="viewer-placeholder-img" />
-          <div class="title">Round</div>
-          <div class="description">Circular option</div>
-        </button>
-      </div>
+    <div class="model-row-grid">
+      <!-- Design cards will be dynamically rendered here based on selected model -->
     </div>
   </div>
 </div>

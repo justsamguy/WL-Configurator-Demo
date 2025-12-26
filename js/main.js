@@ -7,6 +7,40 @@ import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
 import { computePrice } from './pricing.js';
+
+/**
+ * Filter designs by model compatibility
+ * 
+ * This function determines which designs are available for a given model by checking
+ * the "prices" object in each design's data (from data/designs.json).
+ * 
+ * Design Availability Rules:
+ * - A design is available for a model if it has a price entry for that model's ID
+ * - Example: { "prices": { "mdl-coffee": 10800, "mdl-dining": 13200 } }
+ *   This design is available for Coffee and Dining tables, but NOT Conference tables
+ * 
+ * To Configure Design Availability:
+ * 1. Open data/designs.json
+ * 2. For each design, add/remove model IDs in the "prices" object
+ * 3. Model IDs: "mdl-coffee", "mdl-dining", "mdl-conference"
+ * 
+ * Examples:
+ * - Universal design (all models): { "prices": { "mdl-coffee": X, "mdl-dining": Y, "mdl-conference": Z } }
+ * - Exclusive design (one model): { "prices": { "mdl-coffee": X } }
+ * - Partial availability: { "prices": { "mdl-coffee": X, "mdl-dining": Y } }
+ * 
+ * @param {Array} designs - Array of design objects from data/designs.json
+ * @param {string} modelId - The selected model ID (e.g., "mdl-coffee")
+ * @returns {Array} Filtered array of designs compatible with the selected model
+ */
+function filterDesignsByModel(designs, modelId) {
+  if (!modelId) return designs; // Show all designs if no model selected
+
+  return designs.filter(design => {
+    // Check if this design has pricing for the selected model
+    return design.prices && design.prices[modelId];
+  });
+}
 import { populateSummaryPanel } from './stages/summary.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
 import { recomputeTubeSizeConstraints } from './stages/legs.js';
@@ -94,13 +128,27 @@ document.addEventListener('option-selected', async (ev) => {
   
   // Handle model selection (category: 'model')
   if (category === 'model') {
-    // When model changes, clear design selection
-    setState({ selections: { ...state.selections, model: id, design: null }, pricing: { ...state.pricing, base: 0 } });
+    // When model changes, clear ALL selections (design and all options)
+    setState({ 
+      selections: { 
+        model: id, 
+        design: null, 
+        options: {} 
+      }, 
+      pricing: { base: 0, extras: 0, total: 0 } 
+    });
+    
+    // Clear visual state for design tiles
+    document.querySelectorAll('.option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    
+    // Clear visual state for all option cards to reset UI
+    document.querySelectorAll('.option-card[data-category]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
-    
+
     // Update legs and tube size options based on the selected model
     try {
       const allLegs = window._allLegsData || [];
@@ -110,6 +158,36 @@ document.addEventListener('option-selected', async (ev) => {
       }
     } catch (e) {
       console.warn('Failed to update legs options:', e);
+    }
+
+    // Re-render designs filtered by the newly selected model
+    try {
+      const designsSection = document.getElementById('designs-stage-section');
+      if (designsSection) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
+        const designs = await loadData('data/designs.json');
+        if (designs) {
+          const designGrids = designsSection.querySelectorAll('.model-row-grid');
+          if (designGrids && designGrids.length) {
+            const filteredDesigns = filterDesignsByModel(designs, id);
+            renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to re-render designs after model change:', e);
+    }
+
+    // If user selected a model from a stage other than 0 (Models), navigate back to Models stage
+    try {
+      const stageManager = window.stageManager;
+      if (stageManager && stageManager.getCurrentStage && stageManager.getCurrentStage() > 0) {
+        console.log('[Main] Model selected from stage', stageManager.getCurrentStage(), '- navigating to stage 0');
+        await stageManager.setStage(0, { skipConfirm: true });
+      }
+    } catch (e) {
+      console.warn('Failed to navigate back to Models stage:', e);
     }
   }
   // Handle design selection (category: 'design')
@@ -261,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards } = await import('./stageRenderer.js');
+    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
@@ -270,8 +348,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (modelGrids && modelGrids.length && models) {
         // distribute models across the first grid for simplicity
         renderOptionCards(modelGrids[0], models, { category: null });
-      } else if (modelsRoot && models) {
-        renderOptionCards(modelsRoot, models, { category: null });
       }
     }
 
@@ -288,29 +364,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
-    // Render designs stage from data/designs.json
-    // Try to find design grids in the designs section (supports multiple rows)
-    const designsSection = document.getElementById('designs-stage-section');
-    if (designsSection) {
-      const designs = await loadData('data/designs.json');
-      if (designs) {
-        // Clear existing design option cards and render from data
-        const designGrids = designsSection.querySelectorAll('.model-row-grid');
-        if (designGrids && designGrids.length) {
-          // For now, render all designs into the first grid; can be enhanced to filter by model
-          renderOptionCards(designGrids[0], designs, { category: null });
-        }
-      }
+// Render designs stage from data/designs.json
+// Try to find design grids in the designs section (supports multiple rows)
+const designsSection = document.getElementById('designs-stage-section');
+if (designsSection) {
+  const designs = await loadData('data/designs.json');
+  if (designs) {
+    // Clear existing design option cards and render from data
+    const designGrids = designsSection.querySelectorAll('.model-row-grid');
+    if (designGrids && designGrids.length) {
+      // Filter designs based on currently selected model
+      const currentModel = state.selections && state.selections.model;
+      const filteredDesigns = filterDesignsByModel(designs, currentModel);
+      renderOptionCards(designGrids[0], filteredDesigns, { category: null });
     }
+  }
+}
 
-    // Render finish stage (coatings + sheens)
+    // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
     const finishSheenRoot = document.getElementById('finish-sheen-options');
-    if (finishCoatingRoot || finishSheenRoot) {
+    const finishTintRoot = document.getElementById('finish-tint-options');
+    if (finishCoatingRoot || finishSheenRoot || finishTintRoot) {
   const finish = await loadData('data/finish.json');
       if (finish) {
         if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
         if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
+        if (finish.tints && finishTintRoot) renderOptionCards(finishTintRoot, finish.tints, { category: 'finish-tint' });
       }
     }
 
@@ -347,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
-      if (addons) renderOptionCards(addonsRoot, addons, { category: 'addon', multi: true });
+      if (addons) renderAddonsDropdown(addonsRoot, addons);
     }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
@@ -386,5 +466,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-08 23:50');
+  console.log('Last updated: 2025-12-25 18:41');
 });

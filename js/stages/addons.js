@@ -1,30 +1,23 @@
 // Addons stage module
 // Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
+// Updated to handle dropdown tiles with checkboxes instead of option cards
 export function init() {
-  document.addEventListener('click', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.option-card[data-category="addon"]');
-    if (!card) return;
-    if (card.hasAttribute('disabled')) return;
-    const id = card.getAttribute('data-id');
-    const price = Number(card.getAttribute('data-price')) || 0;
-    // toggle checked state
-    const was = card.getAttribute('aria-checked') === 'true';
-    const now = !was;
-    card.setAttribute('aria-checked', now ? 'true' : 'false');
-    card.classList.toggle('selected', now);
-    document.dispatchEvent(new CustomEvent('addon-toggled', { detail: { id, price, checked: now } }));
-  });
+  // No need for click handlers here since the dropdown rendering handles checkbox events
+  // The renderAddonsDropdown function in stageRenderer.js handles the checkbox change events
 }
 
 export function restoreFromState(state) {
   try {
     const arr = state && state.selections && state.selections.options && Array.isArray(state.selections.options.addon) ? state.selections.options.addon : [];
-    document.querySelectorAll('.option-card[data-category="addon"]').forEach(c => {
-      const id = c.getAttribute('data-id');
+    document.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
+      const id = checkbox.getAttribute('data-addon-id');
       const checked = arr.includes(id);
-      c.setAttribute('aria-checked', checked ? 'true' : 'false');
-      c.setAttribute('aria-pressed', checked ? 'true' : 'false');
-      c.classList.toggle('selected', checked);
+      checkbox.checked = checked;
+      // Update the option styling
+      const option = checkbox.closest('.addons-dropdown-option');
+      if (option) {
+        option.classList.toggle('selected', checked);
+      }
     });
   } catch (e) { /* ignore */ }
 }

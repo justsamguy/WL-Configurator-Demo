@@ -4,6 +4,8 @@
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
 import { state } from '../state.js';
 
+let lastKnownModel = null; // Track the model to detect changes
+
 export function init() {
   console.log('[Legs] init() STARTED');
   console.log('[Legs] Module-level state at init time:', { ...state });
@@ -142,10 +144,24 @@ export function recomputeTubeSizeConstraints(appState) {
   }
 }
 
-export function restoreFromState(state) {
+export function restoreFromState(appState) {
   try {
-    console.log('[Legs] restoreFromState called with state.selections:', state.selections);
-    const legId = state && state.selections && state.selections.options && state.selections.options.legs;
+    console.log('[Legs] restoreFromState called with state.selections:', appState.selections);
+    
+    // Check if model has changed and clear disabled states if needed
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Legs] Model changed from', lastKnownModel, 'to', currentModel, '- clearing constraints');
+      // Clear all disabled states and tooltips when model changes
+      document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
+        el.removeAttribute('data-disabled-by');
+        el.removeAttribute('data-tooltip');
+        el.removeAttribute('disabled');
+      });
+      lastKnownModel = currentModel;
+    }
+    
+    const legId = appState && appState.selections && appState.selections.options && appState.selections.options.legs;
     if (legId) {
       const el = document.querySelector(`.option-card[data-id="${legId}"]`);
       if (el) {
@@ -156,7 +172,7 @@ export function restoreFromState(state) {
       }
     }
 
-    const tubeSizeId = state && state.selections && state.selections.options && state.selections.options['tube-size'];
+    const tubeSizeId = appState && appState.selections && appState.selections.options && appState.selections.options['tube-size'];
     if (tubeSizeId) {
       const el = document.querySelector(`.option-card[data-id="${tubeSizeId}"]`);
       if (el) {
@@ -165,7 +181,7 @@ export function restoreFromState(state) {
       }
     }
 
-    const legFinishId = state && state.selections && state.selections.options && state.selections.options['leg-finish'];
+    const legFinishId = appState && appState.selections && appState.selections.options && appState.selections.options['leg-finish'];
     if (legFinishId) {
       const el = document.querySelector(`.option-card[data-id="${legFinishId}"]`);
       if (el) {
@@ -175,7 +191,7 @@ export function restoreFromState(state) {
     }
 
     // Recompute constraints after restoring
-    recomputeTubeSizeConstraints(state);
+    recomputeTubeSizeConstraints(appState);
   } catch (e) { /* ignore */ }
 }
 
