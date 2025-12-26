@@ -1,12 +1,11 @@
 Live Edge
-Waterfall Edge
-Second Waterfall Edge
+Waterfall Edge: Single waterfall, Second Waterfall
 Glass Top
 Embedded Logo
 Custom River Design
 
 
-Tech reveals a section below add-ons:
+Tech reveals these options:
 Power Strips: None, AC, AC+USB, AC+USB+USB-C
 Wireless Charging
 Ethernet Connectivity

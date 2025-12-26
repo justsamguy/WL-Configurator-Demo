@@ -107,8 +107,15 @@ export async function computePrice(state) {
       addons.forEach(id => {
         let p = 0;
         if (addonsData && Array.isArray(addonsData)) {
-          const a = addonsData.find(x => x.id === id);
-          if (a) p = Number(a.price || 0);
+          for (const group of addonsData) {
+            if (group.options) {
+              const option = group.options.find(o => o.id === id);
+              if (option) {
+                p = Number(option.price || 0);
+                break;
+              }
+            }
+          }
         }
         if (!p) {
           const el = document.querySelector(`.option-card[data-id="${id}"]`);

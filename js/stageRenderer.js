@@ -56,10 +56,10 @@ export function renderAddonsDropdown(container, data = []) {
   if (!container) return;
   container.innerHTML = '';
 
-  data.forEach(item => {
+  data.forEach(group => {
     const tile = document.createElement('div');
     tile.className = 'addons-dropdown-tile';
-    tile.setAttribute('data-id', item.id);
+    tile.setAttribute('data-id', group.title);
 
     // Header (clickable to expand/collapse)
     const header = document.createElement('button');
@@ -71,11 +71,15 @@ export function renderAddonsDropdown(container, data = []) {
 
     const title = document.createElement('div');
     title.className = 'addons-dropdown-title';
-    title.textContent = item.title || item.id;
+    title.textContent = group.title;
 
     const price = document.createElement('div');
     price.className = 'addons-dropdown-price';
-    price.textContent = item.price ? `+$${item.price}` : '+$0';
+    if (group.options && group.options.length === 1) {
+      price.textContent = group.options[0].price ? `+$${group.options[0].price}` : '+$0';
+    } else {
+      price.textContent = '';
+    }
 
     titlePrice.appendChild(title);
     titlePrice.appendChild(price);
@@ -98,64 +102,75 @@ export function renderAddonsDropdown(container, data = []) {
     const options = document.createElement('div');
     options.className = 'addons-dropdown-options';
 
-    // Single option for this addon
-    const option = document.createElement('div');
-    option.className = 'addons-dropdown-option';
-    option.setAttribute('data-addon-id', item.id);
+    // Options for this group
+    if (group.options) {
+      group.options.forEach(option => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'addons-dropdown-option';
+        optionDiv.setAttribute('data-addon-id', option.id);
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'addons-dropdown-option-checkbox';
-    checkbox.setAttribute('data-addon-id', item.id);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'addons-dropdown-option-checkbox';
+        checkbox.setAttribute('data-addon-id', option.id);
 
-    const label = document.createElement('div');
-    label.className = 'addons-dropdown-option-label';
-    label.textContent = item.title || item.id;
+        const label = document.createElement('div');
+        label.className = 'addons-dropdown-option-label';
+        label.textContent = option.title;
 
-    const optionPrice = document.createElement('div');
-    optionPrice.className = 'addons-dropdown-option-price';
-    optionPrice.textContent = item.price ? `+$${item.price}` : '+$0';
+        const optionPrice = document.createElement('div');
+        optionPrice.className = 'addons-dropdown-option-price';
+        optionPrice.textContent = option.price ? `+$${option.price}` : '+$0';
 
-    option.appendChild(checkbox);
-    option.appendChild(label);
-    option.appendChild(optionPrice);
+        optionDiv.appendChild(checkbox);
+        optionDiv.appendChild(label);
+        optionDiv.appendChild(optionPrice);
 
-    options.appendChild(option);
+        options.appendChild(optionDiv);
+      });
+    }
 
     // Description if available
-    if (item.description) {
+    if (group.description) {
       const desc = document.createElement('div');
       desc.className = 'addons-dropdown-description';
-      desc.textContent = item.description;
+      desc.textContent = group.description;
       content.appendChild(desc);
     }
 
     content.appendChild(options);
 
     // Handle disabled state
-    if (item.disabled) {
+    if (group.disabled) {
       tile.setAttribute('disabled', 'true');
       header.setAttribute('disabled', 'true');
-      checkbox.setAttribute('disabled', 'true');
-      if (item.tooltip) {
-        tile.setAttribute('data-tooltip', item.tooltip);
+      tile.querySelectorAll('input').forEach(input => input.disabled = true);
+      if (group.tooltip) {
+        tile.setAttribute('data-tooltip', group.tooltip);
       }
     }
 
     // Event listeners
     header.addEventListener('click', () => {
-      if (item.disabled) return;
+      if (group.disabled) return;
       const isExpanded = tile.classList.contains('expanded');
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
     });
 
-    checkbox.addEventListener('change', (e) => {
-      const checked = e.target.checked;
-      option.classList.toggle('selected', checked);
-      document.dispatchEvent(new CustomEvent('addon-toggled', {
-        detail: { id: item.id, price: item.price || 0, checked }
-      }));
+    // Checkbox change events
+    tile.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        const optionDiv = e.target.closest('.addons-dropdown-option');
+        if (optionDiv) optionDiv.classList.toggle('selected', checked);
+        const id = e.target.getAttribute('data-addon-id');
+        const option = group.options.find(o => o.id === id);
+        const price = option ? option.price || 0 : 0;
+        document.dispatchEvent(new CustomEvent('addon-toggled', {
+          detail: { id, price, checked }
+        }));
+      });
     });
 
     tile.appendChild(header);
