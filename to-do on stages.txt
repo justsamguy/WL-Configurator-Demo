@@ -7,3 +7,4 @@ ensure all summary lines are correct and there is a line item for every single t
 create a csv-friendly export option
 rebuild entire app to use react code
 
+add the browser warning to save progress

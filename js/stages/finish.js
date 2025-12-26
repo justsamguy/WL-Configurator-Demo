@@ -1,4 +1,6 @@
 // Finish stage specific logic: constraints and defaults
+let lastKnownModel = null; // Track the model to detect changes
+
 export function recomputeFinishConstraints() {
   try {
     const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
@@ -105,9 +107,25 @@ export function init() {
   });
 }
 
-export function restoreFromState(state) {
+export function restoreFromState(appState) {
   try {
-    const opts = state && state.selections && state.selections.options ? state.selections.options : {};
+    // Check if model has changed and clear disabled states if needed
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Finish] Model changed from', lastKnownModel, 'to', currentModel, '- clearing constraints');
+      // Clear all disabled states and tooltips when model changes
+      ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
+        const el = document.querySelector(`.option-card[data-id="${oid}"]`);
+        if (el) {
+          el.removeAttribute('data-disabled-by');
+          el.removeAttribute('data-tooltip');
+          el.removeAttribute('disabled');
+        }
+      });
+      lastKnownModel = currentModel;
+    }
+    
+    const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
     ['finish-coating', 'finish-sheen', 'finish-tint'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;

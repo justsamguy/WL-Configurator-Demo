@@ -12,6 +12,7 @@ let currentDimensions = {
   heightCustom: null
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
+let lastKnownModel = null; // Track the model to detect changes
 
 
 
@@ -28,9 +29,48 @@ async function loadDimensionsData() {
   }
 }
 
+// Reset dimensions to default state
+function resetDimensions() {
+  currentDimensions = {
+    length: null,
+    width: null,
+    height: 'standard',
+    heightCustom: null
+  };
+  selectedTileId = null;
+  
+  // Clear UI selections
+  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+  
+  // Clear validation messages and banners
+  const bannersContainer = document.getElementById('dimensions-banners');
+  if (bannersContainer) bannersContainer.innerHTML = '';
+  
+  document.querySelectorAll('.control-validation').forEach(el => el.textContent = '');
+  
+  // Reset input fields
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const heightCustomInput = document.getElementById('dim-height-custom-input');
+  if (lengthInput) lengthInput.value = '';
+  if (widthInput) widthInput.value = '';
+  if (heightCustomInput) heightCustomInput.value = '';
+  
+  console.log('[Dimensions] Reset dimensions state');
+}
+
 // Initialize current dimensions from preset if available
 function initializeFromState(appState) {
   try {
+    // Check if model has changed since last initialization
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Dimensions] Model changed from', lastKnownModel, 'to', currentModel, '- resetting dimensions');
+      resetDimensions();
+      lastKnownModel = currentModel;
+      return; // Don't restore old dimensions when model changes
+    }
+    
     const dimSel = appState && appState.selections && appState.selections.options && appState.selections.options.dimensions;
     if (dimSel && dimensionsData) {
       // dimSel is expected to be a preset ID or custom object
@@ -603,6 +643,16 @@ export async function init() {
 // Restore state when dimensions stage becomes active
 export function restoreFromState(appState) {
   try {
+    // Check if model has changed and reset if needed
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Dimensions] Model changed in restoreFromState - resetting');
+      resetDimensions();
+      lastKnownModel = currentModel;
+      // Re-initialize presets for the new model
+      initPresets();
+    }
+    
     initializeFromState(appState);
     updateUIControls();
   } catch (e) {

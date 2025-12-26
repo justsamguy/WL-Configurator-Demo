@@ -1,4 +1,6 @@
 // Materials stage logic: validation and utilities
+let lastKnownModel = null; // Track the model to detect changes
+
 export function isMaterialsComplete(appState) {
   try {
     const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
@@ -29,9 +31,19 @@ export function init() {
   });
 }
 
-export function restoreFromState(state) {
+export function restoreFromState(appState) {
   try {
-    const opts = state && state.selections && state.selections.options ? state.selections.options : {};
+    // Check if model has changed and clear selections if needed
+    const currentModel = appState && appState.selections && appState.selections.model;
+    if (currentModel !== lastKnownModel) {
+      console.log('[Materials] Model changed from', lastKnownModel, 'to', currentModel, '- clearing visual selections');
+      // Clear visual state for material and color cards when model changes
+      document.querySelectorAll('.option-card[data-category="material"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      document.querySelectorAll('.option-card[data-category="color"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      lastKnownModel = currentModel;
+    }
+    
+    const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
     ['material', 'color'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;

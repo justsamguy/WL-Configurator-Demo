@@ -141,6 +141,9 @@ document.addEventListener('option-selected', async (ev) => {
     // Clear visual state for design tiles
     document.querySelectorAll('.option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
     
+    // Clear visual state for all option cards to reset UI
+    document.querySelectorAll('.option-card[data-category]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 420, (val) => updatePriceUI(val));
@@ -463,5 +466,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-25 18:26');
+  console.log('Last updated: 2025-12-25 18:41');
 });
