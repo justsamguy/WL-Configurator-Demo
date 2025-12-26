@@ -61,36 +61,40 @@ export async function computePrice(state) {
       const id = state.selections && state.selections.options ? state.selections.options[cat.key] : null;
       if (!id) continue;
       let p = 0;
-      try {
-        // map key to data path
-        let path = null;
-        if (cat.key === 'material') path = 'data/materials.json';
-        else if (cat.key === 'color') path = 'data/colors.json';
-        else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen') path = 'data/finish.json';
-        else if (cat.key === 'dimensions') path = 'data/dimensions.json';
-        else if (cat.key === 'legs') path = 'data/legs.json';
-        else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';
-        else if (cat.key === 'leg-finish') path = 'data/leg-finish.json';
+      if (cat.key === 'dimensions') {
+        // For dimensions, use the price stored in state.pricing.dimensions
+        p = (state.pricing && typeof state.pricing.dimensions === 'number') ? state.pricing.dimensions : 0;
+      } else {
+        try {
+          // map key to data path
+          let path = null;
+          if (cat.key === 'material') path = 'data/materials.json';
+          else if (cat.key === 'color') path = 'data/colors.json';
+          else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen') path = 'data/finish.json';
+          else if (cat.key === 'legs') path = 'data/legs.json';
+          else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';
+          else if (cat.key === 'leg-finish') path = 'data/leg-finish.json';
 
-        if (path) {
-          const d = await _loadDataOnce(path);
-          if (d) {
-            if (Array.isArray(d)) {
-              const entry = d.find(x => x.id === id);
-              if (entry) p = Number(entry.price || 0);
-            } else if (typeof d === 'object') {
-              // finish.json has coatings and sheens
-              const entry = (d.coatings || []).concat(d.sheens || []).find(x => x.id === id);
-              if (entry) p = Number(entry.price || 0);
+          if (path) {
+            const d = await _loadDataOnce(path);
+            if (d) {
+              if (Array.isArray(d)) {
+                const entry = d.find(x => x.id === id);
+                if (entry) p = Number(entry.price || 0);
+              } else if (typeof d === 'object') {
+                // finish.json has coatings and sheens
+                const entry = (d.coatings || []).concat(d.sheens || []).find(x => x.id === id);
+                if (entry) p = Number(entry.price || 0);
+              }
             }
           }
+        } catch (e) {
+          // ignore and fallback to DOM
         }
-      } catch (e) {
-        // ignore and fallback to DOM
-      }
-      if (!p) {
-        const el = document.querySelector(`.option-card[data-id="${id}"]`);
-        p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+        if (!p) {
+          const el = document.querySelector(`.option-card[data-id="${id}"]`);
+          p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+        }
       }
       if (p) extras += p;
       breakdown.push({ id, type: cat.label, price: p });

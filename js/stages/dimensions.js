@@ -290,7 +290,7 @@ function getHeightPrice() {
 }
 
 // Dispatch option-selected event to trigger state update in main.js
-function dispatchDimensionSelection() {
+function dispatchDimensionSelection(price = 0) {
   const payload = {
     ...currentDimensions,
     length: currentDimensions.length,
@@ -298,18 +298,16 @@ function dispatchDimensionSelection() {
     height: currentDimensions.height,
     heightCustom: currentDimensions.heightCustom
   };
-  
-  const heightPrice = getHeightPrice();
-  
+
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
       id: 'dimensions-custom',
-      price: heightPrice,
+      price: price,
       category: 'dimensions',
       payload
     }
   }));
-  
+
   // Announce to screen readers
   const liveRegion = document.getElementById('dim-live-region');
   if (liveRegion) {
@@ -346,16 +344,17 @@ function initPresets() {
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
-    
+
     tile.innerHTML = `
+      ${preset.image ? `<img src="${preset.image}" alt="${preset.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
       <div class="title">${preset.title}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
-    
+
     tile.addEventListener('click', () => {
       selectPreset(preset, tile);
     });
-    
+
     presetsContainer.appendChild(tile);
   });
   
@@ -392,16 +391,17 @@ function selectPreset(preset, tileElement) {
   currentDimensions.width = preset.width;
   currentDimensions.height = preset.height;
   currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
-  
+
   // Mark this preset as selected
   selectedTileId = preset.id;
   document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
   if (tileElement) tileElement.classList.add('selected');
-  
+
   // Update UI and dispatch
   updateUIControls();
-  dispatchDimensionSelection();
-  
+  const totalPrice = preset.price + getHeightPrice();
+  dispatchDimensionSelection(totalPrice);
+
   // Update field visibility
   updateCustomFieldVisibility();
 }
