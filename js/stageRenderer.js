@@ -73,6 +73,11 @@ export function renderAddonsDropdown(container, data = []) {
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
 
+    // Add indicator before price
+    const indicator = document.createElement('div');
+    indicator.className = 'addons-dropdown-indicator';
+    indicator.setAttribute('data-group-id', group.title.toLowerCase().replace(/\s+/g, '-'));
+
     const price = document.createElement('div');
     price.className = 'addons-dropdown-price';
     if (group.options && group.options.length === 1) {
@@ -82,6 +87,7 @@ export function renderAddonsDropdown(container, data = []) {
     }
 
     titlePrice.appendChild(title);
+    titlePrice.appendChild(indicator);
     titlePrice.appendChild(price);
 
     // Chevron icon
@@ -142,6 +148,10 @@ export function renderAddonsDropdown(container, data = []) {
               document.dispatchEvent(new CustomEvent('addon-toggled', {
                 detail: { id, price, checked: !isPressed }
               }));
+              // Update indicators after selection change
+              import('./stages/addons.js').then(module => {
+                if (module.updateAllIndicators) module.updateAllIndicators();
+              });
             });
           });
           subContainer.appendChild(tilesContainer);
@@ -171,6 +181,10 @@ export function renderAddonsDropdown(container, data = []) {
             document.dispatchEvent(new CustomEvent('addon-selected', {
               detail: { group: subsection.title, id, price }
             }));
+            // Update indicators after selection change
+            import('./stages/addons.js').then(module => {
+              if (module.updateAllIndicators) module.updateAllIndicators();
+            });
           });
         }
 
@@ -265,6 +279,10 @@ export function renderAddonsDropdown(container, data = []) {
         document.dispatchEvent(new CustomEvent('addon-toggled', {
           detail: { id, price, checked }
         }));
+        // Update indicators after selection change
+        import('./stages/addons.js').then(module => {
+          if (module.updateAllIndicators) module.updateAllIndicators();
+        });
       });
     });
 
