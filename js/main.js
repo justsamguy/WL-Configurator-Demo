@@ -418,13 +418,16 @@ if (designsSection) {
 
     // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
-    const finishSheenRoot = document.getElementById('finish-sheen-options');
+    const finishSheenRoot = document.getElementById('finish-sheen-slider');
     const finishTintRoot = document.getElementById('finish-tint-options');
     if (finishCoatingRoot || finishSheenRoot || finishTintRoot) {
   const finish = await loadData('data/finish.json');
       if (finish) {
         if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
-        if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
+        if (finish.sheens && finishSheenRoot) {
+          const { renderSheenSlider } = await import('./stageRenderer.js');
+          renderSheenSlider(finishSheenRoot, finish.sheens);
+        }
         if (finish.tints && finishTintRoot) renderOptionCards(finishTintRoot, finish.tints, { category: 'finish-tint' });
       }
     }
@@ -501,5 +504,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-27 23:21');
+  console.log('Last updated: 2025-12-27 23:37');
 });

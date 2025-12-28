@@ -292,4 +292,56 @@ export function renderAddonsDropdown(container, data = []) {
   });
 }
 
-export default { renderOptionCards, renderAddonsDropdown };
+export function renderSheenSlider(container, data = []) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Create slider container
+  const sliderContainer = document.createElement('div');
+  sliderContainer.className = 'sheen-slider-container';
+
+  // Create range input
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '2';
+  slider.value = '1'; // Default to medium
+  slider.step = '1';
+  slider.className = 'sheen-slider';
+
+  // Create labels
+  const labelsContainer = document.createElement('div');
+  labelsContainer.className = 'sheen-slider-labels flex justify-between text-xs text-gray-600 mt-2';
+
+  data.forEach((item, index) => {
+    const label = document.createElement('div');
+    label.textContent = item.title;
+    label.className = 'sheen-slider-label';
+    labelsContainer.appendChild(label);
+  });
+
+  sliderContainer.appendChild(slider);
+  sliderContainer.appendChild(labelsContainer);
+  container.appendChild(sliderContainer);
+
+  // Add event listener
+  slider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    const selectedItem = data[value];
+    if (selectedItem) {
+      // Dispatch option-selected event
+      document.dispatchEvent(new CustomEvent('option-selected', {
+        detail: {
+          id: selectedItem.id,
+          price: selectedItem.price || 0,
+          category: 'finish-sheen'
+        }
+      }));
+    }
+  });
+
+  // Set initial value to default (Medium)
+  slider.value = '1';
+}
+
+export default { renderOptionCards, renderAddonsDropdown, renderSheenSlider };

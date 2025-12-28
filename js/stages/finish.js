@@ -29,23 +29,7 @@ export function recomputeFinishConstraints() {
       el.removeAttribute('disabled');
     }
 
-    // clear relevant previous flags
-    ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-      const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-      if (el) clearAllDisabledBy(el);
-    });
-
-    if (selectedCoatingId === 'fin-coat-02') {
-      const polyTitle = (selectedCoatingEl && selectedCoatingEl.querySelector('.title') && selectedCoatingEl.querySelector('.title').textContent.trim()) || '2K Poly';
-      ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
-        const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
-        if (el) addDisabledBy(el, polyTitle);
-      });
-    } else if (selectedSheenId === 'fin-sheen-02' || selectedSheenId === 'fin-sheen-03') {
-      const sheenTitle = (selectedSheenEl && selectedSheenEl.querySelector('.title') && selectedSheenEl.querySelector('.title').textContent.trim()) || 'selected sheen';
-      const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
-      if (poly) addDisabledBy(poly, sheenTitle);
-    }
+    // No constraints between coating and sheen - all combinations allowed
   } catch (e) {
     console.warn('Failed to recompute finish constraints:', e);
   }
@@ -68,10 +52,9 @@ export function applyFinishDefaults(appState) {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
     }
     if (!sheenSel) {
-      updates['finish-sheen'] = 'fin-sheen-01';
-      const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
-      if (el2) el2.setAttribute('aria-pressed', 'true');
-      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
+      updates['finish-sheen'] = 'fin-sheen-02';
+      // No visual element to set for slider, just dispatch the event
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-02', price: 0, category: 'finish-sheen' } }));
     }
     if (!tintSel) {
       updates['finish-tint'] = 'fin-tint-01';
@@ -124,9 +107,9 @@ export function restoreFromState(appState) {
       });
       lastKnownModel = currentModel;
     }
-    
+
     const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
-    ['finish-coating', 'finish-sheen', 'finish-tint'].forEach(cat => {
+    ['finish-coating', 'finish-tint'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;
       const el = document.querySelector(`.option-card[data-id="${id}"]`);
@@ -135,6 +118,25 @@ export function restoreFromState(appState) {
         el.setAttribute('aria-pressed', 'true');
       }
     });
+
+    // Handle sheen slider
+    const sheenId = opts['finish-sheen'];
+    if (sheenId) {
+      const slider = document.querySelector('.sheen-slider');
+      if (slider) {
+        // Map sheen IDs to slider values
+        const sheenMap = {
+          'fin-sheen-01': 0, // Less Shiny
+          'fin-sheen-02': 1, // Medium
+          'fin-sheen-03': 2  // More Shiny
+        };
+        const value = sheenMap[sheenId];
+        if (value !== undefined) {
+          slider.value = value;
+        }
+      }
+    }
+
     try { recomputeFinishConstraints(); } catch (e) { /* ignore constraint update */ }
   } catch (e) { /* ignore */ }
 }
