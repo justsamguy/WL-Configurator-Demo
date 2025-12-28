@@ -5,5 +5,6 @@
   {"id": "des-custom", "title": "Custom", "image": "assets/images/Custom Conference design.jpg", "description": "Bespoke design", "prices": {"mdl-coffee": 12000, "mdl-dining": 14400, "mdl-conference": 16800}},
   {"id": "des-keystone", "title": "Keystone", "image": "assets/images/model1_placeholder.png", "description": "Conference exclusive", "prices": {"mdl-conference": 17200}},
   {"id": "des-signature", "title": "Signature", "image": "assets/images/WoodLab Silver Maple Signature Coffee Table.jpg", "description": "Coffee exclusive", "prices": {"mdl-coffee": 11500}},
-  {"id": "des-round", "title": "Round", "image": "assets/images/Round Dining Table.jpg", "description": "Circular option", "prices": {"mdl-coffee": 12800, "mdl-dining": 15200, "mdl-conference": 17600}}
+  {"id": "des-round", "title": "Round", "image": "assets/images/Round Dining Table.jpg", "description": "Circular option", "prices": {"mdl-coffee": 12800, "mdl-dining": 15200, "mdl-conference": 17600}},
+  {"id": "des-cookie", "title": "Cookie", "image": "assets/images/Box Elder Burl Multi-Blue Cookie Dining Table.JPG", "description": "Unique cookie pattern", "prices": {"mdl-coffee": 11000, "mdl-dining": 13400}}
 ]
