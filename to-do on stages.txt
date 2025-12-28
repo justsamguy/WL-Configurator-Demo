@@ -9,5 +9,6 @@ Change designs to become configured presets, so the user can navigate all custom
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
 add the browser warning to save progress
+remove all instances in the codebase where an !important or other similar override is being used and replace them with their proper intended designs.
 
 rebuild entire app to use react code

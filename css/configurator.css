@@ -589,12 +589,6 @@ body.show-model-tiles #stage-panel-0 #model-options,
   padding: 1.5rem;
   width: 100%;
 }
-
-/* Emergency fallback: ensure the Select Design panel and its inner grids/cards
-   are visible and laid out even when JS toggles or timing is inconsistent. */
-#stage-panel-1 {
-  display: block !important;
-}
 #stage-panel-1 .model-row-grid {
   display: flex;
   gap: 1.5rem;
