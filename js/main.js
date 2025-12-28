@@ -253,6 +253,31 @@ document.addEventListener('addon-toggled', async (ev) => {
   animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
 });
 
+// Handle addon selections (single-select per group). Expect detail: { group, id, price }
+document.addEventListener('addon-selected', async (ev) => {
+  const { group, id, price } = ev.detail || { group: null, id: null, price: 0 };
+  if (!group) return;
+  const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
+  // Remove any previous selection in this group
+  // Assuming group is like "Power Strips", and ids are like "addon-power-none"
+  const groupPrefix = group.toLowerCase().replace(/\s+/g, '-');
+  selectedAddons.forEach(addonId => {
+    if (addonId.startsWith(`addon-${groupPrefix}`)) {
+      selectedAddons.delete(addonId);
+    }
+  });
+  // Add the new selection if not "none"
+  if (id && !id.includes('-none')) {
+    selectedAddons.add(id);
+  }
+  const addonsArray = Array.from(selectedAddons);
+  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
+  const p = await computePrice(state);
+  setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+  const from = state.pricing.total || state.pricing.base;
+  animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+});
+
 // Request-based restart: stage modules should dispatch 'request-restart' and
 // main.js (the canonical mutator) will reset the shared state and navigate to
 // the first stage.
@@ -466,5 +491,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-27 20:10');
+  console.log('Last updated: 2025-12-27 21:26');
 });

@@ -1,16 +1,16 @@
 [
-  { "title": "Assembly Service", "options": [{ "id": "addon-01", "title": "Assembly Service", "price": 45, "description": "On-site assembly" }] },
-  { "title": "Protective Pads", "options": [{ "id": "addon-02", "title": "Protective Pads", "price": 25, "description": "Set of 4" }] },
   { "title": "Expedited Production", "options": [{ "id": "addon-03", "title": "Expedited Production", "price": 120, "description": "Rush 5-day lead" }], "disabled": true, "tooltip": "This add-on is currently unavailable due to high demand." },
   { "title": "Live Edge", "options": [{ "id": "addon-live-edge", "title": "Live Edge", "price": 200 }] },
   { "title": "Waterfall Edge", "options": [{ "id": "addon-waterfall-single", "title": "Single Waterfall", "price": 300 }, { "id": "addon-waterfall-second", "title": "Second Waterfall", "price": 400 }] },
   { "title": "Glass Top", "options": [{ "id": "addon-glass-top", "title": "Glass Top", "price": 250 }] },
   { "title": "Embedded Logo", "options": [{ "id": "addon-embedded-logo", "title": "Embedded Logo", "price": 150 }] },
   { "title": "Custom River Design", "options": [{ "id": "addon-custom-river", "title": "Custom River Design", "price": 500 }] },
-  { "title": "Power Strips", "options": [{ "id": "addon-power-none", "title": "None", "price": 0 }, { "id": "addon-power-ac", "title": "AC", "price": 100 }, { "id": "addon-power-ac-usb", "title": "AC+USB", "price": 150 }, { "id": "addon-power-ac-usb-usbc", "title": "AC+USB+USB-C", "price": 200 }] },
-  { "title": "Wireless Charging", "options": [{ "id": "addon-wireless-charging", "title": "Wireless Charging", "price": 300 }] },
-  { "title": "Ethernet Connectivity", "options": [{ "id": "addon-ethernet", "title": "Ethernet Connectivity", "price": 100 }] },
-  { "title": "Innerlighting", "options": [{ "id": "addon-lighting-none", "title": "None", "price": 0 }, { "id": "addon-lighting-white", "title": "White-tunable", "price": 400 }, { "id": "addon-lighting-color-basic", "title": "Color Basic", "price": 500 }, { "id": "addon-lighting-color-fx", "title": "Color +FX", "price": 600 }, { "id": "addon-lighting-custom", "title": "Custom Lighting", "price": 800 }] },
-  { "title": "Custom Tech", "options": [{ "id": "addon-custom-tech", "title": "Custom Tech (Quoted Separately)", "price": 0 }] },
+  { "title": "Tech", "type": "tech", "subsections": [
+    { "title": "Power Strips", "type": "dropdown", "options": [{ "id": "addon-power-none", "title": "None", "price": 0 }, { "id": "addon-power-ac", "title": "AC", "price": 100 }, { "id": "addon-power-ac-usb", "title": "AC+USB", "price": 150 }, { "id": "addon-power-ac-usb-usbc", "title": "AC+USB+USB-C", "price": 200 }] },
+    { "title": "Wireless Charging", "type": "tile", "options": [{ "id": "addon-wireless-charging", "title": "Wireless Charging", "price": 300 }] },
+    { "title": "Ethernet Connectivity", "type": "tile", "options": [{ "id": "addon-ethernet", "title": "Ethernet Connectivity", "price": 100 }] },
+    { "title": "Innerlighting", "type": "dropdown", "options": [{ "id": "addon-lighting-none", "title": "None", "price": 0 }, { "id": "addon-lighting-white", "title": "White-tunable", "price": 400 }, { "id": "addon-lighting-color-basic", "title": "Color Basic", "price": 500 }, { "id": "addon-lighting-color-fx", "title": "Color +FX", "price": 600 }, { "id": "addon-lighting-custom", "title": "Custom Lighting", "price": 800 }] },
+    { "title": "Custom Tech", "type": "tile", "options": [{ "id": "addon-custom-tech", "title": "Custom Tech (Quoted Separately)", "price": 0 }] }
+  ] },
   { "title": "Rounded Corners", "options": [{ "id": "addon-rounded-corners", "title": "Rounded Corners", "price": 150 }] }
 ]
