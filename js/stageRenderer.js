@@ -154,6 +154,21 @@ export function renderAddonsDropdown(container, data = []) {
     header.addEventListener('click', () => {
       if (group.disabled) return;
       const isExpanded = tile.classList.contains('expanded');
+
+      if (!isExpanded) {
+        // About to expand - measure content height first
+        content.style.maxHeight = 'none'; // Temporarily remove max-height to measure
+        const scrollHeight = content.scrollHeight;
+        content.style.maxHeight = '0'; // Reset for animation
+
+        // Force reflow, then set the measured height
+        content.offsetHeight; // Trigger reflow
+        content.style.maxHeight = scrollHeight + 'px';
+      } else {
+        // Collapsing
+        content.style.maxHeight = '0';
+      }
+
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
     });

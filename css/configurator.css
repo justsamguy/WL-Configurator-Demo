@@ -2383,10 +2383,6 @@ body.stage-1 #designs-stage-section > div {
   border-top: 1px solid #e5e7eb;
 }
 
-.addons-dropdown-tile.expanded .addons-dropdown-content {
-  max-height: 400px;
-}
-
 .addons-dropdown-options {
   padding: 1rem;
   display: flex;
