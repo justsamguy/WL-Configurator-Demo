@@ -369,7 +369,12 @@ async function setStage(index, options = {}) {
                       // Design is available if it has pricing for this model
                       return design.prices && design.prices[selectedModel];
                     });
-                    renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+                    // Add price field for rendering
+                    const designsWithPrice = filteredDesigns.map(design => ({
+                      ...design,
+                      price: selectedModel && design.prices ? design.prices[selectedModel] : 0
+                    }));
+                    renderOptionCards(designGrids[0], designsWithPrice, { category: null });
                   }
                 }
               }

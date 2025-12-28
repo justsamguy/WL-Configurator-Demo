@@ -171,7 +171,12 @@ document.addEventListener('option-selected', async (ev) => {
           const designGrids = designsSection.querySelectorAll('.model-row-grid');
           if (designGrids && designGrids.length) {
             const filteredDesigns = filterDesignsByModel(designs, id);
-            renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+            // Add price field for rendering
+            const designsWithPrice = filteredDesigns.map(design => ({
+              ...design,
+              price: id && design.prices ? design.prices[id] : 0
+            }));
+            renderOptionCards(designGrids[0], designsWithPrice, { category: null });
           }
         }
       }
@@ -401,7 +406,12 @@ if (designsSection) {
       // Filter designs based on currently selected model
       const currentModel = state.selections && state.selections.model;
       const filteredDesigns = filterDesignsByModel(designs, currentModel);
-      renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+      // Add price field for rendering
+      const designsWithPrice = filteredDesigns.map(design => ({
+        ...design,
+        price: currentModel && design.prices ? design.prices[currentModel] : 0
+      }));
+      renderOptionCards(designGrids[0], designsWithPrice, { category: null });
     }
   }
 }
@@ -491,5 +501,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-27 21:26');
+  console.log('Last updated: 2025-12-27 21:39');
 });
