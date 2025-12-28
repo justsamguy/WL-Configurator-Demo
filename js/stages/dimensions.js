@@ -107,8 +107,8 @@ function getConstraints() {
   // Define model-specific constraints
   const modelConstraints = {
     'mdl-coffee': {
-      length: { min: 48, max: 100, step: 12, unit: "in" },
-      width: { min: 20, max: 48, step: 6, unit: "in" },
+      length: { min: 24, max: 100, step: 12, unit: "in" },
+      width: { min: 20, max: 60, step: 6, unit: "in" },
       height: { min: 14, max: 22, standard: 18, bar: 20, unit: "in" }
     },
     'mdl-dining': {
@@ -118,7 +118,7 @@ function getConstraints() {
     },
     'mdl-conference': {
       length: { min: 72, max: 200, step: 12, unit: "in" },
-      width: { min: 42, max: 75, step: 6, unit: "in" },
+      width: { min: 36, max: 75, step: 6, unit: "in" },
       height: { min: 26, max: 42, standard: 30, bar: 36, unit: "in" }
     }
   };

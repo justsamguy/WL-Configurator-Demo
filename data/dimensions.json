@@ -1,10 +1,13 @@
 {
   "presets": [
-    { "id": "dim-preset-01", "title": "4-6 seater", "price": 0, "description": "Fast delivery", "length": 72, "width": 36, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 4-6 Seater.png" },
+    { "id": "dim-preset-01", "title": "4-6 seater", "price": 0, "description": "", "length": 72, "width": 36, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 4-6 Seater.png" },
     { "id": "dim-preset-02", "title": "6-8 seater", "price": 500, "description": "", "length": 84, "width": 36, "height": "standard", "lengthUnit": "in", "image": "assets/images/Generated 6-8 Seater.png" },
     { "id": "dim-preset-03", "title": "8-10 seater", "price": 1000, "description": "", "length": 96, "width": 36, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 8-10 Seater.png" },
     { "id": "dim-preset-04", "title": "10-12 seater", "price": 1500, "description": "", "length": 108, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/Generated 10-12 Seater.png" },
-    { "id": "dim-preset-05", "title": "12-14 seater", "price": 2000, "description": "", "length": 120, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 12-14 Seater.png" }
+    { "id": "dim-preset-05", "title": "12-14 seater", "price": 2000, "description": "", "length": 120, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 12-14 Seater.png" },
+    { "id": "dim-preset-06", "title": "24x48", "price": 0, "description": "", "length": 24, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
+    { "id": "dim-preset-07", "title": "26x52", "price": 0, "description": "", "length": 26, "width": 52, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
+    { "id": "dim-preset-08", "title": "30x60", "price": 0, "description": "", "length": 30, "width": 60, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" }
   ],
   "constraints": {
     "length": { "min": 24, "max": 118, "step": 12, "unit": "in" },
