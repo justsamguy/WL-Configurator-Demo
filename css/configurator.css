@@ -2336,6 +2336,7 @@ body.stage-1 #designs-stage-section > div {
   background: none;
   border: none;
   text-align: left;
+  min-height: 3.5rem;
 }
 
 .addons-dropdown-header:hover {
