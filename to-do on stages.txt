@@ -1,6 +1,8 @@
 Get examples of tube sizes (maybe also a 3-point slider with a simple preview)
 Add "tripod" base option that only shows when a round design is selected
 
+Overhaul media to improve loading times
+
 Change designs to become configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles live in a "build your own" section that uses the existing one-stage-at-a-time approach.
 
 

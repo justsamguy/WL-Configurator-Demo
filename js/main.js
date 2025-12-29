@@ -168,7 +168,7 @@ document.addEventListener('option-selected', async (ev) => {
         const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
         const designs = await loadData('data/designs.json');
         if (designs) {
-          const designGrids = designsSection.querySelectorAll('.model-row-grid');
+          const designGrids = designsSection.querySelectorAll('.stage-options-grid');
           if (designGrids && designGrids.length) {
             const filteredDesigns = filterDesignsByModel(designs, id);
             // Add price field for rendering
@@ -401,7 +401,7 @@ if (designsSection) {
   const designs = await loadData('data/designs.json');
   if (designs) {
     // Clear existing design option cards and render from data
-    const designGrids = designsSection.querySelectorAll('.model-row-grid');
+    const designGrids = designsSection.querySelectorAll('.stage-options-grid');
     if (designGrids && designGrids.length) {
       // Filter designs based on currently selected model
       const currentModel = state.selections && state.selections.model;
@@ -504,5 +504,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-27 23:37');
+  console.log('Last updated: 2025-12-28 22:17');
 });
