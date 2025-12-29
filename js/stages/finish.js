@@ -2,37 +2,8 @@
 let lastKnownModel = null; // Track the model to detect changes
 
 export function recomputeFinishConstraints() {
-  try {
-    const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
-    const selectedCoatingId = selectedCoatingEl && selectedCoatingEl.getAttribute('data-id');
-    const selectedSheenEl = document.querySelector('.option-card[data-category="finish-sheen"][aria-pressed="true"]');
-    const selectedSheenId = selectedSheenEl && selectedSheenEl.getAttribute('data-id');
-
-    function _getDisabledByList(el) {
-      const raw = el.getAttribute('data-disabled-by') || '';
-      return raw ? raw.split('||').filter(Boolean) : [];
-    }
-    function addDisabledBy(el, sourceTitle) {
-      if (!el) return;
-      const title = (sourceTitle || '').trim();
-      if (!title) return;
-      const list = _getDisabledByList(el);
-      if (!list.includes(title)) list.push(title);
-      el.setAttribute('data-disabled-by', list.join('||'));
-      el.setAttribute('disabled', 'true');
-      el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
-    }
-    function clearAllDisabledBy(el) {
-      if (!el) return;
-      el.removeAttribute('data-disabled-by');
-      el.removeAttribute('data-tooltip');
-      el.removeAttribute('disabled');
-    }
-
-    // No constraints between coating and sheen - all combinations allowed
-  } catch (e) {
-    console.warn('Failed to recompute finish constraints:', e);
-  }
+  // No constraints between coating and sheen - all combinations allowed
+  // This function is kept for compatibility but no longer does anything
 }
 
 // applyFinishDefaults: ensure sensible defaults for the Finish stage.
@@ -92,23 +63,9 @@ export function init() {
 
 export function restoreFromState(appState) {
   try {
-    // Check if model has changed and clear disabled states if needed
-    const currentModel = appState && appState.selections && appState.selections.model;
-    if (currentModel !== lastKnownModel) {
-      console.log('[Finish] Model changed from', lastKnownModel, 'to', currentModel, '- clearing constraints');
-      // Clear all disabled states and tooltips when model changes
-      ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-        const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-        if (el) {
-          el.removeAttribute('data-disabled-by');
-          el.removeAttribute('data-tooltip');
-          el.removeAttribute('disabled');
-        }
-      });
-      lastKnownModel = currentModel;
-    }
-
     const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
+    
+    // Restore coating and tint selections (option cards)
     ['finish-coating', 'finish-tint'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;
@@ -136,8 +93,6 @@ export function restoreFromState(appState) {
         }
       }
     }
-
-    try { recomputeFinishConstraints(); } catch (e) { /* ignore constraint update */ }
   } catch (e) { /* ignore */ }
 }
 
