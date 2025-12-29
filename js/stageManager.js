@@ -360,22 +360,22 @@ async function setStage(index, options = {}) {
                 const { renderOptionCards } = await import('./stageRenderer.js');
                 const designs = await loadData('data/designs.json');
                 if (designs) {
-                  const designGrids = designsSection.querySelectorAll('.model-row-grid');
-                  if (designGrids && designGrids.length) {
-                    // Filter designs based on selected model
-                    const selectedModel = appState.selections && appState.selections.model;
-                    const filteredDesigns = designs.filter(design => {
-                      if (!selectedModel) return true;
-                      // Design is available if it has pricing for this model
-                      return design.prices && design.prices[selectedModel];
-                    });
-                    // Add price field for rendering
-                    const designsWithPrice = filteredDesigns.map(design => ({
-                      ...design,
-                      price: selectedModel && design.prices ? design.prices[selectedModel] : 0
-                    }));
-                    renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-                  }
+                const designGrids = designsSection.querySelectorAll('.stage-options-grid');
+                if (designGrids && designGrids.length) {
+                  // Filter designs based on selected model
+                  const selectedModel = appState.selections && appState.selections.model;
+                  const filteredDesigns = designs.filter(design => {
+                    if (!selectedModel) return true;
+                    // Design is available if it has pricing for this model
+                    return design.prices && design.prices[selectedModel];
+                  });
+                  // Add price field for rendering
+                  const designsWithPrice = filteredDesigns.map(design => ({
+                    ...design,
+                    price: selectedModel && design.prices ? design.prices[selectedModel] : 0
+                  }));
+                  renderOptionCards(designGrids[0], designsWithPrice, { category: null });
+                }
                 }
               }
             } catch (e) {
