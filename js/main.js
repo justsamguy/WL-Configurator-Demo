@@ -80,33 +80,33 @@ function updatePriceUI(total) {
 }
 
 /**
- * Update legs and tube size options based on selected model
- * Filters legs to only show those compatible with the model
+ * Update legs and tube size options based on selected model and design
+ * Filters legs to only show those compatible with the model and design
  * Filters tube sizes to only show those used by visible legs and compatible with model
  */
-async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes) {
+async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designId = null) {
   if (!modelId) return;
-  
+
   const { renderOptionCards } = await import('./stageRenderer.js');
-  
-  // Filter legs: only show designs compatible with this model (and not hidden)
-  const visibleLegs = getVisibleLegs(modelId, allLegs);
-  
+
+  // Filter legs: only show designs compatible with this model and design (and not hidden)
+  const visibleLegs = getVisibleLegs(modelId, allLegs, designId);
+
   // Render filtered legs
   const legsRoot = document.getElementById('legs-options');
   if (legsRoot) {
     renderOptionCards(legsRoot, visibleLegs, { category: 'legs' });
   }
-  
+
   // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
   const availableTubeSizes = getAvailableTubeSizes(modelId, visibleLegs, allTubeSizes);
-  
+
   // Render filtered tube sizes
   const tubeSizesRoot = document.getElementById('tube-size-options');
   if (tubeSizesRoot) {
     renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size' });
   }
-  
+
   // Recompute tube size constraints based on current leg selection
   try {
     recomputeTubeSizeConstraints();
@@ -202,6 +202,17 @@ document.addEventListener('option-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+
+    // Update legs options based on the selected design
+    try {
+      const allLegs = window._allLegsData || [];
+      const allTubeSizes = window._allTubeSizesData || [];
+      if (allLegs.length > 0 && allTubeSizes.length > 0) {
+        updateLegsOptionsForModel(state.selections.model, allLegs, allTubeSizes, id);
+      }
+    } catch (e) {
+      console.warn('Failed to update legs options after design change:', e);
+    }
   }
   // Handle other category selections (material, finish, legs, dimensions, color, etc.)
   else if (category) {
@@ -504,5 +515,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-30 16:16');
+  console.log('Last updated: 2025-12-30 16:20');
 });
