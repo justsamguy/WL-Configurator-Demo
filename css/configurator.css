@@ -912,9 +912,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   min-height: 80px;
 }
 
-#tube-size-options .viewer-placeholder-img {
-  display: none;
-}
+
 
 #tube-size-options .option-card .title {
   font-size: 14px;
