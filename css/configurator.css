@@ -2602,9 +2602,7 @@ body.stage-1 #designs-stage-section > div {
 
 .sheen-tiles-container {
   display: flex;
-  justify-content: space-between;
   width: 100%;
-  gap: 0.5rem;
   max-width: 400px;
 }
 
