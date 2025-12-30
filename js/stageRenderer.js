@@ -294,26 +294,26 @@ export function renderSheenSlider(container, data = []) {
   if (!container) return;
   container.innerHTML = '';
 
-  // Create slider container
+  if (!Array.isArray(data) || data.length === 0) return;
+
   const sliderContainer = document.createElement('div');
   sliderContainer.className = 'sheen-slider-container';
 
-  // Create range input
   const slider = document.createElement('input');
   slider.type = 'range';
   slider.min = '0';
-  slider.max = '2';
-  slider.value = '1'; // Default to medium
-  slider.step = '1';
+  slider.max = '100';
+  slider.step = '0.1';
   slider.className = 'sheen-slider';
 
-  // Create tiles container
   const tilesContainer = document.createElement('div');
   tilesContainer.className = 'sheen-tiles-container';
   tilesContainer.setAttribute('aria-live', 'polite');
   tilesContainer.setAttribute('aria-atomic', 'true');
 
-  data.forEach((item, index) => {
+  const tileElements = [];
+
+  data.forEach((item) => {
     const tile = document.createElement('button');
     tile.className = 'sheen-tile option-card';
     tile.setAttribute('data-id', item.id);
@@ -349,67 +349,147 @@ export function renderSheenSlider(container, data = []) {
     }
 
     tilesContainer.appendChild(tile);
+    tileElements.push(tile);
   });
 
   sliderContainer.appendChild(slider);
   sliderContainer.appendChild(tilesContainer);
   container.appendChild(sliderContainer);
 
-  // Function to update tile highlighting
+  const fallbackCenters = data.map((_, index) => {
+    if (data.length === 1) return 50;
+    return (index / (data.length - 1)) * 100;
+  });
+  let snapCenters = [...fallbackCenters];
+  let lastSelectedIndex = Math.min(Math.max(Math.floor(data.length / 2), 0), data.length - 1);
+
+  const getSliderValueForIndex = (index) => {
+    const value = snapCenters[index];
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      const fallback = fallbackCenters[index];
+      return typeof fallback === 'number' ? fallback : 0;
+    }
+    return value;
+  };
+
   const updateTileHighlighting = (selectedIndex) => {
-    const tiles = tilesContainer.querySelectorAll('.sheen-tile');
-    tiles.forEach((tile, index) => {
+    tileElements.forEach((tile, index) => {
       const isSelected = index === selectedIndex;
       tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
       tile.classList.toggle('selected', isSelected);
     });
   };
 
-  // Add event listener for slider
-  slider.addEventListener('input', (e) => {
-    const value = parseInt(e.target.value);
-    updateTileHighlighting(value);
-    const selectedItem = data[value];
-    if (selectedItem) {
-      // Dispatch option-selected event
-      document.dispatchEvent(new CustomEvent('option-selected', {
-        detail: {
-          id: selectedItem.id,
-          price: selectedItem.price || 0,
-          category: 'finish-sheen'
-        }
-      }));
+  const dispatchSelectionEvent = (selectedIndex) => {
+    const selectedItem = data[selectedIndex];
+    if (!selectedItem) return;
+    document.dispatchEvent(new CustomEvent('option-selected', {
+      detail: {
+        id: selectedItem.id,
+        price: selectedItem.price || 0,
+        category: 'finish-sheen'
+      }
+    }));
+  };
+
+  const selectIndex = (selectedIndex, options = {}) => {
+    const { dispatch = true } = options;
+    if (selectedIndex < 0 || selectedIndex >= data.length) return;
+    lastSelectedIndex = selectedIndex;
+    updateTileHighlighting(selectedIndex);
+    slider.value = String(getSliderValueForIndex(selectedIndex));
+    container.__sheenSelectedIndex = selectedIndex;
+    if (dispatch) dispatchSelectionEvent(selectedIndex);
+  };
+
+  const refreshSnapCenters = () => {
+    const sliderRect = slider.getBoundingClientRect();
+    if (!sliderRect.width) return;
+    const updatedCenters = tileElements.map(tile => {
+      const rect = tile.getBoundingClientRect();
+      const center = rect.left + rect.width / 2;
+      const percent = ((center - sliderRect.left) / sliderRect.width) * 100;
+      return Math.min(Math.max(percent, 0), 100);
+    });
+
+    if (updatedCenters.length === tileElements.length) {
+      snapCenters = updatedCenters;
+    } else {
+      snapCenters = [...fallbackCenters];
+    }
+    container.__sheenSnapCenters = snapCenters;
+    slider.value = String(getSliderValueForIndex(lastSelectedIndex));
+  };
+
+  const finalizeSelection = () => {
+    refreshSnapCenters();
+    const currentValue = parseFloat(slider.value) || 0;
+    let nearestIndex = 0;
+    let minDistance = Infinity;
+    snapCenters.forEach((center, index) => {
+      const distance = Math.abs(center - currentValue);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    selectIndex(nearestIndex);
+  };
+
+  slider.addEventListener('change', finalizeSelection);
+  slider.addEventListener('keydown', (event) => {
+    const skipKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (skipKeys.includes(event.key)) {
+      setTimeout(finalizeSelection, 0);
     }
   });
 
-  // Add event listeners for tiles
-  tilesContainer.addEventListener('click', (e) => {
-    const tile = e.target.closest('.sheen-tile');
+  tilesContainer.addEventListener('click', (event) => {
+    const tile = event.target.closest('.sheen-tile');
     if (!tile) return;
-
-    const tileId = tile.getAttribute('data-id');
-    const selectedIndex = data.findIndex(item => item.id === tileId);
-
+    const selectedIndex = tileElements.indexOf(tile);
     if (selectedIndex !== -1) {
-      // Update slider value
-      slider.value = selectedIndex;
-      // Update tile highlighting
-      updateTileHighlighting(selectedIndex);
-      // Dispatch event
-      const selectedItem = data[selectedIndex];
-      document.dispatchEvent(new CustomEvent('option-selected', {
-        detail: {
-          id: selectedItem.id,
-          price: selectedItem.price || 0,
-          category: 'finish-sheen'
-        }
-      }));
+      selectIndex(selectedIndex);
     }
   });
 
-  // Set initial value to default (Medium) and highlight corresponding tile
-  slider.value = '1';
-  updateTileHighlighting(1);
+  container.__setSheenIndex = (index, options = {}) => {
+    selectIndex(index, options);
+  };
+
+  const cleanupObservers = () => {
+    if (container.__sheenResizeObserver) {
+      container.__sheenResizeObserver.disconnect();
+      delete container.__sheenResizeObserver;
+    }
+    if (container.__sheenWindowResizeHandler) {
+      window.removeEventListener('resize', container.__sheenWindowResizeHandler);
+      delete container.__sheenWindowResizeHandler;
+    }
+  };
+
+  cleanupObservers();
+  if (typeof ResizeObserver !== 'undefined') {
+    const resizeObserver = new ResizeObserver(() => {
+      refreshSnapCenters();
+    });
+    resizeObserver.observe(sliderContainer);
+    resizeObserver.observe(tilesContainer);
+    container.__sheenResizeObserver = resizeObserver;
+  } else {
+    const resizeHandler = () => refreshSnapCenters();
+    window.addEventListener('resize', resizeHandler);
+    container.__sheenWindowResizeHandler = resizeHandler;
+  }
+
+  container.__sheenFallbackCenters = fallbackCenters;
+  container.__sheenSnapCenters = snapCenters;
+  container.__sheenSelectedIndex = lastSelectedIndex;
+
+  window.requestAnimationFrame(() => {
+    refreshSnapCenters();
+    selectIndex(lastSelectedIndex, { dispatch: false });
+  });
 }
 
 export default { renderOptionCards, renderAddonsDropdown, renderSheenSlider };
