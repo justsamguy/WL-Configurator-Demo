@@ -29,17 +29,15 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.appendChild(img);
     }
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-price-row';
-    const t = document.createElement('div');
-    t.className = 'title';
-    t.textContent = item.title || item.id;
-    const p = document.createElement('div');
-    p.className = 'price-delta';
-    p.textContent = item.price ? `+$${item.price}` : '+$0';
-    titleRow.appendChild(t);
-    titleRow.appendChild(p);
-    btn.appendChild(titleRow);
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'title';
+    titleDiv.textContent = item.title || item.id;
+    btn.appendChild(titleDiv);
+
+    const priceDiv = document.createElement('div');
+    priceDiv.className = 'price-delta';
+    priceDiv.textContent = item.price ? `Starting from: $${item.price.toLocaleString()}` : 'Starting from: $0';
+    btn.appendChild(priceDiv);
 
     if (item.description) {
       const d = document.createElement('div');
