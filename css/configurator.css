@@ -2570,7 +2570,6 @@ body.stage-1 #designs-stage-section > div {
 
 .sheen-slider {
   width: 100%;
-  max-width: 300px;
   height: 6px;
   border-radius: 3px;
   background: #e5e7eb;
@@ -2601,17 +2600,86 @@ body.stage-1 #designs-stage-section > div {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.sheen-slider-labels {
+.sheen-tiles-container {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  max-width: 300px;
+  gap: 0.5rem;
+  max-width: 400px;
 }
 
-.sheen-slider-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  text-align: center;
+.sheen-tile {
   flex: 1;
+  min-height: 100px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.sheen-tile .viewer-placeholder-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.sheen-tile .title-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  width: 100%;
+}
+
+.sheen-tile .title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.sheen-tile .price-delta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.sheen-tile .description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.sheen-tile.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.sheen-tile:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments for sheen tiles */
+@media (max-width: 640px) {
+  .sheen-tiles-container {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .sheen-tile {
+    flex: none;
+    width: 100%;
+    min-height: 80px;
+    padding: 0.5rem;
+  }
+
+  .sheen-tile .viewer-placeholder-img {
+    width: 50px;
+    height: 50px;
+  }
 }

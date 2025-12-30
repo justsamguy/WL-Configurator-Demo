@@ -309,24 +309,68 @@ export function renderSheenSlider(container, data = []) {
   slider.step = '1';
   slider.className = 'sheen-slider';
 
-  // Create labels
-  const labelsContainer = document.createElement('div');
-  labelsContainer.className = 'sheen-slider-labels flex justify-between text-xs text-gray-600 mt-2';
+  // Create tiles container
+  const tilesContainer = document.createElement('div');
+  tilesContainer.className = 'sheen-tiles-container';
+  tilesContainer.setAttribute('aria-live', 'polite');
+  tilesContainer.setAttribute('aria-atomic', 'true');
 
   data.forEach((item, index) => {
-    const label = document.createElement('div');
-    label.textContent = item.title;
-    label.className = 'sheen-slider-label';
-    labelsContainer.appendChild(label);
+    const tile = document.createElement('button');
+    tile.className = 'sheen-tile option-card';
+    tile.setAttribute('data-id', item.id);
+    tile.setAttribute('data-category', 'finish-sheen');
+    tile.setAttribute('data-price', String(item.price || 0));
+    tile.setAttribute('aria-pressed', 'false');
+
+    if (item.image) {
+      const img = document.createElement('img');
+      img.src = item.image;
+      img.alt = item.alt || item.title || 'placeholder';
+      img.className = 'viewer-placeholder-img';
+      tile.appendChild(img);
+    }
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'title-price-row';
+    const t = document.createElement('div');
+    t.className = 'title';
+    t.textContent = item.title || item.id;
+    const p = document.createElement('div');
+    p.className = 'price-delta';
+    p.textContent = item.price ? `+$${item.price}` : '+$0';
+    titleRow.appendChild(t);
+    titleRow.appendChild(p);
+    tile.appendChild(titleRow);
+
+    if (item.description) {
+      const d = document.createElement('div');
+      d.className = 'description';
+      d.textContent = item.description;
+      tile.appendChild(d);
+    }
+
+    tilesContainer.appendChild(tile);
   });
 
   sliderContainer.appendChild(slider);
-  sliderContainer.appendChild(labelsContainer);
+  sliderContainer.appendChild(tilesContainer);
   container.appendChild(sliderContainer);
 
-  // Add event listener
+  // Function to update tile highlighting
+  const updateTileHighlighting = (selectedIndex) => {
+    const tiles = tilesContainer.querySelectorAll('.sheen-tile');
+    tiles.forEach((tile, index) => {
+      const isSelected = index === selectedIndex;
+      tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      tile.classList.toggle('selected', isSelected);
+    });
+  };
+
+  // Add event listener for slider
   slider.addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
+    updateTileHighlighting(value);
     const selectedItem = data[value];
     if (selectedItem) {
       // Dispatch option-selected event
@@ -340,8 +384,34 @@ export function renderSheenSlider(container, data = []) {
     }
   });
 
-  // Set initial value to default (Medium)
+  // Add event listeners for tiles
+  tilesContainer.addEventListener('click', (e) => {
+    const tile = e.target.closest('.sheen-tile');
+    if (!tile) return;
+
+    const tileId = tile.getAttribute('data-id');
+    const selectedIndex = data.findIndex(item => item.id === tileId);
+
+    if (selectedIndex !== -1) {
+      // Update slider value
+      slider.value = selectedIndex;
+      // Update tile highlighting
+      updateTileHighlighting(selectedIndex);
+      // Dispatch event
+      const selectedItem = data[selectedIndex];
+      document.dispatchEvent(new CustomEvent('option-selected', {
+        detail: {
+          id: selectedItem.id,
+          price: selectedItem.price || 0,
+          category: 'finish-sheen'
+        }
+      }));
+    }
+  });
+
+  // Set initial value to default (Medium) and highlight corresponding tile
   slider.value = '1';
+  updateTileHighlighting(1);
 }
 
 export default { renderOptionCards, renderAddonsDropdown, renderSheenSlider };

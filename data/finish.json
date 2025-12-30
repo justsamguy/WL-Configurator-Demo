@@ -4,9 +4,9 @@
     { "id": "fin-coat-01", "title": "Natural Oil", "price": 10, "description": "Natural penetrating oil finish" }
   ],
   "sheens": [
-    { "id": "fin-sheen-01", "title": "Less Shiny", "price": 0, "description": "Low reflection matte" },
-    { "id": "fin-sheen-02", "title": "Medium", "price": 0, "description": "Medium sheen" },
-    { "id": "fin-sheen-03", "title": "More Shiny", "price": 0, "description": "High gloss" }
+    { "id": "fin-sheen-01", "title": "Less Shiny", "price": 0, "description": "Low reflection matte", "image": "assets/images/snapshot_placeholder.png", "alt": "Less Shiny finish placeholder" },
+    { "id": "fin-sheen-02", "title": "Medium", "price": 0, "description": "Medium sheen", "image": "assets/images/snapshot_placeholder.png", "alt": "Medium finish placeholder" },
+    { "id": "fin-sheen-03", "title": "More Shiny", "price": 0, "description": "High gloss", "image": "assets/images/snapshot_placeholder.png", "alt": "More Shiny finish placeholder" }
   ],
   "tints": [
     { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish" },

@@ -76,21 +76,30 @@ export function restoreFromState(appState) {
       }
     });
 
-    // Handle sheen slider
+    // Handle sheen slider and tiles
     const sheenId = opts['finish-sheen'];
     if (sheenId) {
       const slider = document.querySelector('.sheen-slider');
-      if (slider) {
-        // Map sheen IDs to slider values
-        const sheenMap = {
-          'fin-sheen-01': 0, // Less Shiny
-          'fin-sheen-02': 1, // Medium
-          'fin-sheen-03': 2  // More Shiny
-        };
-        const value = sheenMap[sheenId];
-        if (value !== undefined) {
+      const tiles = document.querySelectorAll('.sheen-tile');
+
+      // Map sheen IDs to slider values and tile indices
+      const sheenMap = {
+        'fin-sheen-01': 0, // Less Shiny
+        'fin-sheen-02': 1, // Medium
+        'fin-sheen-03': 2  // More Shiny
+      };
+      const value = sheenMap[sheenId];
+      if (value !== undefined) {
+        // Update slider value
+        if (slider) {
           slider.value = value;
         }
+        // Update tile highlighting
+        tiles.forEach((tile, index) => {
+          const isSelected = index === value;
+          tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+          tile.classList.toggle('selected', isSelected);
+        });
       }
     }
   } catch (e) { /* ignore */ }
