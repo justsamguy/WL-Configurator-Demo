@@ -1,3 +1,8 @@
+add a text field inside the custom color field that only appears when the tile is selected
+add a tooltip on the right side of the wood species header that has a small grey underlined text saying "How your wood is chosen" and the tooltip says "We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" Option.
+brainstorm reorganizing stages to follow the same process used in manufacturing
+
+
 pricing
 Overhaul media to improve loading times
 change app loading to have a loading screen while the app loads in the background

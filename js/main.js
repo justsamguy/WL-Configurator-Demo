@@ -257,6 +257,7 @@ document.addEventListener('tube-size-cleared-due-to-incompatibility', async (ev)
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
+  console.log('[Addons] addon-toggled event:', { id, price, checked });
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
@@ -272,6 +273,7 @@ document.addEventListener('addon-toggled', async (ev) => {
 // Handle addon selections (single-select per group). Expect detail: { group, id, price }
 document.addEventListener('addon-selected', async (ev) => {
   const { group, id, price } = ev.detail || { group: null, id: null, price: 0 };
+  console.log('[Addons] addon-selected event:', { group, id, price });
   if (!group) return;
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   // Remove any previous selection in this group
@@ -515,5 +517,5 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-31 13:59');
+  console.log('Last updated: 2025-12-31 14:41');
 });

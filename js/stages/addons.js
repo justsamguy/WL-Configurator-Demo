@@ -2,8 +2,13 @@
 // Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
 // Updated to handle dropdown tiles with checkboxes instead of option cards
 export function init() {
-  // No need for click handlers here since the dropdown rendering handles checkbox events
-  // The renderAddonsDropdown function in stageRenderer.js handles the checkbox change events
+  const refreshIndicators = (ev) => {
+    console.log('[Addons] Refresh indicators from event:', ev.type, ev.detail || {});
+    updateAllIndicators();
+  };
+  document.addEventListener('addon-toggled', refreshIndicators);
+  document.addEventListener('addon-selected', refreshIndicators);
+  updateAllIndicators();
 }
 
 export function restoreFromState(state) {
@@ -47,19 +52,9 @@ export function restoreFromState(state) {
   } catch (e) { /* ignore */ }
 }
 
-const escapeSelectorValue = (value) => {
-  if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(value);
-  return value;
-};
-
 const parsePrice = (value) => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const getGroupTile = (groupTitle) => {
-  const safeTitle = escapeSelectorValue(groupTitle);
-  return document.querySelector(`.addons-dropdown-tile[data-id="${safeTitle}"]`);
 };
 
 const getGroupSelectionStats = (tile) => {
@@ -103,28 +98,27 @@ const getGroupSelectionStats = (tile) => {
 };
 
 // Function to update indicator for a specific group
-function updateIndicator(groupTitle) {
-  const tile = getGroupTile(groupTitle);
+function updateIndicator(tile, stats) {
   if (!tile) return;
 
   const indicator = tile.querySelector('.addons-dropdown-indicator');
   if (!indicator) return;
 
   const price = tile.querySelector('.addons-dropdown-price');
-  const stats = getGroupSelectionStats(tile);
+  const resolvedStats = stats || getGroupSelectionStats(tile);
 
   indicator.className = 'addons-dropdown-indicator';
-  if (stats.selectedCount === 0) {
+  if (resolvedStats.selectedCount === 0) {
     indicator.classList.remove('partial', 'full');
-  } else if (stats.selectedCount === stats.selectableCount) {
+  } else if (resolvedStats.selectedCount === resolvedStats.selectableCount) {
     indicator.classList.add('full');
   } else {
     indicator.classList.add('partial');
   }
 
   if (price) {
-    if (stats.selectedCount > 0) {
-      price.textContent = `+$${stats.total.toLocaleString()}`;
+    if (resolvedStats.selectedCount > 0) {
+      price.textContent = `+$${resolvedStats.total.toLocaleString()}`;
       price.classList.add('visible');
     } else {
       price.textContent = '';
@@ -135,10 +129,21 @@ function updateIndicator(groupTitle) {
 
 // Function to update all indicators
 function updateAllIndicators() {
+  const summaries = [];
   document.querySelectorAll('.addons-dropdown-tile').forEach(tile => {
-    const groupTitle = tile.getAttribute('data-id');
-    if (groupTitle) updateIndicator(groupTitle);
+    const groupTitle = tile.getAttribute('data-id') || 'Unknown';
+    const stats = getGroupSelectionStats(tile);
+    updateIndicator(tile, stats);
+    summaries.push({
+      group: groupTitle,
+      selected: stats.selectedCount,
+      total: stats.selectableCount,
+      price: stats.total
+    });
   });
+  if (summaries.length > 0) {
+    console.log('[Addons] Indicator summary:', summaries);
+  }
 }
 
 export { updateAllIndicators };
