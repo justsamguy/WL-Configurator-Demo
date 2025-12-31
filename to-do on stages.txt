@@ -1,4 +1,3 @@
-add a tooltip on the right side of the wood species header that has a small grey underlined text saying "How your wood is chosen" and the tooltip says "We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" Option.
 brainstorm reorganizing stages to follow the same process used in manufacturing
 make sure all tiles that are quoted separately use "Quoted Separately" in their price fields.
 make the addon tiles selectable and unselectable, regardless of where on the tile they are clicked.

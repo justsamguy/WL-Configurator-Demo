@@ -1,7 +1,22 @@
 <!-- Materials panel: only option containers (stage-specific help moved to components/StageInfo.html) -->
 <div id="materials-panel" class="">
   <div id="materials-root">
-    <h4 class="text-sm font-semibold mb-2">Wood Species</h4>
+    <div class="flex items-center justify-between gap-3">
+      <h4 class="text-sm font-semibold mb-2">Wood Species</h4>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="tooltip text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700 focus-visible:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-300 transition-colors"
+          data-tip='We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" Option.'
+          aria-describedby="wood-species-tooltip-desc"
+        >
+          How your wood is chosen
+        </button>
+        <span id="wood-species-tooltip-desc" class="sr-only">
+          We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" Option.
+        </span>
+      </div>
+    </div>
     <div id="materials-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
       <!-- Option cards are rendered at runtime by js/main.js -> stageRenderer.renderOptionCards -->
     </div>

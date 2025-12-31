@@ -412,7 +412,8 @@ header .site-logo {
   display: inline-block;
 }
 
-.tooltip:hover::after {
+.tooltip:hover::after,
+.tooltip:focus-visible::after {
   content: attr(data-tip);
   position: absolute;
   bottom: 100%;
@@ -428,7 +429,8 @@ header .site-logo {
   margin-bottom: 5px;
 }
 
-.tooltip:hover::before {
+.tooltip:hover::before,
+.tooltip:focus-visible::before {
   content: "";
   position: absolute;
   bottom: 100%;
