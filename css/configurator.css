@@ -2396,7 +2396,8 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .addons-dropdown-indicator.partial {
-  background-color: #6b7280;
+  background-color: #2563eb;
+  border-color: #2563eb;
   position: relative;
 }
 
