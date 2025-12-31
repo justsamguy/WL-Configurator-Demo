@@ -159,22 +159,6 @@ export function renderAddonsDropdown(container, data = []) {
             btn.appendChild(price);
             tilesContainer.appendChild(btn);
 
-            // Event listener for tile
-            btn.addEventListener('click', () => {
-              const isPressed = btn.getAttribute('aria-pressed') === 'true';
-              btn.setAttribute('aria-pressed', !isPressed);
-              btn.classList.toggle('selected', !isPressed);
-              const id = option.id;
-              const price = option.price || 0;
-              console.log('[Addons] Tile toggle:', { id, price, checked: !isPressed });
-              document.dispatchEvent(new CustomEvent('addon-toggled', {
-                detail: { id, price, checked: !isPressed }
-              }));
-              // Update indicators after selection change
-              import('./stages/addons.js').then(module => {
-                if (module.updateAllIndicators) module.updateAllIndicators();
-              });
-            });
           });
           subContainer.appendChild(tilesContainer);
         } else if (subsection.type === 'dropdown') {
@@ -193,22 +177,6 @@ export function renderAddonsDropdown(container, data = []) {
 
           subContainer.appendChild(select);
 
-          // Event listener for dropdown
-          select.addEventListener('change', (e) => {
-            const selectedOption = e.target.selectedOptions[0];
-            const id = selectedOption.value;
-            const price = parseInt(selectedOption.getAttribute('data-price')) || 0;
-            console.log('[Addons] Dropdown change:', { group: subsection.title, id, price });
-            // For dropdowns, we need to handle selection differently
-            // Assuming only one can be selected per subsection
-            document.dispatchEvent(new CustomEvent('addon-selected', {
-              detail: { group: subsection.title, id, price }
-            }));
-            // Update indicators after selection change
-            import('./stages/addons.js').then(module => {
-              if (module.updateAllIndicators) module.updateAllIndicators();
-            });
-          });
         }
 
         content.appendChild(subContainer);
@@ -243,13 +211,6 @@ export function renderAddonsDropdown(container, data = []) {
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
           optionDiv.appendChild(optionPrice);
-
-          optionDiv.addEventListener('click', (event) => {
-            if (event.target && event.target.closest('input')) return;
-            if (checkbox.disabled) return;
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-          });
 
           options.appendChild(optionDiv);
         });
@@ -290,26 +251,6 @@ export function renderAddonsDropdown(container, data = []) {
 
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
-    });
-
-    // Checkbox change events for non-tech groups
-    tile.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', (e) => {
-        const checked = e.target.checked;
-        const optionDiv = e.target.closest('.addons-dropdown-option');
-        if (optionDiv) optionDiv.classList.toggle('selected', checked);
-        const id = e.target.getAttribute('data-addon-id');
-        const option = group.options.find(o => o.id === id);
-        const price = option ? option.price || 0 : 0;
-        console.log('[Addons] Checkbox change:', { id, price, checked });
-        document.dispatchEvent(new CustomEvent('addon-toggled', {
-          detail: { id, price, checked }
-        }));
-        // Update indicators after selection change
-        import('./stages/addons.js').then(module => {
-          if (module.updateAllIndicators) module.updateAllIndicators();
-        });
-      });
     });
 
     tile.appendChild(header);

@@ -2,12 +2,75 @@
 // Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
 // Updated to handle dropdown tiles with checkboxes instead of option cards
 export function init() {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  if (root.dataset.addonsDelegated === 'true') return;
+  root.dataset.addonsDelegated = 'true';
+
   const refreshIndicators = (ev) => {
     console.log('[Addons] Refresh indicators from event:', ev.type, ev.detail || {});
     updateAllIndicators();
   };
   document.addEventListener('addon-toggled', refreshIndicators);
   document.addEventListener('addon-selected', refreshIndicators);
+
+  root.addEventListener('click', (event) => {
+    const optionRow = event.target.closest('.addons-dropdown-option');
+    if (optionRow && root.contains(optionRow)) {
+      const checkbox = optionRow.querySelector('.addons-dropdown-option-checkbox');
+      if (checkbox && !checkbox.disabled) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return;
+    }
+
+    const tile = event.target.closest('.addons-tile');
+    if (tile && root.contains(tile)) {
+      if (tile.disabled) return;
+      const isPressed = tile.getAttribute('aria-pressed') === 'true';
+      tile.setAttribute('aria-pressed', (!isPressed).toString());
+      tile.classList.toggle('selected', !isPressed);
+      const id = tile.getAttribute('data-addon-id');
+      const price = parsePrice(tile.getAttribute('data-price'));
+      console.log('[Addons] Tile toggle:', { id, price, checked: !isPressed });
+      document.dispatchEvent(new CustomEvent('addon-toggled', {
+        detail: { id, price, checked: !isPressed }
+      }));
+      updateAllIndicators();
+    }
+  });
+
+  root.addEventListener('change', (event) => {
+    const checkbox = event.target.closest('.addons-dropdown-option-checkbox');
+    if (checkbox && root.contains(checkbox)) {
+      const checked = checkbox.checked;
+      const optionDiv = checkbox.closest('.addons-dropdown-option');
+      if (optionDiv) optionDiv.classList.toggle('selected', checked);
+      const id = checkbox.getAttribute('data-addon-id');
+      const price = parsePrice(checkbox.getAttribute('data-price'));
+      console.log('[Addons] Checkbox change:', { id, price, checked });
+      document.dispatchEvent(new CustomEvent('addon-toggled', {
+        detail: { id, price, checked }
+      }));
+      updateAllIndicators();
+      return;
+    }
+
+    const select = event.target.closest('.addons-dropdown-select');
+    if (select && root.contains(select)) {
+      const selectedOption = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
+      const id = selectedOption ? selectedOption.value : null;
+      const price = selectedOption ? parsePrice(selectedOption.getAttribute('data-price')) : 0;
+      const group = select.getAttribute('data-addon-group');
+      console.log('[Addons] Dropdown change:', { group, id, price });
+      document.dispatchEvent(new CustomEvent('addon-selected', {
+        detail: { group, id, price }
+      }));
+      updateAllIndicators();
+    }
+  });
+
   updateAllIndicators();
 }
 
