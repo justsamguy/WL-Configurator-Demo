@@ -47,82 +47,97 @@ export function restoreFromState(state) {
   } catch (e) { /* ignore */ }
 }
 
-// Function to determine indicator state for a group
-function getIndicatorState(groupTitle, selectedIds) {
-  const groupId = groupTitle.toLowerCase().replace(/\s+/g, '-');
+const escapeSelectorValue = (value) => {
+  if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(value);
+  return value;
+};
 
-  // For non-tech groups (checkboxes)
-  const checkboxOptions = document.querySelectorAll(`.addons-dropdown-tile[data-id="${groupTitle}"] .addons-dropdown-option-checkbox`);
-  if (checkboxOptions.length > 0) {
-    const checkedBoxes = Array.from(checkboxOptions).filter(cb => cb.checked);
-    if (checkedBoxes.length === 0) return 'empty';
-    if (checkedBoxes.length === checkboxOptions.length) return 'full';
-    return 'partial';
-  }
+const parsePrice = (value) => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
-  // For tech subsections
-  const subsection = document.querySelector(`.addons-subsection-title`);
-  if (subsection && subsection.textContent.trim() === groupTitle) {
-    const container = subsection.closest('.addons-subsection');
+const getGroupTile = (groupTitle) => {
+  const safeTitle = escapeSelectorValue(groupTitle);
+  return document.querySelector(`.addons-dropdown-tile[data-id="${safeTitle}"]`);
+};
 
-    // Check tiles
-    const tiles = container.querySelectorAll('.addons-tile');
-    if (tiles.length > 0) {
-      const selectedTiles = Array.from(tiles).filter(tile => tile.classList.contains('selected'));
-      if (selectedTiles.length === 0) return 'empty';
-      if (selectedTiles.length === tiles.length) return 'full';
-      return 'partial';
-    }
+const getGroupSelectionStats = (tile) => {
+  const stats = {
+    selectedCount: 0,
+    selectableCount: 0,
+    total: 0
+  };
+  if (!tile) return stats;
 
-    // Check dropdown
-    const select = container.querySelector('.addons-dropdown-select');
-    if (select) {
-      const selectedValue = select.value;
-      const noneOption = select.querySelector('option[value*="none"]');
-      if (noneOption && selectedValue === noneOption.value) return 'empty';
-      return 'full'; // Any other selection is "full"
-    }
-  }
-
-  return 'empty';
-}
-
-// Function to update indicator for a specific group
-function updateIndicator(groupTitle) {
-  const indicator = document.querySelector(`.addons-dropdown-indicator[data-group-id="${groupTitle.toLowerCase().replace(/\s+/g, '-')}"]`);
-  if (!indicator) return;
-
-  // Get current selections (this is a simplified approach - in practice you'd get from state)
-  const selectedIds = [];
-  document.querySelectorAll('.addons-dropdown-option-checkbox:checked, .addons-tile.selected, .addons-dropdown-select').forEach(el => {
-    if (el.type === 'checkbox' && el.checked) {
-      selectedIds.push(el.getAttribute('data-addon-id'));
-    } else if (el.classList.contains('addons-tile') && el.classList.contains('selected')) {
-      selectedIds.push(el.getAttribute('data-addon-id'));
-    } else if (el.tagName === 'SELECT') {
-      const value = el.value;
-      if (value && !value.includes('none')) {
-        selectedIds.push(value);
-      }
+  const checkboxes = tile.querySelectorAll('.addons-dropdown-option-checkbox');
+  checkboxes.forEach(checkbox => {
+    stats.selectableCount += 1;
+    if (checkbox.checked) {
+      stats.selectedCount += 1;
+      stats.total += parsePrice(checkbox.getAttribute('data-price'));
     }
   });
 
-  const state = getIndicatorState(groupTitle, selectedIds);
+  const tiles = tile.querySelectorAll('.addons-tile');
+  tiles.forEach(button => {
+    stats.selectableCount += 1;
+    if (button.classList.contains('selected')) {
+      stats.selectedCount += 1;
+      stats.total += parsePrice(button.getAttribute('data-price'));
+    }
+  });
+
+  const selects = tile.querySelectorAll('.addons-dropdown-select');
+  selects.forEach(select => {
+    stats.selectableCount += 1;
+    const selectedOption = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
+    if (!selectedOption) return;
+    const value = selectedOption.value || '';
+    if (value.includes('none')) return;
+    stats.selectedCount += 1;
+    stats.total += parsePrice(selectedOption.getAttribute('data-price'));
+  });
+
+  return stats;
+};
+
+// Function to update indicator for a specific group
+function updateIndicator(groupTitle) {
+  const tile = getGroupTile(groupTitle);
+  if (!tile) return;
+
+  const indicator = tile.querySelector('.addons-dropdown-indicator');
+  if (!indicator) return;
+
+  const price = tile.querySelector('.addons-dropdown-price');
+  const stats = getGroupSelectionStats(tile);
+
   indicator.className = 'addons-dropdown-indicator';
-  if (state === 'partial') {
-    indicator.classList.add('partial');
-  } else if (state === 'full') {
+  if (stats.selectedCount === 0) {
+    indicator.classList.remove('partial', 'full');
+  } else if (stats.selectedCount === stats.selectableCount) {
     indicator.classList.add('full');
+  } else {
+    indicator.classList.add('partial');
+  }
+
+  if (price) {
+    if (stats.selectedCount > 0) {
+      price.textContent = `+$${stats.total.toLocaleString()}`;
+      price.classList.add('visible');
+    } else {
+      price.textContent = '';
+      price.classList.remove('visible');
+    }
   }
 }
 
 // Function to update all indicators
 function updateAllIndicators() {
-  document.querySelectorAll('.addons-dropdown-indicator').forEach(indicator => {
-    const groupId = indicator.getAttribute('data-group-id');
-    // Convert back to title format
-    const groupTitle = groupId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    updateIndicator(groupTitle);
+  document.querySelectorAll('.addons-dropdown-tile').forEach(tile => {
+    const groupTitle = tile.getAttribute('data-id');
+    if (groupTitle) updateIndicator(groupTitle);
   });
 }
 

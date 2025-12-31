@@ -102,9 +102,8 @@ If repeated attempts don’t resolve an issue:
 ## Running commands in VSCode
 
 - You have full read access to the repository.
-- **Do not run commands** unless explicitly asked.
-- If you suggest a command, **explain what it does** and **ask before running it**.
-- When explicitly asked to run commands, you may run **file operation** commands (e.g., listing directories, organizing, renaming/moving files).
+- You may run **file operation** commands needed for the task (read, list, edit, move/rename) without prompting.
+- If you suggest a command the user did not request (especially non-file ops), **explain what it does** and **ask before running it**.
 
 > Note: Avoid running local verify/test/build commands unless the user explicitly requests them.
 

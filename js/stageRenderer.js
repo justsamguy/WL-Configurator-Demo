@@ -92,12 +92,20 @@ export function renderAddonsDropdown(container, data = []) {
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
 
+    const price = document.createElement('div');
+    price.className = 'addons-dropdown-price';
+
     const indicator = document.createElement('div');
     indicator.className = 'addons-dropdown-indicator';
     indicator.setAttribute('data-group-id', group.title.toLowerCase().replace(/\s+/g, '-'));
 
+    const headerMeta = document.createElement('div');
+    headerMeta.className = 'addons-dropdown-header-meta';
+    headerMeta.appendChild(price);
+    headerMeta.appendChild(indicator);
+
     headerMain.appendChild(title);
-    headerMain.appendChild(indicator);
+    headerMain.appendChild(headerMeta);
 
     // Chevron icon
     const chevron = document.createElement('svg');
@@ -137,6 +145,7 @@ export function renderAddonsDropdown(container, data = []) {
             btn.className = 'addons-tile';
             btn.setAttribute('data-addon-id', option.id);
             btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('data-price', option.price || 0);
 
             const label = document.createElement('div');
             label.className = 'addons-tile-label';
@@ -213,11 +222,13 @@ export function renderAddonsDropdown(container, data = []) {
           const optionDiv = document.createElement('div');
           optionDiv.className = 'addons-dropdown-option';
           optionDiv.setAttribute('data-addon-id', option.id);
+          optionDiv.setAttribute('data-price', option.price || 0);
 
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.className = 'addons-dropdown-option-checkbox';
           checkbox.setAttribute('data-addon-id', option.id);
+          checkbox.setAttribute('data-price', option.price || 0);
 
           const label = document.createElement('div');
           label.className = 'addons-dropdown-option-label';

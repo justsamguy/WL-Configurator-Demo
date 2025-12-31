@@ -2358,10 +2358,30 @@ body.stage-1 #designs-stage-section > div {
   flex: 1;
 }
 
+.addons-dropdown-header-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .addons-dropdown-title {
   font-weight: 600;
   font-size: 0.9375rem;
   color: #111827;
+}
+
+.addons-dropdown-price {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  min-width: 4.5rem;
+  text-align: right;
+  display: none;
+}
+
+.addons-dropdown-price.visible {
+  display: block;
 }
 
 .addons-dropdown-indicator {
@@ -2371,7 +2391,7 @@ body.stage-1 #designs-stage-section > div {
   border: 2px solid #d1d5db;
   background-color: transparent;
   flex-shrink: 0;
-  margin-left: auto;
+  position: relative;
   transition: all 0.2s ease;
 }
 
@@ -2395,6 +2415,19 @@ body.stage-1 #designs-stage-section > div {
 .addons-dropdown-indicator.full {
   background-color: #2563eb;
   border-color: #2563eb;
+}
+
+.addons-dropdown-indicator.full::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-top: 0;
+  border-left: 0;
+  transform: translate(-50%, -55%) rotate(45deg);
 }
 
 .addons-dropdown-chevron {
@@ -2423,19 +2456,21 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .addons-dropdown-intro {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   padding: 1rem;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .addons-dropdown-intro-image {
-  width: 72px;
-  height: 72px;
+  width: 100%;
+  height: auto;
+  max-height: 140px;
   border-radius: 0.5rem;
-  object-fit: cover;
-  flex-shrink: 0;
+  object-fit: contain;
   background-color: #e5e7eb;
+  justify-self: center;
 }
 
 .addons-dropdown-intro-text {
@@ -2450,6 +2485,7 @@ body.stage-1 #designs-stage-section > div {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
+  box-sizing: border-box;
 }
 
 .addons-dropdown-option {
@@ -2463,6 +2499,8 @@ body.stage-1 #designs-stage-section > div {
   width: 100%;
   min-height: 3rem;
   border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .addons-dropdown-option:hover {
@@ -2538,6 +2576,7 @@ body.stage-1 #designs-stage-section > div {
   min-height: 3rem;
   width: 100%;
   max-width: 120px;
+  box-sizing: border-box;
 }
 
 .addons-tile:hover {
