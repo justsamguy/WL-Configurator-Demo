@@ -18,7 +18,6 @@ function ensureCustomColorNoteField() {
   if (!noteContainer) {
     noteContainer = document.createElement('div');
     noteContainer.className = 'custom-color-note-container';
-    noteContainer.hidden = true;
 
     const label = document.createElement('label');
     label.className = 'custom-color-note-label';
@@ -39,12 +38,6 @@ function ensureCustomColorNoteField() {
       document.dispatchEvent(new CustomEvent('custom-color-note-updated', { detail: { value: textarea.value } }));
     });
 
-    const descriptionEl = card.querySelector('.description');
-    if (descriptionEl && descriptionEl.parentElement === card) {
-      descriptionEl.insertAdjacentElement('afterend', noteContainer);
-    } else {
-      card.appendChild(noteContainer);
-    }
     customColorNoteInput = textarea;
   } else {
     customColorNoteInput = noteContainer.querySelector('.custom-color-note');
@@ -55,7 +48,20 @@ function ensureCustomColorNoteField() {
 function setCustomColorNoteVisibility(isVisible) {
   if (!customColorCard || !customColorNoteContainer) return;
   customColorCard.classList.toggle('custom-color-active', isVisible);
-  customColorNoteContainer.hidden = !isVisible;
+  if (isVisible) {
+    if (!customColorNoteContainer.parentElement) {
+      const descriptionEl = customColorCard.querySelector('.description');
+      if (descriptionEl && descriptionEl.parentElement === customColorCard) {
+        descriptionEl.insertAdjacentElement('afterend', customColorNoteContainer);
+      } else {
+        customColorCard.appendChild(customColorNoteContainer);
+      }
+    }
+  } else {
+    if (customColorNoteContainer.parentElement) {
+      customColorNoteContainer.parentElement.removeChild(customColorNoteContainer);
+    }
+  }
 }
 
 function syncCustomColorNoteValue(value = '') {
