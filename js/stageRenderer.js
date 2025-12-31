@@ -395,11 +395,12 @@ export function renderSheenSlider(container, data = []) {
   const selectIndex = (selectedIndex, options = {}) => {
     const { dispatch = true } = options;
     if (selectedIndex < 0 || selectedIndex >= data.length) return;
+    const wasSelected = selectedIndex === lastSelectedIndex;
     lastSelectedIndex = selectedIndex;
     updateTileHighlighting(selectedIndex);
     slider.value = String(getSliderValueForIndex(selectedIndex));
     container.__sheenSelectedIndex = selectedIndex;
-    if (dispatch) dispatchSelectionEvent(selectedIndex);
+    if (dispatch && !wasSelected) dispatchSelectionEvent(selectedIndex);
   };
 
   const refreshSnapCenters = () => {
@@ -436,7 +437,42 @@ export function renderSheenSlider(container, data = []) {
     selectIndex(nearestIndex);
   };
 
-  slider.addEventListener('change', finalizeSelection);
+  const pointerState = {
+    active: false,
+    pointerId: null
+  };
+
+  const startPointerInteraction = (event) => {
+    pointerState.active = true;
+    if (typeof event.pointerId === 'number' && slider.setPointerCapture) {
+      slider.setPointerCapture(event.pointerId);
+      pointerState.pointerId = event.pointerId;
+    }
+  };
+
+  const endPointerInteraction = (event = {}) => {
+    if (!pointerState.active) return;
+    pointerState.active = false;
+    if (typeof pointerState.pointerId === 'number' && slider.releasePointerCapture) {
+      slider.releasePointerCapture(pointerState.pointerId);
+    }
+    pointerState.pointerId = null;
+    finalizeSelection();
+  };
+
+  const usesPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window;
+  if (usesPointerEvents) {
+    slider.addEventListener('pointerdown', startPointerInteraction);
+    slider.addEventListener('pointerup', endPointerInteraction);
+    slider.addEventListener('pointercancel', () => endPointerInteraction());
+  } else {
+    slider.addEventListener('mousedown', startPointerInteraction);
+    slider.addEventListener('mouseup', endPointerInteraction);
+    slider.addEventListener('touchstart', startPointerInteraction);
+    slider.addEventListener('touchend', () => endPointerInteraction());
+    slider.addEventListener('touchcancel', () => endPointerInteraction());
+  }
+
   slider.addEventListener('keydown', (event) => {
     const skipKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
     if (skipKeys.includes(event.key)) {
