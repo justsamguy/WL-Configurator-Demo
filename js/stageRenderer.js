@@ -166,6 +166,7 @@ export function renderAddonsDropdown(container, data = []) {
               btn.classList.toggle('selected', !isPressed);
               const id = option.id;
               const price = option.price || 0;
+              console.log('[Addons] Tile toggle:', { id, price, checked: !isPressed });
               document.dispatchEvent(new CustomEvent('addon-toggled', {
                 detail: { id, price, checked: !isPressed }
               }));
@@ -197,6 +198,7 @@ export function renderAddonsDropdown(container, data = []) {
             const selectedOption = e.target.selectedOptions[0];
             const id = selectedOption.value;
             const price = parseInt(selectedOption.getAttribute('data-price')) || 0;
+            console.log('[Addons] Dropdown change:', { group: subsection.title, id, price });
             // For dropdowns, we need to handle selection differently
             // Assuming only one can be selected per subsection
             document.dispatchEvent(new CustomEvent('addon-selected', {
@@ -241,6 +243,13 @@ export function renderAddonsDropdown(container, data = []) {
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
           optionDiv.appendChild(optionPrice);
+
+          optionDiv.addEventListener('click', (event) => {
+            if (event.target && event.target.closest('input')) return;
+            if (checkbox.disabled) return;
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+          });
 
           options.appendChild(optionDiv);
         });
@@ -292,6 +301,7 @@ export function renderAddonsDropdown(container, data = []) {
         const id = e.target.getAttribute('data-addon-id');
         const option = group.options.find(o => o.id === id);
         const price = option ? option.price || 0 : 0;
+        console.log('[Addons] Checkbox change:', { id, price, checked });
         document.dispatchEvent(new CustomEvent('addon-toggled', {
           detail: { id, price, checked }
         }));

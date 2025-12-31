@@ -14,6 +14,7 @@ export function init() {
 export function restoreFromState(state) {
   try {
     const arr = state && state.selections && state.selections.options && Array.isArray(state.selections.options.addon) ? state.selections.options.addon : [];
+    console.log('[Addons] restoreFromState selections:', arr);
     // Handle checkboxes
     document.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
       const id = checkbox.getAttribute('data-addon-id');

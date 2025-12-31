@@ -3,3 +3,10 @@ Dining/Conference Table:
 36 wide is +0. Every 6" Increment up to 52" is an additional +500. from 52-58 is +1000, then +500 for every increment up to 70.
 
 Coffee Table:
+
+
+Legs:
+Squared is +500, tapered is +600, X and hourglass are +1000. Custom is quoted separately. Cube is +400.
+Tube size has no pricing.
+
+Addons:
