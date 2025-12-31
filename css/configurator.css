@@ -2334,12 +2334,11 @@ body.stage-1 #designs-stage-section > div {
   background-color: #f9fafb;
 }
 
-.addons-dropdown-title-price {
+.addons-dropdown-header-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   flex: 1;
-  margin-right: 1rem;
 }
 
 .addons-dropdown-title {
@@ -2348,20 +2347,14 @@ body.stage-1 #designs-stage-section > div {
   color: #111827;
 }
 
-.addons-dropdown-price {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
 .addons-dropdown-indicator {
   width: 16px;
   height: 16px;
   border-radius: 4px;
   border: 2px solid #d1d5db;
   background-color: transparent;
-  margin: 0 0.5rem 0 auto;
   flex-shrink: 0;
+  margin-left: auto;
   transition: all 0.2s ease;
 }
 
@@ -2406,6 +2399,33 @@ body.stage-1 #designs-stage-section > div {
   transition: max-height 0.3s ease;
   background-color: #f9fafb;
   border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
+}
+
+.addons-dropdown-intro {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: flex-start;
+}
+
+.addons-dropdown-intro-image {
+  width: 72px;
+  height: 72px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  background-color: #e5e7eb;
+}
+
+.addons-dropdown-intro-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.4;
 }
 
 .addons-dropdown-options {

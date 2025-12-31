@@ -50,6 +50,27 @@ export function renderOptionCards(container, data = [], opts = {}) {
   });
 }
 
+const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
+
+function buildAddonIntro(group = {}) {
+  const introWrapper = document.createElement('div');
+  introWrapper.className = 'addons-dropdown-intro';
+
+  const image = document.createElement('img');
+  image.className = 'addons-dropdown-intro-image';
+  image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
+  image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+  introWrapper.appendChild(image);
+
+  const text = document.createElement('p');
+  text.className = 'addons-dropdown-intro-text';
+  const fallbackTitle = group.title ? group.title.toLowerCase() : 'add-on';
+  text.textContent = group.description || `Choose the ${fallbackTitle} enhancements that best fit your space.`;
+  introWrapper.appendChild(text);
+
+  return introWrapper;
+}
+
 export function renderAddonsDropdown(container, data = []) {
   if (!container) return;
   container.innerHTML = '';
@@ -64,29 +85,19 @@ export function renderAddonsDropdown(container, data = []) {
     header.className = 'addons-dropdown-header';
     header.setAttribute('aria-expanded', 'false');
 
-    const titlePrice = document.createElement('div');
-    titlePrice.className = 'addons-dropdown-title-price';
+    const headerMain = document.createElement('div');
+    headerMain.className = 'addons-dropdown-header-main';
 
     const title = document.createElement('div');
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
 
-    // Add indicator before price
     const indicator = document.createElement('div');
     indicator.className = 'addons-dropdown-indicator';
     indicator.setAttribute('data-group-id', group.title.toLowerCase().replace(/\s+/g, '-'));
 
-    const price = document.createElement('div');
-    price.className = 'addons-dropdown-price';
-    if (group.options && group.options.length === 1) {
-      price.textContent = group.options[0].price ? `+$${group.options[0].price}` : '+$0';
-    } else {
-      price.textContent = '';
-    }
-
-    titlePrice.appendChild(title);
-    titlePrice.appendChild(indicator);
-    titlePrice.appendChild(price);
+    headerMain.appendChild(title);
+    headerMain.appendChild(indicator);
 
     // Chevron icon
     const chevron = document.createElement('svg');
@@ -96,12 +107,15 @@ export function renderAddonsDropdown(container, data = []) {
     chevron.setAttribute('stroke', 'currentColor');
     chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />';
 
-    header.appendChild(titlePrice);
+    header.appendChild(headerMain);
     header.appendChild(chevron);
 
     // Content (expandable)
     const content = document.createElement('div');
     content.className = 'addons-dropdown-content';
+
+    const intro = buildAddonIntro(group);
+    content.appendChild(intro);
 
     // Handle tech group with subsections
     if (group.type === 'tech' && group.subsections) {
@@ -219,14 +233,6 @@ export function renderAddonsDropdown(container, data = []) {
 
           options.appendChild(optionDiv);
         });
-      }
-
-      // Description if available
-      if (group.description) {
-        const desc = document.createElement('div');
-        desc.className = 'addons-dropdown-description';
-        desc.textContent = group.description;
-        content.appendChild(desc);
       }
 
       content.appendChild(options);
