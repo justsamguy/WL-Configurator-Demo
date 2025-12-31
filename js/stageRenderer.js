@@ -240,9 +240,11 @@ export function renderAddonsDropdown(container, data = []) {
 
     // Handle disabled state
     if (group.disabled) {
-      tile.setAttribute('disabled', 'true');
-      header.setAttribute('disabled', 'true');
-      tile.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+      tile.classList.add('disabled');
+      tile.setAttribute('data-disabled', 'true');
+      tile.setAttribute('aria-disabled', 'true');
+      header.setAttribute('aria-disabled', 'true');
+      content.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
       if (group.tooltip) {
         tile.setAttribute('data-tooltip', group.tooltip);
       }
@@ -250,7 +252,6 @@ export function renderAddonsDropdown(container, data = []) {
 
     // Event listeners
     header.addEventListener('click', () => {
-      if (group.disabled) return;
       const isExpanded = tile.classList.contains('expanded');
 
       if (!isExpanded) {

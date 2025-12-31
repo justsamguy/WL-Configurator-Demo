@@ -2317,6 +2317,23 @@ body.stage-1 #designs-stage-section > div {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
+.addons-dropdown-tile.disabled {
+  background-color: #f4f6f9;
+  border-color: #d1d5db;
+}
+
+.addons-dropdown-tile.disabled .addons-dropdown-title {
+  color: #6b7280;
+}
+
+.addons-dropdown-tile.disabled .addons-dropdown-chevron {
+  color: #9ca3af;
+}
+
+.addons-dropdown-tile.disabled .addons-dropdown-indicator {
+  border-color: #cbd5f5;
+}
+
 .addons-dropdown-header {
   display: flex;
   align-items: center;
