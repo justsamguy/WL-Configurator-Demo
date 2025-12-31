@@ -3,72 +3,59 @@ let lastKnownModel = null; // Track the model to detect changes
 
 const CUSTOM_COLOR_ID = 'color-01';
 const CUSTOM_NOTE_ATTR = 'data-custom-note';
-const CUSTOM_COLOR_WRAPPER_CLASS = 'custom-color-wrapper';
 const CUSTOM_NOTE_INPUT_ID = 'custom-color-note-input';
 
-let customColorWrapper = null;
+let customColorCard = null;
 let customColorNoteContainer = null;
 let customColorNoteInput = null;
 
 function ensureCustomColorNoteField() {
-  if (customColorWrapper) return;
-  const customCard = document.querySelector(`.option-card[${CUSTOM_NOTE_ATTR}]`);
-  if (!customCard) return;
-  const existingWrapper = customCard.closest(`.${CUSTOM_COLOR_WRAPPER_CLASS}`);
-  if (existingWrapper) {
-    customColorWrapper = existingWrapper;
-    customColorNoteContainer = customColorWrapper.querySelector('.custom-color-note-container');
-    customColorNoteInput = customColorWrapper.querySelector('.custom-color-note');
-    return;
+  if (customColorCard && customColorNoteContainer && customColorNoteInput) return;
+  const card = document.querySelector(`.option-card[${CUSTOM_NOTE_ATTR}]`);
+  if (!card) return;
+  customColorCard = card;
+  let noteContainer = card.querySelector('.custom-color-note-container');
+  if (!noteContainer) {
+    noteContainer = document.createElement('div');
+    noteContainer.className = 'custom-color-note-container';
+    noteContainer.hidden = true;
+
+    const label = document.createElement('label');
+    label.className = 'custom-color-note-label';
+    label.setAttribute('for', CUSTOM_NOTE_INPUT_ID);
+    label.textContent = 'Custom color notes';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'custom-color-note';
+    textarea.id = CUSTOM_NOTE_INPUT_ID;
+    textarea.placeholder = 'Describe the custom color you are after, include reference tones if helpful.';
+    textarea.rows = 3;
+    textarea.setAttribute('aria-label', 'Custom color notes');
+
+    noteContainer.appendChild(label);
+    noteContainer.appendChild(textarea);
+
+    textarea.addEventListener('input', () => {
+      document.dispatchEvent(new CustomEvent('custom-color-note-updated', { detail: { value: textarea.value } }));
+    });
+
+    const descriptionEl = card.querySelector('.description');
+    if (descriptionEl && descriptionEl.parentElement === card) {
+      descriptionEl.insertAdjacentElement('afterend', noteContainer);
+    } else {
+      card.appendChild(noteContainer);
+    }
+    customColorNoteInput = textarea;
+  } else {
+    customColorNoteInput = noteContainer.querySelector('.custom-color-note');
   }
-
-  const parent = customCard.parentElement;
-  if (!parent) return;
-
-  const wrapper = document.createElement('div');
-  wrapper.className = CUSTOM_COLOR_WRAPPER_CLASS;
-  wrapper.setAttribute('data-custom-color-wrapper', 'true');
-  parent.insertBefore(wrapper, customCard);
-  wrapper.appendChild(customCard);
-
-  const noteContainer = document.createElement('div');
-  noteContainer.className = 'custom-color-note-container';
-  noteContainer.hidden = true;
-
-  const label = document.createElement('label');
-  label.className = 'custom-color-note-label';
-  label.setAttribute('for', CUSTOM_NOTE_INPUT_ID);
-  label.textContent = 'Custom color notes';
-
-  const textarea = document.createElement('textarea');
-  textarea.className = 'custom-color-note';
-  textarea.id = CUSTOM_NOTE_INPUT_ID;
-  textarea.placeholder = 'Describe the custom color you are after, include reference tones if helpful.';
-  textarea.rows = 3;
-  textarea.setAttribute('aria-label', 'Custom color notes');
-
-  noteContainer.appendChild(label);
-  noteContainer.appendChild(textarea);
-  wrapper.appendChild(noteContainer);
-
-  textarea.addEventListener('input', () => {
-    document.dispatchEvent(new CustomEvent('custom-color-note-updated', { detail: { value: textarea.value } }));
-  });
-
-  customColorWrapper = wrapper;
   customColorNoteContainer = noteContainer;
-  customColorNoteInput = textarea;
 }
 
 function setCustomColorNoteVisibility(isVisible) {
-  if (!customColorWrapper || !customColorNoteContainer) return;
-  if (isVisible) {
-    customColorWrapper.classList.add('custom-color-active');
-    customColorNoteContainer.hidden = false;
-  } else {
-    customColorWrapper.classList.remove('custom-color-active');
-    customColorNoteContainer.hidden = true;
-  }
+  if (!customColorCard || !customColorNoteContainer) return;
+  customColorCard.classList.toggle('custom-color-active', isVisible);
+  customColorNoteContainer.hidden = !isVisible;
 }
 
 function syncCustomColorNoteValue(value = '') {

@@ -864,22 +864,17 @@ body.show-model-tiles #stage-panel-0 #model-options,
   margin-bottom: 5px;
 }
 
-.stage-options-grid .custom-color-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+.stage-options-grid .option-card[data-custom-note] {
   align-items: stretch;
 }
 
-.custom-color-note-container {
-  display: none;
+.stage-options-grid .option-card[data-custom-note] .custom-color-note-container {
+  display: flex;
   flex-direction: column;
   gap: 0.4rem;
   align-items: stretch;
-}
-
-.custom-color-wrapper.custom-color-active .custom-color-note-container {
-  display: flex;
+  width: 100%;
+  text-align: left;
 }
 
 .custom-color-note-label {

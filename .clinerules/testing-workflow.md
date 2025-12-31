@@ -1,7 +1,10 @@
 ## Brief overview
 This document provides high-level notes on testing for the WoodLab Configurator project.
 
-For agent behavior, constraints, and workflow guardrails, treat `Coding Agent Instructions.md` (repo root) as the primary source of truth.
+For agent behavior, constraints, and workflow guardrails, treat `AGENTS.md` (repo root) as the primary source of truth.
+
+Related rule files (keep shared constraints in sync): `.github/copilot-instructions.md`, `.clinerules/README.md`.
+**Synchronization rule:** When you change shared project rules (stack/platform constraints, architecture invariants, accessibility requirements, workflow guardrails, version policy), update the corresponding sections in the related rule files as well.
 
 ## Testing Recommendations
 - Note: Testing must occur in a live server environment due to CDN dependencies.

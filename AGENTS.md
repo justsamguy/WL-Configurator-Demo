@@ -2,6 +2,15 @@
 
 You are an AI coding agent working in the **WoodLab Configurator** GitHub repository through VSCode. Follow the instructions below exactly.
 
+## Related rule files (keep in sync)
+
+This repo has multiple rule files for different agents/tools. `AGENTS.md` is the primary source of truth for **project constraints and architecture**; other rule files should reference it and mirror shared constraints where applicable.
+
+- GitHub Copilot: `.github/copilot-instructions.md`
+- Cline rules: `.clinerules/README.md` and `.clinerules/**`
+
+**Synchronization rule (required):** If you change shared project rules (stack/platform constraints, architecture invariants, accessibility requirements, workflow guardrails, version policy), update the corresponding sections in the other rule files above so they stay aligned. Preserve tool-specific formatting and instructions (i.e., don’t overwrite Copilot/Cline-specific guidance that doesn’t conflict).
+
 ## Rule precedence (highest → lowest)
 
 1. **Safety & security boundaries**
@@ -124,12 +133,11 @@ Typical flow:
 
 ---
 
-## Timestamp rule (required, user-provided)
+## Timestamp + edit version rule (required)
 
 After completing any requested edit to the app:
-- Update the `Last updated:` timestamp in `js/main.js` (the console.log line after “WoodLab Configurator loaded successfully”) in format `YYYY-MM-DD HH:MM`.
-- **Do not guess the current date/time.** If not provided in the request, ask the user for it after the task is complete.
-- The user will advise whether to apply the timestamp update.
+- Update the `Last updated:` timestamp in `js/main.js` (the console.log line after “WoodLab Configurator loaded successfully”) in format `YYYY-MM-DD HH:MM` using the current local time from the system clock.
+- Increment the `Edit ver:` number in the console.log line immediately after the timestamp by **1**.
 
 ---
 

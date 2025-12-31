@@ -1,6 +1,15 @@
 # WoodLab Configurator Project Instructions
 
-Primary source of truth: `Coding Agent Instructions.md` (repo root). Keep this file aligned; if anything here conflicts, follow `Coding Agent Instructions.md` and update this file.
+Primary source of truth: `AGENTS.md` (repo root). Keep this file aligned; if anything here conflicts, follow `AGENTS.md` and update this file.
+
+## Related rule files (keep in sync)
+
+This repo maintains multiple rule files for different tools/agents. Keep shared project constraints synchronized across them while preserving tool-specific guidance and formatting.
+
+- Primary: `AGENTS.md`
+- Cline rules: `.clinerules/README.md` and `.clinerules/**`
+
+**Synchronization rule:** When you change shared project rules (stack/platform constraints, architecture invariants, accessibility requirements, workflow guardrails, version policy), update the corresponding sections in the files above as well.
 
 ## Context (summary)
 
@@ -20,10 +29,10 @@ Primary source of truth: `Coding Agent Instructions.md` (repo root). Keep this f
 - **No server code.**
 - **No external APIs for business data/services** unless explicitly approved; use local repo data/assets by default (`data/*.json`, `components/*.html`, `assets/**`).
 - **No new dependencies** unless explicitly approved.
-- **Timestamp rule:** After app edits, update `Last updated:` in `js/main.js` as `YYYY-MM-DD HH:MM`, but do not guess the current time—ask the user if not provided.
+- **Timestamp + edit version rule:** After app edits, update `Last updated:` in `js/main.js` as `YYYY-MM-DD HH:MM` using the current local time from the system clock, then increment the `Edit ver:` line immediately after it by 1.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
 
 ## Provenance
 
-- Source: `Coding Agent Instructions.md`
+- Source: `AGENTS.md`
 - Related: `.clinerules/**`
