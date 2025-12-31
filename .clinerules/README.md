@@ -2,7 +2,7 @@
 
 This `.clinerules/` folder contains all rule files for the WoodLab Configurator static mockup project. These rules are tailored to the locked tech stack, strict file/folder structure, and client-only, GitHub Pages-compatible requirements of this project.
 
-Refer to the project's main `README.md` for overall project context and guidelines.
+Primary source of truth for agent behavior and project constraints lives in `Coding Agent Instructions.md` at the repo root. If anything in `.clinerules/**` conflicts with `Coding Agent Instructions.md`, update the rules here to match it.
 
 ## Folder Structure
 
