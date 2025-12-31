@@ -862,6 +862,50 @@ body.show-model-tiles #stage-panel-0 #model-options,
   margin-bottom: 5px;
 }
 
+.stage-options-grid .custom-color-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.custom-color-note-container {
+  display: none;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.custom-color-wrapper.custom-color-active .custom-color-note-container {
+  display: flex;
+}
+
+.custom-color-note-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.custom-color-note {
+  width: 100%;
+  min-height: 72px;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  font-size: 0.875rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.custom-color-note:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* Legs stage: 4-column layout */
 #legs-options {
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -4,10 +4,12 @@ Dining/Conference Table:
 
 Coffee Table:
 
+Finish coatings are both +0
 
 Legs:
 Squared is +500, tapered is +600, X and hourglass are +1000. Custom is quoted separately. Cube is +400.
 Tube size has no pricing.
+Custom finish +0, quoted separately
 
 Addons:
 Live edge +500

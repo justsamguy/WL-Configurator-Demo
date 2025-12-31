@@ -9,6 +9,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
     btn.setAttribute('data-id', item.id);
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
+    if (item.customNote) btn.setAttribute('data-custom-note', 'true');
     // Use aria-checked for multi-select (addon) category, aria-pressed for single-select
     const isMultiSelect = opts.category === 'addon';
     if (isMultiSelect) {

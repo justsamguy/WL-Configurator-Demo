@@ -226,6 +226,19 @@ document.addEventListener('option-selected', async (ev) => {
   }
 });
 
+document.addEventListener('custom-color-note-updated', (ev) => {
+  const value = ev.detail && typeof ev.detail.value === 'string' ? ev.detail.value : '';
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        customColorNote: value
+      }
+    }
+  });
+});
+
 // Handle "none" leg selection - clear dependent selections without dispatching events with null ids
 document.addEventListener('legs-none-selected', async (ev) => {
   try {
