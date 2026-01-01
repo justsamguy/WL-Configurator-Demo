@@ -3,6 +3,7 @@ make sure all tiles that are quoted separately use "Quoted Separately" in their 
 make the addon tiles selectable and unselectable, regardless of where on the tile they are clicked.
 make round corners incompatible with cookie and round designs
 add a cookie-exclusive wood option that's a duplicate of the custom tile except for the name that only shows when the cookie design is chosen.
+add a loading screen
 
 pricing
 Overhaul media to improve loading times
