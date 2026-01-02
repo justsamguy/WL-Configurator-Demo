@@ -1,4 +1,7 @@
 make sure pricing is correct on summary page
+make sure pricing is correct in running total
+clean up and layout summary
+
 Overhaul media to improve loading times
 
 Add popular designs to as configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.

@@ -448,8 +448,6 @@ header .site-logo {
   content: attr(data-tip);
   position: absolute;
   bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 4px 8px;
@@ -458,6 +456,10 @@ header .site-logo {
   white-space: nowrap;
   z-index: 10;
   margin-bottom: 5px;
+  max-width: calc(100vw - 24px);
+  /* Position tooltip centered but constrained to viewport */
+  left: clamp(12px, calc(50% - 50px), calc(100vw - 112px));
+  transform: none;
 }
 
 .tooltip:hover::before,
@@ -971,6 +973,12 @@ body.show-model-tiles #stage-panel-0 #model-options,
 
 .stage-options-grid .option-card[data-custom-note] {
   align-items: stretch;
+}
+
+.stage-options-grid .option-card[data-custom-note] .viewer-placeholder-img {
+  width: auto;
+  max-width: 100%;
+  align-self: center;
 }
 
 .stage-options-grid .option-card[data-custom-note] .custom-color-note-container {
