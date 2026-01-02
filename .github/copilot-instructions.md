@@ -29,7 +29,7 @@ This repo maintains multiple rule files for different tools/agents. Keep shared 
 - **No server code.**
 - **No external APIs for business data/services** unless explicitly approved; use local repo data/assets by default (`data/*.json`, `components/*.html`, `assets/**`).
 - **No new dependencies** unless explicitly approved.
-- **Timestamp + edit version rule:** After app edits, update `Last updated:` in `js/main.js` as `YYYY-MM-DD HH:MM` using the current local time from the system clock, then increment the `Edit ver:` line immediately after it by 1.
+- **Edit version rule:** After app edits, increment the `Edit ver:` line immediately after it by 1.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
 
 ## Provenance

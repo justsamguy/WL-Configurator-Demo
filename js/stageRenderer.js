@@ -151,6 +151,10 @@ export function renderAddonsDropdown(container, data = []) {
             btn.setAttribute('data-addon-id', option.id);
             btn.setAttribute('aria-pressed', 'false');
             btn.setAttribute('data-price', option.price || 0);
+            if (group.disabled || subsection.disabled || option.disabled) {
+              btn.disabled = true;
+              btn.classList.add('disabled');
+            }
 
             const label = document.createElement('div');
             label.className = 'addons-tile-label';
@@ -171,12 +175,19 @@ export function renderAddonsDropdown(container, data = []) {
           const select = document.createElement('select');
           select.className = 'addons-dropdown-select';
           select.setAttribute('data-addon-group', subsection.title);
+          if (group.disabled || subsection.disabled) {
+            select.disabled = true;
+            select.classList.add('disabled');
+          }
 
           subsection.options.forEach(option => {
             const opt = document.createElement('option');
             opt.value = option.id;
             opt.textContent = `${option.title} (+$${option.price || 0})`;
             opt.setAttribute('data-price', option.price || 0);
+            if (group.disabled || subsection.disabled || option.disabled) {
+              opt.disabled = true;
+            }
             select.appendChild(opt);
           });
 
@@ -204,6 +215,11 @@ export function renderAddonsDropdown(container, data = []) {
           checkbox.className = 'addons-dropdown-option-checkbox';
           checkbox.setAttribute('data-addon-id', option.id);
           checkbox.setAttribute('data-price', option.price || 0);
+          if (group.disabled || option.disabled) {
+            checkbox.disabled = true;
+            optionDiv.classList.add('disabled');
+            optionDiv.setAttribute('aria-disabled', 'true');
+          }
 
           const label = document.createElement('div');
           label.className = 'addons-dropdown-option-label';
@@ -226,10 +242,6 @@ export function renderAddonsDropdown(container, data = []) {
 
     // Handle disabled state
     if (group.disabled) {
-      tile.classList.add('disabled');
-      tile.setAttribute('data-disabled', 'true');
-      tile.setAttribute('aria-disabled', 'true');
-      header.setAttribute('aria-disabled', 'true');
       content.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
       if (group.tooltip) {
         tile.setAttribute('data-tooltip', group.tooltip);

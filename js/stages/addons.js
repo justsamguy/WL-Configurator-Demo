@@ -14,6 +14,17 @@ export function init() {
   document.addEventListener('addon-toggled', refreshIndicators);
   document.addEventListener('addon-selected', refreshIndicators);
 
+  if (typeof MutationObserver !== 'undefined') {
+    const disabledObserver = new MutationObserver((mutations) => {
+      const hasDisabledChange = mutations.some(mutation => mutation.attributeName === 'disabled');
+      if (!hasDisabledChange) return;
+      syncDisabledStyles();
+      updateAllIndicators();
+    });
+    disabledObserver.observe(root, { attributes: true, subtree: true, attributeFilter: ['disabled'] });
+    root.__addonsDisabledObserver = disabledObserver;
+  }
+
   root.addEventListener('click', (event) => {
     const optionRow = event.target.closest('.addons-dropdown-option');
     if (optionRow && root.contains(optionRow)) {
@@ -121,16 +132,55 @@ const parsePrice = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+function isSelectEffectivelyDisabled(select) {
+  if (!select) return true;
+  if (select.disabled) return true;
+  const options = Array.from(select.options || []);
+  if (!options.length) return true;
+  return options.every(option => option.disabled);
+}
+
+function syncDisabledStyles() {
+  document.querySelectorAll('.addons-dropdown-option').forEach(option => {
+    const checkbox = option.querySelector('.addons-dropdown-option-checkbox');
+    const isDisabled = checkbox ? checkbox.disabled : false;
+    option.classList.toggle('disabled', isDisabled);
+    if (isDisabled) {
+      option.setAttribute('aria-disabled', 'true');
+    } else {
+      option.removeAttribute('aria-disabled');
+    }
+  });
+
+  document.querySelectorAll('.addons-tile').forEach(tile => {
+    const isDisabled = tile.disabled || tile.getAttribute('aria-disabled') === 'true';
+    tile.classList.toggle('disabled', isDisabled);
+  });
+
+  document.querySelectorAll('.addons-dropdown-select').forEach(select => {
+    const isDisabled = isSelectEffectivelyDisabled(select);
+    select.classList.toggle('disabled', isDisabled);
+  });
+}
+
 const getGroupSelectionStats = (tile) => {
   const stats = {
     selectedCount: 0,
     selectableCount: 0,
-    total: 0
+    total: 0,
+    disabledCount: 0,
+    totalCount: 0
   };
   if (!tile) return stats;
 
   const checkboxes = tile.querySelectorAll('.addons-dropdown-option-checkbox');
   checkboxes.forEach(checkbox => {
+    stats.totalCount += 1;
+    const isDisabled = checkbox.disabled;
+    if (isDisabled) {
+      stats.disabledCount += 1;
+      return;
+    }
     stats.selectableCount += 1;
     if (checkbox.checked) {
       stats.selectedCount += 1;
@@ -140,6 +190,12 @@ const getGroupSelectionStats = (tile) => {
 
   const tiles = tile.querySelectorAll('.addons-tile');
   tiles.forEach(button => {
+    stats.totalCount += 1;
+    const isDisabled = button.disabled || button.getAttribute('aria-disabled') === 'true';
+    if (isDisabled) {
+      stats.disabledCount += 1;
+      return;
+    }
     stats.selectableCount += 1;
     if (button.classList.contains('selected')) {
       stats.selectedCount += 1;
@@ -149,6 +205,12 @@ const getGroupSelectionStats = (tile) => {
 
   const selects = tile.querySelectorAll('.addons-dropdown-select');
   selects.forEach(select => {
+    stats.totalCount += 1;
+    const isDisabled = isSelectEffectivelyDisabled(select);
+    if (isDisabled) {
+      stats.disabledCount += 1;
+      return;
+    }
     stats.selectableCount += 1;
     const selectedOption = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
     if (!selectedOption) return;
@@ -172,7 +234,9 @@ function updateIndicator(tile, stats) {
   const resolvedStats = stats || getGroupSelectionStats(tile);
 
   indicator.className = 'addons-dropdown-indicator';
-  if (resolvedStats.selectedCount === 0) {
+  if (resolvedStats.totalCount > 0 && resolvedStats.selectableCount === 0) {
+    indicator.classList.add('unavailable');
+  } else if (resolvedStats.selectedCount === 0) {
     indicator.classList.remove('partial', 'full');
   } else if (resolvedStats.selectedCount === resolvedStats.selectableCount) {
     indicator.classList.add('full');
@@ -194,6 +258,7 @@ function updateIndicator(tile, stats) {
 // Function to update all indicators
 function updateAllIndicators() {
   const summaries = [];
+  syncDisabledStyles();
   document.querySelectorAll('.addons-dropdown-tile').forEach(tile => {
     const groupTitle = tile.getAttribute('data-id') || 'Unknown';
     const stats = getGroupSelectionStats(tile);
