@@ -1,6 +1,19 @@
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
 // opts.showPrice: set false to hide price text for the rendered tiles
+function isQuotedLabel(value) {
+  return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
+}
+
+function formatPriceLabel(value, opts = {}) {
+  if (isQuotedLabel(value)) return value.trim();
+  const numeric = Number(value);
+  const safeNumber = Number.isFinite(numeric) ? numeric : 0;
+  if (opts.isDesign) {
+    return `Starting from: $${safeNumber.toLocaleString()}`;
+  }
+  return `+$${safeNumber.toLocaleString()}`;
+}
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -39,12 +52,8 @@ export function renderOptionCards(container, data = [], opts = {}) {
     if (opts.showPrice !== false) {
       const priceDiv = document.createElement('div');
       priceDiv.className = 'price-delta';
-      const priceValue = typeof item.price === 'number' ? item.price : 0;
-      if (item.id && item.id.startsWith('des-')) {
-        priceDiv.textContent = `Starting from: $${priceValue.toLocaleString()}`;
-      } else {
-        priceDiv.textContent = `+$${priceValue.toLocaleString()}`;
-      }
+      const isDesign = item.id && item.id.startsWith('des-');
+      priceDiv.textContent = formatPriceLabel(item.price, { isDesign });
       btn.appendChild(priceDiv);
     }
 
@@ -171,7 +180,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
             const price = document.createElement('div');
             price.className = 'addons-tile-price';
-            price.textContent = option.price ? `+$${option.price}` : '+$0';
+            price.textContent = formatPriceLabel(option.price);
 
             btn.appendChild(label);
             btn.appendChild(price);
@@ -194,7 +203,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           subsection.options.forEach(option => {
             const opt = document.createElement('option');
             opt.value = option.id;
-            opt.textContent = `${option.title} (+$${option.price || 0})`;
+            const optionPriceLabel = formatPriceLabel(option.price);
+            opt.textContent = `${option.title} (${optionPriceLabel})`;
             opt.setAttribute('data-price', option.price || 0);
             if (group.disabled || subsection.disabled || option.disabled) {
               opt.disabled = true;
@@ -249,7 +259,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
           const optionPrice = document.createElement('div');
           optionPrice.className = 'addons-dropdown-option-price';
-          optionPrice.textContent = option.price ? `+$${option.price}` : '+$0';
+          optionPrice.textContent = formatPriceLabel(option.price);
 
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
@@ -344,7 +354,7 @@ export function renderSheenSlider(container, data = []) {
     t.textContent = item.title || item.id;
     const p = document.createElement('div');
     p.className = 'price-delta';
-    p.textContent = item.price ? `+$${item.price}` : '+$0';
+    p.textContent = formatPriceLabel(item.price);
     titleRow.appendChild(t);
     titleRow.appendChild(p);
     tile.appendChild(titleRow);
