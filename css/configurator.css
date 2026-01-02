@@ -30,6 +30,37 @@ body {
 /* Simple `.hidden` helper used by JS to toggle visibility of UI rows. */
 .hidden { display: none !important; }
 
+/* Loading screen overlay shown below the navigation bar during app init */
+.app-loading {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--nav-offset, 0px);
+  bottom: 0;
+  z-index: 55;
+  background: rgba(248, 250, 252, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.app-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.app-loading img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.app-loading-text {
+  font-size: 0.95rem;
+  color: #475467;
+  letter-spacing: 0.01em;
+}
+
 /* Root grid layout controlled via .app-root to avoid relying on Tailwind arbitrary utilities */
 .app-root {
   display: grid;
@@ -1108,6 +1139,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
+  --nav-offset: calc(var(--header-height) + var(--stage-bar-height));
   /* Spacing and typographic tokens (merged from later definitions) */
   --space-xs: 6px;
   --space-sm: 12px;

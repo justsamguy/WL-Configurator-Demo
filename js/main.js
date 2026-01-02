@@ -468,6 +468,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.documentElement.style.setProperty('--header-height', `${h}px`);
       // stage bar lives inside header, so avoid double-subtracting
       document.documentElement.style.setProperty('--stage-bar-height', `0px`);
+      const stepper = document.getElementById('top-stepper');
+      if (stepper) {
+        const styles = window.getComputedStyle(stepper);
+        const marginBottom = parseFloat(styles.marginBottom || '0') || 0;
+        const navOffset = stepper.getBoundingClientRect().bottom + marginBottom;
+        document.documentElement.style.setProperty('--nav-offset', `${Math.round(navOffset)}px`);
+      } else {
+        document.documentElement.style.setProperty('--nav-offset', `${h}px`);
+      }
     } catch (e) {
       // ignore
     }
@@ -633,8 +642,14 @@ if (designsSection) {
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
   try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
 
+  const loadingScreen = document.getElementById('app-loading');
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    loadingScreen.setAttribute('aria-hidden', 'true');
+  }
+
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-02 11:13');
-  console.log('Edit ver: 361');
+  console.log('Edit ver: 362');
 });
