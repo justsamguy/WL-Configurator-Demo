@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const modelGrids = document.querySelectorAll('.model-row-grid');
       if (modelGrids && modelGrids.length && models) {
         // distribute models across the first grid for simplicity
-        renderOptionCards(modelGrids[0], models, { category: null });
+        renderOptionCards(modelGrids[0], models, { category: null, showPrice: false });
       }
     }
 
@@ -530,6 +530,6 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-31 20:56');
-  console.log('Edit ver: 351');
+  console.log('Last updated: 2026-01-02 09:17');
+  console.log('Edit ver: 352');
 });

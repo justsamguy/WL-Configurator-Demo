@@ -1,5 +1,6 @@
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
+// opts.showPrice: set false to hide price text for the rendered tiles
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -35,10 +36,13 @@ export function renderOptionCards(container, data = [], opts = {}) {
     titleDiv.textContent = item.title || item.id;
     btn.appendChild(titleDiv);
 
-    const priceDiv = document.createElement('div');
-    priceDiv.className = 'price-delta';
-    priceDiv.textContent = item.price ? `Starting from: $${item.price.toLocaleString()}` : 'Starting from: $0';
-    btn.appendChild(priceDiv);
+    if (opts.showPrice !== false) {
+      const priceDiv = document.createElement('div');
+      priceDiv.className = 'price-delta';
+      const priceValue = typeof item.price === 'number' ? item.price : 0;
+      priceDiv.textContent = `Starting from: $${priceValue.toLocaleString()}`;
+      btn.appendChild(priceDiv);
+    }
 
     if (item.description) {
       const d = document.createElement('div');

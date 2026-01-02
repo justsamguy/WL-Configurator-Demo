@@ -443,6 +443,23 @@ header .site-logo {
   transform: translateX(-50%) rotate(180deg);
 }
 
+.materials-help-link.tooltip:hover::after,
+.materials-help-link.tooltip:focus-visible::after {
+  left: auto;
+  right: 0;
+  transform: none;
+  max-width: min(280px, calc(100vw - 24px));
+  white-space: normal;
+  text-align: left;
+}
+
+.materials-help-link.tooltip:hover::before,
+.materials-help-link.tooltip:focus-visible::before {
+  left: auto;
+  right: 12px;
+  transform: rotate(180deg);
+}
+
 /* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip
    from appearing for that specific control to avoid duplicate/overlapping tooltips. */
 #summary-btn.tooltip:hover::after,
@@ -843,6 +860,9 @@ body.show-model-tiles #stage-panel-0 #model-options,
   position: relative;
   box-sizing: border-box; /* make padding included in card width */
 }
+.model-row-grid .option-card {
+  text-align: center;
+}
 .stage-options-grid .viewer-placeholder-img {
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -855,12 +875,22 @@ body.show-model-tiles #stage-panel-0 #model-options,
   font-size: 14px;
   margin-bottom: 4px;
 }
+.model-row-grid .option-card .title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
 .stage-options-grid .option-card .price-delta {
   font-size: 12px;
   color: #6b7280;
   margin-bottom: 4px;
 }
 .stage-options-grid .option-card .description {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+.model-row-grid .option-card .description {
   font-size: 12px;
   color: #6b7280;
   line-height: 1.3;
