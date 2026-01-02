@@ -770,6 +770,50 @@ body.show-model-tiles #stage-panel-0 #model-options,
   display: block;
 }
 
+.materials-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.materials-heading {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.materials-help-link {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: help;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.materials-help-link:hover,
+.materials-help-link:focus-visible {
+  color: #6b7280;
+}
+
+.materials-help-link:focus-visible {
+  outline: 2px solid #d1d5db;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .stage-options-grid {
   display: grid;
   /* Use a 3-column layout by default. Use minmax(0, 1fr) to avoid intrinsic min-width
