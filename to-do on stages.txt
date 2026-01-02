@@ -1,11 +1,10 @@
 brainstorm reorganizing stages to follow the same process used in manufacturing
-make sure all tiles that are quoted separately use "Quoted Separately" in their price fields.
 make the addon tiles selectable and unselectable, regardless of where on the tile they are clicked.
 make round corners incompatible with cookie and round designs
 add a cookie-exclusive wood option that's a duplicate of the custom tile except for the name that only shows when the cookie design is chosen.
 add a loading screen
 
-pricing
+pricing is correct on summary page
 Overhaul media to improve loading times
 change app loading to have a loading screen while the app loads in the background
 
