@@ -84,9 +84,9 @@ export function restoreFromState(appState) {
       const sheenRoot = document.getElementById('finish-sheen-slider');
 
       const sheenMap = {
-        'fin-sheen-01': 0, // Less Shiny
-        'fin-sheen-02': 1, // Medium
-        'fin-sheen-03': 2  // More Shiny
+        'fin-sheen-01': 0, // Matte
+        'fin-sheen-02': 1, // Satin
+        'fin-sheen-03': 2  // Gloss
       };
 
       const value = sheenMap[sheenId];
