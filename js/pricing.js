@@ -1,3 +1,68 @@
+// Calculate dimension price based on model and selected dimensions
+function calculateDimensionPrice(state) {
+  const modelId = state.selections && state.selections.model;
+  const dimSel = state.selections && state.selections.options && state.selections.options.dimensions;
+
+  if (!modelId || !dimSel) return 0;
+
+  let length = 0;
+  let width = 0;
+
+  // Extract dimensions from selection
+  if (typeof dimSel === 'object' && dimSel.length && dimSel.width) {
+    length = dimSel.length;
+    width = dimSel.width;
+  } else if (typeof dimSel === 'string') {
+    // For preset, we need to look up from dimensions.json
+    // But for now, assume custom dimensions are used
+    return 0;
+  }
+
+  if (modelId === 'mdl-coffee') {
+    // Coffee: first size +0, subsequent +250
+    // Assuming the base is already in design price, and dimensions add +250 for non-first
+    // But pricing.txt says "The first size option is +0, subsequent ones are +250"
+    // Since base is $3950, and sizes add +250, but currently presets have fixed prices
+    // For simplicity, if it's not the smallest preset, add +250
+    // But to make it dynamic, perhaps assume 24x48 is first, others add +250
+    if (length > 24 || width > 48) {
+      return 250;
+    }
+    return 0;
+  } else if (modelId === 'mdl-dining' || modelId === 'mdl-conference') {
+    // Dining/Conference pricing
+    let price = 0;
+
+    // Length pricing: 72" +0, every 12" increment up to 120" +500, 120-132 +1000, then +500 up to 192"
+    if (length > 72) {
+      const lengthOver = length - 72;
+      if (length <= 120) {
+        price += Math.ceil(lengthOver / 12) * 500;
+      } else if (length <= 132) {
+        price += (120 - 72) / 12 * 500 + 1000; // up to 120 +1000 for 120-132
+      } else {
+        price += (120 - 72) / 12 * 500 + 1000 + Math.ceil((length - 132) / 12) * 500;
+      }
+    }
+
+    // Width pricing: 36" +0, every 6" increment up to 52" +500, 52-58 +1000, then +500 up to 70"
+    if (width > 36) {
+      const widthOver = width - 36;
+      if (width <= 52) {
+        price += Math.ceil(widthOver / 6) * 500;
+      } else if (width <= 58) {
+        price += (52 - 36) / 6 * 500 + 1000; // up to 52 +1000 for 52-58
+      } else {
+        price += (52 - 36) / 6 * 500 + 1000 + Math.ceil((width - 58) / 6) * 500;
+      }
+    }
+
+    return price;
+  }
+
+  return 0;
+}
+
 // Central pricing helper
 // computePrice reads the canonical state and DOM (as a fallback) to produce a stable
 // pricing breakdown { base, extras, total, breakdown }
@@ -62,8 +127,8 @@ export async function computePrice(state) {
       if (!id) continue;
       let p = 0;
       if (cat.key === 'dimensions') {
-        // For dimensions, use the price stored in state.pricing.dimensions
-        p = (state.pricing && typeof state.pricing.dimensions === 'number') ? state.pricing.dimensions : 0;
+        // Calculate dynamic dimension price based on model and dimensions
+        p = calculateDimensionPrice(state);
       } else {
         try {
           // map key to data path

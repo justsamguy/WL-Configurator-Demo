@@ -1,11 +1,11 @@
 brainstorm reorganizing stages to follow the same process used in manufacturing
 add a loading screen
 
-pricing is correct on summary page
+make sure pricing is correct on summary page
 Overhaul media to improve loading times
 change app loading to have a loading screen while the app loads in the background
 
-Change designs to become configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles live in a "build your own" section that uses the existing one-stage-at-a-time approach.
+Add popular designs to as configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.
 
 
 ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
