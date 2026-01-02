@@ -319,9 +319,21 @@ function dispatchDimensionSelection(price = 0) {
 function filterPresetsByModel(presets) {
   const constraints = getConstraints();
   if (!constraints) return presets;
-  
+
+  const selectedModel = state && state.selections && state.selections.model;
+
+  // Model-specific preset exclusions
+  const modelExclusions = {
+    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'] // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+  };
+
+  const excludedIds = modelExclusions[selectedModel] || [];
+
   return presets.filter(preset => {
-    // Check if preset dimensions are within model constraints
+    // Check model-specific exclusions first
+    if (excludedIds.includes(preset.id)) return false;
+
+    // Then check technical constraints
     const lengthValid = preset.length >= constraints.length.min && preset.length <= constraints.length.max;
     const widthValid = preset.width >= constraints.width.min && preset.width <= constraints.width.max;
     return lengthValid && widthValid;

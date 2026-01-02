@@ -81,6 +81,9 @@ export function renderAddonsDropdown(container, data = []) {
   container.innerHTML = '';
 
   data.forEach(group => {
+    const resolveTooltip = (option = {}, subsection = {}) => {
+      return option.tooltip || subsection.tooltip || group.tooltip || '';
+    };
     const tile = document.createElement('div');
     tile.className = 'addons-dropdown-tile';
     tile.setAttribute('data-id', group.title);
@@ -154,6 +157,8 @@ export function renderAddonsDropdown(container, data = []) {
             if (group.disabled || subsection.disabled || option.disabled) {
               btn.disabled = true;
               btn.classList.add('disabled');
+              const tooltip = resolveTooltip(option, subsection);
+              if (tooltip) btn.setAttribute('data-tooltip', tooltip);
             }
 
             const label = document.createElement('div');
@@ -178,6 +183,8 @@ export function renderAddonsDropdown(container, data = []) {
           if (group.disabled || subsection.disabled) {
             select.disabled = true;
             select.classList.add('disabled');
+            const tooltip = resolveTooltip({}, subsection);
+            if (tooltip) select.setAttribute('data-tooltip', tooltip);
           }
 
           subsection.options.forEach(option => {
@@ -205,6 +212,7 @@ export function renderAddonsDropdown(container, data = []) {
       // Options for this group
       if (group.options) {
         group.options.forEach(option => {
+          const tooltip = resolveTooltip(option);
           const optionDiv = document.createElement('div');
           optionDiv.className = 'addons-dropdown-option';
           optionDiv.setAttribute('data-addon-id', option.id);
@@ -219,6 +227,7 @@ export function renderAddonsDropdown(container, data = []) {
             checkbox.disabled = true;
             optionDiv.classList.add('disabled');
             optionDiv.setAttribute('aria-disabled', 'true');
+            if (tooltip) optionDiv.setAttribute('data-tooltip', tooltip);
           }
 
           const label = document.createElement('div');

@@ -193,20 +193,23 @@ async function setStage(index, options = {}) {
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
       // (unless "none" leg is selected, which doesn't require tube-size or leg-finish)
+      // (or custom leg is selected, which makes tube-size optional)
       if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
-        
+        const isCustomLeg = legId === 'leg-sample-07';
+
         if (!hasLegs) {
           return;
         }
-        
-        // If not "none" leg, require tube-size and leg-finish
+
+        // If not "none" leg, require tube-size (unless custom leg) and leg-finish
         if (!isNoneLeg) {
           const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
           const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-          if (!hasTubeSize || !hasLegFinish) {
+          const tubeSizeRequired = !isCustomLeg;
+          if ((tubeSizeRequired && !hasTubeSize) || !hasLegFinish) {
             return;
           }
         }
@@ -532,10 +535,12 @@ async function setStage(index, options = {}) {
         const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
         markCompleted(4, !!dimOption);
       } else if (managerState.current === 5) {
-        // Legs stage: check if legs are selected (and tube-size/leg-finish if not "none")
+        // Legs stage (index 5): require legs selected, and tube-size & leg-finish unless "none" leg is selected
+        // (or custom leg is selected, which makes tube-size optional)
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
+        const isCustomLeg = legId === 'leg-sample-07';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -544,7 +549,8 @@ async function setStage(index, options = {}) {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+            const tubeSizeRequired = !isCustomLeg;
+            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
         markCompleted(5, isLegStageComplete);
@@ -690,7 +696,8 @@ export function initStageManager() {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
-        
+        const isCustomLeg = legId === 'leg-sample-07';
+
         let isLegStageComplete = false;
         if (hasLegs) {
           if (isNoneLeg) {
@@ -698,7 +705,8 @@ export function initStageManager() {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+            const tubeSizeRequired = !isCustomLeg;
+            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
         markCompleted(5, isLegStageComplete);

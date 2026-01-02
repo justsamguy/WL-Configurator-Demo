@@ -147,6 +147,14 @@ function syncDisabledStyles() {
     option.classList.toggle('disabled', isDisabled);
     if (isDisabled) {
       option.setAttribute('aria-disabled', 'true');
+      const checkboxTooltip = checkbox ? checkbox.getAttribute('data-tooltip') : '';
+      if (checkboxTooltip && checkboxTooltip !== option.getAttribute('data-tooltip')) {
+        option.setAttribute('data-tooltip', checkboxTooltip);
+      }
+      const checkboxDisabledBy = checkbox ? checkbox.getAttribute('data-disabled-by') : '';
+      if (checkboxDisabledBy && checkboxDisabledBy !== option.getAttribute('data-disabled-by')) {
+        option.setAttribute('data-disabled-by', checkboxDisabledBy);
+      }
     } else {
       option.removeAttribute('aria-disabled');
     }
@@ -236,12 +244,16 @@ function updateIndicator(tile, stats) {
   indicator.className = 'addons-dropdown-indicator';
   if (resolvedStats.totalCount > 0 && resolvedStats.selectableCount === 0) {
     indicator.classList.add('unavailable');
+    indicator.setAttribute('data-tooltip', 'This customization is currently unvailable.');
   } else if (resolvedStats.selectedCount === 0) {
     indicator.classList.remove('partial', 'full');
+    indicator.removeAttribute('data-tooltip');
   } else if (resolvedStats.selectedCount === resolvedStats.selectableCount) {
     indicator.classList.add('full');
+    indicator.removeAttribute('data-tooltip');
   } else {
     indicator.classList.add('partial');
+    indicator.removeAttribute('data-tooltip');
   }
 
   if (price) {

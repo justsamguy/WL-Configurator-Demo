@@ -221,11 +221,19 @@ export function initPlaceholderInteractions() {
     document.body.appendChild(_floatingTooltip);
   }
 
+  const getTooltipText = (el) => {
+    if (!el) return '';
+    const explicit = el.getAttribute('data-tooltip');
+    if (explicit) return explicit;
+    const raw = el.getAttribute('data-disabled-by') || '';
+    return raw ? raw.split('||').filter(Boolean).join(', ') : '';
+  };
+
   // Helper to position and show the floating tooltip above an element
   function showFloatingTooltipFor(el) {
     if (!el) return;
     const tip = _floatingTooltip;
-    const txt = el.getAttribute('data-tooltip') || el.getAttribute('data-disabled-by') || '';
+    const txt = getTooltipText(el);
     if (!txt) return;
     tip.textContent = txt;
     const rect = el.getBoundingClientRect();
@@ -242,29 +250,31 @@ export function initPlaceholderInteractions() {
     _floatingTooltip.classList.remove('visible');
   }
 
-  // Use event delegation to show tooltips for disabled option-cards on pointerenter/leave
+  const getTooltipTarget = (target) => {
+    if (!target || !target.closest) return null;
+    const indicator = target.closest('.addons-dropdown-indicator.unavailable');
+    if (indicator) return indicator;
+    const addonOption = target.closest('.addons-dropdown-option.disabled');
+    if (addonOption) return addonOption;
+    const addonSelect = target.closest('.addons-dropdown-select');
+    if (addonSelect && (addonSelect.disabled || addonSelect.classList.contains('disabled'))) return addonSelect;
+    const addonTile = target.closest('.addons-tile');
+    if (addonTile && (addonTile.disabled || addonTile.classList.contains('disabled'))) return addonTile;
+    const optionCard = target.closest('.option-card[disabled]');
+    if (optionCard) return optionCard;
+    return null;
+  };
+
+  // Use event delegation to show tooltips for disabled controls on pointerenter/leave
   document.addEventListener('pointerenter', (ev) => {
-    const el = ev.target.closest && ev.target.closest('.option-card');
+    const el = getTooltipTarget(ev.target);
     if (!el) return;
-    if (!el.hasAttribute('disabled')) return;
-    // prefer human-friendly data-tooltip; fallback to data-disabled-by which contains the list
-    const tooltipText = el.getAttribute('data-tooltip') || (el.getAttribute('data-disabled-by') || '').split('||').join(', ');
-    if (!tooltipText) return;
-    // set content and show
-    _floatingTooltip.textContent = tooltipText;
-    const rect = el.getBoundingClientRect();
-    const left = rect.left + rect.width / 2;
-    const top = rect.top - 8;
-    _floatingTooltip.style.left = `${left}px`;
-    _floatingTooltip.style.top = `${top}px`;
-    _floatingTooltip.style.transform = 'translate(-50%, -100%)';
-    _floatingTooltip.classList.add('visible');
+    showFloatingTooltipFor(el);
   }, true);
 
   document.addEventListener('pointerleave', (ev) => {
-    const el = ev.target.closest && ev.target.closest('.option-card');
+    const el = getTooltipTarget(ev.target);
     if (!el) return;
-    if (!el.hasAttribute('disabled')) return;
     hideFloatingTooltip();
   }, true);
 }

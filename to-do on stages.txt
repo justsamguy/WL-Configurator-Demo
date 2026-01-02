@@ -1,4 +1,3 @@
-Make the tube size optional when custom leg style is selected. When a tile is optional, if it's already selected and selected again, make it de-select.
 brainstorm reorganizing stages to follow the same process used in manufacturing
 make sure all tiles that are quoted separately use "Quoted Separately" in their price fields.
 make the addon tiles selectable and unselectable, regardless of where on the tile they are clicked.
