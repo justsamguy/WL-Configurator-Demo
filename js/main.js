@@ -169,7 +169,8 @@ document.addEventListener('option-selected', async (ev) => {
       selections: { 
         model: id, 
         design: null, 
-        options: {} 
+        options: {},
+        dimensionsDetail: null
       }, 
       pricing: { base: 0, extras: 0, total: 0 } 
     });
@@ -300,7 +301,18 @@ document.addEventListener('option-selected', async (ev) => {
       console.warn('Failed to update materials after design change:', e);
     }
   }
-  // Handle other category selections (material, finish, legs, dimensions, color, etc.)
+  // Handle other category selections (material, finish, legs, color, etc.)
+  else if (category === 'dimensions') {
+    const newOptions = { ...state.selections.options, [category]: id };
+    const nextSelections = { ...state.selections, options: newOptions };
+    if (ev.detail && ev.detail.payload) nextSelections.dimensionsDetail = ev.detail.payload;
+    else nextSelections.dimensionsDetail = null;
+    setState({ selections: nextSelections });
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+  }
   else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
     // update selections first and then recompute price via computePrice
@@ -414,7 +426,7 @@ document.addEventListener('addon-selected', async (ev) => {
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
-    setState({ selections: { model: null, design: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null }, pricing: { base: 0, extras: 0, total: 0 } });
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
       stageManager.setStage(0);
@@ -651,5 +663,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-02 11:13');
-  console.log('Edit ver: 362');
+  console.log('Edit ver: 363');
 });

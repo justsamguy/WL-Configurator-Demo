@@ -1,7 +1,9 @@
 // Calculate dimension price based on model and selected dimensions
 function calculateDimensionPrice(state) {
   const modelId = state.selections && state.selections.model;
-  const dimSel = state.selections && state.selections.options && state.selections.options.dimensions;
+  const dimSel = state.selections && state.selections.dimensionsDetail
+    ? state.selections.dimensionsDetail
+    : (state.selections && state.selections.options && state.selections.options.dimensions);
 
   if (!modelId || !dimSel) return 0;
 
@@ -9,7 +11,7 @@ function calculateDimensionPrice(state) {
   let width = 0;
 
   // Extract dimensions from selection
-  if (typeof dimSel === 'object' && dimSel.length && dimSel.width) {
+  if (typeof dimSel === 'object' && typeof dimSel.length === 'number' && typeof dimSel.width === 'number') {
     length = dimSel.length;
     width = dimSel.width;
   } else if (typeof dimSel === 'string') {
@@ -115,6 +117,7 @@ export async function computePrice(state) {
       { key: 'color', label: 'color' },
       { key: 'finish-coating', label: 'finish-coating' },
       { key: 'finish-sheen', label: 'finish-sheen' },
+      { key: 'finish-tint', label: 'finish-tint' },
       { key: 'dimensions', label: 'dimensions' },
       { key: 'legs', label: 'legs' },
       { key: 'tube-size', label: 'tube-size' },
@@ -135,7 +138,7 @@ export async function computePrice(state) {
           let path = null;
           if (cat.key === 'material') path = 'data/materials.json';
           else if (cat.key === 'color') path = 'data/colors.json';
-          else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen') path = 'data/finish.json';
+          else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen' || cat.key === 'finish-tint') path = 'data/finish.json';
           else if (cat.key === 'legs') path = 'data/legs.json';
           else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';
           else if (cat.key === 'leg-finish') path = 'data/leg-finish.json';
@@ -148,7 +151,7 @@ export async function computePrice(state) {
                 if (entry) p = Number(entry.price || 0);
               } else if (typeof d === 'object') {
                 // finish.json has coatings and sheens
-                const entry = (d.coatings || []).concat(d.sheens || []).find(x => x.id === id);
+                const entry = (d.coatings || []).concat(d.sheens || []).concat(d.tints || []).find(x => x.id === id);
                 if (entry) p = Number(entry.price || 0);
               }
             }
