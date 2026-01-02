@@ -40,7 +40,11 @@ export function renderOptionCards(container, data = [], opts = {}) {
       const priceDiv = document.createElement('div');
       priceDiv.className = 'price-delta';
       const priceValue = typeof item.price === 'number' ? item.price : 0;
-      priceDiv.textContent = `Starting from: $${priceValue.toLocaleString()}`;
+      if (item.id && item.id.startsWith('des-')) {
+        priceDiv.textContent = `Starting from: $${priceValue.toLocaleString()}`;
+      } else {
+        priceDiv.textContent = `+$${priceValue.toLocaleString()}`;
+      }
       btn.appendChild(priceDiv);
     }
 

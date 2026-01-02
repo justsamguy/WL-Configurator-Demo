@@ -140,7 +140,7 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   // Render filtered tube sizes
   const tubeSizesRoot = document.getElementById('tube-size-options');
   if (tubeSizesRoot) {
-    renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size' });
+    renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size', showPrice: false });
   }
 
   // Recompute tube size constraints based on current leg selection
@@ -601,7 +601,7 @@ if (designsSection) {
     const tubeSizesRoot = document.getElementById('tube-size-options');
     if (tubeSizesRoot) {
   allTubeSizes = await loadData('data/tube-sizes.json');
-      if (allTubeSizes) renderOptionCards(tubeSizesRoot, allTubeSizes, { category: 'tube-size' });
+      if (allTubeSizes) renderOptionCards(tubeSizesRoot, allTubeSizes, { category: 'tube-size', showPrice: false });
     }
     
     // Store for use in model-change filtering
@@ -662,6 +662,6 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2026-01-02 14:35');
-  console.log('Edit ver: 365');
+  console.log('Last updated: 2026-01-02 14:43');
+  console.log('Edit ver: 367');
 });
