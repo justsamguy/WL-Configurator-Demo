@@ -197,7 +197,28 @@ document.addEventListener('option-selected', async (ev) => {
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
-    setState({ selections: { ...state.selections, design: id } });
+    // Check if rounded corners addon needs to be deselected due to incompatibility
+    const currentAddons = state.selections.options.addon || [];
+    const hasRoundedCorners = currentAddons.includes('addon-rounded-corners');
+    const isIncompatibleDesign = id === 'des-cookie' || id === 'des-round';
+
+    let updatedAddons = currentAddons;
+    if (hasRoundedCorners && isIncompatibleDesign) {
+      // Remove rounded corners addon if it's incompatible with the new design
+      updatedAddons = currentAddons.filter(addonId => addonId !== 'addon-rounded-corners');
+      console.log('[Main] Deselecting rounded corners addon due to design incompatibility');
+    }
+
+    setState({
+      selections: {
+        ...state.selections,
+        design: id,
+        options: {
+          ...state.selections.options,
+          addon: updatedAddons
+        }
+      }
+    });
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
@@ -212,6 +233,19 @@ document.addEventListener('option-selected', async (ev) => {
       }
     } catch (e) {
       console.warn('Failed to update legs options after design change:', e);
+    }
+
+    // Update addon compatibility based on the selected design
+    try {
+      const addonsRoot = document.getElementById('addons-options');
+      if (addonsRoot) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderAddonsDropdown } = await import('./stageRenderer.js');
+        const addons = await loadData('data/addons.json');
+        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      }
+    } catch (e) {
+      console.warn('Failed to update addon compatibility after design change:', e);
     }
   }
   // Handle other category selections (material, finish, legs, dimensions, color, etc.)
@@ -505,7 +539,7 @@ if (designsSection) {
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
-      if (addons) renderAddonsDropdown(addonsRoot, addons);
+      if (addons) renderAddonsDropdown(addonsRoot, addons, state);
     }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
@@ -544,6 +578,6 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2026-01-02 10:14');
-  console.log('Edit ver: 358');
+  console.log('Last updated: 2026-01-02 10:27');
+  console.log('Edit ver: 359');
 });

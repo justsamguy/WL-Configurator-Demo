@@ -76,7 +76,7 @@ function buildAddonIntro(group = {}) {
   return introWrapper;
 }
 
-export function renderAddonsDropdown(container, data = []) {
+export function renderAddonsDropdown(container, data = [], currentState = {}) {
   if (!container) return;
   container.innerHTML = '';
 
@@ -223,11 +223,20 @@ export function renderAddonsDropdown(container, data = []) {
           checkbox.className = 'addons-dropdown-option-checkbox';
           checkbox.setAttribute('data-addon-id', option.id);
           checkbox.setAttribute('data-price', option.price || 0);
-          if (group.disabled || option.disabled) {
+
+          // Check for addon compatibility with current design
+          const currentDesign = currentState.selections && currentState.selections.design;
+          const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isDisabled = group.disabled || option.disabled || isRoundedCornersIncompatible;
+
+          if (isDisabled) {
             checkbox.disabled = true;
             optionDiv.classList.add('disabled');
             optionDiv.setAttribute('aria-disabled', 'true');
-            if (tooltip) optionDiv.setAttribute('data-tooltip', tooltip);
+            const incompatibilityTooltip = isRoundedCornersIncompatible ?
+              'Not compatible with Cookie or Round designs' : tooltip;
+            if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }
 
           const label = document.createElement('div');
