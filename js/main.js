@@ -477,7 +477,9 @@ document.addEventListener('addon-selected', async (ev) => {
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
+    const from = state.pricing.total || state.pricing.base || 0;
     setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null }, pricing: { base: 0, extras: 0, total: 0 } });
+    animatePrice(from, 0, 320, (val) => updatePriceUI(val));
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
       stageManager.setStage(0);
@@ -486,6 +488,18 @@ document.addEventListener('request-restart', (ev) => {
       document.dispatchEvent(ev2);
     }
   } catch (e) { /* ignore */ }
+});
+
+// Allow non-selection state mutations (e.g., stage manager clears) to refresh pricing with animation.
+document.addEventListener('request-price-refresh', async (ev) => {
+  try {
+    const from = state.pricing.total || state.pricing.base || 0;
+    const p = await computePrice(state);
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  } catch (e) {
+    console.warn('Failed to refresh price', e);
+  }
 });
 
 // Handle stage change requests from UI modules (e.g., Apply & Next buttons)
@@ -719,5 +733,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-02 15:03');
-  console.log('Edit ver: 373');
+  console.log('Edit ver: 374');
 });

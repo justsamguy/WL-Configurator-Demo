@@ -147,6 +147,7 @@ async function setStage(index, options = {}) {
     if (!confirmed) return;
     // User confirmed, proceed with clear design
     setState({ selections: { ...appState.selections, design: null } });
+    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'design-cleared' } }));
   }
   
   // gating: normally prevent jumping forward past first incomplete required stage

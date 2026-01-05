@@ -13,7 +13,7 @@ function createTooltip() {
   t.className = 'summary-tooltip hidden';
   t.innerHTML = `
     <div class="tooltip-inner">
-      <div class="tooltip-header text-sm font-semibold">Current selections</div>
+      <div class="tooltip-header text-sm font-semibold">Selections affecting your price:</div>
       <div id="summary-tooltip-content" class="tooltip-content text-sm text-gray-700" aria-live="polite"></div>
       <div class="tooltip-footer flex justify-between items-center text-sm font-medium mt-2"><span>Total:</span><span id="summary-tooltip-total"></span></div>
     </div>
@@ -58,6 +58,7 @@ async function renderTooltip() {
       const label = item.label || item.id || item.type || 'item';
       const price = Number(item.price) || 0;
       const hasPriceLabel = typeof item.priceLabel === 'string' && item.priceLabel.trim();
+      if (!hasPriceLabel && price === 0) return;
       const priceText = hasPriceLabel ? item.priceLabel : formatSigned(price);
       // Show the base/design price as an absolute value, other items as signed additions
       if (item.isBase || item.type === 'design') {
@@ -68,6 +69,9 @@ async function renderTooltip() {
         lines.push(`<div class="flex justify-between items-center"><span><strong>${item.type}:</strong> ${label}</span><span class="text-right ml-4">${priceText}</span></div>`);
       }
     });
+    if (!lines.length) {
+      lines.push('<div class="text-gray-600">No options selected</div>');
+    }
   } else {
     lines.push('<div class="text-gray-600">No options selected</div>');
   }
