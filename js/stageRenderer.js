@@ -167,10 +167,21 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             btn.setAttribute('data-addon-id', option.id);
             btn.setAttribute('aria-pressed', 'false');
             btn.setAttribute('data-price', option.price || 0);
-            if (group.disabled || subsection.disabled || option.disabled) {
+
+            // Check for addon compatibility with current design
+            const currentDesign = currentState.selections && currentState.selections.design;
+            const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            const isIncompatible = isInnerlightingIncompatible;
+            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+
+            if (isDisabled) {
               btn.disabled = true;
               btn.classList.add('disabled');
-              const tooltip = resolveTooltip(option, subsection);
+              let tooltip = resolveTooltip(option, subsection);
+              if (isInnerlightingIncompatible) {
+                tooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
+              }
               if (tooltip) btn.setAttribute('data-tooltip', tooltip);
             }
 
@@ -206,7 +217,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             const optionPriceLabel = formatPriceLabel(option.price);
             opt.textContent = `${option.title} (${optionPriceLabel})`;
             opt.setAttribute('data-price', option.price || 0);
-            if (group.disabled || subsection.disabled || option.disabled) {
+
+            // Check for addon compatibility with current design
+            const currentDesign = currentState.selections && currentState.selections.design;
+            const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            const isIncompatible = isInnerlightingIncompatible;
+            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+
+            if (isDisabled) {
               opt.disabled = true;
             }
             select.appendChild(opt);
@@ -242,14 +261,21 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const currentDesign = currentState.selections && currentState.selections.design;
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round');
-          const isDisabled = group.disabled || option.disabled || isRoundedCornersIncompatible;
+          const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
+            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible;
+          const isDisabled = group.disabled || option.disabled || isIncompatible;
 
           if (isDisabled) {
             checkbox.disabled = true;
             optionDiv.classList.add('disabled');
             optionDiv.setAttribute('aria-disabled', 'true');
-            const incompatibilityTooltip = isRoundedCornersIncompatible ?
-              'Not compatible with Cookie or Round designs' : tooltip;
+            let incompatibilityTooltip = tooltip;
+            if (isRoundedCornersIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
+            } else if (isCustomRiverIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
+            }
             if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }
 
