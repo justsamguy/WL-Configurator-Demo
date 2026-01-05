@@ -13,6 +13,7 @@ let currentDimensions = {
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
+let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
 
 
 
@@ -146,6 +147,44 @@ function getConstraints() {
   return dimensionsData.constraints;
 }
 
+function updateAxisInputConstraints() {
+  const constraints = getConstraints();
+  if (!constraints) return;
+
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const heightCustomInput = document.getElementById('dim-height-custom-input');
+
+  if (constraints.length && lengthInput) {
+    lengthInput.min = constraints.length.min;
+    lengthInput.max = constraints.length.max;
+    lengthInput.step = constraints.length.step;
+    axisSteps.length = constraints.length.step;
+  }
+
+  if (constraints.width && widthInput) {
+    widthInput.min = constraints.width.min;
+    widthInput.max = constraints.width.max;
+    widthInput.step = constraints.width.step;
+    axisSteps.width = constraints.width.step;
+  }
+
+  if (heightCustomInput) {
+    heightCustomInput.min = 16;
+    heightCustomInput.max = 50;
+    heightCustomInput.step = axisSteps['height-custom'];
+  }
+}
+
+function updateAxisValidationDescriptions(axis, validationEl) {
+  if (!validationEl || !validationEl.id) return;
+  const hasMessage = validationEl.textContent.trim().length > 0;
+  document.querySelectorAll(`.control-button[data-axis="${axis}"]`).forEach(btn => {
+    if (hasMessage) btn.setAttribute('aria-describedby', validationEl.id);
+    else btn.removeAttribute('aria-describedby');
+  });
+}
+
 // Validate a single axis value
 function validateAxisValue(axis, value) {
   const constraints = getConstraints();
@@ -187,6 +226,7 @@ function updateValidationMessage(axis) {
   
   if (value === null) {
     validationEl.textContent = '';
+    updateAxisValidationDescriptions(axis, validationEl);
     return;
   }
   
@@ -197,6 +237,8 @@ function updateValidationMessage(axis) {
   } else {
     validationEl.textContent = '';
   }
+
+  updateAxisValidationDescriptions(axis, validationEl);
 }
 
 // Render oversize banners
@@ -249,6 +291,8 @@ function updateUIControls() {
   const widthInput = document.getElementById('dim-width-input');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
+
+  updateAxisInputConstraints();
   
   if (lengthInput && currentDimensions.length !== null) {
     lengthInput.value = currentDimensions.length;
@@ -443,12 +487,6 @@ function selectPreset(preset, tileElement) {
 function initAxisControls() {
   const constraints = getConstraints();
   if (!constraints) return;
-  
-  const axisSteps = {
-    length: constraints.length.step,
-    width: constraints.width.step,
-    'height-custom': 5 // arbitrary step for custom height
-  };
   
   document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.control-button');
