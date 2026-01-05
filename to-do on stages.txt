@@ -1,4 +1,3 @@
-add logic to multiply the leg price by 1.5 when the dimensions exceed 130" and add a blue banner above the leg styles that says "Leg prices updated automatically because we require 3 legs on tables over 130" Long."
 
 
 make sure pricing is correct on summary page

@@ -65,6 +65,14 @@ function calculateDimensionPrice(state) {
   return 0;
 }
 
+export function getLegPriceMultiplier(appState) {
+  const length = appState && appState.selections && appState.selections.dimensionsDetail
+    ? appState.selections.dimensionsDetail.length
+    : null;
+  if (typeof length !== 'number') return 1;
+  return length > 130 ? 1.5 : 1;
+}
+
 // Central pricing helper
 // computePrice reads the canonical state and DOM (as a fallback) to produce a stable
 // pricing breakdown { base, extras, total, breakdown }
@@ -162,6 +170,12 @@ export async function computePrice(state) {
         if (!p) {
           const el = document.querySelector(`.option-card[data-id="${id}"]`);
           p = el ? parseInt(el.getAttribute('data-price') || '0', 10) : 0;
+        }
+      }
+      if (cat.key === 'legs') {
+        const legMultiplier = getLegPriceMultiplier(state);
+        if (legMultiplier > 1 && Number.isFinite(p)) {
+          p *= legMultiplier;
         }
       }
       if (p) extras += p;

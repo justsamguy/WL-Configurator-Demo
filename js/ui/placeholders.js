@@ -237,12 +237,23 @@ export function initPlaceholderInteractions() {
     if (!txt) return;
     tip.textContent = txt;
     const rect = el.getBoundingClientRect();
-    // position centered horizontally above the element
-    const left = rect.left + rect.width / 2;
-    const top = rect.top - 8; // small gap
-    tip.style.left = `${left}px`;
+    // Position above the element, but clamp within the viewport so it never overflows.
+    const gap = 8;
+    const centerX = rect.left + rect.width / 2;
+    const tipWidth = tip.offsetWidth || 0;
+    const tipHeight = tip.offsetHeight || 0;
+    const minCenter = gap + tipWidth / 2;
+    const maxCenter = window.innerWidth - gap - tipWidth / 2;
+    const clampedCenterX = Math.min(Math.max(centerX, minCenter), maxCenter);
+    let top = rect.top - gap;
+    let translateY = '-100%';
+    if (top - tipHeight < gap) {
+      top = rect.bottom + gap;
+      translateY = '0';
+    }
+    tip.style.left = `${clampedCenterX}px`;
     tip.style.top = `${top}px`;
-    tip.style.transform = 'translate(-50%, -100%)';
+    tip.style.transform = `translate(-50%, ${translateY})`;
     tip.classList.add('visible');
   }
 

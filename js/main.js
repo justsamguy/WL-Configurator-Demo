@@ -6,7 +6,7 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice } from './pricing.js';
+import { computePrice, getLegPriceMultiplier } from './pricing.js';
 
 /**
  * Filter designs by model compatibility
@@ -115,6 +115,53 @@ function updatePriceUI(total) {
   el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
 }
 
+function isQuotedLabel(value) {
+  return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
+}
+
+function formatLegPriceLabel(value) {
+  if (isQuotedLabel(value)) return value.trim();
+  const numeric = Number(value);
+  const safeNumber = Number.isFinite(numeric) ? numeric : 0;
+  return `+$${safeNumber.toLocaleString()}`;
+}
+
+function applyLegPriceMultiplier(legs, multiplier) {
+  if (!Array.isArray(legs)) return [];
+  if (multiplier === 1) return legs;
+  return legs.map(leg => {
+    if (typeof leg.price === 'number' && Number.isFinite(leg.price)) {
+      return { ...leg, price: leg.price * multiplier };
+    }
+    return leg;
+  });
+}
+
+function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
+  const multiplier = getLegPriceMultiplier(appState);
+  const banner = document.getElementById('legs-price-banner');
+  if (banner) banner.classList.toggle('hidden', multiplier <= 1);
+  if (!Array.isArray(baseLegs) || !baseLegs.length) return;
+
+  const basePriceMap = new Map(baseLegs.map(leg => [leg.id, leg.price]));
+  document.querySelectorAll('.option-card[data-category="legs"]').forEach(card => {
+    const id = card.getAttribute('data-id');
+    if (!id || !basePriceMap.has(id)) return;
+    const basePrice = basePriceMap.get(id);
+    let adjustedPrice = basePrice;
+
+    if (typeof basePrice === 'number' && Number.isFinite(basePrice)) {
+      adjustedPrice = basePrice * multiplier;
+      card.setAttribute('data-price', String(adjustedPrice));
+    } else if (typeof basePrice === 'string') {
+      card.setAttribute('data-price', basePrice);
+    }
+
+    const priceEl = card.querySelector('.price-delta');
+    if (priceEl) priceEl.textContent = formatLegPriceLabel(adjustedPrice);
+  });
+}
+
 /**
  * Update legs and tube size options based on selected model and design
  * Filters legs to only show those compatible with the model and design
@@ -124,14 +171,16 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   if (!modelId) return;
 
   const { renderOptionCards } = await import('./stageRenderer.js');
+  const legMultiplier = getLegPriceMultiplier(state);
 
   // Filter legs: only show designs compatible with this model and design (and not hidden)
   const visibleLegs = getVisibleLegs(modelId, allLegs, designId);
+  const pricedLegs = applyLegPriceMultiplier(visibleLegs, legMultiplier);
 
   // Render filtered legs
   const legsRoot = document.getElementById('legs-options');
   if (legsRoot) {
-    renderOptionCards(legsRoot, visibleLegs, { category: 'legs' });
+    renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
   }
 
   // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
@@ -149,6 +198,7 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   } catch (e) {
     console.warn('Failed to recompute constraints:', e);
   }
+  updateLegPricingUI(state, allLegs);
 }
 
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
@@ -312,6 +362,7 @@ document.addEventListener('option-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+    updateLegPricingUI(state);
   }
   else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
@@ -595,7 +646,11 @@ if (designsSection) {
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
   allLegs = await loadData('data/legs.json');
-      if (allLegs) renderOptionCards(legsRoot, allLegs, { category: 'legs' });
+      if (allLegs) {
+        const legMultiplier = getLegPriceMultiplier(state);
+        const pricedLegs = applyLegPriceMultiplier(allLegs, legMultiplier);
+        renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
+      }
     }
 
     const tubeSizesRoot = document.getElementById('tube-size-options');
@@ -607,6 +662,7 @@ if (designsSection) {
     // Store for use in model-change filtering
     window._allLegsData = allLegs;
     window._allTubeSizesData = allTubeSizes;
+    updateLegPricingUI(state, allLegs);
 
     const legFinishRoot = document.getElementById('leg-finish-options');
     if (legFinishRoot) {
@@ -663,5 +719,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-02 15:03');
-  console.log('Edit ver: 369');
+  console.log('Edit ver: 371');
 });
