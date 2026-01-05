@@ -547,28 +547,28 @@ function initNumericInputs() {
     if (axis === 'length') {
       if (validateAxisValue('length', value)) {
         currentDimensions.length = value;
-        updateValidationMessage('length');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('length');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'width') {
       if (validateAxisValue('width', value)) {
         currentDimensions.width = value;
-        updateValidationMessage('width');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('width');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'height-custom') {
       if (validateAxisValue('height-custom', value)) {
         currentDimensions.heightCustom = value;
-        updateValidationMessage('height-custom');
-        updateApplyButtonState();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('height-custom');
+      updateApplyButtonState();
     }
   });
 }
