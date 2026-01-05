@@ -478,19 +478,29 @@ header .site-logo {
 
 .materials-help-link.tooltip:hover::after,
 .materials-help-link.tooltip:focus-visible::after {
+  top: 100%;
+  bottom: auto;
   left: auto;
   right: 0;
   transform: none;
-  max-width: min(280px, calc(100vw - 24px));
+  margin-top: 6px;
+  margin-bottom: 0;
+  width: min(560px, calc(100vw - 24px));
+  max-width: min(560px, calc(100vw - 24px));
   white-space: normal;
   text-align: left;
 }
 
 .materials-help-link.tooltip:hover::before,
 .materials-help-link.tooltip:focus-visible::before {
+  top: 100%;
+  bottom: auto;
   left: auto;
   right: 12px;
-  transform: rotate(180deg);
+  margin-top: 1px;
+  margin-bottom: 0;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+  transform: none;
 }
 
 /* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip

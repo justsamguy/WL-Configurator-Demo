@@ -1,4 +1,3 @@
-move the how your wood is selected tooltip to appear below the text instead of above, and make it 2x the width (while still positioning so the whole thing is in the viewport).
 
 make sure pricing is correct on summary page
 clean up and layout summary
