@@ -1027,6 +1027,19 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 /* Legs stage: 4-column layout */
+#legs-price-banner {
+  width: 100%;
+  align-self: stretch;
+  background-color: #dcffff;
+  border: 1px solid #2563eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+
 #legs-options {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
