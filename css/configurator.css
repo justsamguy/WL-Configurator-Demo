@@ -2652,7 +2652,7 @@ body.stage-1 #designs-stage-section > div {
 
 .addons-dropdown-intro-image {
   width: 100%;
-  height: auto;
+  aspect-ratio: 1 / 1;
   max-height: 140px;
   border-radius: 0.5rem;
   object-fit: contain;
