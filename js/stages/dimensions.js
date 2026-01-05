@@ -72,9 +72,23 @@ function initializeFromState(appState) {
     }
     
     const dimSel = appState && appState.selections && appState.selections.options && appState.selections.options.dimensions;
-    if (dimSel && dimensionsData) {
-      // dimSel is expected to be a preset ID or custom object
-      if (typeof dimSel === 'string') {
+    const dimDetail = appState && appState.selections && appState.selections.dimensionsDetail;
+    if ((dimSel || dimDetail) && dimensionsData) {
+      const presetById = dimDetail && dimDetail.presetId
+        ? dimensionsData.presets.find(p => p.id === dimDetail.presetId)
+        : null;
+      const presetBySize = dimDetail
+        ? dimensionsData.presets.find(p => p.length === dimDetail.length && p.width === dimDetail.width)
+        : null;
+      const resolvedPreset = presetById || presetBySize;
+      if (dimDetail && typeof dimDetail === 'object') {
+        // Restore from stored detail payload first
+        currentDimensions = { ...currentDimensions, ...dimDetail };
+        if (resolvedPreset && typeof dimDetail.height !== 'string') {
+          currentDimensions.height = resolvedPreset.height;
+        }
+        selectedTileId = resolvedPreset ? resolvedPreset.id : 'custom';
+      } else if (typeof dimSel === 'string') {
         const preset = dimensionsData.presets.find(p => p.id === dimSel);
         if (preset) {
           currentDimensions.length = preset.length;
@@ -84,7 +98,7 @@ function initializeFromState(appState) {
           selectedTileId = preset.id;
         }
       } else if (typeof dimSel === 'object') {
-        // Support custom dimension objects
+        // Support custom dimension objects (legacy shape)
         currentDimensions = { ...currentDimensions, ...dimSel };
         selectedTileId = 'custom';
       }
@@ -290,18 +304,25 @@ function getHeightPrice() {
 }
 
 // Dispatch option-selected event to trigger state update in main.js
+function getDimensionOptionId() {
+  if (selectedTileId && selectedTileId !== 'custom') return selectedTileId;
+  return 'dimensions-custom';
+}
+
 function dispatchDimensionSelection(price = 0) {
+  const optionId = getDimensionOptionId();
   const payload = {
     ...currentDimensions,
     length: currentDimensions.length,
     width: currentDimensions.width,
     height: currentDimensions.height,
-    heightCustom: currentDimensions.heightCustom
+    heightCustom: currentDimensions.heightCustom,
+    presetId: selectedTileId || null
   };
 
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
-      id: 'dimensions-custom',
+      id: optionId,
       price: price,
       category: 'dimensions',
       payload

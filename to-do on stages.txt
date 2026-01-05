@@ -1,7 +1,6 @@
 
 
 make sure pricing is correct on summary page
-make sure pricing is correct in running total
 clean up and layout summary
 
 

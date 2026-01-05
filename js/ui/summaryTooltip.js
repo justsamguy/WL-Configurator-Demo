@@ -55,13 +55,17 @@ async function renderTooltip() {
   const lines = [];
   if (priceData.breakdown && priceData.breakdown.length) {
     priceData.breakdown.forEach(item => {
-      const label = item.id || item.type || 'item';
+      const label = item.label || item.id || item.type || 'item';
       const price = Number(item.price) || 0;
-      // Show the base/model price as an absolute value, other items as signed additions
-      if (item.type === 'model') {
-        lines.push(`<div class="flex justify-between items-center"><span><strong>Base model:</strong> ${label}</span><span class="text-right ml-4">${formatCurrencyShort(price)}</span></div>`);
+      const hasPriceLabel = typeof item.priceLabel === 'string' && item.priceLabel.trim();
+      const priceText = hasPriceLabel ? item.priceLabel : formatSigned(price);
+      // Show the base/design price as an absolute value, other items as signed additions
+      if (item.isBase || item.type === 'design') {
+        const baseLabel = label || 'Base design';
+        const baseText = hasPriceLabel ? item.priceLabel : formatCurrencyShort(price);
+        lines.push(`<div class="flex justify-between items-center"><span><strong>Base design:</strong> ${baseLabel}</span><span class="text-right ml-4">${baseText}</span></div>`);
       } else {
-        lines.push(`<div class="flex justify-between items-center"><span><strong>${item.type}:</strong> ${label}</span><span class="text-right ml-4">${formatSigned(price)}</span></div>`);
+        lines.push(`<div class="flex justify-between items-center"><span><strong>${item.type}:</strong> ${label}</span><span class="text-right ml-4">${priceText}</span></div>`);
       }
     });
   } else {
