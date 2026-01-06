@@ -1,4 +1,4 @@
-make all active console output after the init and edit ver to be toggle-able on or off for debugging.
+
 
 Overhaul media to improve loading times
 
