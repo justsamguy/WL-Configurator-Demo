@@ -177,9 +177,9 @@ function getEntryTitle(entry, fallbackId) {
   return fallbackId || '';
 }
 
-function addOptionItem(list, label, id, entry) {
+function addOptionItem(list, label, id, entry, type) {
   if (!id) return;
-  list.push({ label, value: getEntryTitle(entry, id) });
+  list.push({ label, value: getEntryTitle(entry, id), id, type });
 }
 
 function buildOptionGroups(selections, summaryData) {
@@ -191,7 +191,7 @@ function buildOptionGroups(selections, summaryData) {
     const modelEntry = summaryData && summaryData.models ? summaryData.models.get(modelId) : null;
     groups.push({
       title: 'Model',
-      items: [{ label: 'Model', value: getEntryTitle(modelEntry, modelId) }]
+      items: [{ label: 'Model', value: getEntryTitle(modelEntry, modelId), id: modelId, type: 'model' }]
     });
   }
 
@@ -200,21 +200,21 @@ function buildOptionGroups(selections, summaryData) {
     const designEntry = summaryData && summaryData.designs ? summaryData.designs.get(designId) : null;
     groups.push({
       title: 'Design',
-      items: [{ label: 'Design', value: getEntryTitle(designEntry, designId) }]
+      items: [{ label: 'Design', value: getEntryTitle(designEntry, designId), id: designId, type: 'design' }]
     });
   }
 
   const materialItems = [];
-  addOptionItem(materialItems, 'Material', opts.material, summaryData && opts.material ? summaryData.materials.get(opts.material) : null);
-  addOptionItem(materialItems, 'Color', opts.color, summaryData && opts.color ? summaryData.colors.get(opts.color) : null);
+  addOptionItem(materialItems, 'Material', opts.material, summaryData && opts.material ? summaryData.materials.get(opts.material) : null, 'material');
+  addOptionItem(materialItems, 'Color', opts.color, summaryData && opts.color ? summaryData.colors.get(opts.color) : null, 'color');
   const customColorNote = typeof opts.customColorNote === 'string' ? opts.customColorNote.trim() : '';
-  if (customColorNote) materialItems.push({ label: 'Custom Color Note', value: customColorNote });
+  if (customColorNote) materialItems.push({ label: 'Custom Color Note', value: customColorNote, type: 'note' });
   if (materialItems.length) groups.push({ title: 'Materials', items: materialItems });
 
   const finishItems = [];
-  addOptionItem(finishItems, 'Finish Coating', opts['finish-coating'], summaryData && opts['finish-coating'] ? summaryData.finishCoatings.get(opts['finish-coating']) : null);
-  addOptionItem(finishItems, 'Finish Sheen', opts['finish-sheen'], summaryData && opts['finish-sheen'] ? summaryData.finishSheens.get(opts['finish-sheen']) : null);
-  addOptionItem(finishItems, 'Finish Tint', opts['finish-tint'], summaryData && opts['finish-tint'] ? summaryData.finishTints.get(opts['finish-tint']) : null);
+  addOptionItem(finishItems, 'Finish Coating', opts['finish-coating'], summaryData && opts['finish-coating'] ? summaryData.finishCoatings.get(opts['finish-coating']) : null, 'finish-coating');
+  addOptionItem(finishItems, 'Finish Sheen', opts['finish-sheen'], summaryData && opts['finish-sheen'] ? summaryData.finishSheens.get(opts['finish-sheen']) : null, 'finish-sheen');
+  addOptionItem(finishItems, 'Finish Tint', opts['finish-tint'], summaryData && opts['finish-tint'] ? summaryData.finishTints.get(opts['finish-tint']) : null, 'finish-tint');
   if (finishItems.length) groups.push({ title: 'Finish', items: finishItems });
 
   const dimensionValue = formatDimensionsDetail(selections.dimensionsDetail);
@@ -222,13 +222,13 @@ function buildOptionGroups(selections, summaryData) {
     const dimensionEntry = summaryData && opts.dimensions ? summaryData.dimensions.get(opts.dimensions) : null;
     const fallbackDimension = opts.dimensions === 'dimensions-custom' ? 'Custom dimensions' : opts.dimensions;
     const dimensionLabel = dimensionValue || getEntryTitle(dimensionEntry, fallbackDimension || 'Custom dimensions');
-    groups.push({ title: 'Dimensions', items: [{ label: 'Dimensions', value: dimensionLabel }] });
+    groups.push({ title: 'Dimensions', items: [{ label: 'Dimensions', value: dimensionLabel, id: opts.dimensions, type: 'dimensions' }] });
   }
 
   const legsItems = [];
-  addOptionItem(legsItems, 'Legs', opts.legs, summaryData && opts.legs ? summaryData.legs.get(opts.legs) : null);
-  addOptionItem(legsItems, 'Tube Size', opts['tube-size'], summaryData && opts['tube-size'] ? summaryData.tubeSizes.get(opts['tube-size']) : null);
-  addOptionItem(legsItems, 'Leg Finish', opts['leg-finish'], summaryData && opts['leg-finish'] ? summaryData.legFinishes.get(opts['leg-finish']) : null);
+  addOptionItem(legsItems, 'Legs', opts.legs, summaryData && opts.legs ? summaryData.legs.get(opts.legs) : null, 'legs');
+  addOptionItem(legsItems, 'Tube Size', opts['tube-size'], summaryData && opts['tube-size'] ? summaryData.tubeSizes.get(opts['tube-size']) : null, 'tube-size');
+  addOptionItem(legsItems, 'Leg Finish', opts['leg-finish'], summaryData && opts['leg-finish'] ? summaryData.legFinishes.get(opts['leg-finish']) : null, 'leg-finish');
   if (legsItems.length) groups.push({ title: 'Legs', items: legsItems });
 
   const addonItems = [];
@@ -237,7 +237,7 @@ function buildOptionGroups(selections, summaryData) {
     if (!addonId) return;
     const entry = summaryData ? summaryData.addons.get(addonId) : null;
     const value = formatAddonValue(entry, addonId);
-    if (value) addonItems.push({ label: value });
+    if (value) addonItems.push({ label: value, id: addonId, type: 'addon' });
   });
   if (addonItems.length) groups.push({ title: 'Add-ons', items: addonItems });
 
@@ -248,17 +248,31 @@ function createOptionRow(item) {
   const row = document.createElement('div');
   row.className = 'summary-option-row';
   const hasValue = item && item.value !== undefined && item.value !== null && String(item.value).trim() !== '';
+  const hasPrice = item && item.price !== undefined && item.price !== null && String(item.price).trim() !== '';
+  if (hasPrice) row.classList.add('has-price');
+
+  const main = document.createElement('div');
+  main.className = 'summary-option-main';
 
   const labelSpan = document.createElement('span');
   labelSpan.className = 'summary-option-label';
   labelSpan.textContent = hasValue ? `${item.label}:` : item.label;
-  row.appendChild(labelSpan);
+  main.appendChild(labelSpan);
 
   if (hasValue) {
     const valueSpan = document.createElement('span');
     valueSpan.className = 'summary-option-value';
     valueSpan.textContent = String(item.value);
-    row.appendChild(valueSpan);
+    main.appendChild(valueSpan);
+  }
+
+  row.appendChild(main);
+
+  if (hasPrice) {
+    const priceSpan = document.createElement('span');
+    priceSpan.className = 'summary-option-price';
+    priceSpan.textContent = String(item.price);
+    row.appendChild(priceSpan);
   }
 
   return row;
@@ -310,6 +324,30 @@ function formatBreakdownPrice(item) {
   return `+${formatCurrency(item.price)}`;
 }
 
+function buildBreakdownPriceMap(priceData) {
+  const map = new Map();
+  if (!priceData || !Array.isArray(priceData.breakdown)) return map;
+  priceData.breakdown.forEach((item) => {
+    if (!item || !item.type || !item.id) return;
+    const price = formatBreakdownPrice(item);
+    if (!price) return;
+    map.set(`${item.type}:${item.id}`, price);
+  });
+  return map;
+}
+
+function applyBreakdownPrices(groups, priceMap) {
+  if (!Array.isArray(groups) || !priceMap) return;
+  groups.forEach((group) => {
+    if (!group || !Array.isArray(group.items)) return;
+    group.items.forEach((item) => {
+      if (!item || !item.type || !item.id) return;
+      const price = priceMap.get(`${item.type}:${item.id}`);
+      if (price) item.price = price;
+    });
+  });
+}
+
 function createPriceRow(entry, isLast) {
   const row = document.createElement('div');
   row.className = 'summary-price-row';
@@ -354,9 +392,8 @@ function buildPriceBreakdown(priceData) {
 
 export async function populateSummaryPanel() {
   const optionsRoot = document.getElementById('summary-options-groups');
-  const priceRoot = document.getElementById('summary-price-items');
   const total = document.getElementById('summary-total-price');
-  if (!optionsRoot || !priceRoot || !total) return;
+  if (!optionsRoot || !total) return;
 
   const s = state;
   const selections = s.selections || {};
@@ -369,7 +406,6 @@ export async function populateSummaryPanel() {
   }
 
   const groups = buildOptionGroups(selections, summaryData);
-  renderOptionGroups(optionsRoot, groups);
 
   let priceData = null;
   try {
@@ -378,13 +414,14 @@ export async function populateSummaryPanel() {
     console.warn('Summary pricing failed', e);
   }
 
+  const priceMap = buildBreakdownPriceMap(priceData);
+  applyBreakdownPrices(groups, priceMap);
+  renderOptionGroups(optionsRoot, groups);
+
   const totalValue = priceData && typeof priceData.total === 'number'
     ? priceData.total
     : (s.pricing && typeof s.pricing.total === 'number' ? s.pricing.total : 0);
   total.textContent = formatCurrency(totalValue);
-
-  const breakdownEntries = buildPriceBreakdown(priceData);
-  renderPriceBreakdown(priceRoot, breakdownEntries);
 }
 
 async function captureSnapshot() {

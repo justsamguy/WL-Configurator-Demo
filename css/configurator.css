@@ -233,6 +233,23 @@ header .flex.justify-center.items-center {
   color: #374151;
 }
 
+.summary-option-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.summary-option-row.has-price {
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.summary-option-row.has-price .summary-option-main {
+  flex: 1;
+}
+
 .summary-option-label {
   font-weight: 600;
   color: #374151;
@@ -240,6 +257,11 @@ header .flex.justify-center.items-center {
 
 .summary-option-value {
   color: #4b5563;
+}
+
+.summary-option-price {
+  color: #4b5563;
+  white-space: nowrap;
 }
 
 .summary-empty {
