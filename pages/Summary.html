@@ -1,49 +1,65 @@
-<div class="flex flex-col gap-6 px-8 py-8">
-  <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+<section class="flex flex-col gap-3">
+  <div class="text-sm font-semibold text-gray-900">Snapshot</div>
+  <div id="snapshot-container" class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+    <img id="snapshot-img" class="max-w-full max-h-full object-contain" alt="Configuration snapshot" style="display: none;" />
+    <div id="snapshot-placeholder" class="text-gray-400 text-sm">Your configuration snapshot will appear here</div>
+  </div>
+</section>
 
-  <div class="mb-6">
-    <div id="snapshot-container" class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-      <img id="snapshot-img" class="max-w-full max-h-full object-contain" alt="Configuration snapshot" style="display: none;" />
-      <div id="snapshot-placeholder" class="text-gray-400">Your configuration snapshot will appear here</div>
-    </div>
+<section class="border rounded-lg p-4 bg-white flex flex-col gap-3">
+  <div class="text-sm font-semibold text-gray-900">Options Summary</div>
+  <div id="summary-options-groups" class="flex flex-col gap-4 max-h-64 overflow-y-auto pr-2" aria-live="polite" aria-atomic="true"></div>
+</section>
 
-    <div class="border rounded-lg p-4 bg-white">
-      <h3 class="font-semibold mb-2">Selected Options</h3>
+<section class="border rounded-lg p-4 bg-white flex flex-col gap-3">
+  <div class="text-sm font-semibold text-gray-900">Pricing Breakdown</div>
+  <div id="summary-price-items" class="flex flex-col"></div>
+  <div class="flex justify-between text-sm text-gray-600 pt-2 border-t">
+    <span>Taxes</span>
+    <span>Quoted Separately</span>
+  </div>
+  <div class="flex justify-between text-base font-semibold pt-2">
+    <span>Total</span>
+    <span id="summary-total-price"></span>
+  </div>
+</section>
 
-      <div class="mb-3">
-        <div class="flex justify-between py-1 border-b">
-          <span class="font-medium">Model</span>
-          <span id="summary-model-name"></span>
-        </div>
-        <div class="flex justify-between py-1 border-b">
-          <span class="font-medium">Design</span>
-          <span id="summary-design-name"></span>
-        </div>
-        <div class="flex justify-between py-1 text-sm text-gray-600">
-          <span>Base Price</span>
-          <span id="summary-model-price"></span>
-        </div>
-      </div>
-
-      <!-- Customization options summary will be rendered here by js/main.js -->
-      <div id="summary-custom-options"></div>
-
-      <div class="mt-4 pt-2 border-t flex justify-between font-bold">
-        <span>Total Price</span>
-        <span id="summary-total-price"></span>
-      </div>
+<section id="summary-shipping-section" class="border rounded-lg p-4 bg-white flex flex-col gap-3">
+  <div class="text-sm font-semibold text-gray-900">Shipping</div>
+  <div class="flex flex-wrap gap-4">
+    <label class="flex items-center gap-2 text-sm text-gray-700">
+      <input id="shipping-quote-separately" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
+      Quote separately
+    </label>
+    <label class="flex items-center gap-2 text-sm text-gray-700">
+      <input id="shipping-international" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
+      International
+    </label>
+  </div>
+  <div id="summary-shipping-fields" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+      ZIP Code
+      <input id="shipping-zip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" class="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900" placeholder="90210">
+    </label>
+    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+      Region
+      <input id="shipping-region" type="text" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500" value="Auto" readonly aria-readonly="true">
+    </label>
+    <div class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+      Estimated
+      <div id="shipping-estimate" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700" aria-live="polite" aria-atomic="true">--</div>
     </div>
   </div>
+</section>
 
-  <div class="flex flex-col gap-3">
-    <button id="capture-snapshot" class="btn btn-secondary btn-md w-full">
-      Capture Snapshot
-    </button>
-    <button id="export-pdf" class="btn btn-primary btn-md w-full">
-      Export PDF
-    </button>
-    <button id="restart-config" class="btn btn-tertiary btn-md w-full mt-2">
-      Start Over
-    </button>
-  </div>
+<div class="flex flex-col gap-3">
+  <button id="capture-snapshot" class="btn btn-secondary btn-md w-full">
+    Capture Snapshot
+  </button>
+  <button id="export-pdf" class="btn btn-primary btn-md w-full">
+    Export PDF
+  </button>
+  <button id="restart-config" class="btn btn-tertiary btn-md w-full">
+    Start Over
+  </button>
 </div>

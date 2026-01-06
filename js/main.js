@@ -88,7 +88,7 @@ document.addEventListener('statechange', (ev) => {
   // ev.detail.state contains the latest state object.
   // If the summary page is active, refresh its contents
   try {
-    const summaryRoot = document.getElementById('summary-model-name');
+    const summaryRoot = document.getElementById('summary-panel');
     if (summaryRoot) populateSummaryPanel();
   } catch (e) {
     // ignore
@@ -711,14 +711,14 @@ if (designsSection) {
 
   // If we loaded the Summary page markup, populate its panel now
   try {
-    const hasSummary = document.getElementById('summary-model-name');
+    const hasSummary = document.getElementById('summary-panel');
     if (hasSummary) populateSummaryPanel();
   } catch (e) { /* ignore */ }
 
   // Initialize summary action handlers (capture/export/restart) if present
   try {
     const { initSummaryActions } = await import('./stages/summary.js');
-    if (document.getElementById('summary-model-name')) initSummaryActions();
+    if (document.getElementById('summary-panel')) initSummaryActions();
   } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
@@ -733,5 +733,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-05 16:31');
-  console.log('Edit ver: 379');
+  console.log('Edit ver: 380');
 });
