@@ -1590,6 +1590,8 @@ p, label { font-size: 15px; color: #374151; }
   gap: 0.25rem;
   font-size: 0.85rem;
   color: #374151;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(16,24,40,0.08);
 }
 
 .summary-option-label {
@@ -1599,6 +1601,10 @@ p, label { font-size: 15px; color: #374151; }
 
 .summary-option-value {
   color: #4b5563;
+}
+
+.summary-options-list .summary-option-row:last-child {
+  border-bottom: none;
 }
 
 .summary-empty {
@@ -1720,10 +1726,6 @@ p, label { font-size: 15px; color: #374151; }
 .rounded-md { border-radius: 8px; }
 
 /* End high-impact rules */
-  padding: 0.75rem 1rem;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-}
 
 #viewer-controls button, 
 #viewer-controls span {
