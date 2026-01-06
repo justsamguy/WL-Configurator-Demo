@@ -31,6 +31,7 @@ This repo maintains multiple rule files for different tools/agents. Keep shared 
 - **No new dependencies** unless explicitly approved.
 - **Edit version rule:** After app edits, increment the `Edit ver:` line immediately after it by 1.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
+- **UI styling:** For JS-generated UI, prefer class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
 
 ## Provenance
 

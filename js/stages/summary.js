@@ -7,6 +7,54 @@ const hasHtml2Canvas = typeof html2canvas !== 'undefined';
 const hasJsPDF = typeof window.jsPDF !== 'undefined';
 
 let summaryDataCache = null;
+let zip3RegionMap = null;
+let zip3RegionPromise = null;
+
+async function loadZip3RegionMap() {
+  if (zip3RegionMap) return zip3RegionMap;
+  if (!zip3RegionPromise) {
+    zip3RegionPromise = (async () => {
+      try {
+        const res = await fetch('data/us_zip3_to_census_region.csv');
+        if (!res.ok) throw new Error(`Zip3 region fetch failed: ${res.status}`);
+        const text = await res.text();
+        const map = new Map();
+        const lines = text.trim().split(/\r?\n/);
+        lines.slice(1).forEach((line) => {
+          const [zip3Raw, regionRaw] = line.split(',');
+          const zip3 = zip3Raw ? zip3Raw.trim() : '';
+          const region = regionRaw ? regionRaw.trim() : '';
+          if (zip3.length === 3 && region) map.set(zip3, region);
+        });
+        zip3RegionMap = map;
+        return map;
+      } catch (e) {
+        console.warn('Summary zip3 lookup failed', e);
+        zip3RegionMap = new Map();
+        return zip3RegionMap;
+      }
+    })();
+  }
+  zip3RegionMap = await zip3RegionPromise;
+  return zip3RegionMap;
+}
+
+function normalizeZipInput(value) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/\D/g, '').slice(0, 5);
+}
+
+async function updateRegionFromZip(zipValue, regionInput) {
+  if (!regionInput) return;
+  if (!zipValue || zipValue.length < 3) {
+    regionInput.value = 'Auto';
+    return;
+  }
+  const map = await loadZip3RegionMap();
+  const zip3 = zipValue.slice(0, 3);
+  const region = map.get(zip3);
+  regionInput.value = region || 'Unknown';
+}
 
 function buildIdMap(list) {
   const map = new Map();
@@ -198,17 +246,17 @@ function buildOptionGroups(selections, summaryData) {
 
 function createOptionRow(item) {
   const row = document.createElement('div');
-  row.className = 'text-sm text-gray-700 flex flex-wrap gap-1';
+  row.className = 'summary-option-row';
   const hasValue = item && item.value !== undefined && item.value !== null && String(item.value).trim() !== '';
 
   const labelSpan = document.createElement('span');
-  labelSpan.className = hasValue ? 'font-medium text-gray-700' : 'text-gray-700';
+  labelSpan.className = 'summary-option-label';
   labelSpan.textContent = hasValue ? `${item.label}:` : item.label;
   row.appendChild(labelSpan);
 
   if (hasValue) {
     const valueSpan = document.createElement('span');
-    valueSpan.className = 'text-gray-600';
+    valueSpan.className = 'summary-option-value';
     valueSpan.textContent = String(item.value);
     row.appendChild(valueSpan);
   }
@@ -218,15 +266,15 @@ function createOptionRow(item) {
 
 function createOptionGroup(group) {
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex flex-col gap-2';
+  wrapper.className = 'summary-options-group';
 
   const heading = document.createElement('div');
-  heading.className = 'text-sm font-semibold text-gray-900';
+  heading.className = 'summary-options-title';
   heading.textContent = group.title;
   wrapper.appendChild(heading);
 
   const list = document.createElement('div');
-  list.className = 'flex flex-col gap-1 pl-4';
+  list.className = 'summary-options-list';
   group.items.forEach(item => list.appendChild(createOptionRow(item)));
   wrapper.appendChild(list);
 
@@ -237,7 +285,7 @@ function renderOptionGroups(container, groups) {
   container.innerHTML = '';
   if (!groups.length) {
     const empty = document.createElement('div');
-    empty.className = 'text-gray-600 text-sm';
+    empty.className = 'summary-empty';
     empty.textContent = 'No options selected';
     container.appendChild(empty);
     return;
@@ -264,15 +312,16 @@ function formatBreakdownPrice(item) {
 
 function createPriceRow(entry, isLast) {
   const row = document.createElement('div');
-  row.className = 'flex justify-between items-start text-sm text-gray-700 py-2';
-  if (!isLast) row.classList.add('border-b', 'border-gray-100');
+  row.className = 'summary-price-row';
+  if (isLast) row.classList.add('is-last');
 
   const left = document.createElement('span');
+  left.className = 'summary-price-label';
   left.textContent = entry.label;
   row.appendChild(left);
 
   const right = document.createElement('span');
-  right.className = 'text-gray-600 text-right ml-4';
+  right.className = 'summary-price-amount';
   right.textContent = entry.price || '';
   row.appendChild(right);
 
@@ -283,7 +332,7 @@ function renderPriceBreakdown(container, entries) {
   container.innerHTML = '';
   if (!entries.length) {
     const empty = document.createElement('div');
-    empty.className = 'text-gray-600 text-sm';
+    empty.className = 'summary-empty';
     empty.textContent = 'Pricing details unavailable';
     container.appendChild(empty);
     return;
@@ -414,20 +463,27 @@ function initShippingControls() {
   const updateState = () => {
     const disabled = !!((quote && quote.checked) || (international && international.checked));
     if (fields) {
-      fields.classList.toggle('opacity-50', disabled);
-      fields.classList.toggle('pointer-events-none', disabled);
+      fields.classList.toggle('is-disabled', disabled);
       fields.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }
     if (zip) zip.disabled = disabled;
     if (region) region.disabled = disabled;
     if (estimate) {
-      estimate.classList.toggle('text-gray-400', disabled);
-      estimate.classList.toggle('text-gray-700', !disabled);
+      estimate.classList.toggle('is-disabled', disabled);
     }
+  };
+
+  const handleZipInput = async () => {
+    if (!zip || !region) return;
+    const normalized = normalizeZipInput(zip.value);
+    if (zip.value !== normalized) zip.value = normalized;
+    await updateRegionFromZip(normalized, region);
   };
 
   if (quote) quote.addEventListener('change', updateState);
   if (international) international.addEventListener('change', updateState);
+  if (zip) zip.addEventListener('input', () => { handleZipInput(); });
+  handleZipInput();
   updateState();
 }
 

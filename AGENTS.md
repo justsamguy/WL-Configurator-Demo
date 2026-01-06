@@ -143,6 +143,9 @@ After completing any requested edit to the app:
 
 ## Style and communication
 
+### UI styling convention
+- For JS-generated UI (e.g., summary lists), prefer stable class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography so styling stays consistent across the app.
+
 ### Codebase comment convention
 - Prefer single-sentence inline comments to capture **intent** and/or **what changed**, consistent with the existing codebase style.
 - Use your judgment: comments may describe behavior, explain a change, or both—keep them short and useful.

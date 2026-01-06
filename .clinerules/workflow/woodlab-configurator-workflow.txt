@@ -43,6 +43,7 @@ alwaysApply: true
   - UI/UX must match the three-stage wizard, 3D viewer, sidebar, summary/export, and help drawer as described in the guidelines.
   - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
   - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
+  - For JS-generated UI, prefer stable class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
   - Global state: `js/state.js` owns shared state and `setState(...)`; stage modules under `js/stages/` must not call `setState` directly.
   - Prefer dispatching agreed-upon events (e.g., `option-selected`, `addon-toggled`, `request-restart`, `request-stage-change`) and let `js/main.js` (and narrowly, `js/stageManager.js`) handle state mutation.
   - Notes on recent conventions: `applyFinishDefaults(appState)` in `js/stages/finish.js` dispatches `option-selected` events for defaults and does NOT call `setState`. Summary reset dispatches `request-restart`; `js/main.js` handles reset + navigation.
