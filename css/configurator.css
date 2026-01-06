@@ -1890,6 +1890,9 @@ p, label { font-size: 15px; color: #374151; }
 .option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
 .option-card.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
 
+/* Override selected style for stage-options-grid to use consistent blue styling */
+.stage-options-grid .option-card.selected { border-color: #2563eb; border-width: 3px; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+
 .stage-btn { flex: 1; padding: 0.5rem 0.25rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; }
 .stage-btn.active { border-bottom-color: #6366f1; color: #4f46e5; }
 
