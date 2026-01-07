@@ -146,6 +146,15 @@ function formatCurrency(val) {
   return `$${val.toLocaleString()}`;
 }
 
+function getShippingCost() {
+  const estimate = document.getElementById('shipping-estimate');
+  if (!estimate) return 0;
+  const text = estimate.textContent.trim();
+  // Extract numeric value from formatted currency (e.g., "$500" -> 500)
+  const match = text.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
 function formatDimensionsDetail(detail) {
   if (!detail || typeof detail !== 'object') return '';
   const sizeParts = [];
@@ -427,7 +436,9 @@ export async function populateSummaryPanel() {
   const totalValue = priceData && typeof priceData.total === 'number'
     ? priceData.total
     : (s.pricing && typeof s.pricing.total === 'number' ? s.pricing.total : 0);
-  total.textContent = formatCurrency(totalValue);
+  const shippingCost = getShippingCost();
+  const finalTotal = totalValue + shippingCost;
+  total.textContent = formatCurrency(finalTotal);
 }
 
 async function captureSnapshot() {
@@ -532,9 +543,13 @@ function initShippingControls() {
     await updateRegionFromZip(normalized, region);
   };
 
-  if (quote) quote.addEventListener('change', updateState);
-  if (local) local.addEventListener('change', updateState);
-  if (zip) zip.addEventListener('input', () => { handleZipInput(); });
+  const updateTotal = () => {
+    populateSummaryPanel();
+  };
+
+  if (quote) quote.addEventListener('change', () => { updateState(); updateTotal(); });
+  if (local) local.addEventListener('change', () => { updateState(); updateTotal(); });
+  if (zip) zip.addEventListener('input', () => { handleZipInput(); updateTotal(); });
   handleZipInput();
   updateState();
 }

@@ -353,6 +353,11 @@ header .flex.justify-center.items-center {
 
 .summary-shipping-estimate-field {
   width: auto;
+  align-items: flex-end;
+}
+
+.summary-shipping-estimate-field .summary-shipping-estimate {
+  text-align: right;
 }
 
 .summary-shipping-fields.is-disabled {
