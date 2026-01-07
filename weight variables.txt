@@ -1,0 +1,10 @@
+Tabletop: widthxlengthx2x.03
+Legs: squared/tapered 70lb, X/hourglass 90lb, tripod/custom 110lb (weights per single leg in 3x1 tube except for tripod and custom)
+2x4 Tube is 3x1 tube weight x 1.52
+at 42" table height, leg weight is 1.5x (determine an appropriate multiplier based off of this).
+table widths over 42" have a 1.1x multiplier for each 6" width increase
+cube/C-style base is a flat 40lb. 
+
+Waterfall edge increases tabletop cubic inches by table widthxtableheightx2 and reduces leg weight by half (completely if double waterfall).
+Glass top increases weight by widthxlengthx0.25x0.1
+power strips adds 20lbs, wireless charging and adtl connections add 10lbs each, innerlighting adds 30lbs, custom tech adds 30lbs.
