@@ -503,13 +503,16 @@ function initShippingControls() {
   section.dataset.wlBound = 'true';
 
   const quote = document.getElementById('shipping-quote-separately');
+  const local = document.getElementById('shipping-local-delivery');
   const zip = document.getElementById('shipping-zip');
   const region = document.getElementById('shipping-region');
   const fields = document.getElementById('summary-shipping-fields');
   const estimate = document.getElementById('shipping-estimate');
+  const defaultEstimate = estimate ? estimate.textContent.trim() : '';
 
   const updateState = () => {
-    const disabled = !!(quote && quote.checked);
+    const localDelivery = !!(local && local.checked);
+    const disabled = !!(quote && quote.checked) || localDelivery;
     if (fields) {
       fields.classList.toggle('is-disabled', disabled);
       fields.setAttribute('aria-disabled', disabled ? 'true' : 'false');
@@ -518,6 +521,7 @@ function initShippingControls() {
     if (region) region.disabled = disabled;
     if (estimate) {
       estimate.classList.toggle('is-disabled', disabled);
+      estimate.textContent = localDelivery ? formatCurrency(500) : (defaultEstimate || '--');
     }
   };
 
@@ -529,6 +533,7 @@ function initShippingControls() {
   };
 
   if (quote) quote.addEventListener('change', updateState);
+  if (local) local.addEventListener('change', updateState);
   if (zip) zip.addEventListener('input', () => { handleZipInput(); });
   handleZipInput();
   updateState();
