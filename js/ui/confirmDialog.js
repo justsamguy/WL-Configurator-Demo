@@ -11,8 +11,8 @@ export function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 
     dialogBox.innerHTML = `
       <p class="text-gray-900 text-base mb-8">${message}</p>
       <div class="flex justify-end gap-3">
-        <button class="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition" id="confirm-cancel">${cancelText}</button>
-        <button class="px-5 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition" id="confirm-ok">${confirmText}</button>
+        <button class="btn btn-secondary btn-md" id="confirm-cancel">${cancelText}</button>
+        <button class="btn btn-primary btn-md" id="confirm-ok">${confirmText}</button>
       </div>
     `;
 
