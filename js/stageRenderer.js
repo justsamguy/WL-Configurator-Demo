@@ -72,13 +72,16 @@ const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
 
 function buildAddonIntro(group = {}) {
   const introWrapper = document.createElement('div');
-  introWrapper.className = 'addons-dropdown-intro';
+  const hasImage = Boolean(group.image);
+  introWrapper.className = hasImage ? 'addons-dropdown-intro' : 'addons-dropdown-intro addons-dropdown-intro-no-image';
 
-  const image = document.createElement('img');
-  image.className = 'addons-dropdown-intro-image';
-  image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
-  image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
-  introWrapper.appendChild(image);
+  if (hasImage) {
+    const image = document.createElement('img');
+    image.className = 'addons-dropdown-intro-image';
+    image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
+    image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+    introWrapper.appendChild(image);
+  }
 
   const text = document.createElement('p');
   text.className = 'addons-dropdown-intro-text';
@@ -161,12 +164,20 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           // Render as tiles (buttons)
           const tilesContainer = document.createElement('div');
           tilesContainer.className = 'addons-tiles-container';
+          if (subsection.layout === 'scroll') {
+            tilesContainer.classList.add('addons-tiles-scroll');
+          }
+          const groupId = subsection.groupId || subsection.title;
           subsection.options.forEach(option => {
             const btn = document.createElement('button');
             btn.className = 'addons-tile';
             btn.setAttribute('data-addon-id', option.id);
             btn.setAttribute('aria-pressed', 'false');
             btn.setAttribute('data-price', option.price || 0);
+            if (subsection.selection === 'single') {
+              btn.setAttribute('data-addon-mode', 'single');
+              btn.setAttribute('data-addon-group', groupId);
+            }
 
             // Check for addon compatibility with current design
             const currentDesign = currentState.selections && currentState.selections.design;
@@ -183,6 +194,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
                 tooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
               }
               if (tooltip) btn.setAttribute('data-tooltip', tooltip);
+            }
+
+            if (option.image) {
+              const img = document.createElement('img');
+              img.className = 'addons-tile-image';
+              img.src = option.image;
+              img.alt = option.title ? `Preview of ${option.title}` : 'Tech option';
+              btn.appendChild(img);
             }
 
             const label = document.createElement('div');
@@ -203,7 +222,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           // Render as dropdown
           const select = document.createElement('select');
           select.className = 'addons-dropdown-select';
-          select.setAttribute('data-addon-group', subsection.title);
+          const groupId = subsection.groupId || subsection.title;
+          select.setAttribute('data-addon-group', groupId);
           if (group.disabled || subsection.disabled) {
             select.disabled = true;
             select.classList.add('disabled');

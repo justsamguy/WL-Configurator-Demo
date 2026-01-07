@@ -39,6 +39,26 @@ export function init() {
     const tile = event.target.closest('.addons-tile');
     if (tile && root.contains(tile)) {
       if (tile.disabled) return;
+      const mode = tile.getAttribute('data-addon-mode');
+      if (mode === 'single') {
+        const group = tile.getAttribute('data-addon-group');
+        const groupTiles = getTilesByGroup(root, group);
+        groupTiles.forEach(btn => {
+          btn.setAttribute('aria-pressed', 'false');
+          btn.classList.remove('selected');
+        });
+        tile.setAttribute('aria-pressed', 'true');
+        tile.classList.add('selected');
+        const id = tile.getAttribute('data-addon-id');
+        const price = parsePrice(tile.getAttribute('data-price'));
+        console.log('[Addons] Tile select:', { group, id, price });
+        document.dispatchEvent(new CustomEvent('addon-selected', {
+          detail: { group, id, price }
+        }));
+        updateAllIndicators();
+        return;
+      }
+
       const isPressed = tile.getAttribute('aria-pressed') === 'true';
       tile.setAttribute('aria-pressed', (!isPressed).toString());
       tile.classList.toggle('selected', !isPressed);
@@ -101,11 +121,43 @@ export function restoreFromState(state) {
       }
     });
     // Handle tiles
-    document.querySelectorAll('.addons-tile').forEach(tile => {
+    const tiles = Array.from(document.querySelectorAll('.addons-tile'));
+    tiles.forEach(tile => {
+      const mode = tile.getAttribute('data-addon-mode');
+      if (mode === 'single') return;
       const id = tile.getAttribute('data-addon-id');
       const selected = arr.includes(id);
       tile.setAttribute('aria-pressed', selected ? 'true' : 'false');
       tile.classList.toggle('selected', selected);
+    });
+
+    const singleGroups = new Map();
+    tiles.forEach(tile => {
+      const mode = tile.getAttribute('data-addon-mode');
+      if (mode !== 'single') return;
+      const group = tile.getAttribute('data-addon-group') || '';
+      if (!singleGroups.has(group)) singleGroups.set(group, []);
+      singleGroups.get(group).push(tile);
+    });
+
+    singleGroups.forEach((groupTiles, group) => {
+      const groupPrefix = `addon-${group}-`;
+      const selectedId = arr.find(id => id.startsWith(groupPrefix));
+      let targetTile = null;
+      if (selectedId) {
+        targetTile = groupTiles.find(tile => tile.getAttribute('data-addon-id') === selectedId) || null;
+      }
+      if (!targetTile) {
+        targetTile = groupTiles.find(tile => {
+          const id = tile.getAttribute('data-addon-id') || '';
+          return id.includes('-none');
+        }) || null;
+      }
+      groupTiles.forEach(tile => {
+        const isSelected = targetTile && tile === targetTile;
+        tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        tile.classList.toggle('selected', isSelected);
+      });
     });
     // Handle dropdowns
     document.querySelectorAll('.addons-dropdown-select').forEach(select => {
@@ -131,6 +183,12 @@ const parsePrice = (value) => {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+function getTilesByGroup(root, group) {
+  if (!root || !group) return [];
+  const escapedGroup = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(group) : group.replace(/["\\]/g, '\\$&');
+  return Array.from(root.querySelectorAll(`.addons-tile[data-addon-group="${escapedGroup}"]`));
+}
 
 function isSelectEffectivelyDisabled(select) {
   if (!select) return true;
