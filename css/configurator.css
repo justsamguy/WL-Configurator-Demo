@@ -2838,11 +2838,11 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .addons-dropdown-intro-image {
-  width: 100%;
+  width: 140px;
   aspect-ratio: 1 / 1;
-  max-height: 140px;
+  max-height: 100%;
   border-radius: 0.5rem;
-  object-fit: contain;
+  object-fit: cover;
   background-color: #e5e7eb;
   justify-self: center;
 }
