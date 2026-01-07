@@ -201,9 +201,6 @@ header .flex.justify-center.items-center {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 16rem;
-  overflow-y: auto;
-  padding-right: 0.5rem;
 }
 
 .summary-options-group {
@@ -578,13 +575,12 @@ header .site-logo {
     flex-direction: column;
     height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
     max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
-    overflow: hidden; /* Prevent double scrollbars; internal area will scroll */
+    overflow-y: auto; /* Let the sidebar handle scrolling as a whole */
+    overflow-x: hidden;
   }
 
   /* Scrollable region inside the sidebar */
   #app-sidebar .sidebar-scroll {
-      overflow-y: auto;
-      overflow-x: hidden; /* prevent accidental horizontal scroll */
       /* Space between the sticky header and the scrollable content.
          Use a CSS variable so this spacing can be tuned in one place if needed. */
       --sidebar-content-top-gap: 1rem; /* default 16px */
@@ -592,7 +588,7 @@ header .site-logo {
       padding-right: 8px; /* give space for scrollbar */
     }
 
-  /* Fixed bottom area inside the sidebar should not scroll with the tiles */
+  /* Bottom area inside the sidebar scrolls with the rest of the content */
   #app-sidebar #sidebar-fixed-bottom {
     flex: 0 0 auto;
   }
