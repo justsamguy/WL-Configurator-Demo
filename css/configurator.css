@@ -336,6 +336,10 @@ header .flex.justify-center.items-center {
 }
 
 .summary-shipping-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
   width: max-content;
 }
 
