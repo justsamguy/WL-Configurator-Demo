@@ -1,4 +1,4 @@
-
+add warning for shipping glass
 
 Overhaul media to improve loading times
 
