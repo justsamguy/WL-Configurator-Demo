@@ -13,37 +13,32 @@
     <span>Taxes</span>
     <span>Quoted Separately</span>
   </div>
+  <div id="summary-shipping-section" class="summary-shipping-section">
+    <div class="summary-section-title">Shipping</div>
+    <div class="summary-shipping-options">
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        <input id="shipping-quote-separately" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
+        Quote seperately/International
+      </label>
+    </div>
+    <div id="summary-shipping-fields" class="summary-shipping-fields">
+      <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+        ZIP Code
+        <input id="shipping-zip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" class="summary-shipping-input" placeholder="90210">
+      </label>
+      <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+        Region
+        <input id="shipping-region" type="text" class="summary-shipping-input" value="Auto" readonly aria-readonly="true">
+      </label>
+      <div class="flex flex-col gap-1 text-xs font-medium text-gray-600">
+        Estimated
+        <div id="shipping-estimate" class="summary-shipping-input summary-shipping-estimate" aria-live="polite" aria-atomic="true">--</div>
+      </div>
+    </div>
+  </div>
   <div class="summary-total-row">
     <span>Total</span>
     <span id="summary-total-price"></span>
-  </div>
-</section>
-
-<section id="summary-shipping-section" class="summary-section">
-  <div class="summary-section-title">Shipping</div>
-  <div class="summary-shipping-options">
-    <label class="flex items-center gap-2 text-sm text-gray-700">
-      <input id="shipping-quote-separately" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
-      Quote separately
-    </label>
-    <label class="flex items-center gap-2 text-sm text-gray-700">
-      <input id="shipping-international" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
-      International
-    </label>
-  </div>
-  <div id="summary-shipping-fields" class="summary-shipping-fields">
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      ZIP Code
-      <input id="shipping-zip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" class="summary-shipping-input" placeholder="90210">
-    </label>
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Region
-      <input id="shipping-region" type="text" class="summary-shipping-input" value="Auto" readonly aria-readonly="true">
-    </label>
-    <div class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Estimated
-      <div id="shipping-estimate" class="summary-shipping-input summary-shipping-estimate" aria-live="polite" aria-atomic="true">--</div>
-    </div>
   </div>
 </section>
 

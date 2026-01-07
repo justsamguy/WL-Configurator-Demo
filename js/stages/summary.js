@@ -1,6 +1,7 @@
 import { state } from '../state.js';
 import { loadData } from '../dataLoader.js';
 import { computePrice } from '../pricing.js';
+import { showConfirmDialog } from '../ui/confirmDialog.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
 const hasHtml2Canvas = typeof html2canvas !== 'undefined';
@@ -479,9 +480,15 @@ async function exportPdf() {
   }
 }
 
-function restartConfig() {
+async function restartConfig() {
   // Do not mutate global state here. Request a restart and let main.js handle
   // the canonical state reset and stage navigation.
+  const confirmed = await showConfirmDialog(
+    'Are you sure you want to discard all customizations and start a new project?',
+    'Cancel',
+    'Start Over'
+  );
+  if (!confirmed) return;
   document.dispatchEvent(new CustomEvent('request-restart'));
 }
 
@@ -491,14 +498,13 @@ function initShippingControls() {
   section.dataset.wlBound = 'true';
 
   const quote = document.getElementById('shipping-quote-separately');
-  const international = document.getElementById('shipping-international');
   const zip = document.getElementById('shipping-zip');
   const region = document.getElementById('shipping-region');
   const fields = document.getElementById('summary-shipping-fields');
   const estimate = document.getElementById('shipping-estimate');
 
   const updateState = () => {
-    const disabled = !!((quote && quote.checked) || (international && international.checked));
+    const disabled = !!(quote && quote.checked);
     if (fields) {
       fields.classList.toggle('is-disabled', disabled);
       fields.setAttribute('aria-disabled', disabled ? 'true' : 'false');
@@ -518,7 +524,6 @@ function initShippingControls() {
   };
 
   if (quote) quote.addEventListener('change', updateState);
-  if (international) international.addEventListener('change', updateState);
   if (zip) zip.addEventListener('input', () => { handleZipInput(); });
   handleZipInput();
   updateState();
@@ -538,7 +543,7 @@ export function initSummaryActions() {
   }
   if (rst && rst.dataset.wlBound !== 'true') {
     rst.dataset.wlBound = 'true';
-    rst.addEventListener('click', (ev) => { ev.preventDefault(); restartConfig(); });
+    rst.addEventListener('click', async (ev) => { ev.preventDefault(); await restartConfig(); });
   }
   initShippingControls();
 }
