@@ -331,6 +331,22 @@ header .flex.justify-center.items-center {
   gap: 0.75rem;
 }
 
+.summary-shipping-field {
+  width: max-content;
+}
+
+.summary-shipping-zip-field .summary-shipping-input {
+  width: 7ch;
+}
+
+.summary-shipping-region-field .summary-shipping-input {
+  width: 20ch;
+}
+
+.summary-shipping-estimate-field {
+  width: auto;
+}
+
 .summary-shipping-fields.is-disabled {
   opacity: 0.5;
   pointer-events: none;
@@ -361,7 +377,8 @@ header .flex.justify-center.items-center {
 
 @media (min-width: 640px) {
   .summary-shipping-fields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: start;
   }
 }
 
