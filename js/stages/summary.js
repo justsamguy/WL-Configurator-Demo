@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { loadData } from '../dataLoader.js';
-import { computePrice } from '../pricing.js';
+import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
@@ -186,6 +186,7 @@ function addOptionItem(list, label, id, entry, type) {
 function buildOptionGroups(selections, summaryData) {
   const groups = [];
   const opts = selections.options || {};
+  const waterfallCount = getWaterfallEdgeCount({ selections });
 
   const modelId = selections.model;
   if (modelId) {
@@ -230,6 +231,10 @@ function buildOptionGroups(selections, summaryData) {
   addOptionItem(legsItems, 'Legs', opts.legs, summaryData && opts.legs ? summaryData.legs.get(opts.legs) : null, 'legs');
   addOptionItem(legsItems, 'Tube Size', opts['tube-size'], summaryData && opts['tube-size'] ? summaryData.tubeSizes.get(opts['tube-size']) : null, 'tube-size');
   addOptionItem(legsItems, 'Leg Finish', opts['leg-finish'], summaryData && opts['leg-finish'] ? summaryData.legFinishes.get(opts['leg-finish']) : null, 'leg-finish');
+  if (waterfallCount >= 2 && legsItems.length) {
+    const legsItem = legsItems.find(item => item.type === 'legs');
+    if (legsItem) legsItem.value = 'replaced by waterfall';
+  }
   if (legsItems.length) groups.push({ title: 'Legs', items: legsItems });
 
   const addonItems = [];

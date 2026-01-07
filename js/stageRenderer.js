@@ -286,7 +286,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-live-edge'));
-          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible;
+          const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
+          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || requiresWaterfallSingle;
           const isDisabled = group.disabled || option.disabled || isIncompatible;
 
           if (isDisabled) {
@@ -294,7 +295,11 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             optionDiv.classList.add('disabled');
             optionDiv.setAttribute('aria-disabled', 'true');
             let incompatibilityTooltip = tooltip;
-            if (isRoundedCornersIncompatible) {
+            if (requiresWaterfallSingle) {
+              incompatibilityTooltip = 'Select Single Waterfall to enable';
+              checkbox.setAttribute('data-disabled-by', 'waterfall');
+              optionDiv.setAttribute('data-disabled-by', 'waterfall');
+            } else if (isRoundedCornersIncompatible) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';

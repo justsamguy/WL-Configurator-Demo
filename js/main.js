@@ -6,7 +6,7 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice, getLegPriceMultiplier } from './pricing.js';
+import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
 
 /**
  * Filter designs by model compatibility
@@ -78,6 +78,7 @@ function filterMaterialsByDesign(materials, designId) {
   });
 }
 import { populateSummaryPanel } from './stages/summary.js';
+import { updateAllIndicators } from './stages/addons.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
 import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
@@ -140,7 +141,24 @@ function applyLegPriceMultiplier(legs, multiplier) {
 function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
   const multiplier = getLegPriceMultiplier(appState);
   const banner = document.getElementById('legs-price-banner');
-  if (banner) banner.classList.toggle('hidden', multiplier <= 1);
+  if (banner) {
+    const length = appState && appState.selections && appState.selections.dimensionsDetail
+      ? appState.selections.dimensionsDetail.length
+      : null;
+    const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
+    const waterfallCount = getWaterfallEdgeCount(appState);
+    const messages = [];
+    if (lengthMultiplier > 1) {
+      messages.push('Leg prices updated automatically because we require 3 legs on tables over 130" long.');
+    }
+    if (waterfallCount === 1) {
+      messages.push('Single waterfall halves leg pricing.');
+    } else if (waterfallCount >= 2) {
+      messages.push('Two waterfalls replace legs; leg pricing set to $0.');
+    }
+    banner.classList.toggle('hidden', messages.length === 0);
+    if (messages.length) banner.textContent = messages.join(' ');
+  }
   if (!Array.isArray(baseLegs) || !baseLegs.length) return;
 
   const basePriceMap = new Map(baseLegs.map(leg => [leg.id, leg.price]));
@@ -160,6 +178,49 @@ function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
     const priceEl = card.querySelector('.price-delta');
     if (priceEl) priceEl.textContent = formatLegPriceLabel(adjustedPrice);
   });
+}
+
+function updateWaterfallAddonAvailability(appState = state) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : [];
+  const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
+  const shouldDisableSecond = !hasSingle;
+  const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
+  const option = root.querySelector('.addons-dropdown-option[data-addon-id="addon-waterfall-second"]');
+  if (!checkbox) return;
+
+  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+  if (shouldDisableSecond) {
+    checkbox.disabled = true;
+    checkbox.checked = false;
+    checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+    checkbox.setAttribute('data-disabled-by', 'waterfall');
+    if (option) {
+      option.classList.add('disabled');
+      option.classList.remove('selected');
+      option.setAttribute('aria-disabled', 'true');
+      option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+    }
+  } else if (disabledBy === 'waterfall') {
+    checkbox.disabled = false;
+    checkbox.removeAttribute('data-tooltip');
+    checkbox.removeAttribute('data-disabled-by');
+    if (option) {
+      option.classList.remove('disabled');
+      option.removeAttribute('aria-disabled');
+      if (option.getAttribute('data-disabled-by') === 'waterfall') {
+        option.removeAttribute('data-disabled-by');
+      }
+      if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
+        option.removeAttribute('data-tooltip');
+      }
+    }
+  }
+
+  updateAllIndicators();
 }
 
 /**
@@ -322,6 +383,7 @@ document.addEventListener('option-selected', async (ev) => {
         const { renderAddonsDropdown } = await import('./stageRenderer.js');
         const addons = await loadData('data/addons.json');
         if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateWaterfallAddonAvailability(state);
       }
     } catch (e) {
       console.warn('Failed to update addon compatibility after design change:', e);
@@ -429,6 +491,9 @@ document.addEventListener('addon-toggled', async (ev) => {
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
+  if (id === 'addon-waterfall-single' && !checked) {
+    selectedAddons.delete('addon-waterfall-second');
+  }
   const addonsArray = Array.from(selectedAddons);
   // persist selections then compute price via pricing module
   setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
@@ -436,6 +501,8 @@ document.addEventListener('addon-toggled', async (ev) => {
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
   animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+  updateLegPricingUI(state);
+  updateWaterfallAddonAvailability(state);
 });
 
 // Handle addon selections (single-select per group). Expect detail: { group, id, price }
@@ -462,6 +529,8 @@ document.addEventListener('addon-selected', async (ev) => {
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
   animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+  updateLegPricingUI(state);
+  updateWaterfallAddonAvailability(state);
 });
 
 // Request-based restart: stage modules should dispatch 'request-restart' and
@@ -680,6 +749,7 @@ if (designsSection) {
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
       if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
@@ -724,6 +794,6 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2026-01-07 13:27');
-  console.log('Edit ver: 394');
+  console.log('Last updated: 2026-01-07 13:32');
+  console.log('Edit ver: 397');
 });

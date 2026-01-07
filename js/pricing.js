@@ -118,12 +118,25 @@ function calculateDimensionPrice(state, dimensionsData) {
   return resolveDimensionPricing(state, dimensionsData).price;
 }
 
+const WATERFALL_EDGE_ADDONS = ['addon-waterfall-single', 'addon-waterfall-second'];
+
+export function getWaterfallEdgeCount(appState) {
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : null;
+  if (!Array.isArray(addons)) return 0;
+  return WATERFALL_EDGE_ADDONS.filter(id => addons.includes(id)).length;
+}
+
 export function getLegPriceMultiplier(appState) {
   const length = appState && appState.selections && appState.selections.dimensionsDetail
     ? appState.selections.dimensionsDetail.length
     : null;
-  if (typeof length !== 'number') return 1;
-  return length > 130 ? 1.5 : 1;
+  const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
+  const waterfallCount = getWaterfallEdgeCount(appState);
+  if (waterfallCount >= 2) return 0;
+  if (waterfallCount === 1) return lengthMultiplier * 0.5;
+  return lengthMultiplier;
 }
 
 // Central pricing helper
@@ -245,7 +258,10 @@ export async function computePrice(state) {
       }
       if (cat.key === 'legs') {
         const legMultiplier = getLegPriceMultiplier(state);
-        if (legMultiplier > 1 && Number.isFinite(p)) {
+        if (legMultiplier === 0) {
+          p = 0;
+          priceLabel = '';
+        } else if (legMultiplier !== 1 && Number.isFinite(p)) {
           p *= legMultiplier;
         }
       }
