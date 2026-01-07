@@ -241,6 +241,10 @@ header .flex.justify-center.items-center {
   flex-wrap: wrap;
   gap: 0.25rem;
   min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  border-bottom: 1px solid rgba(16, 24, 40, 0.08);
+  padding-bottom: 0.15rem;
 }
 
 .summary-option-row.has-price {
@@ -251,6 +255,7 @@ header .flex.justify-center.items-center {
 
 .summary-option-row.has-price .summary-option-main {
   flex: 1;
+  margin-right: auto;
 }
 
 .summary-option-label {
@@ -357,6 +362,8 @@ header .flex.justify-center.items-center {
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
+  line-height: 1.25rem;
+  height: 2.5rem;
   color: #111827;
   background: #fff;
 }
@@ -367,6 +374,8 @@ header .flex.justify-center.items-center {
 }
 
 .summary-shipping-estimate {
+  display: flex;
+  align-items: center;
   background: #f9fafb;
   color: #374151;
 }
