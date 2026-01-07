@@ -284,17 +284,9 @@ document.addEventListener('option-selected', async (ev) => {
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
-    // Check if rounded corners addon needs to be deselected due to incompatibility
+    // Check if addons need to be disabled due to design incompatibility
     const currentAddons = state.selections.options.addon || [];
-    const hasRoundedCorners = currentAddons.includes('addon-rounded-corners');
-    const isIncompatibleDesign = id === 'des-cookie' || id === 'des-round';
-
-    let updatedAddons = currentAddons;
-    if (hasRoundedCorners && isIncompatibleDesign) {
-      // Remove rounded corners addon if it's incompatible with the new design
-      updatedAddons = currentAddons.filter(addonId => addonId !== 'addon-rounded-corners');
-      console.log('[Main] Deselecting rounded corners addon due to design incompatibility');
-    }
+    // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
 
     setState({
       selections: {
@@ -302,7 +294,7 @@ document.addEventListener('option-selected', async (ev) => {
         design: id,
         options: {
           ...state.selections.options,
-          addon: updatedAddons
+          addon: currentAddons
         }
       }
     });
@@ -732,6 +724,6 @@ if (designsSection) {
 
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2026-01-05 16:31');
-  console.log('Edit ver: 386');
+  console.log('Last updated: 2026-01-07 12:07');
+  console.log('Edit ver: 387');
 });

@@ -259,11 +259,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
           // Check for addon compatibility with current design
           const currentDesign = currentState.selections && currentState.selections.design;
+          const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round');
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
-          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible;
+          const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-live-edge'));
+          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible;
           const isDisabled = group.disabled || option.disabled || isIncompatible;
 
           if (isDisabled) {
@@ -275,6 +278,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
+            } else if (isChamferedEdgesIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, or Live Edge';
             }
             if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }
