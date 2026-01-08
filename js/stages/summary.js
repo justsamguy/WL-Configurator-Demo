@@ -147,7 +147,7 @@ function formatCurrency(val) {
 }
 
 function getShippingCost() {
-  const estimate = document.getElementById('shipping-estimate');
+  const estimate = document.getElementById('shipping-estimate') || document.getElementById('shipping-estimate-header');
   if (!estimate) return 0;
   const text = estimate.textContent.trim();
   // Extract numeric value from formatted currency (e.g., "$500" -> 500)
@@ -513,34 +513,73 @@ function initShippingControls() {
   if (!section || section.dataset.wlBound === 'true') return;
   section.dataset.wlBound = 'true';
 
+  const toggle = document.getElementById('summary-shipping-toggle');
+  const body = document.getElementById('summary-shipping-body');
   const quote = document.getElementById('shipping-quote-separately');
+  const international = document.getElementById('shipping-international');
   const local = document.getElementById('shipping-local-delivery');
   const zip = document.getElementById('shipping-zip');
   const region = document.getElementById('shipping-region');
   const fields = document.getElementById('summary-shipping-fields');
   const estimate = document.getElementById('shipping-estimate');
+  const headerEstimate = document.getElementById('shipping-estimate-header');
+  const toggles = document.getElementById('summary-shipping-toggles');
+  const commercial = document.getElementById('shipping-commercial');
+  const liftgate = document.getElementById('shipping-liftgate');
+  const whiteGlove = document.getElementById('shipping-white-glove');
+  const notes = document.getElementById('summary-shipping-notes');
+  const notesInput = document.getElementById('shipping-notes');
   const defaultEstimate = estimate ? estimate.textContent.trim() : '';
+
+  const setCollapsed = (collapsed) => {
+    section.classList.toggle('is-collapsed', collapsed);
+    if (body) body.hidden = collapsed;
+    if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  };
+
+  const setEstimateText = (value, isDisabled) => {
+    if (estimate) {
+      estimate.textContent = value;
+      estimate.classList.toggle('is-disabled', isDisabled);
+    }
+    if (headerEstimate) {
+      headerEstimate.textContent = value;
+      headerEstimate.classList.toggle('is-disabled', isDisabled);
+    }
+  };
 
   const updateState = () => {
     const localDelivery = !!(local && local.checked);
-    const disabled = !!(quote && quote.checked) || localDelivery;
+    const disabled = !!(quote && quote.checked) || !!(international && international.checked) || localDelivery;
     if (fields) {
       fields.classList.toggle('is-disabled', disabled);
       fields.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     }
     if (zip) zip.disabled = disabled;
     if (region) region.disabled = disabled;
-    if (estimate) {
-      estimate.classList.toggle('is-disabled', disabled);
-      if (localDelivery) {
-        const tableLength = state.selections && state.selections.dimensionsDetail && typeof state.selections.dimensionsDetail.length === 'number'
-          ? state.selections.dimensionsDetail.length
-          : 0;
-        const shippingCost = tableLength > 144 ? 750 : 500;
-        estimate.textContent = formatCurrency(shippingCost);
-      } else {
-        estimate.textContent = defaultEstimate || '--';
-      }
+    const normalizedZip = zip ? normalizeZipInput(zip.value) : '';
+    const showExtras = !disabled && normalizedZip.length === 5;
+    if (toggles) {
+      toggles.classList.toggle('is-visible', showExtras);
+      toggles.setAttribute('aria-hidden', showExtras ? 'false' : 'true');
+    }
+    [commercial, liftgate, whiteGlove].forEach((input) => {
+      if (input) input.disabled = !showExtras;
+    });
+    const showNotes = localDelivery || (!!(whiteGlove && whiteGlove.checked) && showExtras);
+    if (notes) {
+      notes.classList.toggle('is-visible', showNotes);
+      notes.setAttribute('aria-hidden', showNotes ? 'false' : 'true');
+    }
+    if (notesInput) notesInput.disabled = !showNotes;
+    if (localDelivery) {
+      const tableLength = state.selections && state.selections.dimensionsDetail && typeof state.selections.dimensionsDetail.length === 'number'
+        ? state.selections.dimensionsDetail.length
+        : 0;
+      const shippingCost = tableLength > 144 ? 750 : 500;
+      setEstimateText(formatCurrency(shippingCost), disabled);
+    } else {
+      setEstimateText(defaultEstimate || '--', disabled);
     }
   };
 
@@ -549,17 +588,28 @@ function initShippingControls() {
     const normalized = normalizeZipInput(zip.value);
     if (zip.value !== normalized) zip.value = normalized;
     await updateRegionFromZip(normalized, region);
+    updateState();
   };
 
   const updateTotal = () => {
     populateSummaryPanel();
   };
 
+  if (toggle && body) {
+    toggle.addEventListener('click', () => {
+      setCollapsed(!section.classList.contains('is-collapsed'));
+    });
+  }
   if (quote) quote.addEventListener('change', () => { updateState(); updateTotal(); });
+  if (international) international.addEventListener('change', () => { updateState(); updateTotal(); });
   if (local) local.addEventListener('change', () => { updateState(); updateTotal(); });
   if (zip) zip.addEventListener('input', () => { handleZipInput(); updateTotal(); });
+  if (commercial) commercial.addEventListener('change', updateState);
+  if (liftgate) liftgate.addEventListener('change', updateState);
+  if (whiteGlove) whiteGlove.addEventListener('change', updateState);
   handleZipInput();
   updateState();
+  setCollapsed(section.classList.contains('is-collapsed'));
 }
 
 export function initSummaryActions() {

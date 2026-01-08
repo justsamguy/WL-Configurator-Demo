@@ -14,29 +14,71 @@
     <span>Quoted Separately</span>
   </div>
   <div id="summary-shipping-section" class="summary-shipping-section">
-    <div class="summary-section-title">Shipping</div>
-    <div class="summary-shipping-options">
-      <label class="flex items-center gap-2 text-sm text-gray-700">
-        <input id="shipping-quote-separately" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
-        Quote seperately/International
-      </label>
-      <label class="flex items-center gap-2 text-sm text-gray-700">
-        <input id="shipping-local-delivery" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900">
-        Local delivery
-      </label>
-    </div>
-    <div id="summary-shipping-fields" class="summary-shipping-fields">
-      <label class="summary-shipping-field summary-shipping-zip-field flex flex-col gap-1 text-xs font-medium text-gray-600">
-        ZIP Code
-        <input id="shipping-zip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" class="summary-shipping-input" placeholder="90210">
-      </label>
-      <label class="summary-shipping-field summary-shipping-region-field flex flex-col gap-1 text-xs font-medium text-gray-600">
-        Region
-        <input id="shipping-region" type="text" class="summary-shipping-input" value="Auto" readonly aria-readonly="true">
-      </label>
-      <div class="summary-shipping-field summary-shipping-estimate-field flex flex-col gap-1 text-xs font-medium text-gray-600">
-        Estimated
-        <div id="shipping-estimate" class="summary-shipping-input summary-shipping-estimate" aria-live="polite" aria-atomic="true">--</div>
+    <button id="summary-shipping-toggle" class="summary-shipping-toggle" type="button" aria-expanded="true" aria-controls="summary-shipping-body">
+      <span class="summary-shipping-toggle-title">Shipping</span>
+      <span class="summary-shipping-toggle-estimate">
+        <span class="summary-shipping-toggle-estimate-label">Estimated</span>
+        <span id="shipping-estimate-header" class="summary-shipping-toggle-estimate-value" aria-live="polite" aria-atomic="true">--</span>
+      </span>
+      <span class="summary-shipping-toggle-icon" aria-hidden="true">v</span>
+    </button>
+    <div id="summary-shipping-body" class="summary-shipping-body">
+      <div class="summary-shipping-options">
+        <label class="summary-shipping-choice">
+          <input id="shipping-quote-separately" type="checkbox" class="summary-shipping-choice-input">
+          <span class="summary-shipping-choice-label">Quote separately</span>
+        </label>
+        <label class="summary-shipping-choice">
+          <input id="shipping-international" type="checkbox" class="summary-shipping-choice-input">
+          <span class="summary-shipping-choice-label">International</span>
+        </label>
+        <label class="summary-shipping-choice">
+          <input id="shipping-local-delivery" type="checkbox" class="summary-shipping-choice-input">
+          <span class="summary-shipping-choice-label">Local delivery</span>
+        </label>
+      </div>
+      <div id="summary-shipping-fields" class="summary-shipping-fields">
+        <label class="summary-shipping-field summary-shipping-zip-field">
+          ZIP Code
+          <input id="shipping-zip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="postal-code" class="summary-shipping-input" placeholder="90210">
+        </label>
+        <label class="summary-shipping-field summary-shipping-region-field">
+          Region
+          <input id="shipping-region" type="text" class="summary-shipping-input" value="Auto" readonly aria-readonly="true">
+        </label>
+        <div class="summary-shipping-field summary-shipping-estimate-field">
+          Estimated
+          <div id="shipping-estimate" class="summary-shipping-input summary-shipping-estimate" aria-live="polite" aria-atomic="true">--</div>
+        </div>
+      </div>
+      <div id="summary-shipping-toggles" class="summary-shipping-toggles" aria-hidden="true">
+        <label class="summary-shipping-switch">
+          <span class="summary-shipping-switch-label">Commercial / residential</span>
+          <span class="summary-shipping-switch-toggle">
+            <input id="shipping-commercial" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-control" aria-hidden="true"></span>
+          </span>
+        </label>
+        <label class="summary-shipping-switch">
+          <span class="summary-shipping-switch-label">Forklift / liftgate needed</span>
+          <span class="summary-shipping-switch-toggle">
+            <input id="shipping-liftgate" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-control" aria-hidden="true"></span>
+          </span>
+        </label>
+        <label class="summary-shipping-switch">
+          <span class="summary-shipping-switch-label">I'll unpack / White glove delivery</span>
+          <span class="summary-shipping-switch-toggle">
+            <input id="shipping-white-glove" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-control" aria-hidden="true"></span>
+          </span>
+        </label>
+      </div>
+      <div id="summary-shipping-notes" class="summary-shipping-notes" aria-hidden="true">
+        <label class="summary-shipping-field summary-shipping-notes-field">
+          Delivery notes
+          <textarea id="shipping-notes" class="summary-shipping-input summary-shipping-textarea" rows="3" placeholder="Include all entrances, hallways, floors, stairways, etc. we should know about for delivery."></textarea>
+        </label>
       </div>
     </div>
   </div>

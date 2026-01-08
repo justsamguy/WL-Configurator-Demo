@@ -1,4 +1,9 @@
+
+add installation addon, quoted separately.
+
 add warning for shipping glass
+
+add a note below the total price that this is not a formal quotation or contract sale price.
 
 Overhaul media to improve loading times
 
