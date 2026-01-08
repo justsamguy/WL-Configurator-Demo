@@ -65,6 +65,7 @@ alwaysApply: true
 - **Documentation Updates:**
   - Keep examples synchronized with WoodLab code
   - Update references to WoodLab guidelines and workflow files
+  - Keep `AGENTS.md`, `.github/copilot-instructions.md`, and `.clinerules/**` synchronized on shared constraints (without overwriting tool-specific instructions/formatting)
   - Maintain links between related rules
   - Document breaking changes
 

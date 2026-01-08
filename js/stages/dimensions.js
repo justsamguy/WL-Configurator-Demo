@@ -13,6 +13,7 @@ let currentDimensions = {
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
+let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
 
 
 
@@ -72,9 +73,23 @@ function initializeFromState(appState) {
     }
     
     const dimSel = appState && appState.selections && appState.selections.options && appState.selections.options.dimensions;
-    if (dimSel && dimensionsData) {
-      // dimSel is expected to be a preset ID or custom object
-      if (typeof dimSel === 'string') {
+    const dimDetail = appState && appState.selections && appState.selections.dimensionsDetail;
+    if ((dimSel || dimDetail) && dimensionsData) {
+      const presetById = dimDetail && dimDetail.presetId
+        ? dimensionsData.presets.find(p => p.id === dimDetail.presetId)
+        : null;
+      const presetBySize = dimDetail
+        ? dimensionsData.presets.find(p => p.length === dimDetail.length && p.width === dimDetail.width)
+        : null;
+      const resolvedPreset = presetById || presetBySize;
+      if (dimDetail && typeof dimDetail === 'object') {
+        // Restore from stored detail payload first
+        currentDimensions = { ...currentDimensions, ...dimDetail };
+        if (resolvedPreset && typeof dimDetail.height !== 'string') {
+          currentDimensions.height = resolvedPreset.height;
+        }
+        selectedTileId = resolvedPreset ? resolvedPreset.id : 'custom';
+      } else if (typeof dimSel === 'string') {
         const preset = dimensionsData.presets.find(p => p.id === dimSel);
         if (preset) {
           currentDimensions.length = preset.length;
@@ -84,7 +99,7 @@ function initializeFromState(appState) {
           selectedTileId = preset.id;
         }
       } else if (typeof dimSel === 'object') {
-        // Support custom dimension objects
+        // Support custom dimension objects (legacy shape)
         currentDimensions = { ...currentDimensions, ...dimSel };
         selectedTileId = 'custom';
       }
@@ -132,6 +147,44 @@ function getConstraints() {
   return dimensionsData.constraints;
 }
 
+function updateAxisInputConstraints() {
+  const constraints = getConstraints();
+  if (!constraints) return;
+
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const heightCustomInput = document.getElementById('dim-height-custom-input');
+
+  if (constraints.length && lengthInput) {
+    lengthInput.min = constraints.length.min;
+    lengthInput.max = constraints.length.max;
+    lengthInput.step = constraints.length.step;
+    axisSteps.length = constraints.length.step;
+  }
+
+  if (constraints.width && widthInput) {
+    widthInput.min = constraints.width.min;
+    widthInput.max = constraints.width.max;
+    widthInput.step = constraints.width.step;
+    axisSteps.width = constraints.width.step;
+  }
+
+  if (heightCustomInput) {
+    heightCustomInput.min = 16;
+    heightCustomInput.max = 50;
+    heightCustomInput.step = axisSteps['height-custom'];
+  }
+}
+
+function updateAxisValidationDescriptions(axis, validationEl) {
+  if (!validationEl || !validationEl.id) return;
+  const hasMessage = validationEl.textContent.trim().length > 0;
+  document.querySelectorAll(`.control-button[data-axis="${axis}"]`).forEach(btn => {
+    if (hasMessage) btn.setAttribute('aria-describedby', validationEl.id);
+    else btn.removeAttribute('aria-describedby');
+  });
+}
+
 // Validate a single axis value
 function validateAxisValue(axis, value) {
   const constraints = getConstraints();
@@ -173,6 +226,7 @@ function updateValidationMessage(axis) {
   
   if (value === null) {
     validationEl.textContent = '';
+    updateAxisValidationDescriptions(axis, validationEl);
     return;
   }
   
@@ -183,6 +237,8 @@ function updateValidationMessage(axis) {
   } else {
     validationEl.textContent = '';
   }
+
+  updateAxisValidationDescriptions(axis, validationEl);
 }
 
 // Render oversize banners
@@ -235,6 +291,8 @@ function updateUIControls() {
   const widthInput = document.getElementById('dim-width-input');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
+
+  updateAxisInputConstraints();
   
   if (lengthInput && currentDimensions.length !== null) {
     lengthInput.value = currentDimensions.length;
@@ -290,18 +348,25 @@ function getHeightPrice() {
 }
 
 // Dispatch option-selected event to trigger state update in main.js
+function getDimensionOptionId() {
+  if (selectedTileId && selectedTileId !== 'custom') return selectedTileId;
+  return 'dimensions-custom';
+}
+
 function dispatchDimensionSelection(price = 0) {
+  const optionId = getDimensionOptionId();
   const payload = {
     ...currentDimensions,
     length: currentDimensions.length,
     width: currentDimensions.width,
     height: currentDimensions.height,
-    heightCustom: currentDimensions.heightCustom
+    heightCustom: currentDimensions.heightCustom,
+    presetId: selectedTileId || null
   };
 
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
-      id: 'dimensions-custom',
+      id: optionId,
       price: price,
       category: 'dimensions',
       payload
@@ -319,9 +384,21 @@ function dispatchDimensionSelection(price = 0) {
 function filterPresetsByModel(presets) {
   const constraints = getConstraints();
   if (!constraints) return presets;
-  
+
+  const selectedModel = state && state.selections && state.selections.model;
+
+  // Model-specific preset exclusions
+  const modelExclusions = {
+    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'] // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+  };
+
+  const excludedIds = modelExclusions[selectedModel] || [];
+
   return presets.filter(preset => {
-    // Check if preset dimensions are within model constraints
+    // Check model-specific exclusions first
+    if (excludedIds.includes(preset.id)) return false;
+
+    // Then check technical constraints
     const lengthValid = preset.length >= constraints.length.min && preset.length <= constraints.length.max;
     const widthValid = preset.width >= constraints.width.min && preset.width <= constraints.width.max;
     return lengthValid && widthValid;
@@ -411,12 +488,6 @@ function initAxisControls() {
   const constraints = getConstraints();
   if (!constraints) return;
   
-  const axisSteps = {
-    length: constraints.length.step,
-    width: constraints.width.step,
-    'height-custom': 5 // arbitrary step for custom height
-  };
-  
   document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.control-button');
     if (!btn) return;
@@ -476,28 +547,28 @@ function initNumericInputs() {
     if (axis === 'length') {
       if (validateAxisValue('length', value)) {
         currentDimensions.length = value;
-        updateValidationMessage('length');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('length');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'width') {
       if (validateAxisValue('width', value)) {
         currentDimensions.width = value;
-        updateValidationMessage('width');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('width');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'height-custom') {
       if (validateAxisValue('height-custom', value)) {
         currentDimensions.heightCustom = value;
-        updateValidationMessage('height-custom');
-        updateApplyButtonState();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('height-custom');
+      updateApplyButtonState();
     }
   });
 }

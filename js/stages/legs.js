@@ -6,6 +6,15 @@ import { state } from '../state.js';
 
 let lastKnownModel = null; // Track the model to detect changes
 
+/**
+ * Check if tube size is optional for the given leg ID
+ * @param {string} legId - The leg option ID
+ * @returns {boolean} True if tube size is optional for this leg
+ */
+function isTubeSizeOptional(legId) {
+  return legId === 'leg-sample-07'; // Custom leg makes tube size optional
+}
+
 export function init() {
   console.log('[Legs] init() STARTED');
   console.log('[Legs] Module-level state at init time:', { ...state });
@@ -36,6 +45,20 @@ export function init() {
       if (tubeSizeCard.hasAttribute('disabled')) {
         return; // Block selection of disabled tube sizes
       }
+
+      const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
+      const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
+      const isOptional = isTubeSizeOptional(selectedLegId);
+      const isAlreadySelected = tubeSizeCard.getAttribute('aria-pressed') === 'true';
+
+      // If optional and already selected, deselect it
+      if (isOptional && isAlreadySelected) {
+        tubeSizeCard.setAttribute('aria-pressed', 'false');
+        document.dispatchEvent(new CustomEvent('tube-size-deselected'));
+        return;
+      }
+
+      // Otherwise, select it (normal behavior)
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       tubeSizeCard.setAttribute('aria-pressed', 'true');
       const id = tubeSizeCard.getAttribute('data-id');

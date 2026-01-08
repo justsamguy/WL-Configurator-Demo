@@ -1,13 +1,18 @@
-pricing
+
+add installation addon, quoted separately.
+
+add warning for shipping glass
+
+add a note below the total price that this is not a formal quotation or contract sale price.
+
 Overhaul media to improve loading times
-change app loading to have a loading screen while the app loads in the background
 
-Change designs to become configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles live in a "build your own" section that uses the existing one-stage-at-a-time approach.
+Add popular designs to as configured presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.
 
 
-ensure all summary lines are correct and there is a line item for every single tile selected w/ costs on the left
 create a csv-friendly export option
 add the browser warning to save progress
+
 remove all instances in the codebase where an !important or other similar override is being used and replace them with their proper intended designs.
 
-rebuild entire app to use react code
+fork and rebuild entire app to use react code

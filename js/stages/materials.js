@@ -1,6 +1,74 @@
 // Materials stage logic: validation and utilities
 let lastKnownModel = null; // Track the model to detect changes
 
+const CUSTOM_COLOR_ID = 'color-01';
+const CUSTOM_NOTE_ATTR = 'data-custom-note';
+const CUSTOM_NOTE_INPUT_ID = 'custom-color-note-input';
+
+let customColorCard = null;
+let customColorNoteContainer = null;
+let customColorNoteInput = null;
+
+function ensureCustomColorNoteField() {
+  if (customColorCard && customColorNoteContainer && customColorNoteInput) return;
+  const card = document.querySelector(`.option-card[${CUSTOM_NOTE_ATTR}]`);
+  if (!card) return;
+  customColorCard = card;
+  let noteContainer = card.querySelector('.custom-color-note-container');
+  if (!noteContainer) {
+    noteContainer = document.createElement('div');
+    noteContainer.className = 'custom-color-note-container';
+
+    const label = document.createElement('label');
+    label.className = 'custom-color-note-label';
+    label.setAttribute('for', CUSTOM_NOTE_INPUT_ID);
+    label.textContent = 'Custom color notes';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'custom-color-note';
+    textarea.id = CUSTOM_NOTE_INPUT_ID;
+    textarea.placeholder = 'Describe the custom color you are after, include reference tones if helpful.';
+    textarea.rows = 3;
+    textarea.setAttribute('aria-label', 'Custom color notes');
+
+    noteContainer.appendChild(label);
+    noteContainer.appendChild(textarea);
+
+    textarea.addEventListener('input', () => {
+      document.dispatchEvent(new CustomEvent('custom-color-note-updated', { detail: { value: textarea.value } }));
+    });
+
+    customColorNoteInput = textarea;
+  } else {
+    customColorNoteInput = noteContainer.querySelector('.custom-color-note');
+  }
+  customColorNoteContainer = noteContainer;
+}
+
+function setCustomColorNoteVisibility(isVisible) {
+  if (!customColorCard || !customColorNoteContainer) return;
+  customColorCard.classList.toggle('custom-color-active', isVisible);
+  if (isVisible) {
+    if (!customColorNoteContainer.parentElement) {
+      const descriptionEl = customColorCard.querySelector('.description');
+      if (descriptionEl && descriptionEl.parentElement === customColorCard) {
+        descriptionEl.insertAdjacentElement('afterend', customColorNoteContainer);
+      } else {
+        customColorCard.appendChild(customColorNoteContainer);
+      }
+    }
+  } else {
+    if (customColorNoteContainer.parentElement) {
+      customColorNoteContainer.parentElement.removeChild(customColorNoteContainer);
+    }
+  }
+}
+
+function syncCustomColorNoteValue(value = '') {
+  if (!customColorNoteInput) return;
+  customColorNoteInput.value = value;
+}
+
 export function isMaterialsComplete(appState) {
   try {
     const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
@@ -14,6 +82,9 @@ export function isMaterialsComplete(appState) {
 // Initialize materials stage interactions. This wires option-selected events for
 // single-choice material/color option-cards under the materials panel.
 export function init() {
+  ensureCustomColorNoteField();
+  setCustomColorNoteVisibility(false);
+
   // Delegate click handling for material and color option-cards
   document.addEventListener('click', (ev) => {
     const card = ev.target.closest && ev.target.closest('.option-card[data-category="material"], .option-card[data-category="color"]');
@@ -29,10 +100,19 @@ export function init() {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
     }
   });
+
+  document.addEventListener('option-selected', (ev) => {
+    const { category, id } = ev.detail || {};
+    if (category === 'color') {
+      setCustomColorNoteVisibility(id === CUSTOM_COLOR_ID);
+    }
+  });
 }
 
 export function restoreFromState(appState) {
   try {
+    ensureCustomColorNoteField();
+
     // Check if model has changed and clear selections if needed
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
@@ -53,6 +133,11 @@ export function restoreFromState(appState) {
         el.setAttribute('aria-pressed', 'true');
       }
     });
+
+    const selectedColorId = opts.color;
+    setCustomColorNoteVisibility(selectedColorId === CUSTOM_COLOR_ID);
+    const storedNote = opts.customColorNote || '';
+    syncCustomColorNoteValue(storedNote);
   } catch (e) { /* ignore */ }
 }
 

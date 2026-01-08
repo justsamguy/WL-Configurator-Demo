@@ -4,24 +4,31 @@ globs: index.html, css/*.css, js/**/*.js, assets/**/*, *.md
 alwaysApply: true
 ---
 
+- **Source of Truth**
+  - Follow `AGENTS.md` (repo root). If this workflow file conflicts, update it to match.
+  - Related rule files (keep shared constraints in sync): `.github/copilot-instructions.md`, `.clinerules/README.md`.
+  - **Synchronization rule:** When you change shared project rules (stack/platform constraints, architecture invariants, accessibility requirements, workflow guardrails, version policy), update the corresponding sections in the related rule files as well, while preserving tool-specific instructions/formatting.
+
 - **Development Workflow Process**
-  - Edit project files: `index.html`, `css/configurator.css`, `js/main.js`, `js/viewer.js`, `js/app.js`, `js/ui/*.js`, `components/*.html`, `pages/*.html`, and any assets in `assets/`.
-  - Use only the locked tech stack: Vanilla JS, Tailwind CSS v3 (compiled to css/configurator.css), Three.js r160 (loaded from CDN), jsPDF 2.5.1, html2canvas 1.5.1, and Hero-icons SVGs in assets/icons. **No other frameworks**.
-  - All logic must run in the browser; no server code or external APIs. Use hard-coded placeholder data and assets.
-  - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
+  - Edit project files: `index.html`, `css/*.css`, `js/**/*.js`, `components/*.html`, `pages/*.html`, `data/*.json`, and any assets in `assets/`.
+  - Use only the locked tech stack: Vanilla JS, Tailwind CSS 3.4.1 (CDN), Three.js 0.160.0 (CDN), jsPDF 2.5.1, html2canvas 1.5.1, Heroicons. **No other frameworks**.
+  - All logic must run in the browser; no server code. No external APIs for business data/services unless explicitly approved.
+  - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") in format `YYYY-MM-DD HH:MM` using the current local time from the system clock, then increment the `Edit ver:` line immediately after it by 1.
   - Strictly follow the canonical file/folder layout:
     - `index.html`: Minimal entry point; contains root `div` elements for dynamic content injection. All links must be relative.
-    - `css/configurator.css`: Compiled Tailwind output.
-    - `js/main.js`: App bootstrap, global state (only file allowed to mutate state), and orchestrates dynamic loading of main UI components.
-    - `js/app.js`: Provides utility functions, including `loadComponent` for fetching and injecting HTML components.
+    - `css/configurator.css`: Custom styles for the app (Tailwind is loaded via CDN).
+    - `js/state.js`: Canonical owner of shared `state` and the `setState(...)` dispatcher.
+    - `js/main.js`: Primary app orchestrator; handles app-level state mutations in response to UI/stage events.
+    - `js/stageManager.js`: May perform narrowly-scoped state mutations for navigation UX/gating consistency.
+    - `js/app.js`: Utilities such as `loadComponent` for fetching and injecting local HTML components.
     - `js/viewer.js`: 3D scene logic (Three.js); initialized after `MainContent.html` is loaded.
     - `js/ui/`: One file per UI segment (e.g., banner.js, helpDrawer.js); these modules attach logic to dynamically loaded content.
-     - `js/pricing.js`: Central pricing computation helper (computePrice) used by UI and stage manager.
-     - `js/stages/`: Directory for stage-specific logic (e.g., `finish.js`, `materials.js`) so all code affecting a single stage can live next to each other.
+    - `js/pricing.js`: Central pricing computation helper (computePrice) used by UI and stage manager.
+    - `js/stages/`: Directory for stage-specific logic (e.g., `finish.js`, `materials.js`) so all code affecting a single stage can live next to each other.
     - `components/`: Directory for reusable HTML components (e.g., `Header.html`, `StageBar.html`, `Sidebar.html`, `Footer.html`, `ModelSelection.html`, `ViewerControls.html`).
     - `pages/`: Directory for main application pages (e.g., `MainContent.html`, `Customize.html`, `Summary.html`).
     - `data/`: Directory for stage data as JSON files (e.g., `models.json`, `materials.json`, `finish.json`).
-    - `assets/`: All images, icons, and models (placeholders only).
+    - `assets/`: Images, icons, and models (placeholders permitted).
   - Any changes made to the file structure should be updated here in the clinerules as well.
 
 - **Testing & Viewing Changes**
@@ -36,9 +43,10 @@ alwaysApply: true
   - UI/UX must match the three-stage wizard, 3D viewer, sidebar, summary/export, and help drawer as described in the guidelines.
   - Use placeholder assets: simple geometry for 3D, 256x256 PNGs for images, all marked as placeholders.
   - All interactive elements must be accessible (WCAG 2.2 AA), keyboard navigable, and responsive.
-  - Only `main.js` mutates global state; all UI modules and HTML components observe state and dispatch `Event("statechange")` for updates.
-   - `js/main.js` is the canonical mutator of global state; UI modules and stage modules should prefer dispatching selection events (`option-selected`, `addon-toggled`, `stage-model-selected`, `request-restart`) and let `js/main.js` update state. Stage helper modules may call `setState` in well-documented cases (e.g., applying sensible defaults), but avoid ad-hoc state mutation across the codebase.
-   - Notes on recent conventions: `applyFinishDefaults(appState)` in `js/stages/finish.js` dispatches `option-selected` events for defaults and does NOT call `setState`. The Summary action that resets the configuration dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
+  - For JS-generated UI, prefer stable class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
+  - Global state: `js/state.js` owns shared state and `setState(...)`; stage modules under `js/stages/` must not call `setState` directly.
+  - Prefer dispatching agreed-upon events (e.g., `option-selected`, `addon-toggled`, `request-restart`, `request-stage-change`) and let `js/main.js` (and narrowly, `js/stageManager.js`) handle state mutation.
+  - Notes on recent conventions: `applyFinishDefaults(appState)` in `js/stages/finish.js` dispatches `option-selected` events for defaults and does NOT call `setState`. Summary reset dispatches `request-restart`; `js/main.js` handles reset + navigation.
   - Implement banners, tooltips, and help drawer per spec (see `/js/ui/banner.js` and related files).
 
 - **Export & Summary**
@@ -53,8 +61,9 @@ alwaysApply: true
   - Follow fixed breakpoints for layout: ≥1024px (2-column), 768–1023px (collapsible sidebar), ≤767px (stacked, stage bar bottom).
 
 - **Placeholder & Data Policy**
-  - Use only hard-coded placeholder data and assets.
-  - Mark all placeholder images with `alt="placeholder"`.
+  - Use local repo data/assets by default (e.g., `data/*.json`, `components/*.html`, `assets/**`).
+  - Do not introduce external APIs for business data/services unless explicitly approved.
+  - Mark placeholder images with `alt="placeholder"`.
 
 - **Definition of Done**
   - All checklist items in the guidelines are complete.
@@ -65,7 +74,7 @@ alwaysApply: true
 
 ## Implementation Instructions
 
-1. Place this file at `clinerules/workflow/woodlab-configurator-workflow.txt`.
+1. Place this file at `.clinerules/workflow/woodlab-configurator-workflow.txt`.
 2. Run **“Cline: Reload Rules”** in VS Code or restart the Cline LSP/CLI to apply changes.
 3. Edit the `globs` pattern above if the project structure changes (current pattern covers all relevant files).
 4. Keep this guideline file under version control for team consistency.

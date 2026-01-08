@@ -1,5 +1,19 @@
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
+// opts.showPrice: set false to hide price text for the rendered tiles
+function isQuotedLabel(value) {
+  return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
+}
+
+function formatPriceLabel(value, opts = {}) {
+  if (isQuotedLabel(value)) return value.trim();
+  const numeric = Number(value);
+  const safeNumber = Number.isFinite(numeric) ? numeric : 0;
+  if (opts.isDesign) {
+    return `Starting from: $${safeNumber.toLocaleString()}`;
+  }
+  return `+$${safeNumber.toLocaleString()}`;
+}
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -9,6 +23,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
     btn.setAttribute('data-id', item.id);
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
+    if (item.customNote) btn.setAttribute('data-custom-note', 'true');
     // Use aria-checked for multi-select (addon) category, aria-pressed for single-select
     const isMultiSelect = opts.category === 'addon';
     if (isMultiSelect) {
@@ -34,10 +49,13 @@ export function renderOptionCards(container, data = [], opts = {}) {
     titleDiv.textContent = item.title || item.id;
     btn.appendChild(titleDiv);
 
-    const priceDiv = document.createElement('div');
-    priceDiv.className = 'price-delta';
-    priceDiv.textContent = item.price ? `Starting from: $${item.price.toLocaleString()}` : 'Starting from: $0';
-    btn.appendChild(priceDiv);
+    if (opts.showPrice !== false) {
+      const priceDiv = document.createElement('div');
+      priceDiv.className = 'price-delta';
+      const isDesign = item.id && item.id.startsWith('des-');
+      priceDiv.textContent = formatPriceLabel(item.price, { isDesign });
+      btn.appendChild(priceDiv);
+    }
 
     if (item.description) {
       const d = document.createElement('div');
@@ -54,13 +72,16 @@ const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
 
 function buildAddonIntro(group = {}) {
   const introWrapper = document.createElement('div');
-  introWrapper.className = 'addons-dropdown-intro';
+  const hasImage = Boolean(group.image);
+  introWrapper.className = hasImage ? 'addons-dropdown-intro' : 'addons-dropdown-intro addons-dropdown-intro-no-image';
 
-  const image = document.createElement('img');
-  image.className = 'addons-dropdown-intro-image';
-  image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
-  image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
-  introWrapper.appendChild(image);
+  if (hasImage) {
+    const image = document.createElement('img');
+    image.className = 'addons-dropdown-intro-image';
+    image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
+    image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+    introWrapper.appendChild(image);
+  }
 
   const text = document.createElement('p');
   text.className = 'addons-dropdown-intro-text';
@@ -71,11 +92,14 @@ function buildAddonIntro(group = {}) {
   return introWrapper;
 }
 
-export function renderAddonsDropdown(container, data = []) {
+export function renderAddonsDropdown(container, data = [], currentState = {}) {
   if (!container) return;
   container.innerHTML = '';
 
   data.forEach(group => {
+    const resolveTooltip = (option = {}, subsection = {}) => {
+      return option.tooltip || subsection.tooltip || group.tooltip || '';
+    };
     const tile = document.createElement('div');
     tile.className = 'addons-dropdown-tile';
     tile.setAttribute('data-id', group.title);
@@ -92,12 +116,20 @@ export function renderAddonsDropdown(container, data = []) {
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
 
+    const price = document.createElement('div');
+    price.className = 'addons-dropdown-price';
+
     const indicator = document.createElement('div');
     indicator.className = 'addons-dropdown-indicator';
     indicator.setAttribute('data-group-id', group.title.toLowerCase().replace(/\s+/g, '-'));
 
+    const headerMeta = document.createElement('div');
+    headerMeta.className = 'addons-dropdown-header-meta';
+    headerMeta.appendChild(price);
+    headerMeta.appendChild(indicator);
+
     headerMain.appendChild(title);
-    headerMain.appendChild(indicator);
+    headerMain.appendChild(headerMeta);
 
     // Chevron icon
     const chevron = document.createElement('svg');
@@ -132,11 +164,45 @@ export function renderAddonsDropdown(container, data = []) {
           // Render as tiles (buttons)
           const tilesContainer = document.createElement('div');
           tilesContainer.className = 'addons-tiles-container';
+          if (subsection.layout === 'scroll') {
+            tilesContainer.classList.add('addons-tiles-scroll');
+          }
+          const groupId = subsection.groupId || subsection.title;
           subsection.options.forEach(option => {
             const btn = document.createElement('button');
             btn.className = 'addons-tile';
             btn.setAttribute('data-addon-id', option.id);
             btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('data-price', option.price || 0);
+            if (subsection.selection === 'single') {
+              btn.setAttribute('data-addon-mode', 'single');
+              btn.setAttribute('data-addon-group', groupId);
+            }
+
+            // Check for addon compatibility with current design
+            const currentDesign = currentState.selections && currentState.selections.design;
+            const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            const isIncompatible = isInnerlightingIncompatible;
+            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+
+            if (isDisabled) {
+              btn.disabled = true;
+              btn.classList.add('disabled');
+              let tooltip = resolveTooltip(option, subsection);
+              if (isInnerlightingIncompatible) {
+                tooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
+              }
+              if (tooltip) btn.setAttribute('data-tooltip', tooltip);
+            }
+
+            if (option.image) {
+              const img = document.createElement('img');
+              img.className = 'addons-tile-image';
+              img.src = option.image;
+              img.alt = option.title ? `Preview of ${option.title}` : 'Tech option';
+              btn.appendChild(img);
+            }
 
             const label = document.createElement('div');
             label.className = 'addons-tile-label';
@@ -144,60 +210,49 @@ export function renderAddonsDropdown(container, data = []) {
 
             const price = document.createElement('div');
             price.className = 'addons-tile-price';
-            price.textContent = option.price ? `+$${option.price}` : '+$0';
+            price.textContent = formatPriceLabel(option.price);
 
             btn.appendChild(label);
             btn.appendChild(price);
             tilesContainer.appendChild(btn);
 
-            // Event listener for tile
-            btn.addEventListener('click', () => {
-              const isPressed = btn.getAttribute('aria-pressed') === 'true';
-              btn.setAttribute('aria-pressed', !isPressed);
-              btn.classList.toggle('selected', !isPressed);
-              const id = option.id;
-              const price = option.price || 0;
-              document.dispatchEvent(new CustomEvent('addon-toggled', {
-                detail: { id, price, checked: !isPressed }
-              }));
-              // Update indicators after selection change
-              import('./stages/addons.js').then(module => {
-                if (module.updateAllIndicators) module.updateAllIndicators();
-              });
-            });
           });
           subContainer.appendChild(tilesContainer);
         } else if (subsection.type === 'dropdown') {
           // Render as dropdown
           const select = document.createElement('select');
           select.className = 'addons-dropdown-select';
-          select.setAttribute('data-addon-group', subsection.title);
+          const groupId = subsection.groupId || subsection.title;
+          select.setAttribute('data-addon-group', groupId);
+          if (group.disabled || subsection.disabled) {
+            select.disabled = true;
+            select.classList.add('disabled');
+            const tooltip = resolveTooltip({}, subsection);
+            if (tooltip) select.setAttribute('data-tooltip', tooltip);
+          }
 
           subsection.options.forEach(option => {
             const opt = document.createElement('option');
             opt.value = option.id;
-            opt.textContent = `${option.title} (+$${option.price || 0})`;
+            const optionPriceLabel = formatPriceLabel(option.price);
+            opt.textContent = `${option.title} (${optionPriceLabel})`;
             opt.setAttribute('data-price', option.price || 0);
+
+            // Check for addon compatibility with current design
+            const currentDesign = currentState.selections && currentState.selections.design;
+            const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            const isIncompatible = isInnerlightingIncompatible;
+            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+
+            if (isDisabled) {
+              opt.disabled = true;
+            }
             select.appendChild(opt);
           });
 
           subContainer.appendChild(select);
 
-          // Event listener for dropdown
-          select.addEventListener('change', (e) => {
-            const selectedOption = e.target.selectedOptions[0];
-            const id = selectedOption.value;
-            const price = parseInt(selectedOption.getAttribute('data-price')) || 0;
-            // For dropdowns, we need to handle selection differently
-            // Assuming only one can be selected per subsection
-            document.dispatchEvent(new CustomEvent('addon-selected', {
-              detail: { group: subsection.title, id, price }
-            }));
-            // Update indicators after selection change
-            import('./stages/addons.js').then(module => {
-              if (module.updateAllIndicators) module.updateAllIndicators();
-            });
-          });
         }
 
         content.appendChild(subContainer);
@@ -210,14 +265,49 @@ export function renderAddonsDropdown(container, data = []) {
       // Options for this group
       if (group.options) {
         group.options.forEach(option => {
+          const tooltip = resolveTooltip(option);
           const optionDiv = document.createElement('div');
           optionDiv.className = 'addons-dropdown-option';
           optionDiv.setAttribute('data-addon-id', option.id);
+          optionDiv.setAttribute('data-price', option.price || 0);
 
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.className = 'addons-dropdown-option-checkbox';
           checkbox.setAttribute('data-addon-id', option.id);
+          checkbox.setAttribute('data-price', option.price || 0);
+
+          // Check for addon compatibility with current design
+          const currentDesign = currentState.selections && currentState.selections.design;
+          const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
+          const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
+            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+          const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-live-edge'));
+          const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
+          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || requiresWaterfallSingle;
+          const isDisabled = group.disabled || option.disabled || isIncompatible;
+
+          if (isDisabled) {
+            checkbox.disabled = true;
+            optionDiv.classList.add('disabled');
+            optionDiv.setAttribute('aria-disabled', 'true');
+            let incompatibilityTooltip = tooltip;
+            if (requiresWaterfallSingle) {
+              incompatibilityTooltip = 'Select Single Waterfall to enable';
+              checkbox.setAttribute('data-disabled-by', 'waterfall');
+              optionDiv.setAttribute('data-disabled-by', 'waterfall');
+            } else if (isRoundedCornersIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
+            } else if (isCustomRiverIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
+            } else if (isChamferedEdgesIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, or Live Edge';
+            }
+            if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
+          }
 
           const label = document.createElement('div');
           label.className = 'addons-dropdown-option-label';
@@ -225,7 +315,7 @@ export function renderAddonsDropdown(container, data = []) {
 
           const optionPrice = document.createElement('div');
           optionPrice.className = 'addons-dropdown-option-price';
-          optionPrice.textContent = option.price ? `+$${option.price}` : '+$0';
+          optionPrice.textContent = formatPriceLabel(option.price);
 
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
@@ -240,9 +330,7 @@ export function renderAddonsDropdown(container, data = []) {
 
     // Handle disabled state
     if (group.disabled) {
-      tile.setAttribute('disabled', 'true');
-      header.setAttribute('disabled', 'true');
-      tile.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+      content.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
       if (group.tooltip) {
         tile.setAttribute('data-tooltip', group.tooltip);
       }
@@ -250,7 +338,6 @@ export function renderAddonsDropdown(container, data = []) {
 
     // Event listeners
     header.addEventListener('click', () => {
-      if (group.disabled) return;
       const isExpanded = tile.classList.contains('expanded');
 
       if (!isExpanded) {
@@ -269,25 +356,6 @@ export function renderAddonsDropdown(container, data = []) {
 
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
-    });
-
-    // Checkbox change events for non-tech groups
-    tile.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', (e) => {
-        const checked = e.target.checked;
-        const optionDiv = e.target.closest('.addons-dropdown-option');
-        if (optionDiv) optionDiv.classList.toggle('selected', checked);
-        const id = e.target.getAttribute('data-addon-id');
-        const option = group.options.find(o => o.id === id);
-        const price = option ? option.price || 0 : 0;
-        document.dispatchEvent(new CustomEvent('addon-toggled', {
-          detail: { id, price, checked }
-        }));
-        // Update indicators after selection change
-        import('./stages/addons.js').then(module => {
-          if (module.updateAllIndicators) module.updateAllIndicators();
-        });
-      });
     });
 
     tile.appendChild(header);
@@ -342,7 +410,7 @@ export function renderSheenSlider(container, data = []) {
     t.textContent = item.title || item.id;
     const p = document.createElement('div');
     p.className = 'price-delta';
-    p.textContent = item.price ? `+$${item.price}` : '+$0';
+    p.textContent = formatPriceLabel(item.price);
     titleRow.appendChild(t);
     titleRow.appendChild(p);
     tile.appendChild(titleRow);

@@ -8,6 +8,9 @@
     </div>
   </div>
 
+  <!-- Oversize Banners -->
+  <div id="dimensions-banners"></div>
+
   <!-- Axis Controls -->
   <div class="axis-controls">
     <!-- Length & Width Controls (side-by-side, wrapping on small screens) -->
@@ -37,7 +40,7 @@
             <span class="font-normal">+12″</span>
           </button>
         </div>
-        <div class="control-validation text-xs text-red-600 mt-1" data-axis="length"></div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="length" id="dim-length-validation" aria-live="polite" aria-atomic="true"></div>
       </div>
 
       <!-- Width Control -->
@@ -65,7 +68,7 @@
             <span class="font-normal">+6″</span>
           </button>
         </div>
-        <div class="control-validation text-xs text-red-600 mt-1" data-axis="width"></div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="width" id="dim-width-validation" aria-live="polite" aria-atomic="true"></div>
       </div>
     </div>
 
@@ -102,7 +105,7 @@
             <span class="font-normal">+5″</span>
           </button>
         </div>
-        <div class="control-validation text-xs text-red-600 mt-1" data-axis="height-custom"></div>
+        <div class="control-validation text-xs text-red-600 mt-1" data-axis="height-custom" id="dim-height-custom-validation" aria-live="polite" aria-atomic="true"></div>
       </div>
     </div>
   </div>

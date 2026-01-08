@@ -5,6 +5,6 @@
   { "id": "leg-finish-04", "title": "Satin Bronze", "price": 0, "color": "#906b47", "image": "assets/images/Leg styles/Leg Colors/Satin Bronze.jpg", "description": "Satin bronze finish" },
   { "id": "leg-finish-05", "title": "Gunmetal Grey", "price": 0, "color": "#414141", "image": "assets/images/Leg styles/Leg Colors/Gunmetal Grey.jpg", "description": "Gunmetal grey finish" },
   { "id": "leg-finish-06", "title": "Titanium Silver", "price": 0, "color": "#d3d3d3", "image": "assets/images/Leg styles/Leg Colors/Titanium Silver.jpg", "description": "Titanium silver finish" },
-  { "id": "leg-finish-07", "title": "Raw Metal", "price": 500, "color": "#c0c0c0", "image": "assets/images/model1_placeholder.png", "description": "Raw metal finish" },
-  { "id": "leg-finish-08", "title": "Custom", "price": 50, "color": "#808080", "image": "assets/images/model1_placeholder.png", "description": "Custom finish" }
+  { "id": "leg-finish-07", "title": "Raw Metal", "price": 500, "color": "#c0c0c0", "image": "assets/images/Leg styles/Leg Colors/Raw Metal.jpg", "description": "Raw metal finish" },
+  { "id": "leg-finish-08", "title": "Custom", "price": "Quoted Separately", "color": "#808080", "image": "assets/images/Leg styles/Leg Colors/Brushed Stainless.jpg", "description": "Custom finish" }
 ]

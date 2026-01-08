@@ -42,6 +42,9 @@
 
   <!-- Stage 5: Legs -->
   <section id="stage-panel-5" class="stage-panel">
+    <div id="legs-price-banner" class="hidden legs-price-banner" role="status" aria-live="polite" aria-atomic="true">
+      Leg prices updated automatically because we require 3 legs on tables over 130" Long.
+    </div>
     <div id="legs-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
       <!-- Option cards rendered at runtime from data/legs.json via main.js -> stageRenderer.renderOptionCards -->
     </div>
@@ -68,24 +71,6 @@
 
   <!-- Stage 7: Summary & Export -->
   <section id="stage-panel-7" class="stage-panel">
-    <div id="summary-panel" class="grid grid-cols-1 gap-4">
-      <div class="text-sm text-gray-700">
-        <p><strong>Selected:</strong> Model mdl-01 • Black Walnut • Satin Lacquer • Medium (180x90) • Cube legs</p>
-        <p class="mt-2"><strong>Price breakdown</strong></p>
-        <ul class="text-sm text-gray-600 list-disc pl-5">
-          <li>Base model: $9,800</li>
-          <li>Material (Black Walnut): +$250</li>
-          <li>Finish (Satin): +$0</li>
-          <li>Dimensions (Medium): +$150</li>
-          <li>Legs (Cube): +$95</li>
-          <li>Add-ons: +$45</li>
-        </ul>
-        <p class="mt-2 text-lg font-semibold">Total: $10,380</p>
-      </div>
-      <div>
-        <button class="btn btn-primary">Export PDF</button>
-        <button class="btn ml-2">Copy Summary</button>
-      </div>
-    </div>
+    <div id="summary-panel" class="summary-stage" data-include="pages/Summary.html"></div>
   </section>
 </div>
