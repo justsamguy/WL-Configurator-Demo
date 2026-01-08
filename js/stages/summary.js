@@ -595,6 +595,24 @@ function initShippingControls() {
     populateSummaryPanel();
   };
 
+  const optionInputs = [quote, international, local].filter(Boolean);
+  optionInputs.forEach((input) => {
+    input.addEventListener('mousedown', () => {
+      input.dataset.wasChecked = input.checked ? 'true' : 'false';
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        input.dataset.wasChecked = input.checked ? 'true' : 'false';
+      }
+    });
+    input.addEventListener('click', () => {
+      if (input.dataset.wasChecked === 'true') {
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+  });
+
   if (toggle && body) {
     toggle.addEventListener('click', () => {
       setCollapsed(!section.classList.contains('is-collapsed'));

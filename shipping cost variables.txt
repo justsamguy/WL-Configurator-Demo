@@ -59,7 +59,7 @@ RAW = max(175, BASE * ZM * CFAC)
 
 Round up to next $50: PRICE = ceil(RAW / 50) * 50
 
-Accessorials
+Accessorials (add these prices on the right hand side and add to shipping total when toggled)
 
 Residential: +$150
 Liftgate: +$200

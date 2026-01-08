@@ -416,6 +416,7 @@ header .flex.justify-center.items-center {
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
+  margin-top: 0.25rem;
 }
 
 .summary-shipping-choice {
