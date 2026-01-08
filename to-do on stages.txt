@@ -3,6 +3,8 @@ add installation addon, quoted separately.
 
 add warning for shipping glass
 
+add back/next buttons somehow for people to navigate
+
 add a note below the total price that this is not a formal quotation or contract sale price.
 
 Overhaul media to improve loading times

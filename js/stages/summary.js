@@ -597,16 +597,20 @@ function initShippingControls() {
 
   const optionInputs = [quote, international, local].filter(Boolean);
   optionInputs.forEach((input) => {
-    input.addEventListener('mousedown', () => {
+    const label = input.closest('label');
+    const markChecked = () => {
       input.dataset.wasChecked = input.checked ? 'true' : 'false';
-    });
+    };
+    if (label) label.addEventListener('pointerdown', markChecked);
+    input.addEventListener('pointerdown', markChecked);
     input.addEventListener('keydown', (event) => {
       if (event.key === ' ' || event.key === 'Enter') {
-        input.dataset.wasChecked = input.checked ? 'true' : 'false';
+        markChecked();
       }
     });
-    input.addEventListener('click', () => {
+    input.addEventListener('click', (event) => {
       if (input.dataset.wasChecked === 'true') {
+        event.preventDefault();
         input.checked = false;
         input.dispatchEvent(new Event('change', { bubbles: true }));
       }
