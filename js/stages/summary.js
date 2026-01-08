@@ -596,25 +596,21 @@ function initShippingControls() {
   };
 
   const optionInputs = [quote, international, local].filter(Boolean);
+  const handleOptionChange = (event) => {
+    const changed = event.target;
+    if (!changed || !changed.checked) {
+      updateState();
+      updateTotal();
+      return;
+    }
+    optionInputs.forEach((input) => {
+      if (input !== changed) input.checked = false;
+    });
+    updateState();
+    updateTotal();
+  };
   optionInputs.forEach((input) => {
-    const label = input.closest('label');
-    const markChecked = () => {
-      input.dataset.wasChecked = input.checked ? 'true' : 'false';
-    };
-    if (label) label.addEventListener('pointerdown', markChecked);
-    input.addEventListener('pointerdown', markChecked);
-    input.addEventListener('keydown', (event) => {
-      if (event.key === ' ' || event.key === 'Enter') {
-        markChecked();
-      }
-    });
-    input.addEventListener('click', (event) => {
-      if (input.dataset.wasChecked === 'true') {
-        event.preventDefault();
-        input.checked = false;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    });
+    input.addEventListener('change', handleOptionChange);
   });
 
   if (toggle && body) {
@@ -622,9 +618,6 @@ function initShippingControls() {
       setCollapsed(!section.classList.contains('is-collapsed'));
     });
   }
-  if (quote) quote.addEventListener('change', () => { updateState(); updateTotal(); });
-  if (international) international.addEventListener('change', () => { updateState(); updateTotal(); });
-  if (local) local.addEventListener('change', () => { updateState(); updateTotal(); });
   if (zip) zip.addEventListener('input', () => { handleZipInput(); updateTotal(); });
   if (commercial) commercial.addEventListener('change', updateState);
   if (liftgate) liftgate.addEventListener('change', updateState);
