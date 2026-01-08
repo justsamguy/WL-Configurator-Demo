@@ -228,6 +228,10 @@ header .flex.justify-center.items-center {
   background-color: #f9fafb;
 }
 
+.summary-shipping-section:not(.is-collapsed) .summary-shipping-toggle {
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .summary-shipping-toggle-main {
   display: flex;
   align-items: center;
@@ -439,9 +443,21 @@ header .flex.justify-center.items-center {
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.summary-shipping-choice-input:checked + .summary-shipping-choice-label {
+.summary-shipping-choice-label:hover {
   background: #111827;
   border-color: #111827;
+  color: #fff;
+}
+
+.summary-shipping-choice-input:checked + .summary-shipping-choice-label {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.summary-shipping-choice-input:checked + .summary-shipping-choice-label:hover {
+  background: #2563eb;
+  border-color: #2563eb;
   color: #fff;
 }
 

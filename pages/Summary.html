@@ -9,10 +9,6 @@
 <section class="summary-section">
   <div class="summary-section-title">Options Summary</div>
   <div id="summary-options-groups" class="summary-options-groups" aria-live="polite" aria-atomic="true"></div>
-  <div class="summary-tax-row">
-    <span>Taxes</span>
-    <span>Quoted Separately</span>
-  </div>
   <div id="summary-shipping-section" class="summary-shipping-section">
     <button id="summary-shipping-toggle" class="summary-shipping-toggle" type="button" aria-expanded="true" aria-controls="summary-shipping-body">
       <span class="summary-shipping-toggle-main">
@@ -29,15 +25,15 @@
     <div id="summary-shipping-body" class="summary-shipping-body">
       <div class="summary-shipping-options">
         <label class="summary-shipping-choice">
-          <input id="shipping-quote-separately" type="checkbox" class="summary-shipping-choice-input">
+          <input id="shipping-quote-separately" type="radio" name="shipping-option" class="summary-shipping-choice-input">
           <span class="summary-shipping-choice-label">Quote separately</span>
         </label>
         <label class="summary-shipping-choice">
-          <input id="shipping-international" type="checkbox" class="summary-shipping-choice-input">
+          <input id="shipping-international" type="radio" name="shipping-option" class="summary-shipping-choice-input">
           <span class="summary-shipping-choice-label">International</span>
         </label>
         <label class="summary-shipping-choice">
-          <input id="shipping-local-delivery" type="checkbox" class="summary-shipping-choice-input">
+          <input id="shipping-local-delivery" type="radio" name="shipping-option" class="summary-shipping-choice-input">
           <span class="summary-shipping-choice-label">Local delivery</span>
         </label>
       </div>
@@ -97,6 +93,10 @@
         </label>
       </div>
     </div>
+  </div>
+  <div class="summary-tax-row">
+    <span>Taxes</span>
+    <span>Quoted Separately</span>
   </div>
   <div class="summary-total-row">
     <span>Total</span>
