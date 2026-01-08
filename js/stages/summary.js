@@ -532,7 +532,15 @@ function initShippingControls() {
     if (region) region.disabled = disabled;
     if (estimate) {
       estimate.classList.toggle('is-disabled', disabled);
-      estimate.textContent = localDelivery ? formatCurrency(500) : (defaultEstimate || '--');
+      if (localDelivery) {
+        const tableLength = state.selections && state.selections.dimensionsDetail && typeof state.selections.dimensionsDetail.length === 'number'
+          ? state.selections.dimensionsDetail.length
+          : 0;
+        const shippingCost = tableLength > 144 ? 750 : 500;
+        estimate.textContent = formatCurrency(shippingCost);
+      } else {
+        estimate.textContent = defaultEstimate || '--';
+      }
     }
   };
 
