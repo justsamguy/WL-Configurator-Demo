@@ -411,6 +411,14 @@ header .flex.justify-center.items-center {
   padding-top: 0.5rem;
 }
 
+.summary-disclaimer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding-top: 0.25rem;
+}
+
 .summary-shipping-options {
   display: flex;
   flex-wrap: wrap;
