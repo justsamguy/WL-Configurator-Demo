@@ -1,4 +1,5 @@
-
+use assistant font
+make the price summary tooltip a little prettier
 
 add warning for shipping glass
 

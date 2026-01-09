@@ -69,8 +69,10 @@ function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
   const isLastStage = managerState.current >= STAGES.length - 1;
-  nextBtn.disabled = isLastStage;
-  nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
+  const isCurrentComplete = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
+  const shouldDisable = isLastStage || !isCurrentComplete;
+  nextBtn.disabled = shouldDisable;
+  nextBtn.setAttribute('aria-disabled', shouldDisable ? 'true' : 'false');
 }
 
 async function updateLivePrice() {
@@ -549,6 +551,7 @@ function markCompleted(index, completed = true) {
   const nextIdx = index + 1;
   const nextBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${nextIdx}']`);
   if (nextBtn) nextBtn.disabled = !completed;
+  updateNextButton();
 }
 
 function wireStageButtons() {
