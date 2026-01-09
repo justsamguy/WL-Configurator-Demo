@@ -146,13 +146,178 @@ function formatCurrency(val) {
   return `$${val.toLocaleString()}`;
 }
 
+const HEIGHT_PRESETS_BY_MODEL = {
+  'mdl-coffee': { standard: 18, bar: 20 },
+  'mdl-dining': { standard: 30, bar: 42 },
+  'mdl-conference': { standard: 30, bar: 36 }
+};
+
+const LEG_WEIGHT_RULES = {
+  'leg-sample-04': { weight: 70, perLeg: true }, // Squared
+  'leg-sample-05': { weight: 70, perLeg: true }, // Tapered
+  'leg-sample-06': { weight: 90, perLeg: true }, // X Style
+  'leg-sample-03': { weight: 90, perLeg: true }, // Hourglass
+  'leg-sample-08': { weight: 110, perLeg: false }, // Tripod
+  'leg-sample-07': { weight: 110, perLeg: false }, // Custom
+  'leg-sample-02': { weight: 40, perLeg: false, isFlat: true }, // Cube
+  'leg-sample-01': { weight: 40, perLeg: false, isFlat: true }, // C Style
+  'leg-none': { weight: 0, perLeg: false }
+};
+
+const SHIPPING_ZONE_MAP = {
+  '8': 2,
+  '7': 3,
+  '9': 3,
+  '6': 4,
+  '5': 5,
+  '4': 6,
+  '3': 7,
+  '2': 8,
+  '1': 9,
+  '0': 10
+};
+
+const POWER_STRIP_ADDONS = new Set(['addon-power-ac', 'addon-power-ac-usb', 'addon-power-ac-usb-usbc']);
+const ADDITIONAL_CONNECTIVITY_ADDONS = new Set(['addon-ethernet', 'addon-hdmi']);
+
+function resolveTableHeight(selections) {
+  if (!selections || !selections.dimensionsDetail) return null;
+  const detail = selections.dimensionsDetail;
+  if (typeof detail.height === 'number') return detail.height;
+  if (detail.height === 'custom' && typeof detail.heightCustom === 'number') return detail.heightCustom;
+  const modelId = selections.model || '';
+  const presets = HEIGHT_PRESETS_BY_MODEL[modelId] || { standard: 30, bar: 42 };
+  if (detail.height === 'bar') return presets.bar;
+  return presets.standard;
+}
+
+function resolveTableDimensions(selections) {
+  if (!selections || !selections.dimensionsDetail) return null;
+  const detail = selections.dimensionsDetail;
+  const length = typeof detail.length === 'number' ? detail.length : null;
+  const width = typeof detail.width === 'number' ? detail.width : null;
+  const height = resolveTableHeight(selections);
+  if (!length || !width || !height) return null;
+  return { length, width, height };
+}
+
+function getLegCount(length) {
+  if (typeof length !== 'number') return 2;
+  return length > 130 ? 3 : 2;
+}
+
+function getLegWeight({ legId, tubeId, length, width, height, waterfallCount }) {
+  if (!legId) return 0;
+  if (waterfallCount >= 2) return 0;
+  const rule = LEG_WEIGHT_RULES[legId];
+  if (!rule || !rule.weight) return 0;
+
+  let weight = rule.weight;
+  if (!rule.isFlat) {
+    const legCount = rule.perLeg ? getLegCount(length) : 1;
+    weight = weight * legCount;
+    if (tubeId === 'tube-2x4') weight *= 1.52;
+    if (typeof height === 'number') {
+      const heightMultiplier = Math.max(0.5, 1 + (height - 30) / 24);
+      weight *= heightMultiplier;
+    }
+    if (typeof width === 'number' && width > 42) {
+      const steps = Math.floor((width - 42) / 6);
+      if (steps > 0) weight *= Math.pow(1.1, steps);
+    }
+  }
+
+  if (waterfallCount === 1) weight *= 0.5;
+  return weight;
+}
+
+function getAddonWeight(addons, length, width) {
+  if (!Array.isArray(addons)) return 0;
+  let weight = 0;
+
+  addons.forEach((addonId) => {
+    if (POWER_STRIP_ADDONS.has(addonId)) weight += 20;
+    if (addonId === 'addon-wireless-charging') weight += 10;
+    if (ADDITIONAL_CONNECTIVITY_ADDONS.has(addonId)) weight += 10;
+    if (addonId === 'addon-custom-tech') weight += 30;
+  });
+
+  if (addons.some(id => id && id.startsWith('addon-lighting-'))) weight += 30;
+  if (addons.includes('addon-glass-top') && typeof length === 'number' && typeof width === 'number') {
+    weight += length * width * 0.25 * 0.1;
+  }
+
+  return weight;
+}
+
+function getTabletopWeight({ length, width, height, waterfallCount }) {
+  const tabletopVolume = length * width * 2;
+  const waterfallVolume = waterfallCount > 0 ? waterfallCount * width * height * 2 : 0;
+  let weight = (tabletopVolume + waterfallVolume) * 0.03;
+  if (length > 96) {
+    const extraSegments = Math.ceil((length - 96) / 12);
+    weight += extraSegments * 20;
+  }
+  return weight;
+}
+
+function getPackagingWeight(totalWeight) {
+  return totalWeight * 1.25;
+}
+
+function getDensityFactor(density) {
+  if (density >= 15) return 0.9;
+  if (density >= 10) return 1.0;
+  if (density >= 6) return 1.15;
+  if (density >= 4) return 1.3;
+  if (density >= 2) return 1.6;
+  return 2.0;
+}
+
+function calculateShippingEstimate({ zip, selections, accessorials }) {
+  const normalizedZip = normalizeZipInput(zip || '');
+  if (normalizedZip.length !== 5) return null;
+  const zone = SHIPPING_ZONE_MAP[normalizedZip[0]];
+  if (!zone) return null;
+  const dimensions = resolveTableDimensions(selections);
+  if (!dimensions) return null;
+
+  const { length, width, height } = dimensions;
+  const waterfallCount = getWaterfallEdgeCount({ selections });
+  const addons = selections && selections.options && Array.isArray(selections.options.addon)
+    ? selections.options.addon
+    : [];
+  const legId = selections && selections.options ? selections.options.legs : null;
+  const tubeId = selections && selections.options ? selections.options['tube-size'] : null;
+
+  const tabletopWeight = getTabletopWeight({ length, width, height, waterfallCount });
+  const legWeight = getLegWeight({ legId, tubeId, length, width, height, waterfallCount });
+  const addonWeight = getAddonWeight(addons, length, width);
+  const totalWeight = getPackagingWeight(tabletopWeight + legWeight + addonWeight);
+
+  const cubeFeet = (length * width * height) / 1728;
+  if (!Number.isFinite(totalWeight) || !Number.isFinite(cubeFeet) || cubeFeet <= 0) return null;
+
+  const zoneMultiplier = 1 + 0.12 * (zone - 2);
+  const density = totalWeight / cubeFeet;
+  const classFactor = getDensityFactor(density);
+  const base = 95 + 0.28 * totalWeight + 18 * cubeFeet;
+  const raw = Math.max(175, base * zoneMultiplier * classFactor);
+  const rounded = Math.ceil(raw / 50) * 50;
+
+  let total = rounded;
+  if (accessorials && accessorials.residential) total += 150;
+  if (accessorials && accessorials.liftgate) total += 200;
+  if (accessorials && accessorials.whiteGlove) total += 750;
+
+  return Number.isFinite(total) ? total : null;
+}
+
 function getShippingCost() {
   const estimate = document.getElementById('shipping-estimate') || document.getElementById('shipping-estimate-header');
   if (!estimate) return 0;
-  const text = estimate.textContent.trim();
-  // Extract numeric value from formatted currency (e.g., "$500" -> 500)
-  const match = text.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 0;
+  const numeric = estimate.textContent.trim().replace(/[^\d]/g, '');
+  return numeric ? parseInt(numeric, 10) : 0;
 }
 
 function formatDimensionsDetail(detail) {
@@ -579,7 +744,21 @@ function initShippingControls() {
       const shippingCost = tableLength > 144 ? 750 : 500;
       setEstimateText(formatCurrency(shippingCost), disabled);
     } else {
-      setEstimateText(defaultEstimate || '--', disabled);
+      const accessorials = {
+        residential: !!(commercial && commercial.checked),
+        liftgate: !!(liftgate && liftgate.checked),
+        whiteGlove: !!(whiteGlove && whiteGlove.checked)
+      };
+      const shippingEstimate = disabled ? null : calculateShippingEstimate({
+        zip: normalizedZip,
+        selections: state.selections,
+        accessorials
+      });
+      if (typeof shippingEstimate === 'number') {
+        setEstimateText(formatCurrency(shippingEstimate), false);
+      } else {
+        setEstimateText(defaultEstimate || '--', disabled);
+      }
     }
   };
 
@@ -587,8 +766,8 @@ function initShippingControls() {
     if (!zip || !region) return;
     const normalized = normalizeZipInput(zip.value);
     if (zip.value !== normalized) zip.value = normalized;
-    await updateRegionFromZip(normalized, region);
     updateState();
+    await updateRegionFromZip(normalized, region);
   };
 
   const updateTotal = () => {
@@ -618,10 +797,16 @@ function initShippingControls() {
       setCollapsed(!section.classList.contains('is-collapsed'));
     });
   }
+  const refreshEstimate = () => {
+    updateState();
+    updateTotal();
+  };
+
   if (zip) zip.addEventListener('input', () => { handleZipInput(); updateTotal(); });
-  if (commercial) commercial.addEventListener('change', updateState);
-  if (liftgate) liftgate.addEventListener('change', updateState);
-  if (whiteGlove) whiteGlove.addEventListener('change', updateState);
+  if (commercial) commercial.addEventListener('change', refreshEstimate);
+  if (liftgate) liftgate.addEventListener('change', refreshEstimate);
+  if (whiteGlove) whiteGlove.addEventListener('change', refreshEstimate);
+  document.addEventListener('statechange', refreshEstimate);
   handleZipInput();
   updateState();
   setCollapsed(section.classList.contains('is-collapsed'));
