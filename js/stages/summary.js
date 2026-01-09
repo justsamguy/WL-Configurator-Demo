@@ -153,10 +153,10 @@ const HEIGHT_PRESETS_BY_MODEL = {
 };
 
 const LEG_WEIGHT_RULES = {
-  'leg-sample-04': { weight: 70, perLeg: true }, // Squared
-  'leg-sample-05': { weight: 70, perLeg: true }, // Tapered
-  'leg-sample-06': { weight: 90, perLeg: true }, // X Style
-  'leg-sample-03': { weight: 90, perLeg: true }, // Hourglass
+  'leg-sample-04': { weight: 55, perLeg: true }, // Squared
+  'leg-sample-05': { weight: 55, perLeg: true }, // Tapered
+  'leg-sample-06': { weight: 75, perLeg: true }, // X Style
+  'leg-sample-03': { weight: 75, perLeg: true }, // Hourglass
   'leg-sample-08': { weight: 110, perLeg: false }, // Tripod
   'leg-sample-07': { weight: 110, perLeg: false }, // Custom
   'leg-sample-02': { weight: 40, perLeg: false, isFlat: true }, // Cube
@@ -229,10 +229,6 @@ function getLegWeight({ legId, tubeId, length, width, height, waterfallCount }) 
       const heightMultiplier = Math.max(0.5, 1 + (height - 30) / 24);
       weight *= heightMultiplier;
     }
-    if (typeof width === 'number' && width > 42) {
-      const steps = Math.floor((width - 42) / 6);
-      if (steps > 0) weight *= Math.pow(1.1, steps);
-    }
   }
 
   if (waterfallCount === 1) weight *= 0.5;
@@ -262,10 +258,6 @@ function getTabletopWeight({ length, width, height, waterfallCount }) {
   const tabletopVolume = length * width * 2;
   const waterfallVolume = waterfallCount > 0 ? waterfallCount * width * height * 2 : 0;
   let weight = (tabletopVolume + waterfallVolume) * 0.03;
-  if (length > 96) {
-    const extraSegments = Math.ceil((length - 96) / 12);
-    weight += extraSegments * 20;
-  }
   return weight;
 }
 
@@ -303,7 +295,10 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   const addonWeight = getAddonWeight(addons, length, width);
   const totalWeight = getPackagingWeight(tabletopWeight + legWeight + addonWeight);
 
-  const cubeFeet = (length * width * height) / 1728;
+  const crateLength = length + 7;
+  const crateWidth = width + 7;
+  const crateHeight = height + 10;
+  const cubeFeet = (crateLength * crateWidth * crateHeight) / 1728;
   if (!Number.isFinite(totalWeight) || !Number.isFinite(cubeFeet) || cubeFeet <= 0) return null;
 
   const zoneMultiplier = 1 + SHIPPING_RATE_CONFIG.zoneSlope * (zone - 2);
