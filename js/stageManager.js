@@ -529,8 +529,8 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
-  // If current stage isn't completed, block advancing
-  if (!managerState.completed[managerState.current]) {
+  // If current stage isn't completed (and isn't optional), block advancing
+  if (!managerState.completed[managerState.current] && !OPTIONAL_STAGES.includes(managerState.current)) {
     return;
   }
   setStage(Math.min(managerState.current + 1, STAGES.length - 1));
