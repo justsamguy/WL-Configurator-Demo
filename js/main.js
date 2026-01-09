@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIcon(element, iconName, iconTitle);
   });
 
-  // Initialize summary tooltip (after sidebar/header components exist)
+  // Initialize summary tooltip (after footer/header components exist)
   try {
     const { initSummaryTooltip } = await import('./ui/summaryTooltip.js');
     const sb = document.getElementById('summary-btn');
@@ -795,5 +795,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-08 16:55');
-  console.log('Edit ver: 410');
+  console.log('Edit ver: 411');
 });

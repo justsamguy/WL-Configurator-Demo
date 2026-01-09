@@ -657,4 +657,8 @@ export function restoreFromState(_state) {
   } catch (e) { /* ignore */ }
 }
 
+const disclaimerDiv = document.createElement('div');
+disclaimerDiv.className = 'summary-disclaimer';
+disclaimerDiv.innerHTML = '<small>(This is not a formal quotation or contract sale price)</small>';
+
 export default { populateSummaryPanel, init, initSummaryActions, restoreFromState };

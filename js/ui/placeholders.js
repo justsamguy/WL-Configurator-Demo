@@ -1,7 +1,7 @@
 // UI helpers for placeholder option cards: click handlers, price animation, and loading skeleton
 // No imports here to avoid circular module dependency with main.js
 
-// Update the price UI in the sidebar
+// Update the price UI in the footer
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;

@@ -2,8 +2,6 @@
 
 add warning for shipping glass
 
-add back/next buttons somehow for people to navigate
-
 
 Overhaul media to improve loading times
 

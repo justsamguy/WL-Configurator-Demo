@@ -65,18 +65,26 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
+function updateNextButton() {
+  const nextBtn = document.getElementById('next-stage-btn');
+  if (!nextBtn) return;
+  const isLastStage = managerState.current >= STAGES.length - 1;
+  nextBtn.disabled = isLastStage;
+  nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
+}
+
 async function updateLivePrice() {
-  // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
-  const sidebarPrice = document.getElementById('price-bar');
-  if (sidebarPrice) {
+  // Primary price container: footer #price-bar. Keep fallback to legacy header #live-price
+  const footerPrice = document.getElementById('price-bar');
+  if (footerPrice) {
     // compute authoritative price using shared state where possible
     try {
       const p = await computePrice(appState);
-      sidebarPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      footerPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
       return;
     } catch (e) {
       // fallback
-      sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+      footerPrice.textContent = formatPrice(managerState.config.price || 0);
       return;
     }
     return;
@@ -211,6 +219,7 @@ async function setStage(index, options = {}) {
       }
     }
   });
+  updateNextButton();
 
   // Special handling for Models (0) and Designs (1) stages: move panel for full-width display
   // Do this BEFORE setting display styles so the panel is in the correct location
@@ -552,6 +561,8 @@ function wireStageButtons() {
 export function initStageManager() {
   // initial wiring
   wireStageButtons();
+  const nextBtn = document.getElementById('next-stage-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => nextStage());
   // Initialize models and designs stage modules which wire option-card clicks
   try {
     initModelsStage();

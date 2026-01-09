@@ -693,9 +693,37 @@ header .flex.justify-center.items-center {
   transform-origin: 50% 50%;
 }
 
-/* Positioned summary button inside the sidebar header to avoid layout wrapping */
-.sidebar-summary-btn {
-  /* Inline presentation: remove absolute positioning so the button sits inline with the price */
+/* Floating footer bar for price preview and Next action */
+#app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  padding: 0.75rem 1.5rem 1.25rem;
+  background: transparent;
+  pointer-events: none;
+}
+
+.footer-bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  width: min(780px, calc(100% - 3rem));
+  margin-left: 1.5rem;
+  margin-right: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+/* Summary button aligned inline with the footer price */
+.footer-summary-btn {
   position: relative;
   background: transparent;
   border: none;
@@ -706,26 +734,35 @@ header .flex.justify-center.items-center {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  /* Avoid taking the fixed .btn-icon width/height so it flows inline with text */
   width: auto;
   height: auto;
 }
-.sidebar-summary-btn:focus {
+.footer-summary-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
 /* NOTE FOR MAINTAINERS:
-  The summary button (#summary-btn) must remain inline with the price inside
-  .sidebar-price-row so it scrolls together with the price and does not stick to
-  the header. Do NOT make the button position:sticky or move it back into the
-  sticky header without ensuring it remains visually grouped with #price-bar.
+  Keep #summary-btn inline with #price-bar inside .footer-price-row so the
+  price preview and summary control remain visually grouped in the footer.
 */
-/* Explicit price row to avoid relying on utility classes; keeps label, icon, and price inline */
-.sidebar-price-row {
+.footer-price-row {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+}
+
+.footer-price-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.footer-price-amount {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 /* Keep the price from growing too large and forcing siblings onto new lines */
@@ -737,7 +774,7 @@ header .flex.justify-center.items-center {
 }
 
 /* More specific override to ensure the summary button doesn't inherit the global .btn-icon fixed sizing */
-.btn-icon.sidebar-summary-btn {
+.btn-icon.footer-summary-btn {
   width: auto !important;
   height: auto !important;
   min-width: 0 !important;
@@ -747,18 +784,24 @@ header .flex.justify-center.items-center {
 }
 
 /* Make the summary button look like a tangible control: subtle bg, border, and a tiny shadow */
-.btn-icon.sidebar-summary-btn {
+.btn-icon.footer-summary-btn {
   background: #ffffff;
   border: 1px solid rgba(16,24,40,0.06);
   box-shadow: 0 1px 4px rgba(16,24,40,0.06);
   color: #374151;
 }
-.btn-icon.sidebar-summary-btn:hover {
+.btn-icon.footer-summary-btn:hover {
   background: #f8fafc;
 }
-.btn-icon.sidebar-summary-btn:focus {
+.btn-icon.footer-summary-btn:focus {
   outline: 3px solid rgba(59,130,246,0.18);
   outline-offset: 2px;
+}
+
+#app-footer .footer-next-btn {
+  flex: 0 0 auto;
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
 }
 
 
@@ -1841,6 +1884,22 @@ body.show-model-tiles #stage-bar {
   body {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main, Footer */
+  }
+
+  #app-footer {
+    position: static;
+    padding: 0;
+    background: #ffffff;
+    pointer-events: auto;
+  }
+
+  .footer-bar {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
   }
 
 
