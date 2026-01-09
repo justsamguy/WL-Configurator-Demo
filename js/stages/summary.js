@@ -177,6 +177,14 @@ const SHIPPING_ZONE_MAP = {
   '0': 10
 };
 
+const SHIPPING_RATE_CONFIG = {
+  base: -8.2,
+  weight: 1.218,
+  cube: -1.617,
+  zoneSlope: 0.097,
+  minimum: 210
+};
+
 const POWER_STRIP_ADDONS = new Set(['addon-power-ac', 'addon-power-ac-usb', 'addon-power-ac-usb-usbc']);
 const ADDITIONAL_CONNECTIVITY_ADDONS = new Set(['addon-ethernet', 'addon-hdmi']);
 
@@ -298,19 +306,21 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   const cubeFeet = (length * width * height) / 1728;
   if (!Number.isFinite(totalWeight) || !Number.isFinite(cubeFeet) || cubeFeet <= 0) return null;
 
-  const zoneMultiplier = 1 + 0.12 * (zone - 2);
+  const zoneMultiplier = 1 + SHIPPING_RATE_CONFIG.zoneSlope * (zone - 2);
   const density = totalWeight / cubeFeet;
   const classFactor = getDensityFactor(density);
-  const base = 95 + 0.28 * totalWeight + 18 * cubeFeet;
-  const raw = Math.max(175, base * zoneMultiplier * classFactor);
-  const rounded = Math.ceil(raw / 50) * 50;
+  const base = SHIPPING_RATE_CONFIG.base
+    + SHIPPING_RATE_CONFIG.weight * totalWeight
+    + SHIPPING_RATE_CONFIG.cube * cubeFeet;
+  const raw = base * zoneMultiplier * classFactor;
+  const estimate = Math.max(SHIPPING_RATE_CONFIG.minimum, raw);
 
-  let total = rounded;
+  let total = estimate;
   if (accessorials && accessorials.residential) total += 150;
   if (accessorials && accessorials.liftgate) total += 200;
   if (accessorials && accessorials.whiteGlove) total += 750;
 
-  return Number.isFinite(total) ? total : null;
+  return Number.isFinite(total) ? Math.round(total) : null;
 }
 
 function getShippingCost() {
