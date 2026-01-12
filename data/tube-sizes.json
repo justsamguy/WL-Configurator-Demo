@@ -1,6 +1,6 @@
 [
-  { "id": "tube-1x0.5", "title": "1×½\"", "price": 0, "description": "1 by half inch tube" },
-  { "id": "tube-1x1", "title": "1×1\"", "price": 15, "description": "1 by 1 inch tube" },
-  { "id": "tube-1x3", "title": "1×3\"", "price": 25, "description": "1 by 3 inch tube" },
-  { "id": "tube-2x4", "title": "2×4\"", "price": 40, "description": "2 by 4 inch tube" }
+  { "id": "tube-1x0.5", "title": "1×½\"", "price": 0, "description": "1 by half inch tube", "image": "assets/images/Leg styles/Tube Sizes/1x0.5.png" },
+  { "id": "tube-1x1", "title": "1×1\"", "price": 0, "description": "1 by 1 inch tube", "image": "assets/images/Leg styles/Tube Sizes/1x1.jpg" },
+  { "id": "tube-1x3", "title": "1×3\"", "price": 0, "description": "1 by 3 inch tube", "image": "assets/images/Leg styles/Tube Sizes/3x1.jpg" },
+  { "id": "tube-2x4", "title": "2×4\"", "price": 0, "description": "2 by 4 inch tube", "image": "assets/images/Leg styles/Tube Sizes/2x4.jpg" }
 ]

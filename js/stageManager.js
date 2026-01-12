@@ -23,6 +23,7 @@ import { recomputeFinishConstraints } from './ui/placeholders.js';
 import { applyFinishDefaults } from './stages/finish.js';
 import { computePrice } from './pricing.js';
 import { showBanner } from './ui/banner.js';
+import { showConfirmDialog } from './ui/confirmDialog.js';
 import { init as initModelsStage } from './stages/models.js';
 import { init as initDesignsStage } from './stages/designs.js';
 import materialsStage, { init as initMaterialsStage } from './stages/materials.js';
@@ -64,65 +65,28 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
-function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 'Confirm') {
-  return new Promise((resolve) => {
-    // Create modal backdrop
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; pointer-events: auto;';
-    
-    // Create dialog box
-    const dialogBox = document.createElement('div');
-    dialogBox.style.cssText = 'background-color: white; border-radius: 0.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); padding: 2rem; max-width: 28rem; width: 90%; pointer-events: auto;';
-    dialogBox.innerHTML = `
-      <p class="text-gray-900 text-base mb-8">${message}</p>
-      <div class="flex justify-end gap-3">
-        <button class="px-5 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition" id="confirm-cancel">${cancelText}</button>
-        <button class="px-5 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition" id="confirm-ok">${confirmText}</button>
-      </div>
-    `;
-    
-    modal.appendChild(dialogBox);
-    
-    const onCancel = () => {
-      modal.remove();
-      resolve(false);
-    };
-    const onConfirm = () => {
-      modal.remove();
-      resolve(true);
-    };
-    
-    // Close on Escape key
-    const handleKeydown = (e) => {
-      if (e.key === 'Escape') {
-        onCancel();
-        document.removeEventListener('keydown', handleKeydown);
-      }
-    };
-    
-    document.body.appendChild(modal);
-    
-    dialogBox.querySelector('#confirm-cancel').addEventListener('click', onCancel);
-    dialogBox.querySelector('#confirm-ok').addEventListener('click', onConfirm);
-    document.addEventListener('keydown', handleKeydown);
-    
-    // Focus the confirm button for better UX
-    dialogBox.querySelector('#confirm-ok').focus();
-  });
+function updateNextButton() {
+  const nextBtn = document.getElementById('next-stage-btn');
+  if (!nextBtn) return;
+  const isLastStage = managerState.current >= STAGES.length - 1;
+  const isCurrentComplete = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
+  const shouldDisable = isLastStage || !isCurrentComplete;
+  nextBtn.disabled = shouldDisable;
+  nextBtn.setAttribute('aria-disabled', shouldDisable ? 'true' : 'false');
 }
 
 async function updateLivePrice() {
-  // Primary price container: sidebar #price-bar. Keep fallback to legacy header #live-price
-  const sidebarPrice = document.getElementById('price-bar');
-  if (sidebarPrice) {
+  // Primary price container: footer #price-bar. Keep fallback to legacy header #live-price
+  const footerPrice = document.getElementById('price-bar');
+  if (footerPrice) {
     // compute authoritative price using shared state where possible
     try {
       const p = await computePrice(appState);
-      sidebarPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      footerPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
       return;
     } catch (e) {
       // fallback
-      sidebarPrice.textContent = formatPrice(managerState.config.price || 0);
+      footerPrice.textContent = formatPrice(managerState.config.price || 0);
       return;
     }
     return;
@@ -147,6 +111,7 @@ async function setStage(index, options = {}) {
     if (!confirmed) return;
     // User confirmed, proceed with clear design
     setState({ selections: { ...appState.selections, design: null } });
+    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'design-cleared' } }));
   }
   
   // gating: normally prevent jumping forward past first incomplete required stage
@@ -193,20 +158,23 @@ async function setStage(index, options = {}) {
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
       // (unless "none" leg is selected, which doesn't require tube-size or leg-finish)
+      // (or custom leg is selected, which makes tube-size optional)
       if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
-        
+        const isCustomLeg = legId === 'leg-sample-07';
+
         if (!hasLegs) {
           return;
         }
-        
-        // If not "none" leg, require tube-size and leg-finish
+
+        // If not "none" leg, require tube-size (unless custom leg) and leg-finish
         if (!isNoneLeg) {
           const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
           const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-          if (!hasTubeSize || !hasLegFinish) {
+          const tubeSizeRequired = !isCustomLeg;
+          if ((tubeSizeRequired && !hasTubeSize) || !hasLegFinish) {
             return;
           }
         }
@@ -253,6 +221,7 @@ async function setStage(index, options = {}) {
       }
     }
   });
+  updateNextButton();
 
   // Special handling for Models (0) and Designs (1) stages: move panel for full-width display
   // Do this BEFORE setting display styles so the panel is in the correct location
@@ -360,17 +329,22 @@ async function setStage(index, options = {}) {
                 const { renderOptionCards } = await import('./stageRenderer.js');
                 const designs = await loadData('data/designs.json');
                 if (designs) {
-                  const designGrids = designsSection.querySelectorAll('.model-row-grid');
-                  if (designGrids && designGrids.length) {
-                    // Filter designs based on selected model
-                    const selectedModel = appState.selections && appState.selections.model;
-                    const filteredDesigns = designs.filter(design => {
-                      if (!selectedModel) return true;
-                      // Design is available if it has pricing for this model
-                      return design.prices && design.prices[selectedModel];
-                    });
-                    renderOptionCards(designGrids[0], filteredDesigns, { category: null });
-                  }
+                const designGrids = designsSection.querySelectorAll('.stage-options-grid');
+                if (designGrids && designGrids.length) {
+                  // Filter designs based on selected model
+                  const selectedModel = appState.selections && appState.selections.model;
+                  const filteredDesigns = designs.filter(design => {
+                    if (!selectedModel) return true;
+                    // Design is available if it has pricing for this model
+                    return design.prices && design.prices[selectedModel];
+                  });
+                  // Add price field for rendering
+                  const designsWithPrice = filteredDesigns.map(design => ({
+                    ...design,
+                    price: selectedModel && design.prices ? design.prices[selectedModel] : 0
+                  }));
+                  renderOptionCards(designGrids[0], designsWithPrice, { category: null });
+                }
                 }
               }
             } catch (e) {
@@ -527,10 +501,12 @@ async function setStage(index, options = {}) {
         const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
         markCompleted(4, !!dimOption);
       } else if (managerState.current === 5) {
-        // Legs stage: check if legs are selected (and tube-size/leg-finish if not "none")
+        // Legs stage (index 5): require legs selected, and tube-size & leg-finish unless "none" leg is selected
+        // (or custom leg is selected, which makes tube-size optional)
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
+        const isCustomLeg = legId === 'leg-sample-07';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -539,7 +515,8 @@ async function setStage(index, options = {}) {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+            const tubeSizeRequired = !isCustomLeg;
+            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
         markCompleted(5, isLegStageComplete);
@@ -552,8 +529,8 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
-  // If current stage isn't completed, block advancing
-  if (!managerState.completed[managerState.current]) {
+  // If current stage isn't completed (and isn't optional), block advancing
+  if (!managerState.completed[managerState.current] && !OPTIONAL_STAGES.includes(managerState.current)) {
     return;
   }
   setStage(Math.min(managerState.current + 1, STAGES.length - 1));
@@ -574,6 +551,7 @@ function markCompleted(index, completed = true) {
   const nextIdx = index + 1;
   const nextBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${nextIdx}']`);
   if (nextBtn) nextBtn.disabled = !completed;
+  updateNextButton();
 }
 
 function wireStageButtons() {
@@ -586,6 +564,8 @@ function wireStageButtons() {
 export function initStageManager() {
   // initial wiring
   wireStageButtons();
+  const nextBtn = document.getElementById('next-stage-btn');
+  if (nextBtn) nextBtn.addEventListener('click', () => nextStage());
   // Initialize models and designs stage modules which wire option-card clicks
   try {
     initModelsStage();
@@ -685,7 +665,8 @@ export function initStageManager() {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
         const isNoneLeg = legId === 'leg-none';
-        
+        const isCustomLeg = legId === 'leg-sample-07';
+
         let isLegStageComplete = false;
         if (hasLegs) {
           if (isNoneLeg) {
@@ -693,7 +674,8 @@ export function initStageManager() {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
+            const tubeSizeRequired = !isCustomLeg;
+            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
         markCompleted(5, isLegStageComplete);

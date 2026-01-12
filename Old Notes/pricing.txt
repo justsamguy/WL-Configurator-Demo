@@ -1,0 +1,30 @@
+Dining/Conference Table: 
+Designs start at $4450.
+72 long is +0. Every 12" increment up to 120" is an additional +500. from 120-132 is +1000, then +500 for every increment up to 192". 
+36 wide is +0. Every 6" Increment up to 52" is an additional +500. from 52-58 is +1000, then +500 for every increment up to 70.
+
+Coffee Table:
+Designs start at $3950.
+The first size option is +0, subsequent ones are +250.
+
+Finish coatings are both +0
+
+Legs:
+Squared is +500, tapered is +600, X and hourglass are +1000. Custom is quoted separately. Cube is +400.
+Tube size has no pricing (remove existing).
+Custom finish +0, quoted separately
+
+Addons:
+Live edge +500
+Waterfall Edge +1500 each
+Expedited production +1000
+Glass Top +750
+Embadded Logo +1000
+Custom River +1000
+AC Strips +250, USB models +300
+Wireless Charging +1000
+Ethernet +800
+Innerlighting White 1300, Color 3000, +FX 4000, Custom quoted separately
+Rounded Corners +500
+
+make sure all tiles that are quoted separately use "Quoted Separately" in their price fields.

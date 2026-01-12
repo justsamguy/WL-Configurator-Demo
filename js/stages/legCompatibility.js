@@ -4,9 +4,9 @@
 export const LEG_COMPATIBILITY = {
   // Model compatibility: which leg designs are available for each model
   modelToLegs: {
-    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-07', 'leg-none'],
-    'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07', 'leg-none'],
-    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07', 'leg-none']
+    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
+    'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
+    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none']
   },
   // Tube size compatibility: which tube sizes are compatible with each leg design
   legToTubes: {
@@ -16,6 +16,7 @@ export const LEG_COMPATIBILITY = {
     'leg-sample-04': ['tube-1x3', 'tube-2x4'],   // Squared
     'leg-sample-05': ['tube-1x3', 'tube-2x4'],   // Tapered
     'leg-sample-06': ['tube-1x3', 'tube-2x4'],   // X Style
+    'leg-sample-08': ['tube-1x3', 'tube-2x4'],   // Tripod
     'leg-sample-07': ['tube-1x0.5', 'tube-1x1', 'tube-1x3', 'tube-2x4'], // Custom
     'leg-none': [] // No tubes needed for no legs
   },
@@ -38,11 +39,22 @@ export function getAvailableLegsForModel(modelId) {
 }
 
 /**
- * Get visible leg designs: available for model and not marked as hidden
+ * Get visible leg designs: available for model, compatible with selected design, and not marked as hidden
  */
-export function getVisibleLegs(modelId, allLegs) {
+export function getVisibleLegs(modelId, allLegs, designId = null) {
   const availableLegIds = getAvailableLegsForModel(modelId);
-  return allLegs.filter(leg => availableLegIds.includes(leg.id) && !leg.hidden);
+  return allLegs.filter(leg => {
+    // Must be available for model and not hidden
+    if (!availableLegIds.includes(leg.id) || leg.hidden) return false;
+    
+    // If leg has compatibleDesigns restriction, check if selected design matches
+    if (leg.compatibleDesigns && leg.compatibleDesigns.length > 0) {
+      return designId && leg.compatibleDesigns.includes(designId);
+    }
+    
+    // No design restriction, show the leg
+    return true;
+  });
 }
 
 /**

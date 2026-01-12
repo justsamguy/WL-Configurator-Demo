@@ -1,0 +1,66 @@
+Inputs
+
+W = weight in lb
+
+CF = size in cubic feet (total shipment cube)
+
+ZIP = destination ZIP5
+
+Steps
+
+Zone (distance proxy from origin 836xx using dest ZIP first digit)
+Let D = first digit of ZIP
+Map to Z (zone):
+
+D=8 → Z=2
+
+D=7 or 9 → Z=3
+
+D=6 → Z=4
+
+D=5 → Z=5
+
+D=4 → Z=6
+
+D=3 → Z=7
+
+D=2 → Z=8
+
+D=1 → Z=9
+
+D=0 → Z=10
+
+Zone multiplier
+ZM = 1 + 0.12 * (Z - 2)
+
+Density & class factor (rough NMFC class proxy)
+DEN = W / CF (lb/ft³)
+
+CFAC =
+
+0.90 if DEN ≥ 15
+
+1.00 if 10 ≤ DEN < 15
+
+1.15 if 6 ≤ DEN < 10
+
+1.30 if 4 ≤ DEN < 6
+
+1.60 if 2 ≤ DEN < 4
+
+2.00 if DEN < 2
+
+Base charge + minimum
+
+BASE = 95 + 0.28*W + 18*CF
+
+RAW = max(175, BASE * ZM * CFAC)
+
+
+Round up to next $50: PRICE = ceil(RAW / 50) * 50
+
+Accessorials (add these prices on the right hand side and add to shipping total when toggled)
+
+Residential: +$150
+Liftgate: +$200
+White Glove: +$750

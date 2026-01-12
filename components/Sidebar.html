@@ -20,17 +20,6 @@
   </div>
   <!-- Stage Panels (scrollable area) -->
   <div class="sidebar-scroll px-6 py-4">
-    <!-- Price row + summary button (keep together on one line)
-         Important: The summary button is intentionally placed inline here so it scrolls
-         with the price (not sticky). Future edits: keep the <button id="summary-btn"> element
-         inside this .sidebar-price-row so the price and its summary control remain on the
-         same line and maintain their visual relationship. -->
-    <div class="sidebar-price-row flex items-baseline space-x-3 min-w-0 mt-4 mb-4 px-2" aria-hidden="false">
-      <span class="text-xs text-gray-500">Total</span>
-      <span id="price-bar" class="font-medium text-lg price-compact">$12,480</span>
-      <!-- Summary button placed inline with the price so it scrolls together and doesn't stick to the header -->
-      <button id="summary-btn" class="btn-icon sidebar-summary-btn" aria-expanded="false" aria-controls="summary-tooltip" aria-label="Open summary">i</button>
-    </div>
   <!-- Shared stage help/info (moved from MaterialsPanel to a shared component) -->
   <div data-include="components/StageInfo.html"></div>
   <div data-include="components/StagePanels.html"></div>

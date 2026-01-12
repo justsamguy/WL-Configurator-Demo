@@ -13,6 +13,7 @@ let currentDimensions = {
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
+let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
 
 
 
@@ -72,9 +73,23 @@ function initializeFromState(appState) {
     }
     
     const dimSel = appState && appState.selections && appState.selections.options && appState.selections.options.dimensions;
-    if (dimSel && dimensionsData) {
-      // dimSel is expected to be a preset ID or custom object
-      if (typeof dimSel === 'string') {
+    const dimDetail = appState && appState.selections && appState.selections.dimensionsDetail;
+    if ((dimSel || dimDetail) && dimensionsData) {
+      const presetById = dimDetail && dimDetail.presetId
+        ? dimensionsData.presets.find(p => p.id === dimDetail.presetId)
+        : null;
+      const presetBySize = dimDetail
+        ? dimensionsData.presets.find(p => p.length === dimDetail.length && p.width === dimDetail.width)
+        : null;
+      const resolvedPreset = presetById || presetBySize;
+      if (dimDetail && typeof dimDetail === 'object') {
+        // Restore from stored detail payload first
+        currentDimensions = { ...currentDimensions, ...dimDetail };
+        if (resolvedPreset && typeof dimDetail.height !== 'string') {
+          currentDimensions.height = resolvedPreset.height;
+        }
+        selectedTileId = resolvedPreset ? resolvedPreset.id : 'custom';
+      } else if (typeof dimSel === 'string') {
         const preset = dimensionsData.presets.find(p => p.id === dimSel);
         if (preset) {
           currentDimensions.length = preset.length;
@@ -84,7 +99,7 @@ function initializeFromState(appState) {
           selectedTileId = preset.id;
         }
       } else if (typeof dimSel === 'object') {
-        // Support custom dimension objects
+        // Support custom dimension objects (legacy shape)
         currentDimensions = { ...currentDimensions, ...dimSel };
         selectedTileId = 'custom';
       }
@@ -107,8 +122,8 @@ function getConstraints() {
   // Define model-specific constraints
   const modelConstraints = {
     'mdl-coffee': {
-      length: { min: 48, max: 100, step: 12, unit: "in" },
-      width: { min: 20, max: 48, step: 6, unit: "in" },
+      length: { min: 24, max: 100, step: 12, unit: "in" },
+      width: { min: 20, max: 60, step: 6, unit: "in" },
       height: { min: 14, max: 22, standard: 18, bar: 20, unit: "in" }
     },
     'mdl-dining': {
@@ -118,7 +133,7 @@ function getConstraints() {
     },
     'mdl-conference': {
       length: { min: 72, max: 200, step: 12, unit: "in" },
-      width: { min: 42, max: 75, step: 6, unit: "in" },
+      width: { min: 36, max: 75, step: 6, unit: "in" },
       height: { min: 26, max: 42, standard: 30, bar: 36, unit: "in" }
     }
   };
@@ -130,6 +145,44 @@ function getConstraints() {
   
   // Fallback to default constraints from data
   return dimensionsData.constraints;
+}
+
+function updateAxisInputConstraints() {
+  const constraints = getConstraints();
+  if (!constraints) return;
+
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const heightCustomInput = document.getElementById('dim-height-custom-input');
+
+  if (constraints.length && lengthInput) {
+    lengthInput.min = constraints.length.min;
+    lengthInput.max = constraints.length.max;
+    lengthInput.step = constraints.length.step;
+    axisSteps.length = constraints.length.step;
+  }
+
+  if (constraints.width && widthInput) {
+    widthInput.min = constraints.width.min;
+    widthInput.max = constraints.width.max;
+    widthInput.step = constraints.width.step;
+    axisSteps.width = constraints.width.step;
+  }
+
+  if (heightCustomInput) {
+    heightCustomInput.min = 16;
+    heightCustomInput.max = 50;
+    heightCustomInput.step = axisSteps['height-custom'];
+  }
+}
+
+function updateAxisValidationDescriptions(axis, validationEl) {
+  if (!validationEl || !validationEl.id) return;
+  const hasMessage = validationEl.textContent.trim().length > 0;
+  document.querySelectorAll(`.control-button[data-axis="${axis}"]`).forEach(btn => {
+    if (hasMessage) btn.setAttribute('aria-describedby', validationEl.id);
+    else btn.removeAttribute('aria-describedby');
+  });
 }
 
 // Validate a single axis value
@@ -173,6 +226,7 @@ function updateValidationMessage(axis) {
   
   if (value === null) {
     validationEl.textContent = '';
+    updateAxisValidationDescriptions(axis, validationEl);
     return;
   }
   
@@ -183,6 +237,8 @@ function updateValidationMessage(axis) {
   } else {
     validationEl.textContent = '';
   }
+
+  updateAxisValidationDescriptions(axis, validationEl);
 }
 
 // Render oversize banners
@@ -235,6 +291,8 @@ function updateUIControls() {
   const widthInput = document.getElementById('dim-width-input');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
+
+  updateAxisInputConstraints();
   
   if (lengthInput && currentDimensions.length !== null) {
     lengthInput.value = currentDimensions.length;
@@ -290,26 +348,31 @@ function getHeightPrice() {
 }
 
 // Dispatch option-selected event to trigger state update in main.js
-function dispatchDimensionSelection() {
+function getDimensionOptionId() {
+  if (selectedTileId && selectedTileId !== 'custom') return selectedTileId;
+  return 'dimensions-custom';
+}
+
+function dispatchDimensionSelection(price = 0) {
+  const optionId = getDimensionOptionId();
   const payload = {
     ...currentDimensions,
     length: currentDimensions.length,
     width: currentDimensions.width,
     height: currentDimensions.height,
-    heightCustom: currentDimensions.heightCustom
+    heightCustom: currentDimensions.heightCustom,
+    presetId: selectedTileId || null
   };
-  
-  const heightPrice = getHeightPrice();
-  
+
   document.dispatchEvent(new CustomEvent('option-selected', {
     detail: {
-      id: 'dimensions-custom',
-      price: heightPrice,
+      id: optionId,
+      price: price,
       category: 'dimensions',
       payload
     }
   }));
-  
+
   // Announce to screen readers
   const liveRegion = document.getElementById('dim-live-region');
   if (liveRegion) {
@@ -321,9 +384,21 @@ function dispatchDimensionSelection() {
 function filterPresetsByModel(presets) {
   const constraints = getConstraints();
   if (!constraints) return presets;
-  
+
+  const selectedModel = state && state.selections && state.selections.model;
+
+  // Model-specific preset exclusions
+  const modelExclusions = {
+    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'] // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+  };
+
+  const excludedIds = modelExclusions[selectedModel] || [];
+
   return presets.filter(preset => {
-    // Check if preset dimensions are within model constraints
+    // Check model-specific exclusions first
+    if (excludedIds.includes(preset.id)) return false;
+
+    // Then check technical constraints
     const lengthValid = preset.length >= constraints.length.min && preset.length <= constraints.length.max;
     const widthValid = preset.width >= constraints.width.min && preset.width <= constraints.width.max;
     return lengthValid && widthValid;
@@ -346,16 +421,17 @@ function initPresets() {
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
-    
+
     tile.innerHTML = `
+      ${preset.image ? `<img src="${preset.image}" alt="${preset.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
       <div class="title">${preset.title}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
-    
+
     tile.addEventListener('click', () => {
       selectPreset(preset, tile);
     });
-    
+
     presetsContainer.appendChild(tile);
   });
   
@@ -392,16 +468,17 @@ function selectPreset(preset, tileElement) {
   currentDimensions.width = preset.width;
   currentDimensions.height = preset.height;
   currentDimensions.heightCustom = preset.height === 'custom' ? preset.heightCustom : null;
-  
+
   // Mark this preset as selected
   selectedTileId = preset.id;
   document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
   if (tileElement) tileElement.classList.add('selected');
-  
+
   // Update UI and dispatch
   updateUIControls();
-  dispatchDimensionSelection();
-  
+  const totalPrice = preset.price + getHeightPrice();
+  dispatchDimensionSelection(totalPrice);
+
   // Update field visibility
   updateCustomFieldVisibility();
 }
@@ -410,12 +487,6 @@ function selectPreset(preset, tileElement) {
 function initAxisControls() {
   const constraints = getConstraints();
   if (!constraints) return;
-  
-  const axisSteps = {
-    length: constraints.length.step,
-    width: constraints.width.step,
-    'height-custom': 5 // arbitrary step for custom height
-  };
   
   document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.control-button');
@@ -476,28 +547,28 @@ function initNumericInputs() {
     if (axis === 'length') {
       if (validateAxisValue('length', value)) {
         currentDimensions.length = value;
-        updateValidationMessage('length');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('length');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'width') {
       if (validateAxisValue('width', value)) {
         currentDimensions.width = value;
-        updateValidationMessage('width');
-        updateOversizeBanners();
-        updateApplyButtonState();
-        updateCustomFieldVisibility();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('width');
+      updateOversizeBanners();
+      updateApplyButtonState();
+      updateCustomFieldVisibility();
     } else if (axis === 'height-custom') {
       if (validateAxisValue('height-custom', value)) {
         currentDimensions.heightCustom = value;
-        updateValidationMessage('height-custom');
-        updateApplyButtonState();
         dispatchDimensionSelection();
       }
+      updateValidationMessage('height-custom');
+      updateApplyButtonState();
     }
   });
 }
@@ -509,8 +580,8 @@ function initHeightButtons() {
   
   // Height options: standard, bar, custom
   const heights = [
-    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0 },
-    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120 },
+    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0, image: 'assets/images/Generated Sitting Height.png' },
+    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120, image: 'assets/images/Generated Standing Height.png' },
     { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250 }
   ];
   
@@ -523,6 +594,7 @@ function initHeightButtons() {
     button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
     button.innerHTML = `
+      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
       <div class="title">${height.title} ${height.subtitle}</div>
       <div class="description">+$${height.price}</div>
     `;

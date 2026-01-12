@@ -38,6 +38,7 @@ alwaysApply: true
   - Show examples of correct implementation using WoodLab files and conventions
   - Reference the WoodLab guidelines and actual code when possible
   - Keep rules DRY by referencing other rules
+  - Treat `AGENTS.md` (repo root) as the primary source of truth for shared project constraints; keep `.github/copilot-instructions.md` and `.clinerules/**` aligned on shared constraints while preserving tool-specific guidance/formatting.
 
 - **Tailoring Rules for WoodLab Configurator:**
   - **Module Best Practices:**

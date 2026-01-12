@@ -6,29 +6,29 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice } from './pricing.js';
+import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
 
 /**
  * Filter designs by model compatibility
- * 
+ *
  * This function determines which designs are available for a given model by checking
  * the "prices" object in each design's data (from data/designs.json).
- * 
+ *
  * Design Availability Rules:
  * - A design is available for a model if it has a price entry for that model's ID
  * - Example: { "prices": { "mdl-coffee": 10800, "mdl-dining": 13200 } }
  *   This design is available for Coffee and Dining tables, but NOT Conference tables
- * 
+ *
  * To Configure Design Availability:
  * 1. Open data/designs.json
  * 2. For each design, add/remove model IDs in the "prices" object
  * 3. Model IDs: "mdl-coffee", "mdl-dining", "mdl-conference"
- * 
+ *
  * Examples:
  * - Universal design (all models): { "prices": { "mdl-coffee": X, "mdl-dining": Y, "mdl-conference": Z } }
  * - Exclusive design (one model): { "prices": { "mdl-coffee": X } }
  * - Partial availability: { "prices": { "mdl-coffee": X, "mdl-dining": Y } }
- * 
+ *
  * @param {Array} designs - Array of design objects from data/designs.json
  * @param {string} modelId - The selected model ID (e.g., "mdl-coffee")
  * @returns {Array} Filtered array of designs compatible with the selected model
@@ -41,7 +41,44 @@ function filterDesignsByModel(designs, modelId) {
     return design.prices && design.prices[modelId];
   });
 }
+
+/**
+ * Filter materials by design compatibility
+ *
+ * This function determines which materials are available for a given design by checking
+ * the "designs" array in each material's data (from data/materials.json).
+ *
+ * Material Availability Rules:
+ * - A material is available for all designs if it has no "designs" property
+ * - A material is available for specific designs if it has a "designs" array containing the design ID
+ * - Example: { "designs": ["des-cookie"] } means only available for Cookie design
+ *
+ * To Configure Material Availability:
+ * 1. Open data/materials.json
+ * 2. For each material, add a "designs" array with design IDs to restrict availability
+ * 3. Omit "designs" property for universal materials
+ *
+ * Examples:
+ * - Universal material (all designs): no "designs" property
+ * - Exclusive material (one design): { "designs": ["des-cookie"] }
+ * - Partial availability: { "designs": ["des-river", "des-slab"] }
+ *
+ * @param {Array} materials - Array of material objects from data/materials.json
+ * @param {string} designId - The selected design ID (e.g., "des-cookie")
+ * @returns {Array} Filtered array of materials compatible with the selected design
+ */
+function filterMaterialsByDesign(materials, designId) {
+  if (!designId) return materials; // Show all materials if no design selected
+
+  return materials.filter(material => {
+    // If material has no designs restriction, it's available for all designs
+    if (!material.designs) return true;
+    // If material has designs restriction, check if current design is included
+    return Array.isArray(material.designs) && material.designs.includes(designId);
+  });
+}
 import { populateSummaryPanel } from './stages/summary.js';
+import { updateAllIndicators } from './stages/addons.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
 import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
@@ -52,7 +89,7 @@ document.addEventListener('statechange', (ev) => {
   // ev.detail.state contains the latest state object.
   // If the summary page is active, refresh its contents
   try {
-    const summaryRoot = document.getElementById('summary-model-name');
+    const summaryRoot = document.getElementById('summary-panel');
     if (summaryRoot) populateSummaryPanel();
   } catch (e) {
     // ignore
@@ -79,40 +116,150 @@ function updatePriceUI(total) {
   el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
 }
 
+function isQuotedLabel(value) {
+  return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
+}
+
+function formatLegPriceLabel(value) {
+  if (isQuotedLabel(value)) return value.trim();
+  const numeric = Number(value);
+  const safeNumber = Number.isFinite(numeric) ? numeric : 0;
+  return `+$${safeNumber.toLocaleString()}`;
+}
+
+function applyLegPriceMultiplier(legs, multiplier) {
+  if (!Array.isArray(legs)) return [];
+  if (multiplier === 1) return legs;
+  return legs.map(leg => {
+    if (typeof leg.price === 'number' && Number.isFinite(leg.price)) {
+      return { ...leg, price: leg.price * multiplier };
+    }
+    return leg;
+  });
+}
+
+function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
+  const multiplier = getLegPriceMultiplier(appState);
+  const banner = document.getElementById('legs-price-banner');
+  if (banner) {
+    const length = appState && appState.selections && appState.selections.dimensionsDetail
+      ? appState.selections.dimensionsDetail.length
+      : null;
+    const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
+    const waterfallCount = getWaterfallEdgeCount(appState);
+    const messages = [];
+    if (lengthMultiplier > 1) {
+      messages.push('Leg prices updated automatically because we require 3 legs on tables over 130" long.');
+    }
+    if (waterfallCount === 1) {
+      messages.push('Single waterfall halves leg pricing.');
+    } else if (waterfallCount >= 2) {
+      messages.push('Two waterfalls replace legs; leg pricing set to $0.');
+    }
+    banner.classList.toggle('hidden', messages.length === 0);
+    if (messages.length) banner.textContent = messages.join(' ');
+  }
+  if (!Array.isArray(baseLegs) || !baseLegs.length) return;
+
+  const basePriceMap = new Map(baseLegs.map(leg => [leg.id, leg.price]));
+  document.querySelectorAll('.option-card[data-category="legs"]').forEach(card => {
+    const id = card.getAttribute('data-id');
+    if (!id || !basePriceMap.has(id)) return;
+    const basePrice = basePriceMap.get(id);
+    let adjustedPrice = basePrice;
+
+    if (typeof basePrice === 'number' && Number.isFinite(basePrice)) {
+      adjustedPrice = basePrice * multiplier;
+      card.setAttribute('data-price', String(adjustedPrice));
+    } else if (typeof basePrice === 'string') {
+      card.setAttribute('data-price', basePrice);
+    }
+
+    const priceEl = card.querySelector('.price-delta');
+    if (priceEl) priceEl.textContent = formatLegPriceLabel(adjustedPrice);
+  });
+}
+
+function updateWaterfallAddonAvailability(appState = state) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : [];
+  const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
+  const shouldDisableSecond = !hasSingle;
+  const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
+  const option = root.querySelector('.addons-dropdown-option[data-addon-id="addon-waterfall-second"]');
+  if (!checkbox) return;
+
+  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+  if (shouldDisableSecond) {
+    checkbox.disabled = true;
+    checkbox.checked = false;
+    checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+    checkbox.setAttribute('data-disabled-by', 'waterfall');
+    if (option) {
+      option.classList.add('disabled');
+      option.classList.remove('selected');
+      option.setAttribute('aria-disabled', 'true');
+      option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+    }
+  } else if (disabledBy === 'waterfall') {
+    checkbox.disabled = false;
+    checkbox.removeAttribute('data-tooltip');
+    checkbox.removeAttribute('data-disabled-by');
+    if (option) {
+      option.classList.remove('disabled');
+      option.removeAttribute('aria-disabled');
+      if (option.getAttribute('data-disabled-by') === 'waterfall') {
+        option.removeAttribute('data-disabled-by');
+      }
+      if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
+        option.removeAttribute('data-tooltip');
+      }
+    }
+  }
+
+  updateAllIndicators();
+}
+
 /**
- * Update legs and tube size options based on selected model
- * Filters legs to only show those compatible with the model
+ * Update legs and tube size options based on selected model and design
+ * Filters legs to only show those compatible with the model and design
  * Filters tube sizes to only show those used by visible legs and compatible with model
  */
-async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes) {
+async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designId = null) {
   if (!modelId) return;
-  
+
   const { renderOptionCards } = await import('./stageRenderer.js');
-  
-  // Filter legs: only show designs compatible with this model (and not hidden)
-  const visibleLegs = getVisibleLegs(modelId, allLegs);
-  
+  const legMultiplier = getLegPriceMultiplier(state);
+
+  // Filter legs: only show designs compatible with this model and design (and not hidden)
+  const visibleLegs = getVisibleLegs(modelId, allLegs, designId);
+  const pricedLegs = applyLegPriceMultiplier(visibleLegs, legMultiplier);
+
   // Render filtered legs
   const legsRoot = document.getElementById('legs-options');
   if (legsRoot) {
-    renderOptionCards(legsRoot, visibleLegs, { category: 'legs' });
+    renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
   }
-  
+
   // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
   const availableTubeSizes = getAvailableTubeSizes(modelId, visibleLegs, allTubeSizes);
-  
+
   // Render filtered tube sizes
   const tubeSizesRoot = document.getElementById('tube-size-options');
   if (tubeSizesRoot) {
-    renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size' });
+    renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size', showPrice: false });
   }
-  
+
   // Recompute tube size constraints based on current leg selection
   try {
     recomputeTubeSizeConstraints();
   } catch (e) {
     console.warn('Failed to recompute constraints:', e);
   }
+  updateLegPricingUI(state, allLegs);
 }
 
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
@@ -133,7 +280,8 @@ document.addEventListener('option-selected', async (ev) => {
       selections: { 
         model: id, 
         design: null, 
-        options: {} 
+        options: {},
+        dimensionsDetail: null
       }, 
       pricing: { base: 0, extras: 0, total: 0 } 
     });
@@ -168,10 +316,15 @@ document.addEventListener('option-selected', async (ev) => {
         const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
         const designs = await loadData('data/designs.json');
         if (designs) {
-          const designGrids = designsSection.querySelectorAll('.model-row-grid');
+          const designGrids = designsSection.querySelectorAll('.stage-options-grid');
           if (designGrids && designGrids.length) {
             const filteredDesigns = filterDesignsByModel(designs, id);
-            renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+            // Add price field for rendering
+            const designsWithPrice = filteredDesigns.map(design => ({
+              ...design,
+              price: id && design.prices ? design.prices[id] : 0
+            }));
+            renderOptionCards(designGrids[0], designsWithPrice, { category: null });
           }
         }
       }
@@ -192,13 +345,79 @@ document.addEventListener('option-selected', async (ev) => {
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
-    setState({ selections: { ...state.selections, design: id } });
+    // Check if addons need to be disabled due to design incompatibility
+    const currentAddons = state.selections.options.addon || [];
+    // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
+
+    setState({
+      selections: {
+        ...state.selections,
+        design: id,
+        options: {
+          ...state.selections.options,
+          addon: currentAddons
+        }
+      }
+    });
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+
+    // Update legs options based on the selected design
+    try {
+      const allLegs = window._allLegsData || [];
+      const allTubeSizes = window._allTubeSizesData || [];
+      if (allLegs.length > 0 && allTubeSizes.length > 0) {
+        updateLegsOptionsForModel(state.selections.model, allLegs, allTubeSizes, id);
+      }
+    } catch (e) {
+      console.warn('Failed to update legs options after design change:', e);
+    }
+
+    // Update addon compatibility based on the selected design
+    try {
+      const addonsRoot = document.getElementById('addons-options');
+      if (addonsRoot) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderAddonsDropdown } = await import('./stageRenderer.js');
+        const addons = await loadData('data/addons.json');
+        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateWaterfallAddonAvailability(state);
+      }
+    } catch (e) {
+      console.warn('Failed to update addon compatibility after design change:', e);
+    }
+
+    // Update materials based on the selected design
+    try {
+      const materialsOptionsRoot = document.getElementById('materials-options');
+      if (materialsOptionsRoot) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderOptionCards } = await import('./stageRenderer.js');
+        const mats = await loadData('data/materials.json');
+        if (mats) {
+          const filteredMaterials = filterMaterialsByDesign(mats, id);
+          renderOptionCards(materialsOptionsRoot, filteredMaterials, { category: 'material' });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to update materials after design change:', e);
+    }
   }
-  // Handle other category selections (material, finish, legs, dimensions, color, etc.)
+  // Handle other category selections (material, finish, legs, color, etc.)
+  else if (category === 'dimensions') {
+    const newOptions = { ...state.selections.options, [category]: id };
+    const nextSelections = { ...state.selections, options: newOptions };
+    if (ev.detail && ev.detail.payload) nextSelections.dimensionsDetail = ev.detail.payload;
+    else nextSelections.dimensionsDetail = null;
+    setState({ selections: nextSelections });
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+    updateLegPricingUI(state);
+  }
   else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
     // update selections first and then recompute price via computePrice
@@ -208,6 +427,19 @@ document.addEventListener('option-selected', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   }
+});
+
+document.addEventListener('custom-color-note-updated', (ev) => {
+  const value = ev.detail && typeof ev.detail.value === 'string' ? ev.detail.value : '';
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        customColorNote: value
+      }
+    }
+  });
 });
 
 // Handle "none" leg selection - clear dependent selections without dispatching events with null ids
@@ -238,12 +470,30 @@ document.addEventListener('tube-size-cleared-due-to-incompatibility', async (ev)
   }
 });
 
+// Handle tube size deselected (when optional and clicked again)
+document.addEventListener('tube-size-deselected', async (ev) => {
+  try {
+    // Clear the tube-size selection from state and recompute price
+    setState({ selections: { ...state.selections, options: { ...state.selections.options, 'tube-size': undefined } } });
+    const p = await computePrice(state);
+    setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+  } catch (e) {
+    console.warn('Failed to handle tube-size-deselected:', e);
+  }
+});
+
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
+  console.log('[Addons] addon-toggled event:', { id, price, checked });
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
+  if (id === 'addon-waterfall-single' && !checked) {
+    selectedAddons.delete('addon-waterfall-second');
+  }
   const addonsArray = Array.from(selectedAddons);
   // persist selections then compute price via pricing module
   setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
@@ -251,6 +501,36 @@ document.addEventListener('addon-toggled', async (ev) => {
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
   animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+  updateLegPricingUI(state);
+  updateWaterfallAddonAvailability(state);
+});
+
+// Handle addon selections (single-select per group). Expect detail: { group, id, price }
+document.addEventListener('addon-selected', async (ev) => {
+  const { group, id, price } = ev.detail || { group: null, id: null, price: 0 };
+  console.log('[Addons] addon-selected event:', { group, id, price });
+  if (!group) return;
+  const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
+  // Remove any previous selection in this group
+  // Assuming group is like "Power Strips", and ids are like "addon-power-none"
+  const groupPrefix = group.toLowerCase().replace(/\s+/g, '-');
+  selectedAddons.forEach(addonId => {
+    if (addonId.startsWith(`addon-${groupPrefix}`)) {
+      selectedAddons.delete(addonId);
+    }
+  });
+  // Add the new selection if not "none"
+  if (id && !id.includes('-none')) {
+    selectedAddons.add(id);
+  }
+  const addonsArray = Array.from(selectedAddons);
+  setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
+  const p = await computePrice(state);
+  setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
+  const from = state.pricing.total || state.pricing.base;
+  animatePrice(from, p.total, 320, (val) => updatePriceUI(val));
+  updateLegPricingUI(state);
+  updateWaterfallAddonAvailability(state);
 });
 
 // Request-based restart: stage modules should dispatch 'request-restart' and
@@ -258,7 +538,9 @@ document.addEventListener('addon-toggled', async (ev) => {
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
-    setState({ selections: { model: null, design: null, options: {} }, pricing: { base: 0, extras: 0, total: 0 } });
+    const from = state.pricing.total || state.pricing.base || 0;
+    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null }, pricing: { base: 0, extras: 0, total: 0 } });
+    animatePrice(from, 0, 320, (val) => updatePriceUI(val));
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
       stageManager.setStage(0);
@@ -267,6 +549,18 @@ document.addEventListener('request-restart', (ev) => {
       document.dispatchEvent(ev2);
     }
   } catch (e) { /* ignore */ }
+});
+
+// Allow non-selection state mutations (e.g., stage manager clears) to refresh pricing with animation.
+document.addEventListener('request-price-refresh', async (ev) => {
+  try {
+    const from = state.pricing.total || state.pricing.base || 0;
+    const p = await computePrice(state);
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  } catch (e) {
+    console.warn('Failed to refresh price', e);
+  }
 });
 
 // Handle stage change requests from UI modules (e.g., Apply & Next buttons)
@@ -312,6 +606,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.documentElement.style.setProperty('--header-height', `${h}px`);
       // stage bar lives inside header, so avoid double-subtracting
       document.documentElement.style.setProperty('--stage-bar-height', `0px`);
+      const stepper = document.getElementById('top-stepper');
+      if (stepper) {
+        const styles = window.getComputedStyle(stepper);
+        const marginBottom = parseFloat(styles.marginBottom || '0') || 0;
+        const navOffset = stepper.getBoundingClientRect().bottom + marginBottom;
+        document.documentElement.style.setProperty('--nav-offset', `${Math.round(navOffset)}px`);
+      } else {
+        document.documentElement.style.setProperty('--nav-offset', `${h}px`);
+      }
     } catch (e) {
       // ignore
     }
@@ -327,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIcon(element, iconName, iconTitle);
   });
 
-  // Initialize summary tooltip (after sidebar/header components exist)
+  // Initialize summary tooltip (after footer/header components exist)
   try {
     const { initSummaryTooltip } = await import('./ui/summaryTooltip.js');
     const sb = document.getElementById('summary-btn');
@@ -347,14 +650,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const modelGrids = document.querySelectorAll('.model-row-grid');
       if (modelGrids && modelGrids.length && models) {
         // distribute models across the first grid for simplicity
-        renderOptionCards(modelGrids[0], models, { category: null });
+        renderOptionCards(modelGrids[0], models, { category: null, showPrice: false });
       }
     }
 
     const materialsOptionsRoot = document.getElementById('materials-options');
     if (materialsOptionsRoot) {
       const mats = await loadData('data/materials.json');
-      if (mats) renderOptionCards(materialsOptionsRoot, mats, { category: 'material' });
+      if (mats) {
+        // Filter materials based on currently selected design
+        const currentDesign = state.selections && state.selections.design;
+        const filteredMaterials = filterMaterialsByDesign(mats, currentDesign);
+        renderOptionCards(materialsOptionsRoot, filteredMaterials, { category: 'material' });
+      }
     }
 
     // Render color swatches for the Materials stage from data/colors.json
@@ -371,25 +679,33 @@ if (designsSection) {
   const designs = await loadData('data/designs.json');
   if (designs) {
     // Clear existing design option cards and render from data
-    const designGrids = designsSection.querySelectorAll('.model-row-grid');
+    const designGrids = designsSection.querySelectorAll('.stage-options-grid');
     if (designGrids && designGrids.length) {
       // Filter designs based on currently selected model
       const currentModel = state.selections && state.selections.model;
       const filteredDesigns = filterDesignsByModel(designs, currentModel);
-      renderOptionCards(designGrids[0], filteredDesigns, { category: null });
+      // Add price field for rendering
+      const designsWithPrice = filteredDesigns.map(design => ({
+        ...design,
+        price: currentModel && design.prices ? design.prices[currentModel] : 0
+      }));
+      renderOptionCards(designGrids[0], designsWithPrice, { category: null });
     }
   }
 }
 
     // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
-    const finishSheenRoot = document.getElementById('finish-sheen-options');
+    const finishSheenRoot = document.getElementById('finish-sheen-slider');
     const finishTintRoot = document.getElementById('finish-tint-options');
     if (finishCoatingRoot || finishSheenRoot || finishTintRoot) {
   const finish = await loadData('data/finish.json');
       if (finish) {
         if (finish.coatings && finishCoatingRoot) renderOptionCards(finishCoatingRoot, finish.coatings, { category: 'finish-coating' });
-        if (finish.sheens && finishSheenRoot) renderOptionCards(finishSheenRoot, finish.sheens, { category: 'finish-sheen' });
+        if (finish.sheens && finishSheenRoot) {
+          const { renderSheenSlider } = await import('./stageRenderer.js');
+          renderSheenSlider(finishSheenRoot, finish.sheens);
+        }
         if (finish.tints && finishTintRoot) renderOptionCards(finishTintRoot, finish.tints, { category: 'finish-tint' });
       }
     }
@@ -405,18 +721,23 @@ if (designsSection) {
     const legsRoot = document.getElementById('legs-options');
     if (legsRoot) {
   allLegs = await loadData('data/legs.json');
-      if (allLegs) renderOptionCards(legsRoot, allLegs, { category: 'legs' });
+      if (allLegs) {
+        const legMultiplier = getLegPriceMultiplier(state);
+        const pricedLegs = applyLegPriceMultiplier(allLegs, legMultiplier);
+        renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
+      }
     }
 
     const tubeSizesRoot = document.getElementById('tube-size-options');
     if (tubeSizesRoot) {
   allTubeSizes = await loadData('data/tube-sizes.json');
-      if (allTubeSizes) renderOptionCards(tubeSizesRoot, allTubeSizes, { category: 'tube-size' });
+      if (allTubeSizes) renderOptionCards(tubeSizesRoot, allTubeSizes, { category: 'tube-size', showPrice: false });
     }
     
     // Store for use in model-change filtering
     window._allLegsData = allLegs;
     window._allTubeSizesData = allTubeSizes;
+    updateLegPricingUI(state, allLegs);
 
     const legFinishRoot = document.getElementById('leg-finish-options');
     if (legFinishRoot) {
@@ -427,7 +748,8 @@ if (designsSection) {
     const addonsRoot = document.getElementById('addons-options');
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
-      if (addons) renderAddonsDropdown(addonsRoot, addons);
+      if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
     console.warn('Failed to render stage data from JSON files', e);
@@ -451,20 +773,27 @@ if (designsSection) {
 
   // If we loaded the Summary page markup, populate its panel now
   try {
-    const hasSummary = document.getElementById('summary-model-name');
+    const hasSummary = document.getElementById('summary-panel');
     if (hasSummary) populateSummaryPanel();
   } catch (e) { /* ignore */ }
 
   // Initialize summary action handlers (capture/export/restart) if present
   try {
     const { initSummaryActions } = await import('./stages/summary.js');
-    if (document.getElementById('summary-model-name')) initSummaryActions();
+    if (document.getElementById('summary-panel')) initSummaryActions();
   } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
   try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
 
+  const loadingScreen = document.getElementById('app-loading');
+  if (loadingScreen) {
+    loadingScreen.classList.add('hidden');
+    loadingScreen.setAttribute('aria-hidden', 'true');
+  }
+
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2025-12-25 18:41');
+  console.log('Last updated: 2026-01-12 12:19');
+  console.log('Edit ver: 419');
 });

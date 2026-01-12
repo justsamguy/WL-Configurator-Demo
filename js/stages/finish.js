@@ -2,53 +2,8 @@
 let lastKnownModel = null; // Track the model to detect changes
 
 export function recomputeFinishConstraints() {
-  try {
-    const selectedCoatingEl = document.querySelector('.option-card[data-category="finish-coating"][aria-pressed="true"]');
-    const selectedCoatingId = selectedCoatingEl && selectedCoatingEl.getAttribute('data-id');
-    const selectedSheenEl = document.querySelector('.option-card[data-category="finish-sheen"][aria-pressed="true"]');
-    const selectedSheenId = selectedSheenEl && selectedSheenEl.getAttribute('data-id');
-
-    function _getDisabledByList(el) {
-      const raw = el.getAttribute('data-disabled-by') || '';
-      return raw ? raw.split('||').filter(Boolean) : [];
-    }
-    function addDisabledBy(el, sourceTitle) {
-      if (!el) return;
-      const title = (sourceTitle || '').trim();
-      if (!title) return;
-      const list = _getDisabledByList(el);
-      if (!list.includes(title)) list.push(title);
-      el.setAttribute('data-disabled-by', list.join('||'));
-      el.setAttribute('disabled', 'true');
-      el.setAttribute('data-tooltip', `Incompatible with ${list.join(', ')}`);
-    }
-    function clearAllDisabledBy(el) {
-      if (!el) return;
-      el.removeAttribute('data-disabled-by');
-      el.removeAttribute('data-tooltip');
-      el.removeAttribute('disabled');
-    }
-
-    // clear relevant previous flags
-    ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-      const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-      if (el) clearAllDisabledBy(el);
-    });
-
-    if (selectedCoatingId === 'fin-coat-02') {
-      const polyTitle = (selectedCoatingEl && selectedCoatingEl.querySelector('.title') && selectedCoatingEl.querySelector('.title').textContent.trim()) || '2K Poly';
-      ['fin-sheen-02', 'fin-sheen-03'].forEach((sheenId) => {
-        const el = document.querySelector(`.option-card[data-id="${sheenId}"]`);
-        if (el) addDisabledBy(el, polyTitle);
-      });
-    } else if (selectedSheenId === 'fin-sheen-02' || selectedSheenId === 'fin-sheen-03') {
-      const sheenTitle = (selectedSheenEl && selectedSheenEl.querySelector('.title') && selectedSheenEl.querySelector('.title').textContent.trim()) || 'selected sheen';
-      const poly = document.querySelector(`.option-card[data-id="fin-coat-02"]`);
-      if (poly) addDisabledBy(poly, sheenTitle);
-    }
-  } catch (e) {
-    console.warn('Failed to recompute finish constraints:', e);
-  }
+  // No constraints between coating and sheen - all combinations allowed
+  // This function is kept for compatibility but no longer does anything
 }
 
 // applyFinishDefaults: ensure sensible defaults for the Finish stage.
@@ -68,10 +23,9 @@ export function applyFinishDefaults(appState) {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-coat-02', price: Number(el ? el.getAttribute('data-price') : 0), category: 'finish-coating' } }));
     }
     if (!sheenSel) {
-      updates['finish-sheen'] = 'fin-sheen-01';
-      const el2 = document.querySelector('.option-card[data-id="fin-sheen-01"]');
-      if (el2) el2.setAttribute('aria-pressed', 'true');
-      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-01', price: Number(el2 ? el2.getAttribute('data-price') : 0), category: 'finish-sheen' } }));
+      updates['finish-sheen'] = 'fin-sheen-02';
+      // No visual element to set for slider, just dispatch the event
+      document.dispatchEvent(new CustomEvent('option-selected', { detail: { id: 'fin-sheen-02', price: 0, category: 'finish-sheen' } }));
     }
     if (!tintSel) {
       updates['finish-tint'] = 'fin-tint-01';
@@ -109,24 +63,10 @@ export function init() {
 
 export function restoreFromState(appState) {
   try {
-    // Check if model has changed and clear disabled states if needed
-    const currentModel = appState && appState.selections && appState.selections.model;
-    if (currentModel !== lastKnownModel) {
-      console.log('[Finish] Model changed from', lastKnownModel, 'to', currentModel, '- clearing constraints');
-      // Clear all disabled states and tooltips when model changes
-      ['fin-coat-02', 'fin-sheen-02', 'fin-sheen-03'].forEach((oid) => {
-        const el = document.querySelector(`.option-card[data-id="${oid}"]`);
-        if (el) {
-          el.removeAttribute('data-disabled-by');
-          el.removeAttribute('data-tooltip');
-          el.removeAttribute('disabled');
-        }
-      });
-      lastKnownModel = currentModel;
-    }
-    
     const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
-    ['finish-coating', 'finish-sheen', 'finish-tint'].forEach(cat => {
+    
+    // Restore coating and tint selections (option cards)
+    ['finish-coating', 'finish-tint'].forEach(cat => {
       const id = opts[cat];
       if (!id) return;
       const el = document.querySelector(`.option-card[data-id="${id}"]`);
@@ -135,7 +75,41 @@ export function restoreFromState(appState) {
         el.setAttribute('aria-pressed', 'true');
       }
     });
-    try { recomputeFinishConstraints(); } catch (e) { /* ignore constraint update */ }
+
+    // Handle sheen slider and tiles
+    const sheenId = opts['finish-sheen'];
+    if (sheenId) {
+      const slider = document.querySelector('.sheen-slider');
+      const tiles = document.querySelectorAll('.sheen-tile');
+      const sheenRoot = document.getElementById('finish-sheen-slider');
+
+      const sheenMap = {
+        'fin-sheen-01': 0, // Matte
+        'fin-sheen-02': 1, // Satin
+        'fin-sheen-03': 2  // Gloss
+      };
+
+      const value = sheenMap[sheenId];
+      if (value !== undefined) {
+        const sheenSetter = sheenRoot && sheenRoot.__setSheenIndex;
+        if (sheenSetter) {
+          sheenSetter(value, { dispatch: false });
+        } else {
+          if (slider) {
+            const fallbackCenters = sheenRoot && sheenRoot.__sheenFallbackCenters;
+            const fallbackValue = fallbackCenters && typeof fallbackCenters[value] === 'number'
+              ? fallbackCenters[value]
+              : value;
+            slider.value = String(fallbackValue);
+          }
+          tiles.forEach((tile, index) => {
+            const isSelected = index === value;
+            tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            tile.classList.toggle('selected', isSelected);
+          });
+        }
+      }
+    }
   } catch (e) { /* ignore */ }
 }
 

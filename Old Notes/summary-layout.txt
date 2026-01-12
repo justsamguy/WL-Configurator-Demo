@@ -1,0 +1,24 @@
+__Summary Page Layout Outline__
+
+- __Overall Structure__: Single-column layout with scrolling for the option list
+
+- __Sections__:
+
+  - Snapshot container (reused)
+  - Options summary grouped by stages (with stage subheaders in bold, options indented)
+  - Pricing breakdown (option: selected on left, price on right)
+  - Taxes: static line "Quoted Separately" at the bottom of the pricing breakdown
+  - Shipping info below the option grid:
+    - 2 checkboxes: "Quote separately", "International" (these disable the section if checked)
+    - Horizontal set of fields: 5-digit zip code text field, automatic region field (user can't select), estimated price (dynamic once UI in place)
+  - Action buttons at bottom (Capture Snapshot, Export PDF, Start Over - reused)
+
+__Key Features__:
+
+- Only selected options are shown (unselected remain hidden/omitted)
+- Stage-based grouping with visual hierarchy
+- Existing app styles used throughout
+- No editability on the summary page
+- Each component of an addon is included
+- Custom dimensions are aggregated
+- No other header styling for now

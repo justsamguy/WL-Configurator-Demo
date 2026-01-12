@@ -30,6 +30,37 @@ body {
 /* Simple `.hidden` helper used by JS to toggle visibility of UI rows. */
 .hidden { display: none !important; }
 
+/* Loading screen overlay shown below the navigation bar during app init */
+.app-loading {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--nav-offset, 0px);
+  bottom: 0;
+  z-index: 55;
+  background: rgba(248, 250, 252, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.app-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.app-loading img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.app-loading-text {
+  font-size: 0.95rem;
+  color: #475467;
+  letter-spacing: 0.01em;
+}
+
 /* Root grid layout controlled via .app-root to avoid relying on Tailwind arbitrary utilities */
 .app-root {
   display: grid;
@@ -143,6 +174,501 @@ header .flex.justify-center.items-center {
 .summary-tooltip .tooltip-content { max-height: 220px; overflow:auto; }
 .summary-tooltip .tooltip-footer { border-top: 1px solid rgba(16,24,40,0.04); padding-top:6px; }
 
+/* Summary stage layout */
+.summary-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.summary-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summary-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.summary-shipping-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.summary-shipping-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  min-height: 3.5rem;
+}
+
+.summary-shipping-toggle:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.summary-shipping-toggle:hover {
+  background-color: #f9fafb;
+}
+
+.summary-shipping-section:not(.is-collapsed) .summary-shipping-toggle {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-shipping-toggle-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.summary-shipping-toggle-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.summary-shipping-toggle-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.summary-shipping-toggle-estimate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.summary-shipping-toggle-estimate-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.summary-shipping-toggle-estimate-value.is-disabled {
+  color: #9ca3af;
+}
+
+.summary-shipping-toggle-icon {
+  font-size: 0.85rem;
+  color: #6b7280;
+  transition: transform 150ms ease;
+}
+
+.summary-shipping-section.is-collapsed .summary-shipping-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.summary-shipping-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+}
+
+.summary-shipping-section.is-collapsed .summary-shipping-body {
+  display: none;
+}
+
+.summary-options-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summary-options-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.summary-options-list {
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: #374151;
+  border-bottom: 1px solid rgba(16, 24, 40, 0.08);
+  padding-bottom: 0.15rem;
+}
+
+.summary-option-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.summary-option-row.has-price {
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.summary-option-row.has-price .summary-option-main {
+  flex: 1;
+  margin-right: auto;
+}
+
+.summary-option-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.summary-option-value {
+  color: #4b5563;
+}
+
+.summary-option-price {
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.summary-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.summary-price-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  color: #374151;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(16,24,40,0.08);
+}
+
+.summary-price-row.is-last {
+  border-bottom: none;
+}
+
+.summary-price-row:last-child {
+  border-bottom: none;
+}
+
+.summary-price-amount {
+  color: #4b5563;
+  text-align: right;
+  margin-left: 1rem;
+}
+
+.summary-tax-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.summary-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  padding-top: 0.5rem;
+}
+
+.summary-disclaimer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding-top: 0.25rem;
+}
+
+.summary-shipping-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.summary-shipping-choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.summary-shipping-choice-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.summary-shipping-choice-label {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.summary-shipping-choice-label:hover {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.summary-shipping-choice-input:checked + .summary-shipping-choice-label {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.summary-shipping-choice-input:checked + .summary-shipping-choice-label:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.summary-shipping-choice-input:focus-visible + .summary-shipping-choice-label {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.summary-shipping-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.summary-shipping-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+  width: max-content;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.summary-shipping-zip-field .summary-shipping-input {
+  width: 7ch;
+}
+
+.summary-shipping-region-field .summary-shipping-input {
+  width: 20ch;
+}
+
+.summary-shipping-estimate-field {
+  width: auto;
+  align-items: flex-end;
+}
+
+.summary-shipping-estimate-field .summary-shipping-estimate {
+  text-align: right;
+}
+
+.summary-shipping-fields.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.summary-shipping-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #fff;
+}
+
+.summary-shipping-field .summary-shipping-input {
+  margin-left: 0.35rem;
+}
+
+.summary-shipping-notes-field .summary-shipping-input {
+  margin-left: 0;
+}
+
+.summary-shipping-input[readonly] {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.summary-shipping-estimate {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.summary-shipping-estimate.is-disabled {
+  color: #9ca3af;
+}
+
+.summary-shipping-toggles {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  text-align: center;
+}
+
+.summary-shipping-toggles.is-visible {
+  display: flex;
+}
+
+.summary-shipping-switch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.summary-shipping-switch-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.summary-shipping-switch-sides {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.summary-shipping-switch-side {
+  color: #9ca3af;
+  transition: color 150ms ease;
+}
+
+.summary-shipping-switch-separator {
+  color: #9ca3af;
+}
+
+.summary-shipping-switch-input:not(:checked) ~ .summary-shipping-switch-sides .summary-shipping-switch-side-left {
+  color: #111827;
+}
+
+.summary-shipping-switch-input:checked ~ .summary-shipping-switch-sides .summary-shipping-switch-side-right {
+  color: #111827;
+}
+
+.summary-shipping-switch-track {
+  position: relative;
+  width: 3rem;
+  height: 0.35rem;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.summary-shipping-switch-knob {
+  position: absolute;
+  top: -0.25rem;
+  left: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: #111827;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.summary-shipping-switch-input:checked ~ .summary-shipping-switch-track .summary-shipping-switch-knob {
+  transform: translateX(2.15rem);
+}
+
+.summary-shipping-switch-input:focus-visible ~ .summary-shipping-switch-track {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-sides {
+  color: #d1d5db;
+}
+
+.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-track {
+  background: #f3f4f6;
+}
+
+.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-track .summary-shipping-switch-knob {
+  background: #d1d5db;
+}
+
+.summary-shipping-notes {
+  display: none;
+}
+
+.summary-shipping-notes.is-visible {
+  display: block;
+}
+
+.summary-shipping-notes-field {
+  width: 100%;
+  align-items: stretch;
+}
+
+.summary-shipping-textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+@media (min-width: 640px) {
+  .summary-shipping-fields {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
 /* Floating tooltip used for disabled option-card explanations. Appended to <body>
    and positioned with JS to avoid clipping from overflow/stacking contexts. */
 .inline-disabled-tooltip {
@@ -167,9 +693,36 @@ header .flex.justify-center.items-center {
   transform-origin: 50% 50%;
 }
 
-/* Positioned summary button inside the sidebar header to avoid layout wrapping */
-.sidebar-summary-btn {
-  /* Inline presentation: remove absolute positioning so the button sits inline with the price */
+/* Floating footer bar for price preview and Next action */
+#app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  padding: 0.75rem 0 1.25rem;
+  background: transparent;
+  pointer-events: none;
+}
+
+.footer-bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+/* Summary button aligned inline with the footer price */
+.footer-summary-btn {
   position: relative;
   background: transparent;
   border: none;
@@ -180,26 +733,35 @@ header .flex.justify-center.items-center {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  /* Avoid taking the fixed .btn-icon width/height so it flows inline with text */
   width: auto;
   height: auto;
 }
-.sidebar-summary-btn:focus {
+.footer-summary-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
 /* NOTE FOR MAINTAINERS:
-  The summary button (#summary-btn) must remain inline with the price inside
-  .sidebar-price-row so it scrolls together with the price and does not stick to
-  the header. Do NOT make the button position:sticky or move it back into the
-  sticky header without ensuring it remains visually grouped with #price-bar.
+  Keep #summary-btn inline with #price-bar inside .footer-price-row so the
+  price preview and summary control remain visually grouped in the footer.
 */
-/* Explicit price row to avoid relying on utility classes; keeps label, icon, and price inline */
-.sidebar-price-row {
+.footer-price-row {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+}
+
+.footer-price-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.footer-price-amount {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 /* Keep the price from growing too large and forcing siblings onto new lines */
@@ -211,7 +773,7 @@ header .flex.justify-center.items-center {
 }
 
 /* More specific override to ensure the summary button doesn't inherit the global .btn-icon fixed sizing */
-.btn-icon.sidebar-summary-btn {
+.btn-icon.footer-summary-btn {
   width: auto !important;
   height: auto !important;
   min-width: 0 !important;
@@ -221,18 +783,28 @@ header .flex.justify-center.items-center {
 }
 
 /* Make the summary button look like a tangible control: subtle bg, border, and a tiny shadow */
-.btn-icon.sidebar-summary-btn {
+.btn-icon.footer-summary-btn {
   background: #ffffff;
   border: 1px solid rgba(16,24,40,0.06);
   box-shadow: 0 1px 4px rgba(16,24,40,0.06);
   color: #374151;
 }
-.btn-icon.sidebar-summary-btn:hover {
+.btn-icon.footer-summary-btn:hover {
   background: #f8fafc;
 }
-.btn-icon.sidebar-summary-btn:focus {
+.btn-icon.footer-summary-btn:focus {
   outline: 3px solid rgba(59,130,246,0.18);
   outline-offset: 2px;
+}
+
+#app-footer .footer-next-btn {
+  flex: 0 0 auto;
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
+}
+
+body.stage-7 #app-footer {
+  display: none;
 }
 
 
@@ -359,13 +931,12 @@ header .site-logo {
     flex-direction: column;
     height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
     max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
-    overflow: hidden; /* Prevent double scrollbars; internal area will scroll */
+    overflow-y: auto; /* Let the sidebar handle scrolling as a whole */
+    overflow-x: hidden;
   }
 
   /* Scrollable region inside the sidebar */
   #app-sidebar .sidebar-scroll {
-      overflow-y: auto;
-      overflow-x: hidden; /* prevent accidental horizontal scroll */
       /* Space between the sticky header and the scrollable content.
          Use a CSS variable so this spacing can be tuned in one place if needed. */
       --sidebar-content-top-gap: 1rem; /* default 16px */
@@ -373,9 +944,14 @@ header .site-logo {
       padding-right: 8px; /* give space for scrollbar */
     }
 
-  /* Fixed bottom area inside the sidebar should not scroll with the tiles */
+  /* Bottom area inside the sidebar scrolls with the rest of the content */
   #app-sidebar #sidebar-fixed-bottom {
     flex: 0 0 auto;
+  }
+
+  /* Hide the fixed bottom area for addons stage (stage-6) to allow full scrolling */
+  body.stage-6 #sidebar-fixed-bottom {
+    display: none;
   }
 
   footer {
@@ -407,12 +983,11 @@ header .site-logo {
   display: inline-block;
 }
 
-.tooltip:hover::after {
+.tooltip:hover::after,
+.tooltip:focus-visible::after {
   content: attr(data-tip);
   position: absolute;
   bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 4px 8px;
@@ -421,9 +996,14 @@ header .site-logo {
   white-space: nowrap;
   z-index: 10;
   margin-bottom: 5px;
+  max-width: calc(100vw - 24px);
+  /* Position tooltip centered but constrained to viewport */
+  left: clamp(12px, calc(50% - 50px), calc(100vw - 112px));
+  transform: none;
 }
 
-.tooltip:hover::before {
+.tooltip:hover::before,
+.tooltip:focus-visible::before {
   content: "";
   position: absolute;
   bottom: 100%;
@@ -434,6 +1014,33 @@ header .site-logo {
   border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
   margin-bottom: -5px;
   transform: translateX(-50%) rotate(180deg);
+}
+
+.materials-help-link.tooltip:hover::after,
+.materials-help-link.tooltip:focus-visible::after {
+  top: 100%;
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform: none;
+  margin-top: 6px;
+  margin-bottom: 0;
+  width: min(560px, calc(100vw - 24px));
+  max-width: min(560px, calc(100vw - 24px));
+  white-space: normal;
+  text-align: left;
+}
+
+.materials-help-link.tooltip:hover::before,
+.materials-help-link.tooltip:focus-visible::before {
+  top: 100%;
+  bottom: auto;
+  left: auto;
+  right: 12px;
+  margin-top: 1px;
+  margin-bottom: 0;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+  transform: none;
 }
 
 /* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip
@@ -589,19 +1196,13 @@ body.show-model-tiles #stage-panel-0 #model-options,
   padding: 1.5rem;
   width: 100%;
 }
-
-/* Emergency fallback: ensure the Select Design panel and its inner grids/cards
-   are visible and laid out even when JS toggles or timing is inconsistent. */
-#stage-panel-1 {
-  display: block !important;
-}
-#stage-panel-1 .model-row-grid {
+#stage-panel-1 .stage-options-grid {
   display: flex;
   gap: 1.5rem;
   justify-content: center;
   flex-wrap: wrap;
 }
-#stage-panel-1 .option-card {
+#stage-panel-1 .stage-options-grid .option-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -693,7 +1294,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
 
 .model-row .title {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .model-row .price-delta {
@@ -703,10 +1304,10 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 .model-row .description {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
   text-align: center;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .model-row .option-card.selected::after {
@@ -769,6 +1370,50 @@ body.show-model-tiles #stage-panel-0 #model-options,
   display: block;
 }
 
+.materials-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.materials-heading {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.materials-help-link {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: help;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.materials-help-link:hover,
+.materials-help-link:focus-visible {
+  color: #6b7280;
+}
+
+.materials-help-link:focus-visible {
+  outline: 2px solid #d1d5db;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .stage-options-grid {
   display: grid;
   /* Use a 3-column layout by default. Use minmax(0, 1fr) to avoid intrinsic min-width
@@ -789,7 +1434,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 .stage-options-grid .option-card {
   padding: 12px;
-  min-height: 120px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -798,29 +1443,37 @@ body.show-model-tiles #stage-panel-0 #model-options,
   position: relative;
   box-sizing: border-box; /* make padding included in card width */
 }
+.model-row-grid .option-card {
+  text-align: center;
+}
 .stage-options-grid .viewer-placeholder-img {
   width: 100%;
-  height: 80px;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 4px;
   margin-bottom: 8px;
 }
-.stage-options-grid .option-card .title-price-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
 .stage-options-grid .option-card .title {
   font-weight: 600;
   font-size: 14px;
+  margin-bottom: 4px;
+}
+.model-row-grid .option-card .title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
 }
 .stage-options-grid .option-card .price-delta {
   font-size: 12px;
   color: #6b7280;
+  margin-bottom: 4px;
 }
 .stage-options-grid .option-card .description {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+.model-row-grid .option-card .description {
   font-size: 12px;
   color: #6b7280;
   line-height: 1.3;
@@ -868,7 +1521,65 @@ body.show-model-tiles #stage-panel-0 #model-options,
   margin-bottom: 5px;
 }
 
+.stage-options-grid .option-card[data-custom-note] {
+  align-items: stretch;
+}
+
+.stage-options-grid .option-card[data-custom-note] .viewer-placeholder-img {
+  width: auto;
+  max-width: 100%;
+  align-self: center;
+}
+
+.stage-options-grid .option-card[data-custom-note] .custom-color-note-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: stretch;
+  width: 100%;
+  text-align: left;
+}
+
+.custom-color-note-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.custom-color-note {
+  width: 100%;
+  min-height: 72px;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  font-size: 0.875rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.custom-color-note:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* Legs stage: 4-column layout */
+#legs-price-banner {
+  width: 100%;
+  align-self: stretch;
+  background-color: #dcffff;
+  border: 1px solid #2563eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: #000;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  box-sizing: border-box;
+}
+
 #legs-options {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -913,9 +1624,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   min-height: 80px;
 }
 
-#tube-size-options .viewer-placeholder-img {
-  display: none;
-}
+
 
 #tube-size-options .option-card .title {
   font-size: 14px;
@@ -1001,6 +1710,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
+  --nav-offset: calc(var(--header-height) + var(--stage-bar-height));
   /* Spacing and typographic tokens (merged from later definitions) */
   --space-xs: 6px;
   --space-sm: 12px;
@@ -1179,6 +1889,22 @@ body.show-model-tiles #stage-bar {
     grid-template-rows: auto auto 1fr auto; /* Header, Stage Bar, Main, Footer */
   }
 
+  #app-footer {
+    position: static;
+    padding: 0;
+    background: #ffffff;
+    pointer-events: auto;
+  }
+
+  .footer-bar {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
+  }
+
 
 
   #stage-bar {
@@ -1261,8 +1987,11 @@ body.show-model-tiles #stage-bar {
   align-items: center;
   justify-content: center;
   gap: 2rem; /* Increase spacing between controls */
+}
 
 /* ---------------------- High-impact visual improvements ---------------------- */
+/* High-impact styles are disabled to avoid global shifts; remove wrapper to enable. */
+@media not all {
 
 /* Typographic scale and spacing tokens */
 :root {
@@ -1382,12 +2111,9 @@ p, label { font-size: 15px; color: #374151; }
 /* Small helpers */
 .muted { color:#6b7280; }
 .rounded-md { border-radius: 8px; }
+}
 
 /* End high-impact rules */
-  padding: 0.75rem 1rem;
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-}
 
 #viewer-controls button, 
 #viewer-controls span {
@@ -1531,6 +2257,9 @@ p, label { font-size: 15px; color: #374151; }
 .option-card:hover { border-color: #818cf8; }
 .option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
 .option-card.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
+
+/* Override selected style for stage-options-grid to use consistent blue styling */
+.stage-options-grid .option-card.selected { border-color: #2563eb; border-width: 3px; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 
 .stage-btn { flex: 1; padding: 0.5rem 0.25rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; }
 .stage-btn.active { border-bottom-color: #6366f1; color: #4f46e5; }
@@ -1925,7 +2654,7 @@ p, label { font-size: 15px; color: #374151; }
   gap: 0.5rem;
 }
 
-/* Override flex-direction for rows inside the dimensions-custom-wrapper to allow side-by-side layout */
+/* Keep each axis control stacked; side-by-side layout comes from the wrapper flex container */
 #dimensions-custom-wrapper .axis-control-row {
   flex-direction: column;
   flex: 1;
@@ -2302,7 +3031,6 @@ body.stage-1 #designs-stage-section > div {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 400px;
   overflow-y: auto;
   padding-right: 0.5rem;
 }
@@ -2336,30 +3064,116 @@ body.stage-1 #designs-stage-section > div {
   background: none;
   border: none;
   text-align: left;
+  min-height: 3.5rem;
 }
 
 .addons-dropdown-header:hover {
   background-color: #f9fafb;
 }
 
-.addons-dropdown-title-price {
+.addons-dropdown-header-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   flex: 1;
-  margin-right: 1rem;
+}
+
+.addons-dropdown-header-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .addons-dropdown-title {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: #111827;
 }
 
 .addons-dropdown-price {
   font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
+  font-weight: 600;
+  color: #111827;
+  min-width: 4.5rem;
+  text-align: right;
+  display: none;
+}
+
+.addons-dropdown-price.visible {
+  display: block;
+}
+
+.addons-dropdown-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid #d1d5db;
+  background-color: transparent;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.addons-dropdown-indicator.partial {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  position: relative;
+}
+
+.addons-dropdown-indicator.partial::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 2px;
+  background-color: white;
+  border-radius: 1px;
+}
+
+.addons-dropdown-indicator.full {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.addons-dropdown-indicator.full::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-top: 0;
+  border-left: 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+}
+
+.addons-dropdown-indicator.unavailable {
+  background-color: #ffffff;
+  border-color: #ef4444;
+}
+
+.addons-dropdown-indicator.unavailable::before,
+.addons-dropdown-indicator.unavailable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 2px;
+  background-color: #ef4444;
+  border-radius: 1px;
+}
+
+.addons-dropdown-indicator.unavailable::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.addons-dropdown-indicator.unavailable::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .addons-dropdown-chevron {
@@ -2381,31 +3195,77 @@ body.stage-1 #designs-stage-section > div {
   transition: max-height 0.3s ease;
   background-color: #f9fafb;
   border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
 }
 
-.addons-dropdown-tile.expanded .addons-dropdown-content {
-  max-height: 200px;
+.addons-dropdown-intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+}
+
+.addons-dropdown-intro-no-image {
+  grid-template-columns: 1fr;
+}
+
+.addons-dropdown-intro-image {
+  width: 140px;
+  aspect-ratio: 1 / 1;
+  max-height: 100%;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background-color: #e5e7eb;
+  justify-self: center;
+}
+
+.addons-dropdown-intro-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.4;
 }
 
 .addons-dropdown-options {
-  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .addons-dropdown-option {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border-radius: 0.375rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .addons-dropdown-option:hover {
   background-color: #ffffff;
+}
+
+.addons-dropdown-option.disabled {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.addons-dropdown-option.disabled:hover {
+  background-color: #f9fafb;
 }
 
 .addons-dropdown-option.selected {
@@ -2413,11 +3273,20 @@ body.stage-1 #designs-stage-section > div {
   border: 1px solid #3b82f6;
 }
 
+.addons-dropdown-option.disabled.selected {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
 .addons-dropdown-option-checkbox {
   width: 1rem;
   height: 1rem;
   accent-color: #2563eb;
   cursor: pointer;
+}
+
+.addons-dropdown-option-checkbox:disabled {
+  cursor: not-allowed;
 }
 
 .addons-dropdown-option-label {
@@ -2428,9 +3297,15 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .addons-dropdown-option-price {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: #6b7280;
   font-weight: 500;
+}
+
+.addons-dropdown-option.disabled .addons-dropdown-option-label,
+.addons-dropdown-option.disabled .addons-dropdown-option-price {
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .addons-dropdown-description {
@@ -2438,4 +3313,273 @@ body.stage-1 #designs-stage-section > div {
   font-size: 0.75rem;
   color: #6b7280;
   line-height: 1.4;
+}
+
+/* Tech subsections */
+.addons-subsection {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.addons-subsection:last-child {
+  border-bottom: none;
+}
+
+.addons-subsection-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.addons-tiles-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.addons-tiles-scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x proximity;
+}
+
+.addons-tiles-scroll .addons-tile {
+  flex: 0 0 auto;
+  width: 120px;
+  min-width: 120px;
+  scroll-snap-align: start;
+}
+
+.addons-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 3rem;
+  width: 100%;
+  max-width: 120px;
+  box-sizing: border-box;
+}
+
+.addons-tile-image {
+  width: 72px;
+  height: 72px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.addons-tile:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addons-tile:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.addons-tile.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.addons-tile:disabled,
+.addons-tile.disabled {
+  border-color: #e5e7eb;
+  background-color: #f9fafb;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.addons-tile:disabled:hover,
+.addons-tile.disabled:hover {
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.addons-tile-label {
+  font-size: 0.875rem;
+  color: #374151;
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.addons-tile-price {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.addons-tile:disabled .addons-tile-label,
+.addons-tile.disabled .addons-tile-label,
+.addons-tile:disabled .addons-tile-price,
+.addons-tile.disabled .addons-tile-price {
+  color: #9ca3af;
+}
+
+.addons-dropdown-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addons-dropdown-select:focus-visible {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.addons-dropdown-select:disabled,
+.addons-dropdown-select.disabled {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Sheen slider styles */
+.sheen-slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.sheen-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+}
+
+.sheen-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sheen-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sheen-tiles-container {
+  display: flex;
+  width: 100%;
+  gap: 1rem;
+  justify-content: stretch;
+}
+
+.sheen-tile {
+  flex: 1 1 0;
+  min-height: 110px;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+.sheen-tile .viewer-placeholder-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.sheen-tile .title-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  width: 100%;
+}
+
+.sheen-tile .title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.sheen-tile .price-delta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.sheen-tile .description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.sheen-tile.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.sheen-tile:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments for sheen tiles */
+@media (max-width: 640px) {
+  .sheen-tiles-container {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .sheen-tile {
+    flex: none;
+    width: 100%;
+    min-height: 80px;
+    padding: 0.5rem;
+  }
+
+  .sheen-tile .viewer-placeholder-img {
+    width: 50px;
+    height: 50px;
+  }
 }

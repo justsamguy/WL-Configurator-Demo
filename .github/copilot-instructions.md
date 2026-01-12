@@ -1,60 +1,39 @@
 # WoodLab Configurator Project Instructions
 
-This document outlines the guidelines and conventions for developing the WoodLab Configurator project, a static mockup built with Vanilla JS, Tailwind CSS v3, Three.js, jsPDF, and html2canvas. All logic runs client-side, adhering to a strict file/folder structure and client-only, GitHub Pages-compatible requirements.
+Primary source of truth: `AGENTS.md` (repo root). Keep this file aligned; if anything here conflicts, follow `AGENTS.md` and update this file.
 
-## Context
+## Related rule files (keep in sync)
 
-- **Tech Stack:** Vanilla JS, Tailwind CSS v3, Three.js r160, jsPDF 2.5.1, html2canvas 1.5.1, Hero-icons.
-**Key Directories:** `js/`, `js/stages/` (stage-specific logic), `css/`, `components/`, `pages/`, `assets/`.
-**Maintain state management:** Only `js/main.js` MUST be the canonical mutator of global state. Stage-specific modules under `js/stages/` MUST NOT call `setState`/`setAppState` directly. Instead they should dispatch the agreed-upon events (for example `option-selected`, `addon-toggled`, `stage-model-selected`, or `request-restart`) and let `js/main.js` perform the final state mutation. This prevents cross-stage coupling and keeps stage code safe to edit in isolation.
+This repo maintains multiple rule files for different tools/agents. Keep shared project constraints synchronized across them while preserving tool-specific guidance and formatting.
 
-Notes on recent conventions:
-- `applyFinishDefaults(appState)` in `js/stages/finish.js` will dispatch `option-selected` events for any defaults and will NOT call `setState`.
-- The Summary action that resets the configuration now dispatches `request-restart`; `js/main.js` handles the reset and stage navigation.
-## Response Style
+- Primary: `AGENTS.md`
+- Cline rules: `.clinerules/README.md` and `.clinerules/**`
 
-- Provide concise diffs for changes.
-- Make minimal, targeted changes. When adding new modules under `js/stages/` or `js/pricing.js`, include a one-line description in this file explaining their purpose.
-- **IMPORTANT:** After each requested edit to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") to the current date and time in format `YYYY-MM-DD HH:MM`.
+**Synchronization rule:** When you change shared project rules (stack/platform constraints, architecture invariants, accessibility requirements, workflow guardrails, version policy), update the corresponding sections in the files above as well.
 
-- **Follow the locked tech stack:** Use only the specified libraries and frameworks.
-- **Adhere to the canonical file/folder layout:** Maintain the project's structure as defined.
-- **Use placeholder assets:** Simple geometry for 3D, 256x256 PNGs for images, all marked with `alt="placeholder"`.
-- **Ensure accessibility:** All interactive elements must be WCAG 2.2 AA compliant, keyboard navigable, and responsive. Use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` regions.
-- **Maintain state management:** Only `js/main.js` should mutate global state; UI modules observe state and dispatch `Event("statechange")`.
-- **Write modular code:** Each UI module should have a single responsibility.
-- **Use consistent naming conventions:** For exported functions and variables.
-- **Test via deployment:** Verify functionality by deploying changes.
+## Context (summary)
 
-## Don’t
+- **App type:** Static, client-only (GitHub Pages compatible)
+- **Allowed stack:** Vanilla JS, Tailwind CSS 3.4.1 (CDN), Three.js 0.160.0 (CDN), jsPDF 2.5.1, html2canvas 1.5.1, Heroicons
+- **Key directories:** `js/`, `js/stages/`, `js/ui/`, `css/`, `components/`, `pages/`, `data/`, `assets/`
 
-- **Use other frameworks or libraries** not explicitly listed in the tech stack.
-- **Implement server-side logic or external API calls.**
-- **Remove keyboard focus outlines.**
-- **Mutate global state outside of `js/main.js`.**
-- **Introduce non-placeholder assets or data.**
-- **Suggest or run local verifying/testing commands** unless explicitly requested. Testing and verification must occur in a live server environment (GitHub Pages deployment) due to CDN dependencies.
+## Architecture invariants (summary)
 
+- **Canonical store:** `js/state.js` owns shared `state` and `setState(...)`.
+- **Primary orchestrator:** `js/main.js` handles app-level state mutations in response to UI/stage events.
+- **Stage modules:** `js/stages/**` must not call `setState` directly; dispatch agreed-upon events (e.g., `option-selected`, `addon-toggled`, `request-restart`, `request-stage-change`).
+- **Allowed exception:** `js/stageManager.js` may perform narrowly-scoped state mutations for navigation UX/gating consistency.
 
-## Security & Data Handling Boundaries
+## Workflow guardrails (summary)
 
-- All logic must run client-side.
-- No server code or external APIs are permitted.
-- Use only hard-coded placeholder data and assets.
-
-## Response Style
-
-- Provide concise diffs for changes.
-- Make minimal, targeted changes.
-- **Test:** Stage, Commit, and Sync to GitHub. User to provide feedback on live deployment.
-
+- **No server code.**
+- **No external APIs for business data/services** unless explicitly approved; use local repo data/assets by default (`data/*.json`, `components/*.html`, `assets/**`).
+- **No new dependencies** unless explicitly approved.
+- **Edit version rule:** After app edits, increment the `Edit ver:` line immediately after it by 1.
+- **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
+- **UI styling:** For JS-generated UI, prefer class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
 
 ## Provenance
 
-- Parsed from:
-    - `.clinerules/README.md`
-    - `.clinerules/testing-workflow.md`
-    - `.clinerules/workflow/woodlab-configurator-workflow.txt`
-    - `.clinerules/meta/rule-authoring.txt`
-    - `.clinerules/meta/rule-evolution.txt`
-- Date Parsed: 2025-09-02
+- Source: `AGENTS.md`
+- Related: `.clinerules/**`
