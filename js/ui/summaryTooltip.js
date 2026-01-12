@@ -13,9 +13,9 @@ function createTooltip() {
   t.className = 'summary-tooltip hidden';
   t.innerHTML = `
     <div class="tooltip-inner">
-      <div class="tooltip-header text-sm font-semibold">Selections affecting your price:</div>
-      <div id="summary-tooltip-content" class="tooltip-content text-sm text-gray-700" aria-live="polite"></div>
-      <div class="tooltip-footer flex justify-between items-center text-sm font-medium mt-2"><span>Total:</span><span id="summary-tooltip-total"></span></div>
+      <div class="tooltip-header">Selections affecting your price:</div>
+      <div id="summary-tooltip-content" class="tooltip-content" aria-live="polite" aria-atomic="true"></div>
+      <div class="tooltip-footer"><span>Total:</span><span id="summary-tooltip-total" class="summary-tooltip-total"></span></div>
     </div>
   `;
   document.body.appendChild(t);
@@ -36,6 +36,13 @@ function formatSigned(n) {
   return `(${sign} ${formatCurrencyShort(Math.abs(v))})`;
 }
 
+function formatTypeLabel(type) {
+  if (!type) return 'Item';
+  return String(type)
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 async function renderTooltip() {
   const tip = createTooltip();
   const content = document.getElementById('summary-tooltip-content');
@@ -52,7 +59,7 @@ async function renderTooltip() {
     priceData = { base: (s.pricing && s.pricing.base) || 0, extras: (s.pricing && s.pricing.extras) || 0, total: (s.pricing && s.pricing.total) || 0, breakdown: [] };
   }
 
-  const lines = [];
+  const rows = [];
   if (priceData.breakdown && priceData.breakdown.length) {
     priceData.breakdown.forEach(item => {
       const label = item.label || item.id || item.type || 'item';
@@ -60,23 +67,33 @@ async function renderTooltip() {
       const hasPriceLabel = typeof item.priceLabel === 'string' && item.priceLabel.trim();
       if (!hasPriceLabel && price === 0) return;
       const priceText = hasPriceLabel ? item.priceLabel : formatSigned(price);
-      // Show the base/design price as an absolute value, other items as signed additions
+      // Show the base/design price as an absolute value, other items as signed additions.
       if (item.isBase || item.type === 'design') {
         const baseLabel = label || 'Base design';
         const baseText = hasPriceLabel ? item.priceLabel : formatCurrencyShort(price);
-        lines.push(`<div class="flex justify-between items-center"><span><strong>Base design:</strong> ${baseLabel}</span><span class="text-right ml-4">${baseText}</span></div>`);
+        rows.push(`
+          <div class="summary-tooltip-row is-base">
+            <span class="summary-tooltip-label"><span class="summary-tooltip-type">Base design:</span> ${baseLabel}</span>
+            <span class="summary-tooltip-price">${baseText}</span>
+          </div>
+        `);
       } else {
-        lines.push(`<div class="flex justify-between items-center"><span><strong>${item.type}:</strong> ${label}</span><span class="text-right ml-4">${priceText}</span></div>`);
+        const typeLabel = formatTypeLabel(item.type);
+        rows.push(`
+          <div class="summary-tooltip-row">
+            <span class="summary-tooltip-label"><span class="summary-tooltip-type">${typeLabel}:</span> ${label}</span>
+            <span class="summary-tooltip-price">${priceText}</span>
+          </div>
+        `);
       }
     });
-    if (!lines.length) {
-      lines.push('<div class="text-gray-600">No options selected</div>');
-    }
-  } else {
-    lines.push('<div class="text-gray-600">No options selected</div>');
   }
 
-  content.innerHTML = lines.join('');
+  if (!rows.length) {
+    content.innerHTML = '<div class="summary-tooltip-empty">No options selected</div>';
+  } else {
+    content.innerHTML = `<div class="summary-tooltip-lines">${rows.join('')}</div>`;
+  }
   total.textContent = formatCurrency(priceData.total || 0);
 }
 
