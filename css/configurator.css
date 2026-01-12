@@ -20,7 +20,7 @@ html {
 
 /* Base layout for grid */
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Assistant', system-ui, sans-serif;
   display: grid; /* Ensure body is a grid container */
   height: 100vh; /* Force body to exactly match viewport height so grid sizing (1fr) works predictably */
   overflow: hidden; /* Hide page-level overflow; internal panels will scroll instead */
@@ -2006,7 +2006,7 @@ body.show-model-tiles #stage-bar {
 
 /* Global typography tweaks */
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-family: 'Assistant', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   color: #0f1720;
   line-height: 1.45;
   font-size: 15px;
