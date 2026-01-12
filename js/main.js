@@ -792,8 +792,23 @@ if (designsSection) {
     loadingScreen.setAttribute('aria-hidden', 'true');
   }
 
+  // Set up beforeunload warning for unsaved customizations
+  window.addEventListener('beforeunload', (event) => {
+    const { selections } = state;
+    // Check if user has made any customizations beyond the initial empty state
+    const hasCustomizations = selections.model || selections.design || 
+                              Object.keys(selections.options || {}).length > 0 ||
+                              selections.dimensionsDetail;
+    if (hasCustomizations) {
+      // Set returnValue to trigger browser warning dialog
+      event.returnValue = '';
+      event.preventDefault();
+      return '';
+    }
+  });
+
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-12 12:19');
-  console.log('Edit ver: 420');
+  console.log('Edit ver: 421');
 });
