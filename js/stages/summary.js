@@ -728,6 +728,20 @@ function initShippingControls() {
     return addons.includes('addon-glass-top');
   };
 
+  const requestGlassTopRemoval = () => {
+    const checkbox = document.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-glass-top"]');
+    if (checkbox && !checkbox.disabled) {
+      if (checkbox.checked) {
+        checkbox.checked = false;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
+    document.dispatchEvent(new CustomEvent('addon-toggled', {
+      detail: { id: 'addon-glass-top', price: 0, checked: false }
+    }));
+  };
+
   const showWarning = () => {
     if (!warning) return;
     warning.hidden = false;
@@ -751,8 +765,11 @@ function initShippingControls() {
   const updateState = () => {
     const glassLocked = hasGlassTopAddon();
     if (warning) {
-      if (glassLocked) showWarning();
-      else if (!warning.classList.contains('is-closing')) hideWarningImmediate();
+      if (glassLocked) {
+        if (!warning.classList.contains('is-closing')) showWarning();
+      } else if (!warning.classList.contains('is-closing')) {
+        hideWarningImmediate();
+      }
     }
     if (international) {
       if (glassLocked && international.checked) international.checked = false;
@@ -856,9 +873,7 @@ function initShippingControls() {
   if (warningAction) {
     warningAction.addEventListener('click', () => {
       startWarningClose();
-      document.dispatchEvent(new CustomEvent('addon-toggled', {
-        detail: { id: 'addon-glass-top', price: 0, checked: false }
-      }));
+      requestGlassTopRemoval();
     });
   }
   if (warning) {
