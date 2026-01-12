@@ -4,8 +4,11 @@ import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
-const hasHtml2Canvas = typeof html2canvas !== 'undefined';
-const hasJsPDF = typeof window !== 'undefined' && !!((window.jspdf && window.jspdf.jsPDF) || window.jsPDF);
+const getJsPdfFactory = () => {
+  if (typeof window === 'undefined') return null;
+  return (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+};
+const isHtml2CanvasAvailable = () => typeof window !== 'undefined' && typeof window.html2canvas !== 'undefined';
 
 let summaryDataCache = null;
 let zip3RegionMap = null;
@@ -656,9 +659,9 @@ async function captureSnapshot() {
   const container = document.getElementById('snapshot-container');
   const imgEl = document.getElementById('snapshot-img');
   const placeholder = document.getElementById('snapshot-placeholder');
-  if (!container || !imgEl || !hasHtml2Canvas) return null;
+  if (!container || !imgEl || !isHtml2CanvasAvailable()) return null;
   try {
-    const canvas = await html2canvas(container, { backgroundColor: null, scale: 1 });
+    const canvas = await window.html2canvas(container, { backgroundColor: null, scale: 1 });
     const dataUrl = canvas.toDataURL('image/png');
     imgEl.src = dataUrl;
     imgEl.style.display = '';
@@ -671,8 +674,9 @@ async function captureSnapshot() {
 }
 
 async function exportPdf() {
-  if (!hasJsPDF || !hasHtml2Canvas) {
-    console.warn('PDF export unavailable: missing libraries');
+  const jsPdfFactory = getJsPdfFactory();
+  if (!jsPdfFactory || !isHtml2CanvasAvailable()) {
+    console.warn('PDF export unavailable: missing jsPDF or html2canvas');
     return;
   }
 
@@ -709,12 +713,6 @@ async function exportPdf() {
     ? 'Quoted separately'
     : (shippingValue ? formatCurrency(shippingValue) : (shippingDetails.estimateText || 'Pending'));
   const finalTotal = subtotal + shippingValue;
-
-  const jsPdfFactory = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-  if (!jsPdfFactory) {
-    console.warn('jsPDF not available for export');
-    return;
-  }
 
   const doc = new jsPdfFactory({ unit: 'pt', format: 'a4' });
   const margin = 42;
