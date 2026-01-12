@@ -728,11 +728,31 @@ function initShippingControls() {
     return addons.includes('addon-glass-top');
   };
 
+  const showWarning = () => {
+    if (!warning) return;
+    warning.hidden = false;
+    warning.classList.remove('is-closing');
+    warning.setAttribute('aria-hidden', 'false');
+  };
+
+  const hideWarningImmediate = () => {
+    if (!warning) return;
+    warning.hidden = true;
+    warning.classList.remove('is-closing');
+    warning.setAttribute('aria-hidden', 'true');
+  };
+
+  const startWarningClose = () => {
+    if (!warning || warning.hidden) return;
+    warning.classList.add('is-closing');
+    warning.setAttribute('aria-hidden', 'true');
+  };
+
   const updateState = () => {
     const glassLocked = hasGlassTopAddon();
     if (warning) {
-      warning.hidden = !glassLocked;
-      warning.setAttribute('aria-hidden', glassLocked ? 'false' : 'true');
+      if (glassLocked) showWarning();
+      else if (!warning.classList.contains('is-closing')) hideWarningImmediate();
     }
     if (international) {
       if (glassLocked && international.checked) international.checked = false;
@@ -835,9 +855,21 @@ function initShippingControls() {
   document.addEventListener('statechange', refreshEstimate);
   if (warningAction) {
     warningAction.addEventListener('click', () => {
+      startWarningClose();
       document.dispatchEvent(new CustomEvent('addon-toggled', {
         detail: { id: 'addon-glass-top', price: 0, checked: false }
       }));
+    });
+  }
+  if (warning) {
+    warning.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'max-height') return;
+      if (!warning.classList.contains('is-closing')) return;
+      if (hasGlassTopAddon()) {
+        showWarning();
+        return;
+      }
+      hideWarningImmediate();
     });
   }
   handleZipInput();

@@ -486,6 +486,19 @@ header .flex.justify-center.items-center {
   border: 1px solid #f59e0b;
   background: #fffbeb;
   color: #92400e;
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition: max-height 220ms ease, padding 220ms ease, border-width 220ms ease, opacity 180ms ease;
+}
+
+.summary-shipping-warning.is-closing {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .summary-shipping-warning-text {
