@@ -1,4 +1,3 @@
-use assistant font
 make the price summary tooltip a little prettier
 
 add warning for shipping glass
@@ -10,7 +9,6 @@ Add popular designs to as configured presets, so the user can navigate all custo
 
 
 create a csv-friendly export option
-add the browser warning to save progress
 
 remove all instances in the codebase where an !important or other similar override is being used and replace them with their proper intended designs.
 

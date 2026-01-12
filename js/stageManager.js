@@ -602,10 +602,9 @@ export function initStageManager() {
         markCompleted(4, false); // Dimensions
         markCompleted(5, false); // Legs
         
-        // Update button states to reflect the reset completion status
-        setStage(managerState.current, { skipConfirm: true });
-        
-        // Don't call setStage here; let user click Next or the Designs button to navigate
+        if (managerState.current === 0 && hasModel) {
+          setStage(1, { skipConfirm: true });
+        }
         return;
       }
       
@@ -614,10 +613,9 @@ export function initStageManager() {
         const hasDesign = !!(appState.selections && appState.selections.design);
         markCompleted(1, !!hasDesign);
         
-        // Update button states to reflect the new completion status
-        setStage(managerState.current, { skipConfirm: true });
-        
-        // Don't call setStage here; let user click Next or the Materials button to navigate
+        if (managerState.current === 1 && hasDesign) {
+          setStage(2, { skipConfirm: true });
+        }
         return;
       }
       
