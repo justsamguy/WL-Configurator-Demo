@@ -23,6 +23,13 @@
       </span>
     </button>
     <div id="summary-shipping-body" class="summary-shipping-body">
+      <div id="summary-shipping-warning" class="summary-shipping-warning" aria-live="polite" aria-atomic="true" hidden>
+        <div class="summary-shipping-warning-text">
+          <span class="summary-shipping-warning-title">Glass sheets cannot be shipped.</span>
+          <span class="summary-shipping-warning-subtitle">Remove the glass top add-on to continue with shipping.</span>
+        </div>
+        <button id="summary-shipping-warning-remove" class="summary-shipping-warning-action" type="button">Remove from Order</button>
+      </div>
       <div class="summary-shipping-options">
         <label class="summary-shipping-choice">
           <input id="shipping-quote-separately" type="checkbox" class="summary-shipping-choice-input">

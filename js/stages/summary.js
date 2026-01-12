@@ -700,6 +700,8 @@ function initShippingControls() {
   const whiteGlove = document.getElementById('shipping-white-glove');
   const notes = document.getElementById('summary-shipping-notes');
   const notesInput = document.getElementById('shipping-notes');
+  const warning = document.getElementById('summary-shipping-warning');
+  const warningAction = document.getElementById('summary-shipping-warning-remove');
   const defaultEstimate = estimate ? estimate.textContent.trim() : '';
 
   const setCollapsed = (collapsed) => {
@@ -719,17 +721,35 @@ function initShippingControls() {
     }
   };
 
+  const hasGlassTopAddon = () => {
+    const addons = state.selections && state.selections.options && Array.isArray(state.selections.options.addon)
+      ? state.selections.options.addon
+      : [];
+    return addons.includes('addon-glass-top');
+  };
+
   const updateState = () => {
+    const glassLocked = hasGlassTopAddon();
+    if (warning) {
+      warning.hidden = !glassLocked;
+      warning.setAttribute('aria-hidden', glassLocked ? 'false' : 'true');
+    }
+    if (international) {
+      if (glassLocked && international.checked) international.checked = false;
+      international.disabled = glassLocked;
+      international.setAttribute('aria-disabled', glassLocked ? 'true' : 'false');
+    }
     const localDelivery = !!(local && local.checked);
     const disabled = !!(quote && quote.checked) || !!(international && international.checked) || localDelivery;
+    const effectiveDisabled = disabled || glassLocked;
     if (fields) {
-      fields.classList.toggle('is-disabled', disabled);
-      fields.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      fields.classList.toggle('is-disabled', effectiveDisabled);
+      fields.setAttribute('aria-disabled', effectiveDisabled ? 'true' : 'false');
     }
-    if (zip) zip.disabled = disabled;
-    if (region) region.disabled = disabled;
+    if (zip) zip.disabled = effectiveDisabled;
+    if (region) region.disabled = effectiveDisabled;
     const normalizedZip = zip ? normalizeZipInput(zip.value) : '';
-    const showExtras = !disabled && normalizedZip.length === 5;
+    const showExtras = !effectiveDisabled && normalizedZip.length === 5;
     if (toggles) {
       toggles.classList.toggle('is-visible', showExtras);
       toggles.setAttribute('aria-hidden', showExtras ? 'false' : 'true');
@@ -737,7 +757,7 @@ function initShippingControls() {
     [commercial, liftgate, whiteGlove].forEach((input) => {
       if (input) input.disabled = !showExtras;
     });
-    const showNotes = localDelivery || (!!(whiteGlove && whiteGlove.checked) && showExtras);
+    const showNotes = !glassLocked && (localDelivery || (!!(whiteGlove && whiteGlove.checked) && showExtras));
     if (notes) {
       notes.classList.toggle('is-visible', showNotes);
       notes.setAttribute('aria-hidden', showNotes ? 'false' : 'true');
@@ -748,14 +768,14 @@ function initShippingControls() {
         ? state.selections.dimensionsDetail.length
         : 0;
       const shippingCost = tableLength > 144 ? 750 : 500;
-      setEstimateText(formatCurrency(shippingCost), disabled);
+      setEstimateText(formatCurrency(shippingCost), effectiveDisabled);
     } else {
       const accessorials = {
         residential: !!(commercial && commercial.checked),
         liftgate: !!(liftgate && liftgate.checked),
         whiteGlove: !!(whiteGlove && whiteGlove.checked)
       };
-      const shippingEstimate = disabled ? null : calculateShippingEstimate({
+      const shippingEstimate = effectiveDisabled ? null : calculateShippingEstimate({
         zip: normalizedZip,
         selections: state.selections,
         accessorials
@@ -763,7 +783,7 @@ function initShippingControls() {
       if (typeof shippingEstimate === 'number') {
         setEstimateText(formatCurrency(shippingEstimate), false);
       } else {
-        setEstimateText(defaultEstimate || '--', disabled);
+        setEstimateText(defaultEstimate || '--', effectiveDisabled);
       }
     }
   };
@@ -813,6 +833,13 @@ function initShippingControls() {
   if (liftgate) liftgate.addEventListener('change', refreshEstimate);
   if (whiteGlove) whiteGlove.addEventListener('change', refreshEstimate);
   document.addEventListener('statechange', refreshEstimate);
+  if (warningAction) {
+    warningAction.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('addon-toggled', {
+        detail: { id: 'addon-glass-top', price: 0, checked: false }
+      }));
+    });
+  }
   handleZipInput();
   updateState();
   setCollapsed(section.classList.contains('is-collapsed'));

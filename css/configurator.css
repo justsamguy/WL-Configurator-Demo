@@ -475,6 +475,46 @@ header .flex.justify-center.items-center {
   padding-top: 0.25rem;
 }
 
+.summary-shipping-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.summary-shipping-warning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-shipping-warning-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.summary-shipping-warning-subtitle {
+  font-size: 0.75rem;
+  color: #78350f;
+}
+
+.summary-shipping-warning-action {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .summary-shipping-options {
   display: flex;
   flex-wrap: wrap;
@@ -524,6 +564,20 @@ header .flex.justify-center.items-center {
   background: #2563eb;
   border-color: #2563eb;
   color: #fff;
+}
+
+.summary-shipping-choice-input:disabled + .summary-shipping-choice-label {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.summary-shipping-choice-input:disabled + .summary-shipping-choice-label:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
 }
 
 .summary-shipping-choice-input:focus-visible + .summary-shipping-choice-label {
