@@ -275,6 +275,8 @@ document.addEventListener('option-selected', async (ev) => {
   
   // Handle model selection (category: 'model')
   if (category === 'model') {
+    const stageManager = window.stageManager || null;
+    const originStage = stageManager && stageManager.getCurrentStage ? stageManager.getCurrentStage() : null;
     // When model changes, clear ALL selections (design and all options)
     setState({ 
       selections: { 
@@ -332,11 +334,10 @@ document.addEventListener('option-selected', async (ev) => {
       console.warn('Failed to re-render designs after model change:', e);
     }
 
-    // If user selected a model from a stage other than 0 (Models), navigate back to Models stage
+    // If user selected a model from a stage beyond Designs, navigate back to Models stage
     try {
-      const stageManager = window.stageManager;
-      if (stageManager && stageManager.getCurrentStage && stageManager.getCurrentStage() > 0) {
-        console.log('[Main] Model selected from stage', stageManager.getCurrentStage(), '- navigating to stage 0');
+      if (stageManager && typeof stageManager.setStage === 'function' && originStage !== null && originStage > 1) {
+        console.log('[Main] Model selected from stage', originStage, '- navigating to stage 0');
         await stageManager.setStage(0, { skipConfirm: true });
       }
     } catch (e) {
@@ -810,5 +811,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-12 12:19');
-  console.log('Edit ver: 423');
+  console.log('Edit ver: 424');
 });
