@@ -5,7 +5,7 @@ import { showConfirmDialog } from '../ui/confirmDialog.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
 const hasHtml2Canvas = typeof html2canvas !== 'undefined';
-const hasJsPDF = typeof window.jsPDF !== 'undefined';
+const hasJsPDF = typeof window !== 'undefined' && !!((window.jspdf && window.jspdf.jsPDF) || window.jsPDF);
 
 let summaryDataCache = null;
 let zip3RegionMap = null;
@@ -326,6 +326,46 @@ function getShippingCost() {
   return numeric ? parseInt(numeric, 10) : 0;
 }
 
+function getShippingDetails() {
+  const quote = document.getElementById('shipping-quote-separately');
+  const international = document.getElementById('shipping-international');
+  const local = document.getElementById('shipping-local-delivery');
+  const zip = document.getElementById('shipping-zip');
+  const region = document.getElementById('shipping-region');
+  const estimate = document.getElementById('shipping-estimate') || document.getElementById('shipping-estimate-header');
+  const commercial = document.getElementById('shipping-commercial');
+  const liftgate = document.getElementById('shipping-liftgate');
+  const whiteGlove = document.getElementById('shipping-white-glove');
+  const notesInput = document.getElementById('shipping-notes');
+
+  let mode = 'Standard shipping';
+  if (quote && quote.checked) mode = 'Quote separately';
+  else if (international && international.checked) mode = 'International shipping';
+  else if (local && local.checked) mode = 'Local delivery';
+
+  const zipValue = zip ? normalizeZipInput(zip.value) : '';
+  const regionValue = region ? region.value.trim() : '';
+  const estimateText = estimate ? estimate.textContent.trim() || '--' : '--';
+  const estimateValue = getShippingCost();
+
+  const flags = [];
+  if (commercial && commercial.checked) flags.push('Residential delivery');
+  if (liftgate && liftgate.checked) flags.push('Liftgate required');
+  if (whiteGlove && whiteGlove.checked) flags.push('White glove service');
+
+  const notes = notesInput && !notesInput.disabled ? notesInput.value.trim() : '';
+
+  return {
+    mode,
+    zip: zipValue,
+    region: regionValue,
+    estimateText,
+    estimateValue,
+    flags,
+    notes
+  };
+}
+
 function formatDimensionsDetail(detail) {
   if (!detail || typeof detail !== 'object') return '';
   const sizeParts = [];
@@ -631,40 +671,251 @@ async function captureSnapshot() {
 }
 
 async function exportPdf() {
-  // Ensure snapshot is captured before exporting
   if (!hasJsPDF || !hasHtml2Canvas) {
-    console.warn('jsPDF or html2canvas not available');
+    console.warn('PDF export unavailable: missing libraries');
     return;
   }
-  
-  // Check if snapshot needs to be captured first
-  const imgEl = document.getElementById('snapshot-img');
-  const placeholder = document.getElementById('snapshot-placeholder');
-  if (!imgEl || imgEl.style.display === 'none' || !imgEl.src) {
-    // Auto-capture if not already done
-    await captureSnapshot();
-  }
-  
-  const dataUrl = await captureSnapshot();
-  if (!dataUrl) return;
+
+  const snapshotUrl = await captureSnapshot();
+
+  let summaryData = null;
   try {
-    const { jsPDF } = window.jspdf || window.jspdf || {};
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    // Add image (fit to page width)
-    const imgProps = doc.getImageProperties(dataUrl);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const ratio = imgProps.width / imgProps.height;
-    const imgWidth = pageWidth - 80;
-    const imgHeight = imgWidth / ratio;
-    doc.addImage(dataUrl, 'PNG', 40, 40, imgWidth, imgHeight);
-    // Add brief summary text below
-    const total = state.pricing && state.pricing.total ? formatCurrency(state.pricing.total) : '$0';
-    doc.setFontSize(12);
-    doc.text(`Total: ${total}`, 40, 60 + imgHeight);
-    doc.save('woodlab-summary.pdf');
+    summaryData = await loadSummaryData();
   } catch (e) {
-    console.warn('Failed to export PDF', e);
+    console.warn('Summary data load failed', e);
   }
+
+  const selections = state.selections || {};
+  const groups = buildOptionGroups(selections, summaryData);
+
+  let priceData = null;
+  try {
+    priceData = await computePrice(state);
+  } catch (e) {
+    console.warn('Summary pricing failed', e);
+  }
+
+  const priceMap = buildBreakdownPriceMap(priceData);
+  applyBreakdownPrices(groups, priceMap);
+  const priceBreakdown = buildPriceBreakdown(priceData);
+
+  const subtotal = priceData && typeof priceData.total === 'number'
+    ? priceData.total
+    : (state.pricing && typeof state.pricing.total === 'number' ? state.pricing.total : 0);
+
+  const shippingDetails = getShippingDetails();
+  const shippingValue = typeof shippingDetails.estimateValue === 'number' ? shippingDetails.estimateValue : 0;
+  const shippingLabel = shippingDetails.mode === 'Quote separately'
+    ? 'Quoted separately'
+    : (shippingValue ? formatCurrency(shippingValue) : (shippingDetails.estimateText || 'Pending'));
+  const finalTotal = subtotal + shippingValue;
+
+  const jsPdfFactory = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if (!jsPdfFactory) {
+    console.warn('jsPDF not available for export');
+    return;
+  }
+
+  const doc = new jsPdfFactory({ unit: 'pt', format: 'a4' });
+  const margin = 42;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const accent = [37, 99, 235];
+  const textMain = [17, 24, 39];
+  const textMuted = [107, 114, 128];
+  let y = margin;
+
+  const ensureSpace = (needed = 24) => {
+    if (y + needed > pageHeight - margin) {
+      doc.addPage();
+      y = margin;
+    }
+  };
+
+  const addSectionTitle = (title) => {
+    ensureSpace(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...textMain);
+    doc.text(title, margin, y);
+    doc.setDrawColor(...accent);
+    doc.setLineWidth(0.75);
+    doc.line(margin, y + 4, margin + 52, y + 4);
+    y += 16;
+  };
+
+  const addKeyValue = (label, value, rightValue) => {
+    if (!value && !rightValue) return;
+    const bodyWidth = pageWidth - margin * 2;
+    const textWidth = rightValue ? bodyWidth - 96 : bodyWidth - 32;
+    const lines = value ? doc.splitTextToSize(value, textWidth) : [];
+    const lineHeight = 12;
+    const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
+    ensureSpace(blockHeight + 8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(label, margin + 2, y);
+    if (lines.length) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...textMain);
+      doc.text(lines, rightValue ? margin + 72 : margin + 2, y);
+    }
+    if (rightValue) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...textMain);
+      doc.text(rightValue, pageWidth - margin, y, { align: 'right' });
+    }
+    y += blockHeight + 4;
+  };
+
+  // Header card
+  const headerHeight = 64;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.75);
+  doc.roundedRect(margin, y, pageWidth - margin * 2, headerHeight, 8, 8, 'FD');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...textMain);
+  doc.text('WoodLab Configurator', margin + 14, y + 24);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...textMuted);
+  const generatedAt = new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  doc.text(`Generated ${generatedAt}`, margin + 14, y + 38);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...accent);
+  doc.text(formatCurrency(finalTotal), pageWidth - margin - 14, y + 26, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...textMuted);
+  doc.text('Estimated total with shipping shown', pageWidth - margin - 14, y + 40, { align: 'right' });
+  y += headerHeight + 16;
+
+  // Snapshot
+  addSectionTitle('Snapshot');
+  if (snapshotUrl) {
+    const imgProps = doc.getImageProperties(snapshotUrl);
+    const maxImgWidth = pageWidth - margin * 2;
+    const maxImgHeight = 240;
+    const ratio = imgProps.width / imgProps.height || 1;
+    let imgWidth = maxImgWidth;
+    let imgHeight = imgWidth / ratio;
+    if (imgHeight > maxImgHeight) {
+      imgHeight = maxImgHeight;
+      imgWidth = imgHeight * ratio;
+    }
+    ensureSpace(imgHeight + 16);
+    const imgX = margin + ((maxImgWidth - imgWidth) / 2);
+    doc.setDrawColor(229, 231, 235);
+    doc.roundedRect(margin, y, maxImgWidth, imgHeight + 12, 6, 6, 'S');
+    doc.addImage(snapshotUrl, 'PNG', imgX, y + 6, imgWidth, imgHeight);
+    y += imgHeight + 24;
+  } else {
+    addKeyValue('Preview', 'Snapshot not captured yet');
+  }
+
+  // Selections
+  addSectionTitle('Selections');
+  if (!groups.length) {
+    addKeyValue('Selections', 'No options selected');
+  } else {
+    groups.forEach((group) => {
+      ensureSpace(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...textMain);
+      doc.text(group.title, margin + 2, y);
+      y += 12;
+      group.items.forEach((item) => {
+        const valueText = item && (item.value || item.id);
+        if (!valueText) return;
+        const labelText = item.label && valueText ? `${item.label}: ${valueText}` : valueText;
+        const lines = doc.splitTextToSize(labelText, pageWidth - margin * 2 - 96);
+        const blockHeight = Math.max(12, lines.length * 12);
+        ensureSpace(blockHeight + 6);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(...textMain);
+        doc.text(lines, margin + 10, y);
+        if (item.price) {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...textMain);
+          doc.text(String(item.price), pageWidth - margin, y, { align: 'right' });
+        }
+        y += blockHeight + 4;
+      });
+      y += 4;
+    });
+  }
+
+  // Pricing
+  addSectionTitle('Pricing');
+  addKeyValue('Configured subtotal', formatCurrency(subtotal));
+  addKeyValue('Shipping', shippingLabel);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...accent);
+  ensureSpace(14);
+  doc.text('Estimated total', margin + 2, y);
+  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
+  y += 16;
+  if (priceBreakdown.length) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text('Line items', margin + 2, y);
+    y += 10;
+    priceBreakdown.forEach((entry) => {
+      const lines = doc.splitTextToSize(entry.label, pageWidth - margin * 2 - 88);
+      const blockHeight = Math.max(12, lines.length * 12);
+      ensureSpace(blockHeight + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...textMain);
+      doc.text(lines, margin + 4, y);
+      if (entry.price) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(entry.price, pageWidth - margin, y, { align: 'right' });
+      }
+      y += blockHeight + 4;
+    });
+  }
+
+  // Shipping details
+  addSectionTitle('Shipping Details');
+  addKeyValue('Mode', shippingDetails.mode || 'Not selected');
+  const destinationLabel = shippingDetails.zip || shippingDetails.region
+    ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
+    : 'Not provided';
+  addKeyValue('Destination', destinationLabel);
+  addKeyValue('Estimate', shippingLabel);
+  if (shippingDetails.flags && shippingDetails.flags.length) {
+    addKeyValue('Services', shippingDetails.flags.join(', '));
+  }
+  if (shippingDetails.notes) {
+    addKeyValue('Delivery notes', shippingDetails.notes);
+  }
+
+  // Notes / disclaimer
+  addSectionTitle('Notes');
+  const notes = [
+    'Taxes are quoted separately.',
+    'This PDF is a visual summary and is not a formal quotation or contract.'
+  ];
+  const noteLines = doc.splitTextToSize(notes.join(' '), pageWidth - margin * 2);
+  ensureSpace(noteLines.length * 12 + 4);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...textMuted);
+  doc.text(noteLines, margin, y);
+  y += noteLines.length * 12 + 2;
+
+  doc.save('woodlab-summary.pdf');
 }
 
 async function restartConfig() {
