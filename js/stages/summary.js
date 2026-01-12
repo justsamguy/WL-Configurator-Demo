@@ -315,7 +315,8 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   if (accessorials && accessorials.liftgate) total += 200;
   if (accessorials && accessorials.whiteGlove) total += 750;
 
-  return Number.isFinite(total) ? Math.round(total) : null;
+  const roundedUp = Math.ceil(total / 50) * 50;
+  return Number.isFinite(total) ? roundedUp + 100 : null;
 }
 
 function getShippingCost() {
