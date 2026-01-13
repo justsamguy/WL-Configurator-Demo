@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Finish');
+
 // Finish stage specific logic: constraints and defaults
 let lastKnownModel = null; // Track the model to detect changes
 
@@ -38,7 +42,7 @@ export function applyFinishDefaults(appState) {
       try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
     }
   } catch (e) {
-    console.warn('applyFinishDefaults failed', e);
+    log.warn('applyFinishDefaults failed', e);
   }
 }
 

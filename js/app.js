@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('App');
+
 /**
  * Utility function to load HTML components dynamically.
  * Fetches HTML content from a specified path and injects it into a target DOM element.
@@ -9,7 +13,7 @@
 export async function loadComponent(containerId, componentPath) {
   const container = document.getElementById(containerId);
   if (!container) {
-    console.error(`Error: Container with ID '${containerId}' not found.`);
+    log.error('Container not found', { containerId });
     return;
   }
 
@@ -24,10 +28,10 @@ export async function loadComponent(containerId, componentPath) {
     try {
       await processIncludes(container);
     } catch (e) {
-      console.warn('processIncludes failed for', containerId, e);
+      log.warn('processIncludes failed', { containerId, error: e });
     }
   } catch (error) {
-    console.error(`Failed to load component '${componentPath}':`, error);
+    log.error('Failed to load component', { componentPath, error });
   }
 }
 
@@ -51,7 +55,7 @@ export async function processIncludes(root = document) {
       // process nested includes inside the newly injected content
       await processIncludes(node);
     } catch (err) {
-      console.error(`Error including '${path}':`, err);
+      log.error('Error including component', { path, error: err });
     }
   }
 }

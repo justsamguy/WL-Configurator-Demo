@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('Pricing');
+
 function shouldLogPricing() {
   return typeof window !== 'undefined' && window.__wl_price_debug;
 }
@@ -107,7 +111,7 @@ function resolveDimensionPricing(state, dimensionsData) {
 
   const total = basePrice + heightPrice;
   if (shouldLogPricing()) {
-    console.log('[Pricing] dimensions', { modelId, presetId, basePrice, heightPrice, total, detail });
+    log.debug('dimensions', { modelId, presetId, basePrice, heightPrice, total, detail });
   }
 
   return { price: total, label: formatDimensionLabel(detail, matchedPreset) };
@@ -325,12 +329,12 @@ export async function computePrice(state) {
       });
     }
   } catch (e) {
-    console.warn('computePrice: failed to compute from DOM/state', e);
+    log.warn('computePrice: failed to compute from DOM/state', e);
   }
 
   const total = base + extras;
   if (shouldLogPricing()) {
-    console.log('[Pricing] total', { base, extras, total, breakdown });
+    log.debug('total', { base, extras, total, breakdown });
   }
   return { base, extras, total, breakdown };
 }

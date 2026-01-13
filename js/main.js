@@ -7,6 +7,10 @@ import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('Main');
+const addonsLog = createLogger('Addons');
 
 /**
  * Filter designs by model compatibility
@@ -84,7 +88,7 @@ import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
-  console.log('[Main] State changed:', ev.detail.state.selections);
+  log.debug('State changed', ev.detail.state.selections);
   // main orchestrator can react to state changes here if needed.
   // ev.detail.state contains the latest state object.
   // If the summary page is active, refresh its contents
@@ -332,7 +336,7 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   try {
     recomputeTubeSizeConstraints();
   } catch (e) {
-    console.warn('Failed to recompute constraints:', e);
+    log.warn('Failed to recompute constraints', e);
   }
   updateLegPricingUI(state, allLegs);
 }
@@ -340,11 +344,11 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
 document.addEventListener('option-selected', async (ev) => {
   const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
-  console.log('[Main] option-selected event:', { id, category, price }, 'current state:', state.selections);
+  log.debug('option-selected event', { id, category, price, selections: state.selections });
   
   // Ignore events with null or undefined category (malformed events)
   if (!category) {
-    console.warn('[Main] Ignoring malformed option-selected event with null/undefined category');
+    log.warn('Ignoring malformed option-selected event with null/undefined category');
     return;
   }
   
@@ -382,7 +386,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateLegsOptionsForModel(id, allLegs, allTubeSizes);
       }
     } catch (e) {
-      console.warn('Failed to update legs options:', e);
+      log.warn('Failed to update legs options', e);
     }
 
     // Re-render designs filtered by the newly selected model
@@ -406,17 +410,17 @@ document.addEventListener('option-selected', async (ev) => {
         }
       }
     } catch (e) {
-      console.warn('Failed to re-render designs after model change:', e);
+      log.warn('Failed to re-render designs after model change', e);
     }
 
     // If user selected a model from a stage beyond Designs, navigate back to Models stage
     try {
       if (stageManager && typeof stageManager.setStage === 'function' && originStage !== null && originStage > 1) {
-        console.log('[Main] Model selected from stage', originStage, '- navigating to stage 0');
+        log.debug('Model selected from stage, navigating to stage 0', { originStage });
         await stageManager.setStage(0, { skipConfirm: true });
       }
     } catch (e) {
-      console.warn('Failed to navigate back to Models stage:', e);
+      log.warn('Failed to navigate back to Models stage', e);
     }
   }
   // Handle design selection (category: 'design')
@@ -448,7 +452,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateLegsOptionsForModel(state.selections.model, allLegs, allTubeSizes, id);
       }
     } catch (e) {
-      console.warn('Failed to update legs options after design change:', e);
+      log.warn('Failed to update legs options after design change', e);
     }
 
     // Update addon compatibility based on the selected design
@@ -462,7 +466,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateWaterfallAddonAvailability(state);
       }
     } catch (e) {
-      console.warn('Failed to update addon compatibility after design change:', e);
+      log.warn('Failed to update addon compatibility after design change', e);
     }
 
     // Update materials based on the selected design
@@ -478,7 +482,7 @@ document.addEventListener('option-selected', async (ev) => {
         }
       }
     } catch (e) {
-      console.warn('Failed to update materials after design change:', e);
+      log.warn('Failed to update materials after design change', e);
     }
   }
   // Handle other category selections (material, finish, legs, color, etc.)
@@ -528,7 +532,7 @@ document.addEventListener('legs-none-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle legs-none-selected:', e);
+    log.warn('Failed to handle legs-none-selected', e);
   }
 });
 
@@ -542,7 +546,7 @@ document.addEventListener('tube-size-cleared-due-to-incompatibility', async (ev)
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle tube-size-cleared-due-to-incompatibility:', e);
+    log.warn('Failed to handle tube-size-cleared-due-to-incompatibility', e);
   }
 });
 
@@ -556,14 +560,14 @@ document.addEventListener('tube-size-deselected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle tube-size-deselected:', e);
+    log.warn('Failed to handle tube-size-deselected', e);
   }
 });
 
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
-  console.log('[Addons] addon-toggled event:', { id, price, checked });
+  addonsLog.debug('addon-toggled event', { id, price, checked });
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
@@ -590,7 +594,7 @@ document.addEventListener('addon-toggled', async (ev) => {
 // Handle addon selections (single-select per group). Expect detail: { group, id, price }
 document.addEventListener('addon-selected', async (ev) => {
   const { group, id, price } = ev.detail || { group: null, id: null, price: 0 };
-  console.log('[Addons] addon-selected event:', { group, id, price });
+  addonsLog.debug('addon-selected event', { group, id, price });
   if (!group) return;
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   // Remove any previous selection in this group
@@ -641,7 +645,7 @@ document.addEventListener('request-price-refresh', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
   } catch (e) {
-    console.warn('Failed to refresh price', e);
+    log.warn('Failed to refresh price', e);
   }
 });
 
@@ -718,7 +722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sb = document.getElementById('summary-btn');
     if (sb) initSummaryTooltip(sb);
   } catch (e) {
-    console.warn('Failed to initialize summary tooltip', e);
+    log.warn('Failed to initialize summary tooltip', e);
   }
 
   // Render model and materials option cards from data files (if placeholders exist)
@@ -834,7 +838,7 @@ if (designsSection) {
       updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
-    console.warn('Failed to render stage data from JSON files', e);
+    log.warn('Failed to render stage data from JSON files', e);
   }
 
   // Initial state update to render the first stage (use setState to dispatch standardized event)
@@ -846,11 +850,11 @@ if (designsSection) {
     stageManager.initStageManager();
   // expose for other modules (summary/restart) to programmatically change stage
   window.stageManager = stageManager;
-    console.log('Stage manager initialized from main.js');
+    log.info('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
   } catch (err) {
-    console.warn('Failed to initialize stage manager from main.js', err);
+    log.warn('Failed to initialize stage manager from main.js', err);
   }
 
   // If we loaded the Summary page markup, populate its panel now
@@ -866,7 +870,7 @@ if (designsSection) {
   } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
-  try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
+  try { initPlaceholderInteractions(); } catch (e) { log.warn('Failed to init placeholder interactions', e); }
 
   const loadingScreen = document.getElementById('app-loading');
   if (loadingScreen) {
@@ -892,5 +896,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-12 12:19');
-  console.log('Edit ver: 432');
+  console.log('Edit ver: 433');
 });

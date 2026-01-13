@@ -1,5 +1,8 @@
 // UI helpers for placeholder option cards: click handlers, price animation, and loading skeleton
-// No imports here to avoid circular module dependency with main.js
+// Minimize imports here to avoid circular module dependency with main.js
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Placeholders');
 
 // Update the price UI in the footer
 function updatePriceUI(total) {
@@ -128,7 +131,7 @@ function restoreVisualSelections() {
       el.setAttribute('aria-checked', isSelected ? 'true' : 'false');
     });
   }).catch((e) => {
-    console.warn('Failed to restore visual selections:', e);
+    log.warn('Failed to restore visual selections', e);
   });
 }
 

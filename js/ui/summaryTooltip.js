@@ -2,6 +2,9 @@
 // Shows a small tooltip/dialog listing current selections and price total.
 import { state } from '../state.js';
 import { computePrice } from '../pricing.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('SummaryTooltip');
 
 function createTooltip() {
   let t = document.getElementById('summary-tooltip');
@@ -55,7 +58,7 @@ async function renderTooltip() {
   try {
     priceData = await computePrice(s);
   } catch (e) {
-    console.warn('summaryTooltip: computePrice failed', e);
+    log.warn('computePrice failed', e);
     priceData = { base: (s.pricing && s.pricing.base) || 0, extras: (s.pricing && s.pricing.extras) || 0, total: (s.pricing && s.pricing.total) || 0, breakdown: [] };
   }
 

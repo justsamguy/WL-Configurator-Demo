@@ -2,6 +2,10 @@ import { state } from '../state.js';
 import { loadData } from '../dataLoader.js';
 import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Summary');
+const pdfLog = createLogger('PDF Export');
 
 // html2canvas and jsPDF are available globally via CDN in index.html
 const getJsPDFactory = () => {
@@ -33,7 +37,7 @@ async function loadZip3RegionMap() {
         zip3RegionMap = map;
         return map;
       } catch (e) {
-        console.warn('Summary zip3 lookup failed', e);
+        log.warn('Summary zip3 lookup failed', e);
         zip3RegionMap = new Map();
         return zip3RegionMap;
       }
@@ -631,7 +635,7 @@ export async function populateSummaryPanel() {
   try {
     summaryData = await loadSummaryData();
   } catch (e) {
-    console.warn('Summary data load failed', e);
+    log.warn('Summary data load failed', e);
   }
 
   const groups = buildOptionGroups(selections, summaryData);
@@ -640,7 +644,7 @@ export async function populateSummaryPanel() {
   try {
     priceData = await computePrice(s);
   } catch (e) {
-    console.warn('Summary pricing failed', e);
+    log.warn('Summary pricing failed', e);
   }
 
   const priceMap = buildBreakdownPriceMap(priceData);
@@ -660,7 +664,7 @@ async function captureSnapshot() {
   const imgEl = document.getElementById('snapshot-img');
   const placeholder = document.getElementById('snapshot-placeholder');
   if (!container || !imgEl || !isHtml2CanvasAvailable()) {
-    console.log('[PDF Export] Snapshot prerequisites missing', {
+    pdfLog.warn('Snapshot prerequisites missing', {
       hasContainer: !!container,
       hasImage: !!imgEl,
       hasHtml2Canvas: isHtml2CanvasAvailable()
@@ -675,34 +679,35 @@ async function captureSnapshot() {
     if (placeholder) placeholder.style.display = 'none';
     return dataUrl;
   } catch (e) {
-    console.warn('Snapshot failed', e);
+    pdfLog.warn('Snapshot failed', e);
     return null;
   }
 }
 
 async function exportPdf() {
   const jsPDFactory = getJsPDFactory();
-  console.log('[PDF Export] Dependencies check', {
+  pdfLog.info('Export started');
+  pdfLog.debug('Dependencies check', {
     hasJsPDF: !!jsPDFactory,
     hasHtml2Canvas: isHtml2CanvasAvailable()
   });
   if (!jsPDFactory || !isHtml2CanvasAvailable()) {
-    console.warn('PDF export unavailable: missing jsPDF or html2canvas');
+    pdfLog.warn('Export unavailable: missing jsPDF or html2canvas');
     return;
   }
 
   const snapshotUrl = await captureSnapshot();
-  console.log('[PDF Export] Snapshot capture', { hasSnapshot: !!snapshotUrl });
+  pdfLog.debug('Snapshot capture', { hasSnapshot: !!snapshotUrl });
 
   let summaryData = null;
   try {
     summaryData = await loadSummaryData();
-    console.log('[PDF Export] Summary data loaded', {
+    pdfLog.debug('Summary data loaded', {
       hasModels: summaryData && summaryData.models && summaryData.models.size > 0,
       hasAddons: summaryData && summaryData.addons && summaryData.addons.size > 0
     });
   } catch (e) {
-    console.warn('Summary data load failed', e);
+    pdfLog.warn('Summary data load failed', e);
   }
 
   const selections = state.selections || {};
@@ -711,11 +716,11 @@ async function exportPdf() {
   let priceData = null;
   try {
     priceData = await computePrice(state);
-    console.log('[PDF Export] Pricing computed', {
+    pdfLog.debug('Pricing computed', {
       hasTotal: priceData && typeof priceData.total === 'number'
     });
   } catch (e) {
-    console.warn('Summary pricing failed', e);
+    pdfLog.warn('Summary pricing failed', e);
   }
 
   const priceMap = buildBreakdownPriceMap(priceData);
@@ -933,6 +938,7 @@ async function exportPdf() {
   y += noteLines.length * 12 + 2;
 
   doc.save('woodlab-summary.pdf');
+  pdfLog.info('Export finished');
 }
 
 async function restartConfig() {

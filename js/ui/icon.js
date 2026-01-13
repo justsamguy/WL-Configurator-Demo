@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Icon');
+
 // js/ui/icon.js
 export async function loadIcon(element, iconName, title = '') {
     const iconBaseUrl = 'assets/icons/'; // Local path as per project rules
@@ -21,7 +25,7 @@ export async function loadIcon(element, iconName, title = '') {
             element.setAttribute('aria-label', title); // Provide accessible label
         }
     } catch (error) {
-        console.error(`Error loading icon '${iconName}':`, error);
+        log.error(`Error loading icon '${iconName}'`, error);
         element.innerHTML = `<span class="text-red-500">Icon Error</span>`; // Placeholder for error
     }
 }

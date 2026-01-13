@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Designs');
+
 // Designs stage module
 // Single responsibility: load designs filtered by selected model, wire design option-card interactions,
 // and restore visual selections from state.
@@ -34,7 +38,7 @@ export function restoreFromState(state) {
     }
   } catch (e) {
     // fail silently
-    console.warn('designs.restoreFromState failed', e);
+    log.warn('restoreFromState failed', e);
   }
 }
 

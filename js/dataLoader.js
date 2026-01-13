@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('DataLoader');
+
 // Simple data loader with in-memory cache for local JSON files used by stages
 const cache = {};
 
@@ -10,7 +14,7 @@ export async function loadData(path) {
     cache[path] = j;
     return j;
   } catch (e) {
-    console.warn('loadData failed for', path, e);
+    log.warn('loadData failed', { path, error: e });
     cache[path] = null;
     return null;
   }

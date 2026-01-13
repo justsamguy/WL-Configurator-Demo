@@ -3,6 +3,9 @@
 // Also dispatches 'request-stage-change' for Apply & Next button
 
 import { state } from '../state.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Dimensions');
 
 let dimensionsData = null;
 let currentDimensions = {
@@ -25,7 +28,7 @@ async function loadDimensionsData() {
     dimensionsData = await response.json();
     return dimensionsData;
   } catch (e) {
-    console.error('Failed to load dimensions data:', e);
+    log.error('Failed to load dimensions data', e);
     return null;
   }
 }
@@ -57,7 +60,7 @@ function resetDimensions() {
   if (widthInput) widthInput.value = '';
   if (heightCustomInput) heightCustomInput.value = '';
   
-  console.log('[Dimensions] Reset dimensions state');
+  log.debug('Reset dimensions state');
 }
 
 // Initialize current dimensions from preset if available
@@ -66,7 +69,7 @@ function initializeFromState(appState) {
     // Check if model has changed since last initialization
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Dimensions] Model changed from', lastKnownModel, 'to', currentModel, '- resetting dimensions');
+      log.debug('Model changed, resetting dimensions', { from: lastKnownModel, to: currentModel });
       resetDimensions();
       lastKnownModel = currentModel;
       return; // Don't restore old dimensions when model changes
@@ -108,7 +111,7 @@ function initializeFromState(appState) {
     // Stages should require explicit user selection; this respects the principle
     // that stage modules do not mutate state without user action.
   } catch (e) {
-    console.warn('Failed to initialize dimensions from state:', e);
+    log.warn('Failed to initialize dimensions from state', e);
   }
 }
 
@@ -686,7 +689,7 @@ export async function init() {
   // Load data first
   const data = await loadDimensionsData();
   if (!data) {
-    console.error('Failed to load dimensions data');
+    log.error('Failed to load dimensions data');
     return;
   }
   
@@ -718,7 +721,7 @@ export function restoreFromState(appState) {
     // Check if model has changed and reset if needed
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Dimensions] Model changed in restoreFromState - resetting');
+      log.debug('Model changed in restoreFromState, resetting');
       resetDimensions();
       lastKnownModel = currentModel;
       // Re-initialize presets for the new model
@@ -728,7 +731,7 @@ export function restoreFromState(appState) {
     initializeFromState(appState);
     updateUIControls();
   } catch (e) {
-    console.warn('Failed to restore dimensions from state:', e);
+    log.warn('Failed to restore dimensions from state', e);
   }
 }
 

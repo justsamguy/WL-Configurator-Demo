@@ -3,6 +3,9 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { state } from './state.js'; // Import shared state module to avoid circular imports
+import { createLogger } from './logger.js';
+
+const log = createLogger('Viewer');
 
 let renderer, scene, camera, controls;
 let initialized = false;
@@ -134,7 +137,7 @@ export async function initViewer() {
   if (initialized) return;
   const container = document.getElementById("viewer-canvas");
   if (!container) {
-    console.warn("Viewer canvas container not found. Viewer initialization deferred.");
+    log.warn('Viewer canvas container not found. Viewer initialization deferred.');
     return;
   }
 
@@ -177,7 +180,7 @@ export async function initViewer() {
     controls.target.set(0, 0.5, 0);
     controls.update();
   } catch (err) {
-    console.warn('OrbitControls initialization failed:', err);
+    log.warn('OrbitControls initialization failed', err);
     // Provide a no-op controls object to avoid breaking render loop
     controls = {
       update() { /* no-op */ }
@@ -294,7 +297,7 @@ export function initViewerControls() {
   if (resetViewButton) {
     resetViewButton.addEventListener("click", resetView);
   } else {
-    console.warn("Reset view button not found. Viewer controls might not be loaded yet.");
+    log.warn('Reset view button not found. Viewer controls might not be loaded yet.');
   }
 }
 

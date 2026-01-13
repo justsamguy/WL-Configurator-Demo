@@ -34,6 +34,9 @@ import addonsStage from './stages/addons.js';
 import summaryStage from './stages/summary.js';
 import modelsStageModule from './stages/models.js';
 import designsStageModule from './stages/designs.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('StageManager');
 
 const managerState = {
   current: 0,
@@ -153,7 +156,7 @@ async function setStage(index, options = {}) {
             } catch (e) { /* ignore */ }
           }, 100);
         } catch (e) {
-          console.warn('Failed to apply finish defaults via module:', e);
+          log.warn('Failed to apply finish defaults via module', e);
         }
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
@@ -229,7 +232,7 @@ async function setStage(index, options = {}) {
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
-    console.log(`[setStage] Entering stage ${managerState.current} - moving panel to mainContent`);
+    log.debug(`[setStage] Entering stage ${managerState.current} - moving panel to mainContent`);
     // hide sidebar and viewer chrome; CSS will make the stage panel span full width
     if (sidebar) sidebar.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
@@ -243,37 +246,37 @@ async function setStage(index, options = {}) {
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
       
-      console.log(`[setStage] Looking for panel: ${panelId}`);
-      console.log(`[setStage] Panel found:`, !!panel, panel?.parentElement?.id);
+      log.debug(`[setStage] Looking for panel: ${panelId}`);
+      log.debug('[setStage] Panel found', { exists: !!panel, parentId: panel?.parentElement?.id });
       
       // If panel is not found, it might still be in mainContent from a previous stage
       // Try to restore any displaced panels first
       if (!panel && root && mainContent) {
-        console.log(`[setStage] Panel not found by ID, searching in mainContent`);
+        log.debug('[setStage] Panel not found by ID, searching in mainContent');
         // Check if any stage-panel is currently in mainContent that shouldn't be
         const displacePanel = mainContent.querySelector('[id^="stage-panel-"]');
         if (displacePanel && displacePanel.id !== panelId) {
-          console.log(`[setStage] Found displaced panel: ${displacePanel.id}, restoring to root`);
+          log.debug(`[setStage] Found displaced panel: ${displacePanel.id}, restoring to root`);
           root.appendChild(displacePanel);
         }
         // Now try to find the target panel again
         panel = document.getElementById(panelId);
-        console.log(`[setStage] Panel found after cleanup:`, !!panel);
+        log.debug('[setStage] Panel found after cleanup', { exists: !!panel });
       }
       
       // If panel doesn't exist (e.g., StagePanels.html hasn't loaded yet or sidebar is hidden),
       // create it dynamically in mainContent for stages 0 and 1
       if (!panel && mainContent) {
-        console.log(`[setStage] Panel ${panelId} not found, creating it dynamically in mainContent`);
+        log.debug(`[setStage] Panel ${panelId} not found, creating it dynamically in mainContent`);
         panel = document.createElement('section');
         panel.id = panelId;
         panel.className = 'stage-panel';
         panel.innerHTML = `<div id="stage-${managerState.current}-placeholder"></div>`;
         mainContent.innerHTML = '';
         mainContent.appendChild(panel);
-        console.log(`[setStage] Created panel ${panelId} in mainContent`);
+        log.debug(`[setStage] Created panel ${panelId} in mainContent`);
       } else if (panel && mainContent) {
-        console.log(`[setStage] Appending panel ${panelId} to mainContent`);
+        log.debug(`[setStage] Appending panel ${panelId} to mainContent`);
         // remember that we moved it
         if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
         // Clear any previous inline display style
@@ -284,21 +287,21 @@ async function setStage(index, options = {}) {
           mainContent.innerHTML = '';
           mainContent.appendChild(panel);
         }
-        console.log(`[setStage] Panel appended. Parent now:`, panel.parentElement?.id);
+        log.debug('[setStage] Panel appended. Parent now', { parentId: panel.parentElement?.id });
       } else {
-        console.warn(`[setStage] Could not append panel - panel:`, !!panel, 'root:', !!root, 'mainContent:', !!mainContent);
+        log.warn('[setStage] Could not append panel', { hasPanel: !!panel, hasRoot: !!root, hasMainContent: !!mainContent });
       }
       
       const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
       // Use requestAnimationFrame to ensure DOM has updated before loading component
       await new Promise(resolve => requestAnimationFrame(resolve));
-      console.log(`[setStage] Loading component for stage ${managerState.current}`);
+      log.debug(`[setStage] Loading component for stage ${managerState.current}`);
       
       // Ensure the placeholder exists before loading component
       const placeholderId = `stage-${managerState.current}-placeholder`;
       let placeholder = document.getElementById(placeholderId);
       if (!placeholder && panel) {
-        console.log(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
+        log.debug(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
         panel.innerHTML = `<div id="${placeholderId}"></div>`;
         placeholder = document.getElementById(placeholderId);
       }
@@ -306,12 +309,12 @@ async function setStage(index, options = {}) {
       // Ensure the placeholder has the expected component structure (e.g. .model-row-grid)
       const hasGrid = placeholder && placeholder.querySelector('.model-row-grid');
       if (placeholder && !hasGrid) {
-        console.log(`[setStage] Placeholder ${placeholderId} missing grid structure, loading component`);
+        log.debug(`[setStage] Placeholder ${placeholderId} missing grid structure, loading component`);
         await loadComponent(placeholderId, componentPath);
       } else if (placeholder) {
-        console.log(`[setStage] Placeholder ${placeholderId} already has component structure, skipping loadComponent`);
+        log.debug(`[setStage] Placeholder ${placeholderId} already has component structure, skipping loadComponent`);
       } else {
-        console.warn(`[setStage] Could not find or create placeholder ${placeholderId}`);
+        log.warn(`[setStage] Could not find or create placeholder ${placeholderId}`);
       }
       // Restore visual selections when entering model/design selection stage
       setTimeout(async () => {
@@ -348,19 +351,19 @@ async function setStage(index, options = {}) {
                 }
               }
             } catch (e) {
-              console.warn('Failed to re-render designs on stage entry:', e);
+              log.warn('Failed to re-render designs on stage entry', e);
             }
             designsStageModule.restoreFromState && designsStageModule.restoreFromState(appState);
           }
         } catch (e) {
-          console.warn('Failed to restore selections on stage change:', e);
+          log.warn('Failed to restore selections on stage change', e);
         }
       }, 100); // Small delay to ensure DOM is ready
     } catch (e) {
       // ignore load errors
     }
   } else {
-    console.log(`[setStage] Exiting stages 0/1, restoring sidebar (now at stage ${managerState.current})`);
+    log.debug(`[setStage] Exiting stages 0/1, restoring sidebar (now at stage ${managerState.current})`);
     // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
     if (viewer) viewer.style.display = '';
@@ -381,34 +384,34 @@ async function setStage(index, options = {}) {
         const root = document.getElementById('stage-panels-root');
         const mainContent = document.getElementById('app-main');
         
-        console.log(`[setStage restore] Checking panel ${panelId}: found=`, !!panel, 'parent=', panel?.parentElement?.id);
+        log.debug(`[setStage restore] Checking panel ${panelId}`, { found: !!panel, parentId: panel?.parentElement?.id });
         
         // Check both locations for the panel
         if (!panel && mainContent) {
           panel = mainContent.querySelector(`#${panelId}`);
-          console.log(`[setStage restore] Found ${panelId} in mainContent:`, !!panel);
+          log.debug(`[setStage restore] Found ${panelId} in mainContent`, { found: !!panel });
         }
         
         // Restore panel to root if it's not there already
         if (panel && root) {
           if (panel.parentElement !== root) {
-            console.log(`[setStage restore] Restoring ${panelId} from ${panel.parentElement?.id} to root`);
+            log.debug(`[setStage restore] Restoring ${panelId} from ${panel.parentElement?.id} to root`);
             root.appendChild(panel);
           } else {
-            console.log(`[setStage restore] ${panelId} already in root`);
+            log.debug(`[setStage restore] ${panelId} already in root`);
           }
           delete panel.dataset.wlOrigParent;
         } else {
-          console.warn(`[setStage restore] Could not restore ${panelId}: panel=`, !!panel, 'root=', !!root);
+          log.warn(`[setStage restore] Could not restore ${panelId}`, { hasPanel: !!panel, hasRoot: !!root });
         }
       }
     } catch (e) { 
-      console.error('[setStage restore] Error:', e);
+      log.error('[setStage restore] Error', e);
     }
     // Restore UI for non-model stages
     try {
       const s = appState;
-      console.log('[StageManager] Restoring stage', managerState.current, 'with state:', s.selections);
+      log.debug('Restoring stage', { stage: managerState.current, selections: s.selections });
       if (managerState.current === 2) materialsStage.restoreFromState && materialsStage.restoreFromState(s);
       if (managerState.current === 3) finishStage.restoreFromState && finishStage.restoreFromState(s);
       if (managerState.current === 4) {
@@ -422,7 +425,7 @@ async function setStage(index, options = {}) {
         dimensionsStage.restoreFromState && dimensionsStage.restoreFromState(s);
       }
       if (managerState.current === 5) {
-        console.log('[StageManager] Entering Legs stage (5), state.selections.model:', s.selections.model);
+        log.debug('Entering Legs stage (5)', { model: s.selections.model });
         legsStage.restoreFromState && legsStage.restoreFromState(s);
       }
       if (managerState.current === 6) addonsStage.restoreFromState && addonsStage.restoreFromState(s);
@@ -523,7 +526,7 @@ async function setStage(index, options = {}) {
       }
       // Update button states after checking completion (buttons are updated via markCompleted)
     } catch (e) {
-      console.warn('Failed to check stage completion after entering stage:', e);
+      log.warn('Failed to check stage completion after entering stage', e);
     }
   // }, 150);
 }
@@ -570,16 +573,16 @@ export function initStageManager() {
   try {
     initModelsStage();
   } catch (e) {
-    console.warn('Failed to initialize models stage module', e);
+    log.warn('Failed to initialize models stage module', e);
   }
   try {
     initDesignsStage();
   } catch (e) {
-    console.warn('Failed to initialize designs stage module', e);
+    log.warn('Failed to initialize designs stage module', e);
   }
   // Initialize remaining stage modules
-  try { initMaterialsStage(); } catch (e) { console.warn('Failed to init materials stage', e); }
-  try { initFinishStage(); } catch (e) { console.warn('Failed to init finish stage', e); }
+  try { initMaterialsStage(); } catch (e) { log.warn('Failed to init materials stage', e); }
+  try { initFinishStage(); } catch (e) { log.warn('Failed to init finish stage', e); }
   try { dimensionsStage.init && dimensionsStage.init(); } catch (e) { /* ignore */ }
   try { legsStage.init && legsStage.init(); } catch (e) { /* ignore */ }
   try { addonsStage.init && addonsStage.init(); } catch (e) { /* ignore */ }
@@ -684,7 +687,7 @@ export function initStageManager() {
       // run a UI update to refresh Next/Prev/button states
       // setStage(managerState.current); // REMOVED: This causes infinite loop when triggered by state changes
     } catch (e) {
-      console.warn('Error in option-selected handler:', e);
+      log.warn('Error in option-selected handler', e);
     }
   });
 

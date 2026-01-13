@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Materials');
+
 // Materials stage logic: validation and utilities
 let lastKnownModel = null; // Track the model to detect changes
 
@@ -116,7 +120,7 @@ export function restoreFromState(appState) {
     // Check if model has changed and clear selections if needed
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Materials] Model changed from', lastKnownModel, 'to', currentModel, '- clearing visual selections');
+      log.debug('Model changed, clearing visual selections', { from: lastKnownModel, to: currentModel });
       // Clear visual state for material and color cards when model changes
       document.querySelectorAll('.option-card[data-category="material"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       document.querySelectorAll('.option-card[data-category="color"]').forEach(c => c.setAttribute('aria-pressed', 'false'));

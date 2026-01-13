@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('StageData');
+
 // Lightweight stage data loader
 export async function loadStageData(path) {
   try {
@@ -5,7 +9,7 @@ export async function loadStageData(path) {
     if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
     return await res.json();
   } catch (e) {
-    console.warn('loadStageData failed for', path, e);
+    log.warn('loadStageData failed', { path, error: e });
     return null;
   }
 }

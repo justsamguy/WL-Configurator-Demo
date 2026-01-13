@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Addons');
+
 // Addons stage module
 // Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
 // Updated to handle dropdown tiles with checkboxes instead of option cards
@@ -8,7 +12,7 @@ export function init() {
   root.dataset.addonsDelegated = 'true';
 
   const refreshIndicators = (ev) => {
-    console.log('[Addons] Refresh indicators from event:', ev.type, ev.detail || {});
+    log.debug('Refresh indicators from event', { type: ev.type, detail: ev.detail || {} });
     updateAllIndicators();
   };
   document.addEventListener('addon-toggled', refreshIndicators);
@@ -51,7 +55,7 @@ export function init() {
         tile.classList.add('selected');
         const id = tile.getAttribute('data-addon-id');
         const price = parsePrice(tile.getAttribute('data-price'));
-        console.log('[Addons] Tile select:', { group, id, price });
+        log.debug('Tile select', { group, id, price });
         document.dispatchEvent(new CustomEvent('addon-selected', {
           detail: { group, id, price }
         }));
@@ -64,7 +68,7 @@ export function init() {
       tile.classList.toggle('selected', !isPressed);
       const id = tile.getAttribute('data-addon-id');
       const price = parsePrice(tile.getAttribute('data-price'));
-      console.log('[Addons] Tile toggle:', { id, price, checked: !isPressed });
+      log.debug('Tile toggle', { id, price, checked: !isPressed });
       document.dispatchEvent(new CustomEvent('addon-toggled', {
         detail: { id, price, checked: !isPressed }
       }));
@@ -80,7 +84,7 @@ export function init() {
       if (optionDiv) optionDiv.classList.toggle('selected', checked);
       const id = checkbox.getAttribute('data-addon-id');
       const price = parsePrice(checkbox.getAttribute('data-price'));
-      console.log('[Addons] Checkbox change:', { id, price, checked });
+      log.debug('Checkbox change', { id, price, checked });
       document.dispatchEvent(new CustomEvent('addon-toggled', {
         detail: { id, price, checked }
       }));
@@ -94,7 +98,7 @@ export function init() {
       const id = selectedOption ? selectedOption.value : null;
       const price = selectedOption ? parsePrice(selectedOption.getAttribute('data-price')) : 0;
       const group = select.getAttribute('data-addon-group');
-      console.log('[Addons] Dropdown change:', { group, id, price });
+      log.debug('Dropdown change', { group, id, price });
       document.dispatchEvent(new CustomEvent('addon-selected', {
         detail: { group, id, price }
       }));
@@ -108,7 +112,7 @@ export function init() {
 export function restoreFromState(state) {
   try {
     const arr = state && state.selections && state.selections.options && Array.isArray(state.selections.options.addon) ? state.selections.options.addon : [];
-    console.log('[Addons] restoreFromState selections:', arr);
+    log.debug('restoreFromState selections', { selections: arr });
     // Handle checkboxes
     document.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
       const id = checkbox.getAttribute('data-addon-id');
@@ -341,7 +345,7 @@ function updateAllIndicators() {
     });
   });
   if (summaries.length > 0) {
-    console.log('[Addons] Indicator summary:', summaries);
+    log.debug('Indicator summary', summaries);
   }
 }
 
