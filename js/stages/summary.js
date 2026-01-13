@@ -21,7 +21,11 @@ const getJsPDFactory = () => {
 };
 const isHtml2CanvasAvailable = () => {
   const available = typeof window !== 'undefined' && typeof window.html2canvas !== 'undefined';
-  console.debug('[PDF Export] html2canvas check', { available });
+  console.debug('[PDF Export] html2canvas check', { 
+    available,
+    isFunction: typeof window?.html2canvas === 'function',
+    keys: available ? Object.keys(window.html2canvas).slice(0, 5) : []
+  });
   return available;
 };
 const SNAPSHOT_CAPTURE_ENABLED = false;
@@ -703,24 +707,17 @@ async function captureSnapshot() {
 async function exportPdf() {
   console.log('[PDF Export] Button clicked, starting export...');
   const jsPDFactory = getJsPDFactory();
-  const html2CanvasAvailable = isHtml2CanvasAvailable();
   pdfLog.info('Export started');
   pdfLog.debug('Dependencies check', {
-    hasJsPDF: !!jsPDFactory,
-    hasHtml2Canvas: html2CanvasAvailable
+    hasJsPDF: !!jsPDFactory
   });
   console.warn('[PDF Export] Dependency check:', {
     jsPDFactory: !!jsPDFactory,
-    html2Canvas: html2CanvasAvailable,
     windowJspdf: !!window.jspdf,
-    windowJsPDF: !!window.jsPDF,
-    windowHtml2canvas: !!window.html2canvas
+    windowJsPDF: !!window.jsPDF
   });
-  if (!jsPDFactory || !html2CanvasAvailable) {
-    const missing = [];
-    if (!jsPDFactory) missing.push('jsPDF');
-    if (!html2CanvasAvailable) missing.push('html2canvas');
-    const msg = `Export unavailable: missing ${missing.join(' and ')}`;
+  if (!jsPDFactory) {
+    const msg = 'Export unavailable: missing jsPDF';
     pdfLog.warn(msg);
     console.error('[PDF Export]', msg);
     return;

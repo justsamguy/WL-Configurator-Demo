@@ -59,7 +59,24 @@
   <!-- Three.js: load as ES modules in module scripts (viewer handles imports). Remove legacy UMD example scripts to avoid deprecation warnings. -->
   <!-- jsPDF and html2canvas (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';document.head.appendChild(s);"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.5.1/dist/html2canvas.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.5.1/html2canvas.min.js';document.head.appendChild(s);"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.5.1/dist/html2canvas.min.js" onerror="console.warn('[html2canvas CDN] Load failed, trying fallback'); this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.5.1/html2canvas.min.js';s.onerror=function(){console.error('[html2canvas fallback] Also failed to load')};document.head.appendChild(s);"></script>
+  <script>
+    // Log library loading status (verify both jsPDF and html2canvas are available)
+    (function() {
+      const checkLibraries = () => {
+        const libs = {
+          jsPDF: typeof window !== 'undefined' && (window.jspdf?.jsPDF || window.jsPDF),
+          html2canvas: typeof window !== 'undefined' && window.html2canvas
+        };
+        console.log('[Libraries Check]', libs);
+        return libs;
+      };
+      // Check immediately and after a delay to catch late-loading scripts
+      checkLibraries();
+      setTimeout(checkLibraries, 500);
+      setTimeout(checkLibraries, 2000);
+    })();
+  </script>
   <!-- App scripts -->
   <script type="module" src="./js/main.js" defer></script>
   <script type="module" src="./js/app.js" defer></script>
