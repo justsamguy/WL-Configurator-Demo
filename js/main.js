@@ -7,10 +7,27 @@ import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
+import * as dataLoader from './dataLoader.js';
+import { buildExportJSON } from './export.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
+
+if (typeof window !== 'undefined') {
+  window.exportConfig = async () => {
+    try {
+      const payload = await buildExportJSON(state, dataLoader);
+      console.log('Configuration exported. Copy the JSON below and paste into your LLM:');
+      console.log(JSON.stringify(payload, null, 2));
+      return payload;
+    } catch (e) {
+      log.warn('Export config failed', e);
+      console.warn('Configuration export failed. See log for details.');
+      return null;
+    }
+  };
+}
 
 /**
  * Filter designs by model compatibility
@@ -896,5 +913,5 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-12 12:19');
-  console.log('Edit ver: 439');
+  console.log('Edit ver: 440');
 });

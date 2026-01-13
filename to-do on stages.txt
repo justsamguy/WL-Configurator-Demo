@@ -5,7 +5,4 @@ Overhaul media to improve loading times
 use the output system to make popular designs as design presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.
 
 
-create a import/csv-friendly export option
-
-
 fork and rebuild entire app to use react code

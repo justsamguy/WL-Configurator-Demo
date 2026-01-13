@@ -117,19 +117,20 @@ function buildAddonMap(addons) {
   return map;
 }
 
-async function loadSummaryData() {
+export async function loadSummaryData(loadDataOverride) {
   if (summaryDataCache) return summaryDataCache;
+  const loader = typeof loadDataOverride === 'function' ? loadDataOverride : loadData;
   const [models, designs, materials, colors, finish, dimensions, legs, tubeSizes, legFinishes, addons] = await Promise.all([
-    loadData('data/models.json'),
-    loadData('data/designs.json'),
-    loadData('data/materials.json'),
-    loadData('data/colors.json'),
-    loadData('data/finish.json'),
-    loadData('data/dimensions.json'),
-    loadData('data/legs.json'),
-    loadData('data/tube-sizes.json'),
-    loadData('data/leg-finish.json'),
-    loadData('data/addons.json')
+    loader('data/models.json'),
+    loader('data/designs.json'),
+    loader('data/materials.json'),
+    loader('data/colors.json'),
+    loader('data/finish.json'),
+    loader('data/dimensions.json'),
+    loader('data/legs.json'),
+    loader('data/tube-sizes.json'),
+    loader('data/leg-finish.json'),
+    loader('data/addons.json')
   ]);
 
   summaryDataCache = {
@@ -164,7 +165,7 @@ const BREAKDOWN_LABELS = {
   addon: 'Add-on'
 };
 
-function formatCurrency(val) {
+export function formatCurrency(val) {
   if (typeof val !== 'number') return '$0';
   return `$${val.toLocaleString()}`;
 }
@@ -349,7 +350,7 @@ function getShippingCost() {
   return numeric ? parseInt(numeric, 10) : 0;
 }
 
-function getShippingDetails() {
+export function getShippingDetails() {
   const quote = document.getElementById('shipping-quote-separately');
   const international = document.getElementById('shipping-international');
   const local = document.getElementById('shipping-local-delivery');
@@ -426,7 +427,7 @@ function addOptionItem(list, label, id, entry, type) {
   list.push({ label, value: getEntryTitle(entry, id), id, type });
 }
 
-function buildOptionGroups(selections, summaryData) {
+export function buildOptionGroups(selections, summaryData) {
   const groups = [];
   const opts = selections.options || {};
   const waterfallCount = getWaterfallEdgeCount({ selections });
@@ -573,7 +574,7 @@ function formatBreakdownPrice(item) {
   return `+${formatCurrency(item.price)}`;
 }
 
-function buildBreakdownPriceMap(priceData) {
+export function buildBreakdownPriceMap(priceData) {
   const map = new Map();
   if (!priceData || !Array.isArray(priceData.breakdown)) return map;
   priceData.breakdown.forEach((item) => {
@@ -585,7 +586,7 @@ function buildBreakdownPriceMap(priceData) {
   return map;
 }
 
-function applyBreakdownPrices(groups, priceMap) {
+export function applyBreakdownPrices(groups, priceMap) {
   if (!Array.isArray(groups) || !priceMap) return;
   groups.forEach((group) => {
     if (!group || !Array.isArray(group.items)) return;
@@ -629,7 +630,7 @@ function renderPriceBreakdown(container, entries) {
   });
 }
 
-function buildPriceBreakdown(priceData) {
+export function buildPriceBreakdown(priceData) {
   if (!priceData || !Array.isArray(priceData.breakdown)) return [];
   return priceData.breakdown
     .map(item => ({
