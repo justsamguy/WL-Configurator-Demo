@@ -1001,6 +1001,10 @@ function initShippingControls() {
   };
 
   const hasGlassTopAddon = () => {
+    const checkbox = document.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-glass-top"]');
+    if (checkbox) return checkbox.checked;
+    const tile = document.querySelector('.addons-tile[data-addon-id="addon-glass-top"]');
+    if (tile) return tile.classList.contains('selected') || tile.getAttribute('aria-pressed') === 'true';
     const addons = state.selections && state.selections.options && Array.isArray(state.selections.options.addon)
       ? state.selections.options.addon
       : [];
