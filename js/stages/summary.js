@@ -994,7 +994,13 @@ async function exportPdf() {
   doc.text(noteLines, margin, y);
   y += noteLines.length * 12 + 2;
 
-  doc.save('woodlab-summary.pdf');
+  const now = new Date();
+  const timestamp = now.getFullYear().toString() +
+    (now.getMonth() + 1).toString().padStart(2, '0') +
+    now.getDate().toString().padStart(2, '0') +
+    now.getHours().toString().padStart(2, '0') +
+    now.getMinutes().toString().padStart(2, '0');
+  doc.save(`woodlab-summary-${timestamp}.pdf`);
   pdfLog.info('Export finished');
   console.log('[PDF Export] Export complete');
 }
