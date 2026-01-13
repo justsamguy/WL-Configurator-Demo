@@ -752,7 +752,6 @@ async function exportPdf() {
 
   const priceMap = buildBreakdownPriceMap(priceData);
   applyBreakdownPrices(groups, priceMap);
-  const priceBreakdown = buildPriceBreakdown(priceData);
 
   const subtotal = priceData && typeof priceData.total === 'number'
     ? priceData.total
@@ -820,6 +819,49 @@ async function exportPdf() {
     y += blockHeight + 4;
   };
 
+  const listIndent = 10;
+  const priceColumnWidth = 88;
+  const listTextWidth = pageWidth - margin * 2 - listIndent - priceColumnWidth;
+  const listLineHeight = 12;
+  const listRowGap = 4;
+
+  const addListGroupTitle = (title, nextRowHeight = listLineHeight) => {
+    ensureSpace(16 + nextRowHeight);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(title, margin + 2, y);
+    y += 12;
+  };
+
+  const addListItem = (labelText, price) => {
+    const lines = doc.splitTextToSize(labelText, listTextWidth);
+    const blockHeight = Math.max(listLineHeight, lines.length * listLineHeight);
+    ensureSpace(blockHeight + listRowGap);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(lines, margin + listIndent, y);
+    if (price) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...textMain);
+      doc.text(String(price), pageWidth - margin, y, { align: 'right' });
+    }
+    y += blockHeight + listRowGap;
+  };
+
+  const addSummaryRow = (label, value) => {
+    ensureSpace(14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(label, margin + 2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...textMain);
+    doc.text(value, pageWidth - margin, y, { align: 'right' });
+    y += 14;
+  };
+
   // Header card
   const headerHeight = 64;
   doc.setFillColor(248, 250, 252);
@@ -868,72 +910,54 @@ async function exportPdf() {
     addKeyValue('Preview', 'Snapshot not captured yet');
   }
 
-  // Selections
-  addSectionTitle('Selections');
-  if (!groups.length) {
+  // Options summary
+  addSectionTitle('Options Summary');
+  const optionRows = [];
+  groups.forEach((group) => {
+    if (!group || !Array.isArray(group.items)) return;
+    const groupItems = group.items
+      .map((item) => {
+        const labelText = item && item.label ? String(item.label) : '';
+        const valueText = item && item.value !== undefined && item.value !== null ? String(item.value) : '';
+        const fallbackId = item && item.id ? String(item.id) : '';
+        const combinedText = labelText && valueText
+          ? `${labelText}: ${valueText}`
+          : (labelText || valueText || fallbackId);
+        if (!combinedText) return null;
+        return { label: combinedText, price: item.price };
+      })
+      .filter(Boolean);
+    if (!groupItems.length) return;
+    optionRows.push({ type: 'group', title: group.title });
+    groupItems.forEach((entry) => optionRows.push({ type: 'item', ...entry }));
+  });
+
+  if (!optionRows.length) {
     addKeyValue('Selections', 'No options selected');
   } else {
-    groups.forEach((group) => {
-      ensureSpace(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...textMain);
-      doc.text(group.title, margin + 2, y);
-      y += 12;
-      group.items.forEach((item) => {
-        const valueText = item && (item.value || item.id);
-        if (!valueText) return;
-        const labelText = item.label && valueText ? `${item.label}: ${valueText}` : valueText;
-        const lines = doc.splitTextToSize(labelText, pageWidth - margin * 2 - 96);
-        const blockHeight = Math.max(12, lines.length * 12);
-        ensureSpace(blockHeight + 6);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(...textMain);
-        doc.text(lines, margin + 10, y);
-        if (item.price) {
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...textMain);
-          doc.text(String(item.price), pageWidth - margin, y, { align: 'right' });
-        }
-        y += blockHeight + 4;
-      });
-      y += 4;
+    optionRows.forEach((row) => {
+      if (row.type === 'group') {
+        addListGroupTitle(row.title);
+        return;
+      }
+      addListItem(row.label, row.price);
     });
   }
 
-  // Pricing
-  addSectionTitle('Pricing');
-  addKeyValue('Configured subtotal', formatCurrency(subtotal));
-  addKeyValue('Shipping', shippingLabel);
+  ensureSpace(20);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(margin + listIndent, y, pageWidth - margin, y);
+  y += 10;
+  addSummaryRow('Shipping', shippingLabel || 'Pending');
+  addSummaryRow('Taxes', 'Quoted separately');
+  ensureSpace(16);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(...accent);
-  ensureSpace(14);
-  doc.text('Estimated total', margin + 2, y);
+  doc.text('Total', margin + 2, y);
   doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
   y += 16;
-  if (priceBreakdown.length) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...textMain);
-    doc.text('Line items', margin + 2, y);
-    y += 10;
-    priceBreakdown.forEach((entry) => {
-      const lines = doc.splitTextToSize(entry.label, pageWidth - margin * 2 - 88);
-      const blockHeight = Math.max(12, lines.length * 12);
-      ensureSpace(blockHeight + 6);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...textMain);
-      doc.text(lines, margin + 4, y);
-      if (entry.price) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(entry.price, pageWidth - margin, y, { align: 'right' });
-      }
-      y += blockHeight + 4;
-    });
-  }
 
   // Shipping details
   addSectionTitle('Shipping Details');
