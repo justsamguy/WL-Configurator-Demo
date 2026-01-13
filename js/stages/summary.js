@@ -659,7 +659,14 @@ async function captureSnapshot() {
   const container = document.getElementById('snapshot-container');
   const imgEl = document.getElementById('snapshot-img');
   const placeholder = document.getElementById('snapshot-placeholder');
-  if (!container || !imgEl || !isHtml2CanvasAvailable()) return null;
+  if (!container || !imgEl || !isHtml2CanvasAvailable()) {
+    console.log('[PDF Export] Snapshot prerequisites missing', {
+      hasContainer: !!container,
+      hasImage: !!imgEl,
+      hasHtml2Canvas: isHtml2CanvasAvailable()
+    });
+    return null;
+  }
   try {
     const canvas = await window.html2canvas(container, { backgroundColor: null, scale: 1 });
     const dataUrl = canvas.toDataURL('image/png');
@@ -675,16 +682,25 @@ async function captureSnapshot() {
 
 async function exportPdf() {
   const jsPDFFactory = getJsPDFFactory();
+  console.log('[PDF Export] Dependencies check', {
+    hasJsPDF: !!jsPDFFactory,
+    hasHtml2Canvas: isHtml2CanvasAvailable()
+  });
   if (!jsPDFFactory || !isHtml2CanvasAvailable()) {
     console.warn('PDF export unavailable: missing jsPDF or html2canvas');
     return;
   }
 
   const snapshotUrl = await captureSnapshot();
+  console.log('[PDF Export] Snapshot capture', { hasSnapshot: !!snapshotUrl });
 
   let summaryData = null;
   try {
     summaryData = await loadSummaryData();
+    console.log('[PDF Export] Summary data loaded', {
+      hasModels: summaryData && summaryData.models && summaryData.models.size > 0,
+      hasAddons: summaryData && summaryData.addons && summaryData.addons.size > 0
+    });
   } catch (e) {
     console.warn('Summary data load failed', e);
   }
@@ -695,6 +711,9 @@ async function exportPdf() {
   let priceData = null;
   try {
     priceData = await computePrice(state);
+    console.log('[PDF Export] Pricing computed', {
+      hasTotal: priceData && typeof priceData.total === 'number'
+    });
   } catch (e) {
     console.warn('Summary pricing failed', e);
   }
