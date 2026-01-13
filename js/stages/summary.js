@@ -13,6 +13,7 @@ const getJsPDFactory = () => {
   return (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
 };
 const isHtml2CanvasAvailable = () => typeof window !== 'undefined' && typeof window.html2canvas !== 'undefined';
+const SNAPSHOT_CAPTURE_ENABLED = false;
 
 let summaryDataCache = null;
 let zip3RegionMap = null;
@@ -660,6 +661,10 @@ export async function populateSummaryPanel() {
 }
 
 async function captureSnapshot() {
+  if (!SNAPSHOT_CAPTURE_ENABLED) {
+    pdfLog.info('Snapshot capture disabled; skipping html2canvas.');
+    return null;
+  }
   const container = document.getElementById('snapshot-container');
   const imgEl = document.getElementById('snapshot-img');
   const placeholder = document.getElementById('snapshot-placeholder');
@@ -696,7 +701,7 @@ async function exportPdf() {
     return;
   }
 
-  const snapshotUrl = await captureSnapshot();
+  const snapshotUrl = SNAPSHOT_CAPTURE_ENABLED ? await captureSnapshot() : null;
   pdfLog.debug('Snapshot capture', { hasSnapshot: !!snapshotUrl });
 
   let summaryData = null;
