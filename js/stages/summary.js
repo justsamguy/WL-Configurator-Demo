@@ -10,9 +10,20 @@ const pdfLog = createLogger('PDF Export');
 // html2canvas and jsPDF are available globally via CDN in index.html
 const getJsPDFactory = () => {
   if (typeof window === 'undefined') return null;
-  return (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+  const factory = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+  console.debug('[PDF Export] jsPDF factory check', {
+    hasJspdf: !!window.jspdf,
+    hasJsPDFClass: !!(window.jspdf && window.jspdf.jsPDF),
+    hasGlobalJsPDF: !!window.jsPDF,
+    factory: !!factory
+  });
+  return factory;
 };
-const isHtml2CanvasAvailable = () => typeof window !== 'undefined' && typeof window.html2canvas !== 'undefined';
+const isHtml2CanvasAvailable = () => {
+  const available = typeof window !== 'undefined' && typeof window.html2canvas !== 'undefined';
+  console.debug('[PDF Export] html2canvas check', { available });
+  return available;
+};
 const SNAPSHOT_CAPTURE_ENABLED = false;
 
 let summaryDataCache = null;
@@ -690,14 +701,28 @@ async function captureSnapshot() {
 }
 
 async function exportPdf() {
+  console.log('[PDF Export] Button clicked, starting export...');
   const jsPDFactory = getJsPDFactory();
+  const html2CanvasAvailable = isHtml2CanvasAvailable();
   pdfLog.info('Export started');
   pdfLog.debug('Dependencies check', {
     hasJsPDF: !!jsPDFactory,
-    hasHtml2Canvas: isHtml2CanvasAvailable()
+    hasHtml2Canvas: html2CanvasAvailable
   });
-  if (!jsPDFactory || !isHtml2CanvasAvailable()) {
-    pdfLog.warn('Export unavailable: missing jsPDF or html2canvas');
+  console.warn('[PDF Export] Dependency check:', {
+    jsPDFactory: !!jsPDFactory,
+    html2Canvas: html2CanvasAvailable,
+    windowJspdf: !!window.jspdf,
+    windowJsPDF: !!window.jsPDF,
+    windowHtml2canvas: !!window.html2canvas
+  });
+  if (!jsPDFactory || !html2CanvasAvailable) {
+    const missing = [];
+    if (!jsPDFactory) missing.push('jsPDF');
+    if (!html2CanvasAvailable) missing.push('html2canvas');
+    const msg = `Export unavailable: missing ${missing.join(' and ')}`;
+    pdfLog.warn(msg);
+    console.error('[PDF Export]', msg);
     return;
   }
 
@@ -944,6 +969,7 @@ async function exportPdf() {
 
   doc.save('woodlab-summary.pdf');
   pdfLog.info('Export finished');
+  console.log('[PDF Export] Export complete');
 }
 
 async function restartConfig() {
