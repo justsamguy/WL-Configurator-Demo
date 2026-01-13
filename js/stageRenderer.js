@@ -281,13 +281,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const currentDesign = currentState.selections && currentState.selections.design;
           const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval'));
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-live-edge'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge'));
+          const isSquovalIncompatible = option.id === 'addon-squoval' &&
+            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners'));
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
-          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || requiresWaterfallSingle;
+          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || requiresWaterfallSingle;
           const isDisabled = group.disabled || option.disabled || isIncompatible;
 
           if (isDisabled) {
@@ -300,11 +302,13 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               checkbox.setAttribute('data-disabled-by', 'waterfall');
               optionDiv.setAttribute('data-disabled-by', 'waterfall');
             } else if (isRoundedCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, or Squoval';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
             } else if (isChamferedEdgesIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, or Live Edge';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge';
+            } else if (isSquovalIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Chamfered Edges or Rounded Corners';
             }
             if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }
