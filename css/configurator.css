@@ -492,6 +492,10 @@ header .flex.justify-center.items-center {
   transition: max-height 220ms ease, padding 220ms ease, border-width 220ms ease, opacity 180ms ease;
 }
 
+.summary-shipping-warning[hidden] {
+  display: none;
+}
+
 .summary-shipping-warning.is-closing {
   max-height: 0;
   padding-top: 0;

@@ -1044,22 +1044,36 @@ function initShippingControls() {
     }));
   };
 
+  const normalizeWarningFocus = () => {
+    if (!warning) return;
+    const active = document.activeElement;
+    if (active && warning.contains(active)) {
+      if (toggle) toggle.focus();
+      else if (active instanceof HTMLElement) active.blur();
+    }
+  };
+
   const showWarning = () => {
     if (!warning) return;
     warning.hidden = false;
+    warning.inert = false;
     warning.classList.remove('is-closing');
     warning.setAttribute('aria-hidden', 'false');
   };
 
   const hideWarningImmediate = () => {
     if (!warning) return;
+    normalizeWarningFocus();
     warning.hidden = true;
+    warning.inert = true;
     warning.classList.remove('is-closing');
     warning.setAttribute('aria-hidden', 'true');
   };
 
   const startWarningClose = () => {
     if (!warning || warning.hidden) return;
+    normalizeWarningFocus();
+    warning.inert = true;
     warning.classList.add('is-closing');
     warning.setAttribute('aria-hidden', 'true');
   };
