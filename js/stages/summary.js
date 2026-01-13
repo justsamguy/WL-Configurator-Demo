@@ -796,8 +796,11 @@ async function exportPdf() {
   const addKeyValue = (label, value, rightValue) => {
     if (!value && !rightValue) return;
     const bodyWidth = pageWidth - margin * 2;
-    const textWidth = rightValue ? bodyWidth - 96 : bodyWidth - 32;
-    const lines = value ? doc.splitTextToSize(value, textWidth) : [];
+    const labelColumnWidth = 72;
+    const rightColumnWidth = rightValue ? 96 : 0;
+    const textWidth = Math.max(40, bodyWidth - labelColumnWidth - rightColumnWidth);
+    const valueText = value ? String(value) : '';
+    const lines = valueText ? doc.splitTextToSize(valueText, textWidth) : [];
     const lineHeight = 12;
     const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
     ensureSpace(blockHeight + 8);
@@ -809,7 +812,7 @@ async function exportPdf() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(...textMain);
-      doc.text(lines, rightValue ? margin + 72 : margin + 2, y);
+      doc.text(lines, margin + labelColumnWidth, y);
     }
     if (rightValue) {
       doc.setFont('helvetica', 'bold');
@@ -945,21 +948,6 @@ async function exportPdf() {
     });
   }
 
-  ensureSpace(20);
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
-  doc.line(margin + listIndent, y, pageWidth - margin, y);
-  y += 10;
-  addSummaryRow('Shipping', shippingLabel || 'Pending');
-  addSummaryRow('Taxes', 'Quoted separately');
-  ensureSpace(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(...accent);
-  doc.text('Total', margin + 2, y);
-  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
-  y += 16;
-
   // Shipping details
   addSectionTitle('Shipping Details');
   addKeyValue('Mode', shippingDetails.mode || 'Not selected');
@@ -974,6 +962,21 @@ async function exportPdf() {
   if (shippingDetails.notes) {
     addKeyValue('Delivery notes', shippingDetails.notes);
   }
+
+  ensureSpace(20);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(margin + listIndent, y, pageWidth - margin, y);
+  y += 10;
+  addSummaryRow('Shipping', shippingLabel || 'Pending');
+  addSummaryRow('Taxes', 'Quoted separately');
+  ensureSpace(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...accent);
+  doc.text('Total', margin + 2, y);
+  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
+  y += 16;
 
   // Notes / disclaimer
   addSectionTitle('Notes');
