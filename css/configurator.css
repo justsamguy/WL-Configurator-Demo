@@ -2987,6 +2987,15 @@ p, label { font-size: 15px; color: #374151; }
   color: #f59e0b;
 }
 
+.oversize-banner--blue {
+  background-color: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.oversize-banner--blue svg {
+  color: #3b82f6;
+}
+
 .oversize-banner p {
   color: #374151;
   margin-top: 0.25rem;

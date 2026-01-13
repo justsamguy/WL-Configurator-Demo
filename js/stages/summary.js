@@ -335,6 +335,8 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   const estimate = Math.max(SHIPPING_RATE_CONFIG.minimum, raw);
 
   let total = estimate;
+  // Add $300 for custom crate
+  total += 300;
   if (accessorials && accessorials.residential) total += 150;
   if (accessorials && accessorials.liftgate) total += 200;
   if (accessorials && accessorials.whiteGlove) total += 750;
@@ -1148,7 +1150,7 @@ function initShippingControls() {
       const tableLength = state.selections && state.selections.dimensionsDetail && typeof state.selections.dimensionsDetail.length === 'number'
         ? state.selections.dimensionsDetail.length
         : 0;
-      const shippingCost = tableLength > 144 ? 750 : 500;
+      const shippingCost = tableLength >= 120 ? 750 : 500;
       setEstimateText(formatCurrency(shippingCost), effectiveDisabled);
     } else {
       const accessorials = {
