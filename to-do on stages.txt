@@ -1,4 +1,3 @@
-fix the delivery notes field so it doesn't go beyond the right size of the shipping dropdown.
 
 Overhaul media to improve loading times
 

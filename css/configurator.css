@@ -649,6 +649,7 @@ header .flex.justify-center.items-center {
   font-size: 0.875rem;
   color: #111827;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .summary-shipping-field .summary-shipping-input {
