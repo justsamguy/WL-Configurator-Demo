@@ -4,7 +4,7 @@ import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
 
 // html2canvas and jsPDF are available globally via CDN in index.html
-const getJsPDFFactory = () => {
+const getJsPDFactory = () => {
   if (typeof window === 'undefined') return null;
   return (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
 };
@@ -681,12 +681,12 @@ async function captureSnapshot() {
 }
 
 async function exportPdf() {
-  const jsPDFFactory = getJsPDFFactory();
+  const jsPDFactory = getJsPDFactory();
   console.log('[PDF Export] Dependencies check', {
-    hasJsPDF: !!jsPDFFactory,
+    hasJsPDF: !!jsPDFactory,
     hasHtml2Canvas: isHtml2CanvasAvailable()
   });
-  if (!jsPDFFactory || !isHtml2CanvasAvailable()) {
+  if (!jsPDFactory || !isHtml2CanvasAvailable()) {
     console.warn('PDF export unavailable: missing jsPDF or html2canvas');
     return;
   }
@@ -733,7 +733,7 @@ async function exportPdf() {
     : (shippingValue ? formatCurrency(shippingValue) : (shippingDetails.estimateText || 'Pending'));
   const finalTotal = subtotal + shippingValue;
 
-  const doc = new jsPDFFactory({ unit: 'pt', format: 'a4' });
+  const doc = new jsPDFactory({ unit: 'pt', format: 'a4' });
   const margin = 42;
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
