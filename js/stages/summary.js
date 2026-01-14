@@ -341,8 +341,8 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   const estimate = Math.max(SHIPPING_RATE_CONFIG.minimum, raw);
 
   let total = estimate;
-  // Add $300 for custom crate
-  total += 300;
+  // Add $350 for custom crate
+  total += 350;
   if (accessorials && accessorials.residential) total += SHIPPING_ACCESSORIAL_PRICES.residential;
   if (accessorials && accessorials.liftgate) total += SHIPPING_ACCESSORIAL_PRICES.liftgate;
   if (accessorials && accessorials.whiteGlove) total += SHIPPING_ACCESSORIAL_PRICES.whiteGlove;
