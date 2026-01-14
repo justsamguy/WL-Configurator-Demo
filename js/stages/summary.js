@@ -881,6 +881,12 @@ async function exportPdf() {
     y += 14;
   };
 
+  const modelEntry = summaryData && summaryData.models ? summaryData.models.get(selections.model) : null;
+  const designEntry = summaryData && summaryData.designs ? summaryData.designs.get(selections.design) : null;
+  const modelName = selections.model ? getEntryTitle(modelEntry, selections.model) : 'Model';
+  const designName = selections.design ? getEntryTitle(designEntry, selections.design) : 'Design';
+  const headerTitle = `WoodLab Custom ${designName} ${modelName}`;
+
   // Header card
   const headerHeight = 64;
   doc.setFillColor(248, 250, 252);
@@ -890,12 +896,7 @@ async function exportPdf() {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...textMain);
-  doc.text('WoodLab Configurator', margin + 14, y + 24);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(...textMuted);
-  const generatedAt = new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-  doc.text(`Generated ${generatedAt}`, margin + 14, y + 38);
+  doc.text(headerTitle, margin + 14, y + 24);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...accent);
@@ -903,7 +904,9 @@ async function exportPdf() {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...textMuted);
-  doc.text('Estimated total with shipping shown', pageWidth - margin - 14, y + 40, { align: 'right' });
+  doc.text('Estimated total', pageWidth - margin - 14, y + 40, { align: 'right' });
+  const generatedAt = new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  doc.text(`Generated ${generatedAt}`, pageWidth - margin - 14, y + 52, { align: 'right' });
   y += headerHeight + 16;
 
   // Snapshot
@@ -954,20 +957,31 @@ async function exportPdf() {
   if (!optionRows.length) {
     addKeyValue('Selections', 'No options selected');
   } else {
-  let hasGroupTitle = false;
-  optionRows.forEach((row) => {
-    if (row.type === 'group') {
-      addListGroupTitle(row.title, hasGroupTitle ? 6 : 0);
-      hasGroupTitle = true;
-      return;
-    }
-    addListItem(row.label, row.price);
-  });
+    let hasGroupTitle = false;
+    let hasGroupItems = false;
+    const addGroupSeparator = () => {
+      if (!hasGroupItems) return;
+      ensureSpace(10);
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.5);
+      doc.line(margin + listIndent, y, pageWidth - margin, y);
+      y += 6;
+      hasGroupItems = false;
+    };
+    optionRows.forEach((row) => {
+      if (row.type === 'group') {
+        if (hasGroupTitle) addGroupSeparator();
+        addListGroupTitle(row.title, hasGroupTitle ? 4 : 0);
+        hasGroupTitle = true;
+        return;
+      }
+      addListItem(row.label, row.price);
+      hasGroupItems = true;
+    });
+    addGroupSeparator();
   }
 
   // Shipping details
-  addSectionTitle('Shipping Details');
-  addListGroupTitle('Shipping');
   addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
   const destinationLabel = shippingDetails.zip || shippingDetails.region
     ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
@@ -985,11 +999,12 @@ async function exportPdf() {
 
   ensureSpace(20);
   doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(1.5);
   doc.line(margin + listIndent, y, pageWidth - margin, y);
   y += 10;
   addSummaryRow('Taxes', 'Quoted separately');
-  ensureSpace(16);
+  ensureSpace(22);
+  y += 6;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(...accent);
@@ -998,7 +1013,6 @@ async function exportPdf() {
   y += 16;
 
   // Disclosure
-  addSectionTitle('Disclosure');
   const notes = [
     'Taxes are quoted separately.',
     'This PDF is a visual summary and is not a formal quotation or contract.'
