@@ -621,7 +621,7 @@ header .flex.justify-center.items-center {
 }
 
 .summary-shipping-zip-field .summary-shipping-input {
-  width: 7ch;
+  width: 9ch;
 }
 
 .summary-shipping-region-field .summary-shipping-input {
@@ -690,11 +690,21 @@ header .flex.justify-center.items-center {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 0.35rem;
   padding: 0.25rem 0;
   font-size: 0.85rem;
   color: #4b5563;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.summary-shipping-switch-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
 }
 
 .summary-shipping-switch-input {
@@ -714,6 +724,20 @@ header .flex.justify-center.items-center {
   letter-spacing: 0.01em;
 }
 
+.summary-shipping-switch-price {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #111827;
+  min-width: 4.5rem;
+  text-align: right;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.summary-shipping-switch-price.is-visible {
+  opacity: 1;
+}
+
 .summary-shipping-switch-side {
   color: #9ca3af;
   transition: color 150ms ease;
@@ -723,11 +747,11 @@ header .flex.justify-center.items-center {
   color: #9ca3af;
 }
 
-.summary-shipping-switch-input:not(:checked) ~ .summary-shipping-switch-sides .summary-shipping-switch-side-left {
+.summary-shipping-switch-input:not(:checked) ~ .summary-shipping-switch-row .summary-shipping-switch-side-left {
   color: #111827;
 }
 
-.summary-shipping-switch-input:checked ~ .summary-shipping-switch-sides .summary-shipping-switch-side-right {
+.summary-shipping-switch-input:checked ~ .summary-shipping-switch-row .summary-shipping-switch-side-right {
   color: #111827;
 }
 
@@ -759,8 +783,12 @@ header .flex.justify-center.items-center {
   outline-offset: 2px;
 }
 
-.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-sides {
+.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-row .summary-shipping-switch-sides {
   color: #d1d5db;
+}
+
+.summary-shipping-switch-input:disabled ~ .summary-shipping-switch-row .summary-shipping-switch-price {
+  color: #9ca3af;
 }
 
 .summary-shipping-switch-input:disabled ~ .summary-shipping-switch-track {
