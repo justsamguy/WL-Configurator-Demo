@@ -252,29 +252,30 @@ function updateOversizeBanners() {
   
   bannersContainer.innerHTML = '';
   
-  const checks = [
-    { axis: 'length', value: currentDimensions.length },
-    { axis: 'width', value: currentDimensions.width }
-  ];
-  
-  checks.forEach(({ axis, value }) => {
-    if (value === null) return;
-    const message = checkOversizeThreshold(axis, value);
-    if (message) {
-      const banner = document.createElement('div');
-      banner.className = `oversize-banner${axis === 'width' ? ' oversize-banner--blue' : ''}`;
-      banner.innerHTML = `
-        <div class="font-semibold">
-          <svg fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          Oversize
-        </div>
-        <p>${message}</p>
-      `;
-      bannersContainer.appendChild(banner);
-    }
-  });
+  if (currentDimensions.width === null) return;
+  const message = checkOversizeThreshold('width', currentDimensions.width);
+  if (!message) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'summary-shipping-warning';
+  banner.setAttribute('aria-live', 'polite');
+  banner.setAttribute('aria-atomic', 'true');
+
+  const textWrap = document.createElement('div');
+  textWrap.className = 'summary-shipping-warning-text';
+
+  const title = document.createElement('span');
+  title.className = 'summary-shipping-warning-title';
+  title.textContent = 'Oversize width';
+
+  const subtitle = document.createElement('span');
+  subtitle.className = 'summary-shipping-warning-subtitle';
+  subtitle.textContent = message;
+
+  textWrap.appendChild(title);
+  textWrap.appendChild(subtitle);
+  banner.appendChild(textWrap);
+  bannersContainer.appendChild(banner);
 }
 
 // Show/hide custom dimension controls based on selection
