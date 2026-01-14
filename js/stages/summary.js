@@ -783,8 +783,14 @@ async function exportPdf() {
     }
   };
 
+  const sectionGap = 10;
   const addSectionTitle = (title) => {
-    ensureSpace(24);
+    if (y !== margin) {
+      ensureSpace(24 + sectionGap);
+      y += sectionGap;
+    } else {
+      ensureSpace(24);
+    }
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(...textMain);
@@ -792,7 +798,7 @@ async function exportPdf() {
     doc.setDrawColor(...accent);
     doc.setLineWidth(0.75);
     doc.line(margin, y + 4, margin + 52, y + 4);
-    y += 16;
+    y += 18;
   };
 
   const addKeyValue = (label, value, rightValue) => {
@@ -831,8 +837,9 @@ async function exportPdf() {
   const listLineHeight = 12;
   const listRowGap = 4;
 
-  const addListGroupTitle = (title, nextRowHeight = listLineHeight) => {
-    ensureSpace(16 + nextRowHeight);
+  const addListGroupTitle = (title, gapBefore = 0, nextRowHeight = listLineHeight) => {
+    ensureSpace(16 + nextRowHeight + gapBefore);
+    if (gapBefore) y += gapBefore;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...textMain);
@@ -941,28 +948,33 @@ async function exportPdf() {
   if (!optionRows.length) {
     addKeyValue('Selections', 'No options selected');
   } else {
-    optionRows.forEach((row) => {
-      if (row.type === 'group') {
-        addListGroupTitle(row.title);
-        return;
-      }
-      addListItem(row.label, row.price);
-    });
+  let hasGroupTitle = false;
+  optionRows.forEach((row) => {
+    if (row.type === 'group') {
+      addListGroupTitle(row.title, hasGroupTitle ? 6 : 0);
+      hasGroupTitle = true;
+      return;
+    }
+    addListItem(row.label, row.price);
+  });
   }
 
   // Shipping details
-  addSectionTitle('Shipping Details');
-  addKeyValue('Mode', shippingDetails.mode || 'Not selected');
+  addSectionTitle('Shipping');
+  addListGroupTitle('Shipping');
+  addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
   const destinationLabel = shippingDetails.zip || shippingDetails.region
     ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
     : 'Not provided';
-  addKeyValue('Destination', destinationLabel);
-  addKeyValue('Estimate', shippingLabel);
+  addListItem(`Destination: ${destinationLabel}`);
+  addListItem('Estimate', shippingLabel || 'Pending');
   if (shippingDetails.flags && shippingDetails.flags.length) {
-    addKeyValue('Services', shippingDetails.flags.join(', '));
+    shippingDetails.flags.forEach((flag) => {
+      addListItem(`Add-on: ${flag}`);
+    });
   }
   if (shippingDetails.notes) {
-    addKeyValue('Delivery notes', shippingDetails.notes);
+    addListItem(`Delivery notes: ${shippingDetails.notes}`);
   }
 
   ensureSpace(20);
@@ -970,7 +982,6 @@ async function exportPdf() {
   doc.setLineWidth(0.5);
   doc.line(margin + listIndent, y, pageWidth - margin, y);
   y += 10;
-  addSummaryRow('Shipping', shippingLabel || 'Pending');
   addSummaryRow('Taxes', 'Quoted separately');
   ensureSpace(16);
   doc.setFont('helvetica', 'bold');
@@ -980,8 +991,8 @@ async function exportPdf() {
   doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
   y += 16;
 
-  // Notes / disclaimer
-  addSectionTitle('Notes');
+  // Disclosure
+  addSectionTitle('Disclosure');
   const notes = [
     'Taxes are quoted separately.',
     'This PDF is a visual summary and is not a formal quotation or contract.'
@@ -993,6 +1004,11 @@ async function exportPdf() {
   doc.setTextColor(...textMuted);
   doc.text(noteLines, margin, y);
   y += noteLines.length * 12 + 2;
+
+  // Notes
+  addSectionTitle('Notes');
+  ensureSpace(8);
+  y += 8;
 
   const now = new Date();
   const timestamp = now.getFullYear().toString() +
