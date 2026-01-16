@@ -117,7 +117,7 @@ export async function buildExportJSON(appState, dataLoader) {
     shipping: {
       mode: (shippingDetails && shippingDetails.mode) || 'Not selected',
       zipCode: (shippingDetails && shippingDetails.zip) || '',
-      region: (shippingDetails && shippingDetails.region) || '',
+      region: (shippingDetails && shippingDetails.region && !shippingDetails.region.includes(' US')) ? `${shippingDetails.region} US` : (shippingDetails && shippingDetails.region) || '',
       estimatedCost,
       accessorials: (shippingDetails && shippingDetails.flags) ? shippingDetails.flags : [],
       notes: normalizeValue(shippingDetails && shippingDetails.notes)

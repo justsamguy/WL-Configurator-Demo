@@ -77,7 +77,7 @@ async function updateRegionFromZip(zipValue, regionInput) {
   const map = await loadZip3RegionMap();
   const zip3 = zipValue.slice(0, 3);
   const region = map.get(zip3);
-  regionInput.value = region || 'Unknown';
+  regionInput.value = region ? `${region} US` : 'Unknown';
 }
 
 function buildIdMap(list) {
@@ -909,8 +909,8 @@ async function exportPdf() {
   doc.text(`Generated ${generatedAt}`, pageWidth - margin - 14, y + 52, { align: 'right' });
   y += headerHeight + 16;
 
-  // Snapshot
-  addSectionTitle('Snapshot');
+  // Preview
+  addSectionTitle('Preview');
   if (snapshotUrl) {
     const imgProps = doc.getImageProperties(snapshotUrl);
     const maxImgWidth = pageWidth - margin * 2;
@@ -932,8 +932,8 @@ async function exportPdf() {
     addKeyValue('Preview', 'Snapshot not captured yet');
   }
 
-  // Options summary
-  addSectionTitle('Options Summary');
+  // Configuration
+  addSectionTitle('Configuration');
   const optionRows = [];
   groups.forEach((group) => {
     if (!group || !Array.isArray(group.items)) return;
@@ -982,6 +982,7 @@ async function exportPdf() {
   }
 
   // Shipping details
+  addSectionTitle('Shipping');
   addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
   const destinationLabel = shippingDetails.zip || shippingDetails.region
     ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
