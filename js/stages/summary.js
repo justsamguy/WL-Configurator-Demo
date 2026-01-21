@@ -713,6 +713,24 @@ async function captureSnapshot() {
   }
 }
 
+async function loadLogoDataUrl() {
+  const logoPath = 'assets/icons/WoodLab_logo_-_official.png';
+  try {
+    const response = await fetch(logoPath);
+    if (!response.ok) throw new Error(`Logo fetch failed: ${response.status}`);
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    pdfLog.warn('Logo load failed', e);
+    return null;
+  }
+}
+
 async function exportPdf() {
   console.log('[PDF Export] Button clicked, starting export...');
   const jsPDFactory = getJsPDFactory();
@@ -733,6 +751,7 @@ async function exportPdf() {
   }
 
   const snapshotUrl = SNAPSHOT_CAPTURE_ENABLED ? await captureSnapshot() : null;
+  const logoDataUrl = await loadLogoDataUrl();
   pdfLog.debug('Snapshot capture', { hasSnapshot: !!snapshotUrl });
 
   let summaryData = null;
@@ -888,6 +907,23 @@ async function exportPdf() {
   const headerTitle = `WoodLab Custom ${designName} ${modelName}`;
 
   // Header card
+  if (logoDataUrl) {
+    const logoProps = doc.getImageProperties(logoDataUrl);
+    const maxLogoWidth = pageWidth - margin * 2;
+    const maxLogoHeight = 48;
+    const baseLogoWidth = Math.min(160, maxLogoWidth);
+    const logoRatio = logoProps.width / logoProps.height || 1;
+    let logoWidth = baseLogoWidth;
+    let logoHeight = logoWidth / logoRatio;
+    if (logoHeight > maxLogoHeight) {
+      logoHeight = maxLogoHeight;
+      logoWidth = logoHeight * logoRatio;
+    }
+    ensureSpace(logoHeight + 12);
+    const logoX = margin + ((pageWidth - margin * 2 - logoWidth) / 2);
+    doc.addImage(logoDataUrl, 'PNG', logoX, y, logoWidth, logoHeight);
+    y += logoHeight + 12;
+  }
   const headerHeight = 64;
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(229, 231, 235);
