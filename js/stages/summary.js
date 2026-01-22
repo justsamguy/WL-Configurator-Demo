@@ -167,8 +167,8 @@ const BREAKDOWN_LABELS = {
 };
 
 export function formatCurrency(val) {
-  if (typeof val !== 'number') return '$0';
-  return `$${val.toLocaleString()}`;
+  if (typeof val !== 'number') return 'USD $0';
+  return `USD $${val.toLocaleString()}`;
 }
 
 const HEIGHT_PRESETS_BY_MODEL = {
@@ -244,10 +244,10 @@ const COLOR_PIGMENT_SPECS = {
 };
 
 const COLOR_LAYOUT_SPECS = {
-  'Multi-Blue': 'Gradient (dark to light)',
-  'Multi-Grey': 'Gradient (dark to light)',
-  'Copper Blend': 'Gradient (dark to light)',
-  'Multi-Green': 'Gradient (dark to light)',
+  'Multi-Blue': 'Gradient (dark on one end, light on the other)',
+  'Multi-Grey': 'Gradient (dark on one end, light on the other)',
+  'Copper Blend': 'Gradient (dark on one end, light on the other)',
+  'Multi-Green': 'Gradient (dark on one end, light on the other)',
   'Dark Grey': 'Solid',
   'Caviar Black': 'Solid',
   'Solid Black': 'Solid',
@@ -564,6 +564,20 @@ function getLegWidthForTable(width) {
   if (width <= 42) return 28;
   if (width <= 48) return 32;
   return Math.max(0, width - 10);
+}
+
+function getLegSideSetbackLabel({ width, legWidth, plateLength, legId, designId }) {
+  if (!Number.isFinite(width)) return 'TBD';
+  if (legId === 'leg-sample-02') return '0.25 in (leg + plate)';
+  if (legId === 'leg-sample-08' && designId === 'des-round') return '12-14 in (leg + plate)';
+  if (legId === 'leg-sample-08' && designId === 'des-cookie') return '12+ in (leg + plate)';
+  const formatSideSetback = (value) => formatInches(value, Number.isInteger(value) ? 0 : 1);
+  const legSetback = Number.isFinite(legWidth) ? Math.max(0, (width - legWidth) / 2) : null;
+  const plateSetback = Number.isFinite(plateLength) ? Math.max(0, (width - plateLength) / 2) : null;
+  const parts = [];
+  if (Number.isFinite(legSetback)) parts.push(`${formatSideSetback(legSetback)} to leg`);
+  if (Number.isFinite(plateSetback)) parts.push(`${formatSideSetback(plateSetback)} to plate`);
+  return parts.length ? parts.join(', ') : 'TBD';
 }
 
 function calculateEmptyCrateWeight(lengthIn, widthIn, heightIn) {
@@ -1127,21 +1141,26 @@ async function exportPdf() {
   const techLabelWidth = 168;
   const techValueWidth = pageWidth - margin * 2 - techLabelWidth;
   const techLineColor = [229, 231, 235];
+  const techSubheadingFontSize = 11;
+  const techSubheadingTopGap = 6;
+  const techSubheadingBottomGap = 4;
+  const techSubheadingLineHeight = 12;
 
   const addTechSubheading = (title) => {
-    ensureSpace(18);
-    y += 6;
+    ensureSpace(techSubheadingTopGap + techSubheadingBottomGap + techSubheadingLineHeight);
+    y += techSubheadingTopGap;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(techSubheadingFontSize);
     doc.setTextColor(...textMuted);
     doc.text(title, margin + 2, y);
-    y += 10;
+    y += techSubheadingLineHeight + techSubheadingBottomGap;
   };
 
   const addTechRow = (label, value) => {
     if (!value) return;
-    const textValue = String(value);
-    const lines = doc.splitTextToSize(textValue, techValueWidth);
+    const lines = Array.isArray(value)
+      ? value.flatMap(item => doc.splitTextToSize(String(item), techValueWidth))
+      : doc.splitTextToSize(String(value), techValueWidth);
     const lineHeight = 12;
     const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
     const rowHeight = blockHeight + techRowPadding * 2;
@@ -1157,7 +1176,7 @@ async function exportPdf() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...textMain);
-    doc.text(lines, margin + techLabelWidth, textY);
+    doc.text(lines, pageWidth - margin, textY, { align: 'right' });
     doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
     y += rowHeight;
   };
@@ -1404,7 +1423,6 @@ async function exportPdf() {
     else if (Number.isFinite(length) && length >= 120) legEndSetback = '18-20 in';
     else legEndSetback = '12-14 in';
   }
-  const legSideSetback = hasLegs ? 'Calculated from tabletop width and leg size (leg + plate)' : 'TBD';
   const tubeDims = parseTubeDimensions(tubeTitle);
   const tubeDepth = tubeDims.length ? Math.max(...tubeDims) : null;
   const legDimensions = (hasLegs && Number.isFinite(legWidth) && Number.isFinite(tubeDepth) && Number.isFinite(legHeight))
@@ -1413,6 +1431,15 @@ async function exportPdf() {
   const plateLength = Number.isFinite(width) ? Math.max(0, width - 6) : null;
   const plateSize = hasLegs && Number.isFinite(plateLength)
     ? `${formatNumber(plateLength)} in L x 6 in W x 0.25 in T`
+    : 'TBD';
+  const legSideSetback = hasLegs
+    ? getLegSideSetbackLabel({
+      width,
+      legWidth,
+      plateLength,
+      legId: opts.legs,
+      designId: selections.design
+    })
     : 'TBD';
   let legException = null;
   if (opts.legs === 'leg-sample-02') legException = 'Cube bases have 0.25 in setback on all sides';
@@ -1448,9 +1475,9 @@ async function exportPdf() {
     ? emptyCrateWeight + estimatedTotalWeight
     : null;
 
-  addTechSubheading('Dimensions');
   addTechRow('Tabletop Dimensions', tabletopDimensionsLabel);
   addTechRow('Overall Dimensions (with legs)', overallDimensionsLabel);
+  addTechRow('Estimated Total Weight', formatWeight(estimatedTotalWeight));
   addTechRow('Tabletop Thickness', tabletopThicknessLabel);
   addTechRow('Edge Detail', edgeDetailLabel);
   if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
@@ -1476,7 +1503,7 @@ async function exportPdf() {
   if (finishCoatsLabel) addTechRow('Finish Coats', finishCoatsLabel);
   addTechRow('Finish Tint', finishTintLabel);
   if (finishTintNote) addTechRow('Tint Notes', finishTintNote);
-  addTechRow('Epoxy Layers', 'Seal coat <0.25 in + river 2-2.5 in');
+  addTechRow('Epoxy Layers', ['Seal coat <0.25 in', 'River 2-2.5 in']);
   addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
   addTechRow('Color Layout', (colorSpecs && colorSpecs.layout) || (colorTitle ? 'Custom' : 'TBD'));
 
@@ -1534,18 +1561,23 @@ async function exportPdf() {
 
   addTechSubheading('Shipping Specs');
   const shippingMode = shippingDetails.mode || 'Standard shipping';
-  const shippingMethod = shippingMode === 'Standard shipping' ? 'Standard Ground' : shippingMode;
+  const shippingMethod = shippingMode === 'Standard shipping' ? 'LTL' : shippingMode;
   const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
-  addTechRow('Estimated Total Weight', formatWeight(estimatedTotalWeight));
   addTechRow('Shipping Method', shippingMethod);
   addTechRow('Estimated Transit Time', transitTime);
   addTechRow('Delivery Region', destinationLabel);
   addTechRow('Crate Dimensions', crateDimensions);
-  addTechRow('Crate Material', '7/16 in OSB walls/floor/top; frame 2x2/2x4/2x6 lumber');
+  addTechRow('Crate Material', [
+    '7/16 in OSB walls/floor/top',
+    'Frame 2x2/2x4/2x6 lumber'
+  ]);
   addTechRow('Crate Hardware', 'T-25 screws 3/4-3 in');
-  addTechRow('Packaging', '1/4 in PE foam + 80 Ga stretch wrap; foam lining 1 in EPS foam');
-  addTechRow('Empty Crate Weight', formatWeight(emptyCrateWeight, 1));
-  addTechRow('Crate Weight (loaded)', formatWeight(loadedCrateWeight, 1));
+  addTechRow('Packaging', [
+    'Table wrap: 1/4 in PE foam + 80 Ga stretch wrap',
+    'Crate lining: 1 in EPS foam'
+  ]);
+  addTechRow('Estimated Empty Crate Weight', formatWeight(emptyCrateWeight, 1));
+  addTechRow('Estimated Crate Weight (loaded)', formatWeight(loadedCrateWeight, 1));
 
   const now = new Date();
   const timestamp = now.getFullYear().toString() +
