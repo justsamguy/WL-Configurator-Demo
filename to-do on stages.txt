@@ -1,5 +1,4 @@
-add number field to input custom power strip cable length (distance is measured from the leg the cables will come out of)
-add a custom tint option ("Match a stain to my reference")
+add a new tint option called custom ($250, "Match the stain to my reference"). In the technical section, all finsish coats become TBD. 
 add angled corners addon
 update how your wood is chosen tooltip, and make the text a little darker
 

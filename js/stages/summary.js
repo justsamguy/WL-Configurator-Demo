@@ -282,6 +282,14 @@ const POWER_STRIP_SPECS = {
   'addon-power-ac-usb-usbc': '125V 15A; 3 AC + 3 USB + 3 USB-C (5V 2.4A each); rails 5 ft or 3 ft; cable length 12 ft; black'
 };
 
+// Get power strip specs with custom cable length if available
+const getPowerStripSpecs = (powerStripId, customCableLength) => {
+  const baseSpec = POWER_STRIP_SPECS[powerStripId];
+  if (!baseSpec || !customCableLength) return baseSpec;
+  // Replace the default 12 ft cable length with the custom value
+  return baseSpec.replace('cable length 12 ft', `cable length ${customCableLength} ft`);
+};
+
 const LIGHTING_SPECS_BY_ID = {
   'addon-lighting-white': '24V, 90+ CRI, 2700-6000K, non-addressable, 320 LED/m',
   'addon-lighting-color-basic': '24V, RGBW, non-addressable, 30-60 LED/m',
@@ -1421,7 +1429,7 @@ async function exportPdf() {
     addTechSubheading('Add-ons');
     if (addons.includes('addon-live-edge')) addTechRow('Live Edge', 'Natural slab edge');
     if (addons.includes('addon-glass-top')) addTechRow('Glass Top', '1/4 in thick; glass type TBD');
-    if (powerStripId) addTechRow(`Power Strip (${powerStripTitle})`, POWER_STRIP_SPECS[powerStripId]);
+    if (powerStripId) addTechRow(`Power Strip (${powerStripTitle})`, getPowerStripSpecs(powerStripId, selections.techCableLength));
     if (addons.includes('addon-wireless-charging')) addTechRow('Wireless Charging', 'Up to 15W output, 20W input');
     if (addons.includes('addon-ethernet')) addTechRow('Ethernet', 'Cat5e cabling');
     if (addons.includes('addon-hdmi')) addTechRow('HDMI', 'HDMI 2.0');

@@ -14,9 +14,32 @@ export function init() {
   const refreshIndicators = (ev) => {
     log.debug('Refresh indicators from event', { type: ev.type, detail: ev.detail || {} });
     updateAllIndicators();
+    updateTechCableLengthState();
   };
   document.addEventListener('addon-toggled', refreshIndicators);
   document.addEventListener('addon-selected', refreshIndicators);
+
+  const updateTechCableLengthState = () => {
+    const cableLengthInput = document.getElementById('tech-cable-length-input');
+    if (!cableLengthInput) return;
+    
+    // Check if any tech option is selected
+    const powerStripSelected = root.querySelector('[data-addon-id^="addon-power"]:not([data-addon-id*="none"])[aria-pressed="true"]');
+    const wirelessSelected = root.querySelector('[data-addon-id="addon-wireless-charging"][aria-pressed="true"]');
+    const ethernetSelected = root.querySelector('[data-addon-id="addon-ethernet"][class*="selected"]');
+    const hdmiSelected = root.querySelector('[data-addon-id="addon-hdmi"][class*="selected"]');
+    const lightingSelected = root.querySelector('[data-addon-id^="addon-lighting-"]:not([data-addon-id*="none"])[aria-pressed="true"]');
+    const customTechSelected = root.querySelector('[data-addon-id="addon-custom-tech"][aria-pressed="true"]');
+    
+    const anyTechSelected = powerStripSelected || wirelessSelected || ethernetSelected || hdmiSelected || lightingSelected || customTechSelected;
+    
+    cableLengthInput.disabled = !anyTechSelected;
+    if (!anyTechSelected) {
+      cableLengthInput.setAttribute('data-tooltip', 'Please make a selection');
+    } else {
+      cableLengthInput.removeAttribute('data-tooltip');
+    }
+  };
 
   if (typeof MutationObserver !== 'undefined') {
     const disabledObserver = new MutationObserver((mutations) => {
@@ -106,7 +129,20 @@ export function init() {
     }
   });
 
+  // Handle tech cable length input
+  const cableLengthInput = document.getElementById('tech-cable-length-input');
+  if (cableLengthInput) {
+    cableLengthInput.addEventListener('input', (event) => {
+      const value = event.target.value ? parseFloat(event.target.value) : null;
+      document.dispatchEvent(new CustomEvent('tech-cable-length-changed', {
+        detail: { cableLength: value }
+      }));
+      log.debug('Cable length changed', { cableLength: value });
+    });
+  }
+
   updateAllIndicators();
+  updateTechCableLengthState();
 }
 
 export function restoreFromState(state) {
@@ -180,6 +216,12 @@ export function restoreFromState(state) {
     });
     // Update all indicators after restoring state
     updateAllIndicators();
+    // Restore cable length if present
+    const cableLengthInput = document.getElementById('tech-cable-length-input');
+    if (cableLengthInput && state && state.selections && state.selections.techCableLength) {
+      cableLengthInput.value = state.selections.techCableLength;
+    }
+    updateTechCableLengthState();
   } catch (e) { /* ignore */ }
 }
 

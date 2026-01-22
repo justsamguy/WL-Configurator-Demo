@@ -151,6 +151,29 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
     // Handle tech group with subsections
     if (group.type === 'tech' && group.subsections) {
+      // Add custom cable length input for tech addon
+      const cableLengthContainer = document.createElement('div');
+      cableLengthContainer.className = 'addons-cable-length-container';
+
+      const cableLengthLabel = document.createElement('label');
+      cableLengthLabel.className = 'addons-cable-length-label';
+      cableLengthLabel.htmlFor = 'tech-cable-length-input';
+      cableLengthLabel.textContent = 'Custom Cable Length (feet)';
+
+      const cableLengthInput = document.createElement('input');
+      cableLengthInput.type = 'number';
+      cableLengthInput.id = 'tech-cable-length-input';
+      cableLengthInput.className = 'addons-cable-length-input';
+      cableLengthInput.min = '1';
+      cableLengthInput.max = '300';
+      cableLengthInput.placeholder = '12';
+      cableLengthInput.disabled = true;
+      cableLengthInput.setAttribute('data-tooltip', 'Please make a selection');
+      cableLengthInput.setAttribute('aria-label', 'Custom cable length for power cables');
+
+      cableLengthContainer.appendChild(cableLengthLabel);
+      cableLengthContainer.appendChild(cableLengthInput);
+      content.appendChild(cableLengthContainer);
       group.subsections.forEach(subsection => {
         const subContainer = document.createElement('div');
         subContainer.className = 'addons-subsection';

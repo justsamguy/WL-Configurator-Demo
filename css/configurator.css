@@ -3767,3 +3767,46 @@ body.stage-1 #designs-stage-section > div {
     height: 50px;
   }
 }
+/* Tech addon cable length input */
+.addons-cable-length-container {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.addons-cable-length-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.addons-cable-length-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.addons-cable-length-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.addons-cable-length-input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.addons-cable-length-input:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}

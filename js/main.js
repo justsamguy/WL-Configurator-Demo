@@ -636,13 +636,20 @@ document.addEventListener('addon-selected', async (ev) => {
   updateWaterfallAddonAvailability(state);
 });
 
+// Handle tech cable length changes
+document.addEventListener('tech-cable-length-changed', (ev) => {
+  const { cableLength } = ev.detail || { cableLength: null };
+  addonsLog.debug('tech-cable-length-changed event', { cableLength });
+  setState({ selections: { ...state.selections, techCableLength: cableLength } });
+});
+
 // Request-based restart: stage modules should dispatch 'request-restart' and
 // main.js (the canonical mutator) will reset the shared state and navigate to
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
     const from = state.pricing.total || state.pricing.base || 0;
-    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null }, pricing: { base: 0, extras: 0, total: 0 } });
+    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null, techCableLength: null }, pricing: { base: 0, extras: 0, total: 0 } });
     animatePrice(from, 0, 320, (val) => updatePriceUI(val));
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
@@ -913,6 +920,6 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-14 15:46');
-  console.log('Edit ver: 462');
+  console.log('Edit ver: 463');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
