@@ -1716,6 +1716,16 @@ async function exportPdf() {
   addTechRow('Estimated Empty Crate Weight', formatWeight(emptyCrateWeight));
   addTechRow('Estimated Crate Weight (loaded)', formatWeight(loadedCrateWeight));
 
+  // Technical specs disclaimer
+  const techDisclaimer = 'These specifications are standard and may not be identical for every custom project.';
+  const techDisclaimerLines = doc.splitTextToSize(techDisclaimer, pageWidth - margin * 2);
+  ensureSpace(techDisclaimerLines.length * 12 + 4);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...textMuted);
+  doc.text(techDisclaimerLines, margin, y);
+  y += techDisclaimerLines.length * 12 + 2;
+
   const now = new Date();
   const timestamp = now.getFullYear().toString() +
     (now.getMonth() + 1).toString().padStart(2, '0') +
