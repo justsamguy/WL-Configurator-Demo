@@ -70,6 +70,20 @@ export function init() {
       if (mode === 'single') {
         const group = tile.getAttribute('data-addon-group');
         const groupTiles = getTilesByGroup(root, group);
+        const isSelected = tile.getAttribute('aria-pressed') === 'true';
+        if (isSelected) {
+          groupTiles.forEach(btn => {
+            btn.setAttribute('aria-pressed', 'false');
+            btn.classList.remove('selected');
+          });
+          const id = tile.getAttribute('data-addon-id');
+          log.debug('Tile deselect', { group, id });
+          document.dispatchEvent(new CustomEvent('addon-selected', {
+            detail: { group, id: null, price: 0 }
+          }));
+          updateAllIndicators();
+          return;
+        }
         groupTiles.forEach(btn => {
           btn.setAttribute('aria-pressed', 'false');
           btn.classList.remove('selected');
