@@ -1,4 +1,3 @@
-add angled corners addon
 update how your wood is chosen tooltip, and make the text a little darker
 
 Overhaul media to improve loading times

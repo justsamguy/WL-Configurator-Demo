@@ -304,15 +304,17 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const currentDesign = currentState.selections && currentState.selections.design;
           const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-angled-corners'));
+          const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-rounded-corners'));
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge') || currentAddons.includes('addon-angled-corners'));
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
-            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners'));
+            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners'));
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
-          const isIncompatible = isRoundedCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || requiresWaterfallSingle;
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || requiresWaterfallSingle;
           const isDisabled = group.disabled || option.disabled || isIncompatible;
 
           if (isDisabled) {
@@ -325,13 +327,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               checkbox.setAttribute('data-disabled-by', 'waterfall');
               optionDiv.setAttribute('data-disabled-by', 'waterfall');
             } else if (isRoundedCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, or Squoval';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Angled Corners';
+            } else if (isAngledCornersIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Rounded Corners';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
             } else if (isChamferedEdgesIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, Live Edge, or Angled Corners';
             } else if (isSquovalIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Chamfered Edges or Rounded Corners';
+              incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, or Angled Corners';
             }
             if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }

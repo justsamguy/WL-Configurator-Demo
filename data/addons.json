@@ -15,5 +15,5 @@
   ] },
   { "title": "Chamfered Edges", "description": "Create angled edges for a refined, contemporary look.", "image": "assets/images/Chamfered Edge.jpg", "options": [{ "id": "addon-chamfered-edges", "title": "Chamfered Edges", "price": 750 }] },
   { "title": "Squoval", "description": "Blend chamfered edges with softly rounded corners for a squoval profile.", "image": "assets/images/Chamfered Edge.jpg", "options": [{ "id": "addon-squoval", "title": "Squoval", "price": 650 }] },
-  { "title": "Rounded Corners", "description": "Soften the edges for a safer fit in high-traffic spaces.", "image": "assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.JPG", "options": [{ "id": "addon-rounded-corners", "title": "Rounded Corners", "price": 500 }] }
+  { "title": "Cut Corners", "description": "Customize the corner profile for a refined aesthetic.", "image": "assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.JPG", "options": [{ "id": "addon-rounded-corners", "title": "Rounded Corners", "price": 500 }, { "id": "addon-angled-corners", "title": "Angled Corners", "price": 500 }] }
 ]
