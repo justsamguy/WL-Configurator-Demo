@@ -1040,6 +1040,7 @@ async function exportPdf() {
   const accent = [37, 99, 235];
   const textMain = [17, 24, 39];
   const textMuted = [107, 114, 128];
+  const textValue = [55, 65, 81];
   let y = margin;
 
   const ensureSpace = (needed = 24) => {
@@ -1145,17 +1146,17 @@ async function exportPdf() {
   const techLabelWidth = 168;
   const techValueWidth = pageWidth - margin * 2 - techLabelWidth;
   const techLineColor = [229, 231, 235];
-  const techSubheadingFontSize = 11;
-  const techSubheadingTopGap = 6;
-  const techSubheadingBottomGap = 4;
+  const techSubheadingFontSize = 10;
+  const techSubheadingTopGap = 8;
+  const techSubheadingBottomGap = 6;
   const techSubheadingLineHeight = 12;
 
   const addTechSubheading = (title) => {
     ensureSpace(techSubheadingTopGap + techSubheadingBottomGap + techSubheadingLineHeight);
     y += techSubheadingTopGap;
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(techSubheadingFontSize);
-    doc.setTextColor(...textMuted);
+    doc.setTextColor(...textMain);
     doc.text(title, margin + 2, y);
     y += techSubheadingLineHeight + techSubheadingBottomGap;
   };
@@ -1178,8 +1179,8 @@ async function exportPdf() {
     doc.setTextColor(...textMain);
     doc.text(label, margin + 2, textY);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(...textMain);
+    doc.setFontSize(9);
+    doc.setTextColor(...textValue);
     doc.text(lines, pageWidth - margin, textY, { align: 'right' });
     doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
     y += rowHeight;
