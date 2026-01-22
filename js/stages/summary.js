@@ -1245,7 +1245,55 @@ async function exportPdf() {
     ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
     : 'Not provided';
 
-  // Technical Specifications
+  // Shipping details
+  addSectionTitle('Shipping');
+  addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
+  addListItem(`Destination: ${destinationLabel}`);
+  addListItem('Estimate', shippingLabel || 'Pending');
+  if (shippingDetails.flags && shippingDetails.flags.length) {
+    shippingDetails.flags.forEach((flag) => {
+      addListItem(`Add-on: ${flag}`);
+    });
+  }
+  if (shippingDetails.notes) {
+    addListItem(`Delivery notes: ${shippingDetails.notes}`);
+  }
+
+  ensureSpace(20);
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(1.5);
+  doc.line(margin + listIndent, y, pageWidth - margin, y);
+  y += 10;
+  addSummaryRow('Taxes', 'Quoted separately');
+  ensureSpace(22);
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...accent);
+  doc.text('Total', margin + 2, y);
+  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
+  y += 16;
+
+  // Disclosure
+  const notes = [
+    'Taxes are quoted separately.',
+    'This PDF is a visual summary and is not a formal quotation or contract.'
+  ];
+  const noteLines = doc.splitTextToSize(notes.join(' '), pageWidth - margin * 2);
+  ensureSpace(noteLines.length * 12 + 4);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...textMuted);
+  doc.text(noteLines, margin, y);
+  y += noteLines.length * 12 + 2;
+
+  // Notes
+  addSectionTitle('Notes');
+  ensureSpace(8);
+  y += 8;
+
+  doc.addPage();
+  y = margin;
   addSectionTitle('Technical Specifications');
   const opts = selections.options || {};
   const dimensionDetail = selections.dimensionsDetail || {};
@@ -1458,53 +1506,6 @@ async function exportPdf() {
   addTechRow('Packaging', '1/4 in PE foam + 80 Ga stretch wrap; foam lining 1 in EPS foam');
   addTechRow('Empty Crate Weight', formatWeight(emptyCrateWeight, 1));
   addTechRow('Crate Weight (loaded)', formatWeight(loadedCrateWeight, 1));
-
-  // Shipping details
-  addSectionTitle('Shipping');
-  addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
-  addListItem(`Destination: ${destinationLabel}`);
-  addListItem('Estimate', shippingLabel || 'Pending');
-  if (shippingDetails.flags && shippingDetails.flags.length) {
-    shippingDetails.flags.forEach((flag) => {
-      addListItem(`Add-on: ${flag}`);
-    });
-  }
-  if (shippingDetails.notes) {
-    addListItem(`Delivery notes: ${shippingDetails.notes}`);
-  }
-
-  ensureSpace(20);
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(1.5);
-  doc.line(margin + listIndent, y, pageWidth - margin, y);
-  y += 10;
-  addSummaryRow('Taxes', 'Quoted separately');
-  ensureSpace(22);
-  y += 6;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(...accent);
-  doc.text('Total', margin + 2, y);
-  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
-  y += 16;
-
-  // Disclosure
-  const notes = [
-    'Taxes are quoted separately.',
-    'This PDF is a visual summary and is not a formal quotation or contract.'
-  ];
-  const noteLines = doc.splitTextToSize(notes.join(' '), pageWidth - margin * 2);
-  ensureSpace(noteLines.length * 12 + 4);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...textMuted);
-  doc.text(noteLines, margin, y);
-  y += noteLines.length * 12 + 2;
-
-  // Notes
-  addSectionTitle('Notes');
-  ensureSpace(8);
-  y += 8;
 
   const now = new Date();
   const timestamp = now.getFullYear().toString() +
