@@ -218,6 +218,77 @@ const SHIPPING_ACCESSORIAL_PRICES = {
 const POWER_STRIP_ADDONS = new Set(['addon-power-ac', 'addon-power-ac-usb', 'addon-power-ac-usb-usbc']);
 const ADDITIONAL_CONNECTIVITY_ADDONS = new Set(['addon-ethernet', 'addon-hdmi']);
 
+const COOKIE_DESIGN_ID = 'des-cookie';
+const TABLETOP_THICKNESS_DEFAULT = 2;
+
+const MATERIAL_TECH_SPECS = {
+  'Black Walnut': { density: '35-38', hardness: '950-1100' },
+  'Spalted Maple': { density: '30-40', hardness: '700-1100' },
+  'American Elm': { density: '35-38', hardness: '800-900' },
+  'Siberian Elm': { density: '30-38', hardness: '800-950' },
+  'Sycamore': { density: '24-37', hardness: '720-850' },
+  'Ash': { density: '30-42', hardness: '1200-1350' },
+  'Claro Walnut': { density: '40+', hardness: '1000-1200' }
+};
+
+const COLOR_PIGMENT_SPECS = {
+  'Multi-Blue': 'Ocean, Maui, Caribbean gradient',
+  'Multi-Grey': 'Caviar, Dolphin, Pearl gradient',
+  'Copper Blend': 'Espresso, Coral, Pineapple gradient',
+  'Multi-Green': 'Jungle, Emerald, Candy Apple gradient',
+  'Dark Grey': 'Caviar + Dolphin',
+  'Caviar Black': 'Caviar',
+  'Solid Black': 'Liquid Pigment, Solid Black',
+  'Custom': 'Custom'
+};
+
+const COLOR_LAYOUT_SPECS = {
+  'Multi-Blue': 'Gradient (dark to light)',
+  'Multi-Grey': 'Gradient (dark to light)',
+  'Copper Blend': 'Gradient (dark to light)',
+  'Multi-Green': 'Gradient (dark to light)',
+  'Dark Grey': 'Solid',
+  'Caviar Black': 'Solid',
+  'Solid Black': 'Solid',
+  'Custom': 'Custom'
+};
+
+const FINISH_SHEEN_SPECS = {
+  '2K Poly': { Satin: '20 sheen', Matte: '10 sheen', Gloss: '30 sheen' },
+  'Natural Oil': { Satin: '3043 Clear Satin', Matte: '3031 Clear Matte', Gloss: '3011 Clear Gloss' }
+};
+
+const FINISH_TINT_NOTES = {
+  'Natural Oil': {
+    Clear: 'Base coat 1101 Clear Satin',
+    Natural: 'Base coat 3051 Raw Matte',
+    Darken: 'Base coat 3166 Walnut'
+  }
+};
+
+const LEG_FINISH_BRANDS = {
+  'Matte Black': 'Behr Metallic Matte Black',
+  'Satin Black': 'Rustoleum Satin Black',
+  'Oil Rubbed Bronze': 'Behr Oil Rubbed Bronze',
+  'Satin Bronze': 'Rustoleum Satin Bronze',
+  'Gunmetal Grey': 'Rustoleum Gunmetal Grey',
+  'Titanium Silver': 'Rustoleum Titanium Silver',
+  'Raw Metal': 'Rustoleum Clear'
+};
+
+const POWER_STRIP_SPECS = {
+  'addon-power-ac': '125V 15A; 6 AC ports; rails 5 ft or 3 ft; cable length 12 ft; black',
+  'addon-power-ac-usb': '125V 15A; 3 AC + 6 USB (5V 2.4A each); rails 5 ft or 3 ft; cable length 12 ft; black',
+  'addon-power-ac-usb-usbc': '125V 15A; 3 AC + 3 USB + 3 USB-C (5V 2.4A each); rails 5 ft or 3 ft; cable length 12 ft; black'
+};
+
+const LIGHTING_SPECS_BY_ID = {
+  'addon-lighting-white': '24V, 90+ CRI, 2700-6000K, non-addressable, 320 LED/m',
+  'addon-lighting-color-basic': '24V, RGBW, non-addressable, 30-60 LED/m',
+  'addon-lighting-color-fx': '12V, 90+ CRI, RGBW, FCOB, addressable (SPI control), app compatible, 100-400 LED/m',
+  'addon-lighting-custom': '5V/12V/24V, 91-94 CRI, CCT/RGB/RGBW, FCOB, addressable (SPI/DMX512/Art-Net/WS), custom effect software/TUYA compatible, up to 720 LED/m'
+};
+
 function resolveTableHeight(selections) {
   if (!selections || !selections.dimensionsDetail) return null;
   const detail = selections.dimensionsDetail;
@@ -415,6 +486,112 @@ function formatDimensionsDetail(detail) {
   }
   if (heightText) sizeText = sizeText ? `${sizeText}, ${heightText}` : heightText;
   return sizeText;
+}
+
+function formatNumber(value, decimals = 0) {
+  if (!Number.isFinite(value)) return null;
+  if (decimals <= 0) return Math.round(value).toString();
+  return value.toFixed(decimals);
+}
+
+function formatInches(value, decimals = 0) {
+  const formatted = formatNumber(value, decimals);
+  return formatted ? `${formatted} in` : 'TBD';
+}
+
+function formatDimensionPair(length, width) {
+  if (!Number.isFinite(length) || !Number.isFinite(width)) return 'TBD';
+  return `${formatNumber(length)} in x ${formatNumber(width)} in`;
+}
+
+function formatDimensionTriple(length, width, height) {
+  if (!Number.isFinite(length) || !Number.isFinite(width) || !Number.isFinite(height)) return 'TBD';
+  return `${formatNumber(length)} in x ${formatNumber(width)} in x ${formatNumber(height)} in`;
+}
+
+function formatWeight(value, decimals = 0) {
+  const formatted = formatNumber(value, decimals);
+  return formatted ? `${formatted} lbs` : 'TBD';
+}
+
+function getMaterialSpecs(title) {
+  if (!title) return null;
+  return MATERIAL_TECH_SPECS[title] || null;
+}
+
+function getColorSpecs(title) {
+  if (!title) return null;
+  return {
+    pigment: COLOR_PIGMENT_SPECS[title] || null,
+    layout: COLOR_LAYOUT_SPECS[title] || null
+  };
+}
+
+function getFinishSheenSpec(coatingTitle, sheenTitle) {
+  if (!sheenTitle) return null;
+  const spec = FINISH_SHEEN_SPECS[coatingTitle];
+  if (spec && spec[sheenTitle]) return `${sheenTitle} (${spec[sheenTitle]})`;
+  return sheenTitle;
+}
+
+function getFinishTintNote(coatingTitle, tintTitle) {
+  if (!tintTitle) return null;
+  if (coatingTitle === '2K Poly' && tintTitle !== 'Clear') return 'Custom tint';
+  const lookup = FINISH_TINT_NOTES[coatingTitle];
+  if (lookup && lookup[tintTitle]) return lookup[tintTitle];
+  return null;
+}
+
+function parseTubeDimensions(title) {
+  if (!title) return [];
+  const matches = title.match(/[\d.]+/g);
+  if (!matches) return [];
+  return matches.map(val => Number(val)).filter(Number.isFinite);
+}
+
+function getLegWidthForTable(width) {
+  if (!Number.isFinite(width)) return null;
+  if (width <= 36) return 26;
+  if (width <= 42) return 28;
+  if (width <= 48) return 32;
+  return Math.max(0, width - 10);
+}
+
+function calculateEmptyCrateWeight(lengthIn, widthIn, heightIn) {
+  if (!Number.isFinite(lengthIn) || !Number.isFinite(widthIn) || !Number.isFinite(heightIn)) return null;
+  const skidH = 5.5;
+  const crossH = 3.5;
+  const top2x2H = 1.5;
+  const sideHIn = Math.max(0, heightIn - skidH - crossH - top2x2H);
+
+  const lengthFt = lengthIn / 12;
+  const widthFt = widthIn / 12;
+  const sideHFt = sideHIn / 12;
+
+  const wOsbSqFt = 46 / 32;
+  const w2x4Ft = 11 / 8;
+  const w2x6Ft = 16 / 8;
+  const w2x2Ft = w2x4Ft / 2;
+
+  const runners = Math.ceil(widthIn / 24) + 1;
+  const cross = Math.ceil(lengthIn / 24) + 1;
+  const studL = Math.ceil(lengthIn / 48) + 1;
+  const studW = Math.ceil(widthIn / 48) + 1;
+  const studs = 2 * studL + 2 * studW - 4;
+  const topBatt = Math.ceil(lengthIn / 48) + 1;
+
+  const osbAreaFt2 = 2 * (lengthFt * widthFt)
+    + 2 * (lengthFt * sideHFt)
+    + 2 * (widthFt * sideHFt);
+  const osbLb = osbAreaFt2 * wOsbSqFt;
+
+  const lf2x6 = runners * lengthFt;
+  const lf2x4 = cross * widthFt;
+  const lf2x2 = 2 * (lengthFt + widthFt) + studs * sideHFt + topBatt * widthFt;
+  const lumberLb = lf2x6 * w2x6Ft + lf2x4 * w2x4Ft + lf2x2 * w2x2Ft;
+
+  const total = (osbLb + lumberLb) * 1.05;
+  return Math.round(total * 10) / 10;
 }
 
 function formatAddonValue(entry, fallbackId) {
@@ -900,6 +1077,45 @@ async function exportPdf() {
     y += 14;
   };
 
+  const techRowPadding = 6;
+  const techLabelWidth = 168;
+  const techValueWidth = pageWidth - margin * 2 - techLabelWidth;
+  const techLineColor = [229, 231, 235];
+
+  const addTechSubheading = (title) => {
+    ensureSpace(18);
+    y += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMuted);
+    doc.text(title, margin + 2, y);
+    y += 10;
+  };
+
+  const addTechRow = (label, value) => {
+    if (!value) return;
+    const textValue = String(value);
+    const lines = doc.splitTextToSize(textValue, techValueWidth);
+    const lineHeight = 12;
+    const blockHeight = Math.max(lineHeight, lines.length * lineHeight);
+    const rowHeight = blockHeight + techRowPadding * 2;
+    ensureSpace(rowHeight + 2);
+    doc.setDrawColor(...techLineColor);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    const textY = y + techRowPadding + 9;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(label, margin + 2, textY);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...textMain);
+    doc.text(lines, margin + techLabelWidth, textY);
+    doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+    y += rowHeight;
+  };
+
   const modelEntry = summaryData && summaryData.models ? summaryData.models.get(selections.model) : null;
   const designEntry = summaryData && summaryData.designs ? summaryData.designs.get(selections.design) : null;
   const modelName = selections.model ? getEntryTitle(modelEntry, selections.model) : 'Model';
@@ -1017,12 +1233,225 @@ async function exportPdf() {
     addGroupSeparator();
   }
 
-  // Shipping details
-  addSectionTitle('Shipping');
-  addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
   const destinationLabel = shippingDetails.zip || shippingDetails.region
     ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
     : 'Not provided';
+
+  // Technical Specifications
+  addSectionTitle('Technical Specifications');
+  const opts = selections.options || {};
+  const dimensionDetail = selections.dimensionsDetail || {};
+  const length = typeof dimensionDetail.length === 'number' ? dimensionDetail.length : null;
+  const width = typeof dimensionDetail.width === 'number' ? dimensionDetail.width : null;
+  const height = resolveTableHeight(selections);
+  const isCookieDesign = selections.design === COOKIE_DESIGN_ID;
+  const tabletopThickness = isCookieDesign ? null : TABLETOP_THICKNESS_DEFAULT;
+  const tabletopDimensionsLabel = formatDimensionPair(length, width);
+  const tabletopThicknessLabel = isCookieDesign ? 'TBD (quoted separately)' : `${TABLETOP_THICKNESS_DEFAULT} in +/- 0.25 in`;
+  const overallDimensionsLabel = formatDimensionTriple(length, width, height);
+  const addons = Array.isArray(opts.addon) ? opts.addon : [];
+  const waterfallCount = getWaterfallEdgeCount({ selections });
+  const edgeDetails = [];
+  if (addons.includes('addon-live-edge')) edgeDetails.push('Live edge');
+  if (addons.includes('addon-rounded-corners')) edgeDetails.push('Rounded corners');
+  if (addons.includes('addon-chamfered-edges')) edgeDetails.push('Chamfered edges');
+  if (addons.includes('addon-squoval')) edgeDetails.push('Squoval');
+  if (waterfallCount > 0) edgeDetails.push(waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall');
+  const edgeDetailLabel = edgeDetails.length ? edgeDetails.join(', ') : 'Standard';
+
+  const materialEntry = summaryData && summaryData.materials ? summaryData.materials.get(opts.material) : null;
+  const materialTitle = getEntryTitle(materialEntry, opts.material) || 'TBD';
+  const materialSpecs = getMaterialSpecs(materialTitle);
+
+  const finishCoatingEntry = summaryData && summaryData.finishCoatings ? summaryData.finishCoatings.get(opts['finish-coating']) : null;
+  const finishSheenEntry = summaryData && summaryData.finishSheens ? summaryData.finishSheens.get(opts['finish-sheen']) : null;
+  const finishTintEntry = summaryData && summaryData.finishTints ? summaryData.finishTints.get(opts['finish-tint']) : null;
+  const finishCoatingTitle = getEntryTitle(finishCoatingEntry, opts['finish-coating']);
+  const finishSheenTitle = getEntryTitle(finishSheenEntry, opts['finish-sheen']);
+  const finishTintTitle = getEntryTitle(finishTintEntry, opts['finish-tint']);
+  const finishTypeLabel = finishCoatingTitle === '2K Poly'
+    ? '2K Polyurethane'
+    : (finishCoatingTitle === 'Natural Oil' ? 'Osmo Natural Oil' : (finishCoatingTitle || 'TBD'));
+  const finishSheenLabel = getFinishSheenSpec(finishCoatingTitle, finishSheenTitle) || finishSheenTitle || 'TBD';
+  const finishTintLabel = finishTintTitle || 'TBD';
+  const finishTintNote = getFinishTintNote(finishCoatingTitle, finishTintTitle);
+  const finishCoatsLabel = finishCoatingTitle === '2K Poly'
+    ? 'Single coat'
+    : (finishCoatingTitle === 'Natural Oil' ? 'Multi-coat with Ceramic Pro Strong 1000 top coat' : null);
+
+  const colorEntry = summaryData && summaryData.colors ? summaryData.colors.get(opts.color) : null;
+  const colorTitle = getEntryTitle(colorEntry, opts.color);
+  const colorSpecs = getColorSpecs(colorTitle);
+
+  const legEntry = summaryData && summaryData.legs ? summaryData.legs.get(opts.legs) : null;
+  const tubeEntry = summaryData && summaryData.tubeSizes ? summaryData.tubeSizes.get(opts['tube-size']) : null;
+  const legFinishEntry = summaryData && summaryData.legFinishes ? summaryData.legFinishes.get(opts['leg-finish']) : null;
+  const legTitle = getEntryTitle(legEntry, opts.legs);
+  const tubeTitle = getEntryTitle(tubeEntry, opts['tube-size']);
+  const legFinishTitle = getEntryTitle(legFinishEntry, opts['leg-finish']);
+  const legFinishBrand = LEG_FINISH_BRANDS[legFinishTitle];
+  const legFinishLabel = legFinishBrand ? `${legFinishTitle} (${legFinishBrand})` : (legFinishTitle || 'TBD');
+  const hasLegs = opts.legs && opts.legs !== 'leg-none' && waterfallCount < 2;
+  const legStyleLabel = hasLegs ? (legTitle || 'TBD') : (waterfallCount >= 2 ? 'Replaced by waterfall' : (legTitle || 'None'));
+  const legWidth = getLegWidthForTable(width);
+  const legHeight = Number.isFinite(height) && Number.isFinite(tabletopThickness)
+    ? Math.max(0, height - tabletopThickness)
+    : null;
+  const legHeightLabel = Number.isFinite(legHeight)
+    ? formatInches(legHeight)
+    : (isCookieDesign ? 'TBD (cookie quoted separately)' : 'TBD');
+  const legCount = (hasLegs && Number.isFinite(length)) ? getLegCount(length) : null;
+  let legEndSetback = 'TBD';
+  if (hasLegs) {
+    if (selections.model === 'mdl-coffee') legEndSetback = '5-7 in';
+    else if (Number.isFinite(length) && length >= 120) legEndSetback = '18-20 in';
+    else legEndSetback = '12-14 in';
+  }
+  const legSideSetback = hasLegs ? 'Calculated from tabletop width and leg size (leg + plate)' : 'TBD';
+  const tubeDims = parseTubeDimensions(tubeTitle);
+  const tubeDepth = tubeDims.length ? Math.max(...tubeDims) : null;
+  const legDimensions = (hasLegs && Number.isFinite(legWidth) && Number.isFinite(tubeDepth) && Number.isFinite(legHeight))
+    ? `${formatNumber(legWidth)} in W x ${formatNumber(tubeDepth)} in D x ${formatNumber(legHeight)} in H`
+    : 'TBD';
+  const plateLength = Number.isFinite(width) ? Math.max(0, width - 6) : null;
+  const plateSize = hasLegs && Number.isFinite(plateLength)
+    ? `${formatNumber(plateLength)} in L x 6 in W x 0.25 in T`
+    : 'TBD';
+  let legException = null;
+  if (opts.legs === 'leg-sample-02') legException = 'Cube bases have 0.25 in setback on all sides';
+  if (opts.legs === 'leg-sample-08' && selections.design === 'des-round') {
+    legException = 'Round tripods have 12-14 in setback on all sides';
+  }
+  if (opts.legs === 'leg-sample-08' && selections.design === 'des-cookie') {
+    legException = 'Cookie tripods have 12+ in even setback; height TBD';
+  }
+
+  let estimatedTotalWeight = null;
+  if (Number.isFinite(length) && Number.isFinite(width) && Number.isFinite(height)) {
+    const tabletopWeight = getTabletopWeight({ length, width, height, waterfallCount });
+    const legWeight = getLegWeight({
+      legId: opts.legs,
+      tubeId: opts['tube-size'],
+      length,
+      width,
+      height,
+      waterfallCount
+    });
+    const addonWeight = getAddonWeight(addons, length, width);
+    const rawWeight = tabletopWeight + legWeight + addonWeight;
+    if (Number.isFinite(rawWeight)) estimatedTotalWeight = rawWeight;
+  }
+
+  const crateLength = Number.isFinite(length) ? length + 7 : null;
+  const crateWidth = Number.isFinite(width) ? width + 7 : null;
+  const crateHeight = Number.isFinite(height) ? height + 10 : null;
+  const crateDimensions = formatDimensionTriple(crateLength, crateWidth, crateHeight);
+  const emptyCrateWeight = calculateEmptyCrateWeight(crateLength, crateWidth, crateHeight);
+  const loadedCrateWeight = Number.isFinite(emptyCrateWeight) && Number.isFinite(estimatedTotalWeight)
+    ? emptyCrateWeight + estimatedTotalWeight
+    : null;
+
+  addTechSubheading('Dimensions');
+  addTechRow('Tabletop Dimensions', tabletopDimensionsLabel);
+  addTechRow('Overall Dimensions (with legs)', overallDimensionsLabel);
+  addTechRow('Tabletop Thickness', tabletopThicknessLabel);
+  addTechRow('Edge Detail', edgeDetailLabel);
+  if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
+  if (addons.includes('addon-chamfered-edges')) addTechRow('Chamfered Edges', '0.25 in at 45 degrees');
+  if (addons.includes('addon-squoval')) addTechRow('Squoval', 'Min width is 20% less than tabletop width');
+  if (waterfallCount > 0) {
+    const dropLabel = Number.isFinite(height) ? formatInches(height) : 'TBD';
+    const calcLabel = (Number.isFinite(width) && Number.isFinite(height))
+      ? ` (calc 2 x ${formatNumber(width)} in x ${formatNumber(height)} in)`
+      : ' (calc 2 x width x height)';
+    addTechRow('Waterfall Edge', `${waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall'}, drop ${dropLabel}${calcLabel}`);
+  }
+
+  addTechSubheading('Materials');
+  addTechRow('Material', materialTitle || 'TBD');
+  addTechRow('Material Density (lb/ft^3)', materialSpecs ? materialSpecs.density : 'TBD');
+  addTechRow('Material Hardness (Janka, lbf)', materialSpecs ? materialSpecs.hardness : 'TBD');
+
+  addTechSubheading('Finish & Color');
+  addTechRow('Finish Type', finishTypeLabel);
+  addTechRow('Finish Sheen', finishSheenLabel);
+  if (finishCoatsLabel) addTechRow('Finish Coats', finishCoatsLabel);
+  addTechRow('Finish Tint', finishTintLabel);
+  if (finishTintNote) addTechRow('Tint Notes', finishTintNote);
+  addTechRow('Epoxy Layers', 'Seal coat <0.25 in + river 2-2.5 in');
+  addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
+  addTechRow('Color Layout', (colorSpecs && colorSpecs.layout) || (colorTitle ? 'Custom' : 'TBD'));
+
+  addTechSubheading('Legs');
+  addTechRow('Leg Style', legStyleLabel);
+  if (hasLegs) {
+    addTechRow('Leg Material', 'HSS steel');
+    addTechRow('Leg Tube Size', tubeTitle || 'TBD');
+    addTechRow('Leg Tube Wall Thickness', '14 gauge (0.083 in)');
+    addTechRow('Leg Width', Number.isFinite(legWidth) ? formatInches(legWidth) : 'TBD');
+    addTechRow('Leg Height', legHeightLabel);
+    addTechRow('Legs (qty)', Number.isFinite(legCount) ? String(legCount) : 'TBD');
+    addTechRow('Leg Setback (from end)', legEndSetback);
+    addTechRow('Leg Setback (from side)', legSideSetback);
+    if (legException) addTechRow('Leg Exceptions', legException);
+    addTechRow('Leg Dimensions', legDimensions);
+    addTechRow('Mounting Plate Size', plateSize);
+    addTechRow('Leg Finish Color', legFinishLabel);
+  }
+
+  const powerStripId = addons.find(id => POWER_STRIP_SPECS[id]);
+  const powerStripEntry = powerStripId && summaryData ? summaryData.addons.get(powerStripId) : null;
+  const powerStripTitle = powerStripEntry ? powerStripEntry.title : 'Power Strip';
+  const lightingAddonId = addons.find(id => id && id.startsWith('addon-lighting-'));
+  const lightingEntry = lightingAddonId && summaryData ? summaryData.addons.get(lightingAddonId) : null;
+  const lightingTitle = lightingEntry ? lightingEntry.title : 'Lighting';
+
+  const hasAddonSpecs = addons.includes('addon-glass-top') ||
+    addons.includes('addon-wireless-charging') ||
+    addons.includes('addon-ethernet') ||
+    addons.includes('addon-hdmi') ||
+    addons.includes('addon-custom-tech') ||
+    addons.includes('addon-custom-river') ||
+    addons.includes('addon-embedded-logo') ||
+    addons.includes('addon-live-edge') ||
+    !!powerStripId ||
+    !!lightingAddonId;
+
+  if (hasAddonSpecs) {
+    addTechSubheading('Add-ons');
+    if (addons.includes('addon-live-edge')) addTechRow('Live Edge', 'Natural slab edge');
+    if (addons.includes('addon-glass-top')) addTechRow('Glass Top', '1/4 in thick; glass type TBD');
+    if (powerStripId) addTechRow(`Power Strip (${powerStripTitle})`, POWER_STRIP_SPECS[powerStripId]);
+    if (addons.includes('addon-wireless-charging')) addTechRow('Wireless Charging', 'Up to 15W output, 20W input');
+    if (addons.includes('addon-ethernet')) addTechRow('Ethernet', 'Cat5e cabling');
+    if (addons.includes('addon-hdmi')) addTechRow('HDMI', 'HDMI 2.0');
+    if (lightingAddonId) {
+      addTechRow('Lighting Operating Temp', '-10C to 45C');
+      addTechRow(`Lighting (${lightingTitle})`, LIGHTING_SPECS_BY_ID[lightingAddonId] || lightingTitle);
+    }
+    if (addons.includes('addon-custom-tech')) addTechRow('Custom Tech', 'Quoted separately');
+    if (addons.includes('addon-custom-river')) addTechRow('Custom River Design', 'Quoted separately');
+    if (addons.includes('addon-embedded-logo')) addTechRow('Embedded Logo', 'Custom inlay');
+  }
+
+  addTechSubheading('Shipping Specs');
+  const shippingMode = shippingDetails.mode || 'Standard shipping';
+  const shippingMethod = shippingMode === 'Standard shipping' ? 'Standard Ground' : shippingMode;
+  const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
+  addTechRow('Estimated Total Weight', formatWeight(estimatedTotalWeight));
+  addTechRow('Shipping Method', shippingMethod);
+  addTechRow('Estimated Transit Time', transitTime);
+  addTechRow('Delivery Region', destinationLabel);
+  addTechRow('Crate Dimensions', crateDimensions);
+  addTechRow('Crate Material', '7/16 in OSB walls/floor/top; frame 2x2/2x4/2x6 lumber');
+  addTechRow('Crate Hardware', 'T-25 screws 3/4-3 in');
+  addTechRow('Packaging', '1/4 in PE foam + 80 Ga stretch wrap; foam lining 1 in EPS foam');
+  addTechRow('Empty Crate Weight', formatWeight(emptyCrateWeight, 1));
+  addTechRow('Crate Weight (loaded)', formatWeight(loadedCrateWeight, 1));
+
+  // Shipping details
+  addSectionTitle('Shipping');
+  addListItem(`Mode: ${shippingDetails.mode || 'Not selected'}`);
   addListItem(`Destination: ${destinationLabel}`);
   addListItem('Estimate', shippingLabel || 'Pending');
   if (shippingDetails.flags && shippingDetails.flags.length) {

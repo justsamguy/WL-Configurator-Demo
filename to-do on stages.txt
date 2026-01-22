@@ -1,3 +1,7 @@
+add number field to input custom power strip cable length (distance is measured from the leg the cables will come out of)
+add a custom tint option ("Match a stain to my reference")
+add angled corners addon
+update how your wood is chosen tooltip, and make the text a little darker
 
 Overhaul media to improve loading times
 

@@ -13,16 +13,16 @@
    - Enhance `data/materials.json` — add density (g/cm³), hardness rating, finish compatibility notes
    - Enhance `data/legs.json` — add leg height, width, depth, setback distance, wall thickness
    - Enhance `data/finish.json` — add coating thickness (microns), cure time, application notes
-   - Enhance `data/colors.json` — add epoxy type, pour depth (if River design), pigment composition notes
+   - Enhance `data/colors.json` — add epoxy type, layer information, pigment composition notes
 
 2. Collect specs from you (or design team/manufacturer docs) for:
    - Material densities & hardness ratings
    - Leg geometry & setback distances per leg style
    - Tube wall thicknesses (gauge)
-   - Tabletop thickness(es)
+   - Tabletop thickness (fixed at 2" for all models)
    - Add-on electrical specs (watts, outlets, cable lengths, color temps, CRI)
-   - Crate dimensions formula, wall/floor/top/frame specs, weights
-   - Shipping time estimates by region/method
+   - Crate dimensions formula (dynamic based on table size), wall/floor/top/frame specs, weights (formulated based on material weights)
+   - Shipping time estimates by region/method (show "5–10 business days" for all Standard Ground)
 
 ## Technical Section Content Layout
 
@@ -31,8 +31,7 @@
 ```
 ─────────────────────────────────────────
 Tabletop Dimensions         72" L × 36" W × 2" thick
-─────────────────────────────────────────
-Overall Height (with legs)  30"
+Overall Dimensions (with legs)  72" Long × 36" Wide × 30" Tall
 ─────────────────────────────────────────
 Material                    Black Walnut
 Material Density            0.68 g/cm³
@@ -40,15 +39,21 @@ Hardness (Janka)           1010
 Wood Finish Coating        2K Polyurethane
 Finish Sheen               Satin
 Finish Tint                Clear
+Pigment Composition        Color1, Color2, Color3...
+Color Layout               [description of pigments and placement in river design]
 ─────────────────────────────────────────
-Leg Style                   X-Style Metal Frame
-Leg Material                Welded Steel
+Leg Style                   X
+Leg Material                HSS Steel
 Leg Tube Size              2×4"
-Leg Tube Wall Thickness    0.120" (12 gauge)
-Leg Setback (from edge)    3"
+Leg Tube Wall Thickness    0.065"
+Leg Setback (from end)    12"
+Leg Setback (from side)    4"
 Leg Finish                 Matte Black
-Legs (qty)                 4
-Per-Leg Dimensions         24" H × 4" W × 2" D
+Legs (qty)                 2
+Single-Leg Dimensions (overall)        28" H × 28" W × 8" D
+Single-Leg Weight (overall)             40 lbs
+Single-Leg Dimensions (minus plate)        27.25" H × 28" W × 4" D
+Mounting Plate Size         30" L × 8" W × 0.25" T
 ─────────────────────────────────────────
 Estimated Total Weight     285 lbs
   (Tabletop + Legs + Hardware)
@@ -60,10 +65,10 @@ Waterfall Edge (1x)        Single waterfall side, 12" drop
 [SHIPPING (if applicable)]
 Shipping Method            Standard Ground
 Crate Dimensions           79" L × 43" W × 37" H
-Crate Material (walls)     1" plywood + 2×4 frame
+Crate Material (walls)     5/8" OSB plywood + 2×2/2x4/2x6 lumber frame
 Crate Weight (empty)       85 lbs
 Crate Weight (loaded)      370 lbs
-Estimated Transit Time     5–7 business days
+Estimated Transit Time     5–10 business days
 Delivery Region            Zone 3 (Midwest)
 ─────────────────────────────────────────
 ```
@@ -76,15 +81,3 @@ Delivery Region            Zone 3 (Midwest)
 4. **Refactor pricing.js weight logic** — Move hardcoded weight rules to `data/technicalSpecs.json` and update `js/pricing.js` to reference the config
 5. **Build Technical page renderer** — Add new function in `js/export.js` to format Technical section with left/right label-value pairs, line separators, add-on subsections, and conditional shipping block
 6. **Test with multiple configurations** — Verify weight, crate, and shipping data display correctly for different table sizes, leg styles, and add-on combinations
-
-## Further Considerations
-
-1. **Tabletop thickness**  2" is a fixed thickness for all models.
-
-2. **Epoxy pigments & color layout** This will be 2 lines - one is pigment composition (Color1, Color2, Color3...), the second line is color layout - describing the pigments and their placement in the river design. 
-
-3. **Per-leg specs** show individual leg geometry: Overall ("28" H × 28" W" x 8" D), Without mounting plate ("27.25" H × 28" W × 4" D), Mounting plate size (30" L × 8" W  × "0.25" T). These dimensions are dynamic based on tabletop dimensions.
-
-4. **Crate specs** size is already calculated dynamically, weight can be formulated based on material weights—confirm if any fixed values are needed.
-
-5. **Shipping time** show "5–10 business days" for all Standard Ground.
