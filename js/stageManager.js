@@ -249,18 +249,20 @@ async function setStage(index, options = {}) {
       log.debug(`[setStage] Looking for panel: ${panelId}`);
       log.debug('[setStage] Panel found', { exists: !!panel, parentId: panel?.parentElement?.id });
       
-      // If panel is not found, it might still be in mainContent from a previous stage
-      // Try to restore any displaced panels first
-      if (!panel && root && mainContent) {
-        log.debug('[setStage] Panel not found by ID, searching in mainContent');
-        // Check if any stage-panel is currently in mainContent that shouldn't be
+      // Always restore any displaced stage panels before moving the target panel.
+      if (root && mainContent) {
         const displacePanel = mainContent.querySelector('[id^="stage-panel-"]');
         if (displacePanel && displacePanel.id !== panelId) {
           log.debug(`[setStage] Found displaced panel: ${displacePanel.id}, restoring to root`);
           root.appendChild(displacePanel);
         }
-        // Now try to find the target panel again
-        panel = document.getElementById(panelId);
+      }
+
+      // If panel is not found, it might still be in mainContent from a previous stage
+      // Try to find the target panel again after cleanup.
+      if (!panel && root && mainContent) {
+        log.debug('[setStage] Panel not found by ID, searching in mainContent');
+        panel = mainContent.querySelector(`#${panelId}`);
         log.debug('[setStage] Panel found after cleanup', { exists: !!panel });
       }
       
