@@ -1625,6 +1625,9 @@ async function exportPdf() {
   const shippingMode = shippingDetails.mode || 'Standard shipping';
   const shippingMethod = shippingMode === 'Standard shipping' ? 'LTL' : shippingMode;
   const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
+  const destinationLabel = shippingDetails.zip || shippingDetails.region
+    ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
+    : 'Not provided';
   addTechRow('Shipping Method', shippingMethod);
   addTechRow('Estimated Transit Time', transitTime);
   addTechRow('Delivery Region', destinationLabel);
