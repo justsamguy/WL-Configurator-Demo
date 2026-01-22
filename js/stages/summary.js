@@ -667,18 +667,15 @@ export function buildOptionGroups(selections, summaryData) {
     });
   }
 
-  const materialItems = [];
-  addOptionItem(materialItems, 'Material', opts.material, summaryData && opts.material ? summaryData.materials.get(opts.material) : null, 'material');
-  addOptionItem(materialItems, 'Color', opts.color, summaryData && opts.color ? summaryData.colors.get(opts.color) : null, 'color');
+  const tabletopItems = [];
+  addOptionItem(tabletopItems, 'Material', opts.material, summaryData && opts.material ? summaryData.materials.get(opts.material) : null, 'material');
+  addOptionItem(tabletopItems, 'Color', opts.color, summaryData && opts.color ? summaryData.colors.get(opts.color) : null, 'color');
   const customColorNote = typeof opts.customColorNote === 'string' ? opts.customColorNote.trim() : '';
-  if (customColorNote) materialItems.push({ label: 'Custom Color Note', value: customColorNote, type: 'note' });
-  if (materialItems.length) groups.push({ title: 'Materials', items: materialItems });
-
-  const finishItems = [];
-  addOptionItem(finishItems, 'Finish Coating', opts['finish-coating'], summaryData && opts['finish-coating'] ? summaryData.finishCoatings.get(opts['finish-coating']) : null, 'finish-coating');
-  addOptionItem(finishItems, 'Finish Sheen', opts['finish-sheen'], summaryData && opts['finish-sheen'] ? summaryData.finishSheens.get(opts['finish-sheen']) : null, 'finish-sheen');
-  addOptionItem(finishItems, 'Finish Tint', opts['finish-tint'], summaryData && opts['finish-tint'] ? summaryData.finishTints.get(opts['finish-tint']) : null, 'finish-tint');
-  if (finishItems.length) groups.push({ title: 'Finish', items: finishItems });
+  if (customColorNote) tabletopItems.push({ label: 'Custom Color Note', value: customColorNote, type: 'note' });
+  addOptionItem(tabletopItems, 'Finish Coating', opts['finish-coating'], summaryData && opts['finish-coating'] ? summaryData.finishCoatings.get(opts['finish-coating']) : null, 'finish-coating');
+  addOptionItem(tabletopItems, 'Finish Sheen', opts['finish-sheen'], summaryData && opts['finish-sheen'] ? summaryData.finishSheens.get(opts['finish-sheen']) : null, 'finish-sheen');
+  addOptionItem(tabletopItems, 'Finish Tint', opts['finish-tint'], summaryData && opts['finish-tint'] ? summaryData.finishTints.get(opts['finish-tint']) : null, 'finish-tint');
+  if (tabletopItems.length) groups.push({ title: 'Tabletop', items: tabletopItems });
 
   const dimensionValue = formatDimensionsDetail(selections.dimensionsDetail);
   if (opts.dimensions || dimensionValue) {
@@ -1153,7 +1150,7 @@ async function exportPdf() {
   const techValueWidth = pageWidth - margin * 2 - techLabelWidth;
   const techLineColor = [229, 231, 235];
   const techSubheadingFontSize = 10;
-  const techSubheadingTopGap = 8;
+  const techSubheadingTopGap = 24;
   const techSubheadingBottomGap = 8;
   const techSubheadingLineHeight = 12;
 
@@ -1406,7 +1403,7 @@ async function exportPdf() {
   } else if (finishCoatingTitle === '2K Poly') {
     finishCoats.push('2K Polyurethane');
   } else if (finishCoatingTitle === 'Natural Oil') {
-    finishCoats.push('Osmo Natural Oil base coat');
+    finishCoats.push(finishTintNote || 'Osmo Natural Oil base coat');
     finishCoats.push('Ceramic Pro Strong 1000 top coat');
   } else if (finishCoatingTitle) {
     finishCoats.push(finishTypeLabel);
@@ -1520,18 +1517,18 @@ async function exportPdf() {
     addTechRow('Waterfall Edge', `${waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall'}, drop ${dropLabel}${calcLabel}`);
   }
 
-  addTechSubheading('Materials');
+  addTechSubheading('Tabletop');
   addTechRow('Material', materialTitle || 'TBD');
   addTechRow('Material Density (lb/ft^3)', materialSpecs ? materialSpecs.density : 'TBD');
   addTechRow('Material Hardness (Janka, lbf)', materialSpecs ? materialSpecs.hardness : 'TBD');
 
-  addTechSubheading('Finish & Color');
   addTechRow('Finish Type', finishTypeLabel);
   addTechRow('Finish Sheen', finishSheenLabel);
   addTechRow('Finish Tint', finishTintLabel);
-  if (finishTintNote) addTechRow('Tint Notes', finishTintNote);
   finishCoats.forEach((coat, index) => {
-    addTechRow(`Finish Coat ${index + 1}`, coat);
+    const isOsmoTopCoat = finishCoatingTitle === 'Natural Oil' && coat === 'Ceramic Pro Strong 1000 top coat';
+    const label = isOsmoTopCoat ? 'Finish Top Coat' : `Finish Coat ${index + 1}`;
+    addTechRow(label, coat);
   });
   addTechRow('Base Epoxy Layer', 'Seal coat <0.25 in');
   addTechRow('Main Epoxy Layer', 'River 2-2.5 in');

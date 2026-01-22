@@ -45,8 +45,7 @@ function getAddonValues(items) {
 function buildConfigFromGroups(groups) {
   const modelGroup = getGroup(groups, 'Model');
   const designGroup = getGroup(groups, 'Design');
-  const materialsGroup = getGroup(groups, 'Materials');
-  const finishGroup = getGroup(groups, 'Finish');
+  const tabletopGroup = getGroup(groups, 'Tabletop');
   const dimensionsGroup = getGroup(groups, 'Dimensions');
   const legsGroup = getGroup(groups, 'Legs');
   const addonsGroup = getGroup(groups, 'Add-ons');
@@ -55,14 +54,14 @@ function buildConfigFromGroups(groups) {
     model: getItemValue(modelGroup && modelGroup.items, 'Model'),
     design: getItemValue(designGroup && designGroup.items, 'Design'),
     materials: {
-      material: getItemValue(materialsGroup && materialsGroup.items, 'Material'),
-      color: getItemValue(materialsGroup && materialsGroup.items, 'Color'),
-      customColorNote: getItemValue(materialsGroup && materialsGroup.items, 'Custom Color Note')
+      material: getItemValue(tabletopGroup && tabletopGroup.items, 'Material'),
+      color: getItemValue(tabletopGroup && tabletopGroup.items, 'Color'),
+      customColorNote: getItemValue(tabletopGroup && tabletopGroup.items, 'Custom Color Note')
     },
     finish: {
-      coating: getItemValue(finishGroup && finishGroup.items, 'Finish Coating'),
-      sheen: getItemValue(finishGroup && finishGroup.items, 'Finish Sheen'),
-      tint: getItemValue(finishGroup && finishGroup.items, 'Finish Tint')
+      coating: getItemValue(tabletopGroup && tabletopGroup.items, 'Finish Coating'),
+      sheen: getItemValue(tabletopGroup && tabletopGroup.items, 'Finish Sheen'),
+      tint: getItemValue(tabletopGroup && tabletopGroup.items, 'Finish Tint')
     },
     dimensions: getItemValue(dimensionsGroup && dimensionsGroup.items, 'Dimensions'),
     legs: {
