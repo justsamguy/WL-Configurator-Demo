@@ -839,14 +839,15 @@ header .flex.justify-center.items-center {
   width: 100%;
   font-size: 0.75rem;
   color: #6b7280;
+  text-align: center;
 }
 
 .summary-shipping-switch-description-label {
   font-weight: 600;
 }
 
-.summary-shipping-switch-description-input {
-  width: min(100%, 18rem);
+.summary-shipping-switch-description-text {
+  max-width: 24rem;
 }
 
 .summary-shipping-notes {

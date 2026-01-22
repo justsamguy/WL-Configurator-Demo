@@ -1628,10 +1628,6 @@ function initShippingControls() {
   const liftgatePrice = document.getElementById('shipping-liftgate-price');
   const whiteGlovePrice = document.getElementById('shipping-white-glove-price');
   const cratePrice = document.getElementById('shipping-crate-price');
-  const crateDescription = document.getElementById('shipping-crate-description');
-  const commercialDescription = document.getElementById('shipping-commercial-description');
-  const liftgateDescription = document.getElementById('shipping-liftgate-description');
-  const whiteGloveDescription = document.getElementById('shipping-white-glove-description');
   const notes = document.getElementById('summary-shipping-notes');
   const notesInput = document.getElementById('shipping-notes');
   const warning = document.getElementById('summary-shipping-warning');
@@ -1757,12 +1753,15 @@ function initShippingControls() {
       toggles.classList.toggle('is-visible', showExtras);
       toggles.setAttribute('aria-hidden', showExtras ? 'false' : 'true');
     }
+    const whiteGloveSelected = !!(whiteGlove && whiteGlove.checked);
     [commercial, liftgate, whiteGlove].forEach((input) => {
       if (input) input.disabled = !showExtras;
     });
-    [crateDescription, commercialDescription, liftgateDescription, whiteGloveDescription].forEach((input) => {
-      if (input) input.disabled = !showExtras;
-    });
+    if (liftgate) {
+      if (whiteGloveSelected) liftgate.checked = false;
+      liftgate.disabled = !showExtras || whiteGloveSelected;
+      liftgate.setAttribute('aria-disabled', liftgate.disabled ? 'true' : 'false');
+    }
     setStaticPrice(cratePrice, formatAccessorialPrice(SHIPPING_CRATE_COST), showExtras);
     setTogglePrice(commercialPrice, !!(commercial && commercial.checked), SHIPPING_ACCESSORIAL_PRICES.residential);
     setTogglePrice(liftgatePrice, !!(liftgate && liftgate.checked), SHIPPING_ACCESSORIAL_PRICES.liftgate);
