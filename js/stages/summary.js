@@ -316,25 +316,67 @@ const LEG_FINISH_BRANDS = {
   'Raw Metal': 'Rustoleum Clear'
 };
 
-const POWER_STRIP_SPECS = {
-  'addon-power-ac': '125V 15A; 6 AC ports; rails 5 ft or 3 ft; cable length 12 ft; black',
-  'addon-power-ac-usb': '125V 15A; 3 AC + 6 USB (5V 2.4A each); rails 5 ft or 3 ft; cable length 12 ft; black',
-  'addon-power-ac-usb-usbc': '125V 15A; 3 AC + 3 USB + 3 USB-C (5V 2.4A each); rails 5 ft or 3 ft; cable length 12 ft; black'
-};
+const TECH_CABLE_LENGTH_DEFAULT = '12 ft';
 
-// Get power strip specs with custom cable length if available
-const getPowerStripSpecs = (powerStripId, customCableLength) => {
-  const baseSpec = POWER_STRIP_SPECS[powerStripId];
-  if (!baseSpec || !customCableLength) return baseSpec;
-  // Replace the default 12 ft cable length with the custom value
-  return baseSpec.replace('cable length 12 ft', `cable length ${customCableLength} ft`);
+const POWER_STRIP_SPECS = {
+  'addon-power-ac': {
+    powerRating: '125V 15A',
+    ports: '6 AC',
+    railLength: '5 ft or 3 ft',
+    color: 'Black'
+  },
+  'addon-power-ac-usb': {
+    powerRating: '125V 15A',
+    ports: '3 AC + 6 USB (5V 2.4A each)',
+    railLength: '5 ft or 3 ft',
+    color: 'Black'
+  },
+  'addon-power-ac-usb-usbc': {
+    powerRating: '125V 15A',
+    ports: '3 AC + 3 USB + 3 USB-C (5V 2.4A each)',
+    railLength: '5 ft or 3 ft',
+    color: 'Black'
+  }
 };
 
 const LIGHTING_SPECS_BY_ID = {
-  'addon-lighting-white': '24V, 90+ CRI, 2700-6000K, non-addressable, 320 LED/m',
-  'addon-lighting-color-basic': '24V, RGBW, non-addressable, 30-60 LED/m',
-  'addon-lighting-color-fx': '12V, 90+ CRI, RGBW, FCOB, addressable (SPI control), app compatible, 100-400 LED/m',
-  'addon-lighting-custom': '5V/12V/24V, 91-94 CRI, CCT/RGB/RGBW, FCOB, addressable (SPI/DMX512/Art-Net/WS), custom effect software/TUYA compatible, up to 720 LED/m'
+  'addon-lighting-white': {
+    voltage: '24V',
+    cri: '90+ CRI',
+    color: '2700-6000K',
+    control: 'Non-addressable',
+    density: '320 LED/m'
+  },
+  'addon-lighting-color-basic': {
+    voltage: '24V',
+    color: 'RGBW',
+    control: 'Non-addressable',
+    density: '30-60 LED/m'
+  },
+  'addon-lighting-color-fx': {
+    voltage: '12V',
+    cri: '90+ CRI',
+    color: 'RGBW',
+    type: 'FCOB',
+    control: 'Addressable (SPI control)',
+    compatibility: 'App compatible',
+    density: '100-400 LED/m'
+  },
+  'addon-lighting-custom': {
+    voltage: '5V/12V/24V',
+    cri: '91-94 CRI',
+    color: 'CCT/RGB/RGBW',
+    type: 'FCOB',
+    control: 'Addressable (SPI/DMX512/Art-Net/WS)',
+    compatibility: 'Custom effect software/TUYA compatible',
+    density: 'Up to 720 LED/m'
+  }
+};
+
+const getTechCableLengthLabel = (customLength) => {
+  const normalized = typeof customLength === 'string' ? customLength.trim() : customLength;
+  if (normalized) return `${normalized} ft`;
+  return TECH_CABLE_LENGTH_DEFAULT;
 };
 
 function resolveTableHeight(selections) {
@@ -1426,16 +1468,17 @@ async function exportPdf() {
   const finishSheenLabel = getFinishSheenSpec(finishCoatingTitle, finishSheenTitle) || finishSheenTitle || 'TBD';
   const finishTintLabel = finishTintTitle || 'TBD';
   const finishTintNote = getFinishTintNote(finishCoatingTitle, finishTintTitle);
-  const finishCoats = [];
+  const finishCoatRows = [];
   if (finishTintTitle === 'Custom') {
-    finishCoats.push('TBD');
+    finishCoatRows.push({ label: 'Finish Base Coat', value: 'TBD' });
   } else if (finishCoatingTitle === '2K Poly') {
-    finishCoats.push('2K Polyurethane');
+    finishCoatRows.push({ label: 'Finish Base Coat', value: '2K Polyurethane' });
   } else if (finishCoatingTitle === 'Natural Oil') {
-    finishCoats.push(finishTintNote || 'Osmo Natural Oil base coat');
-    finishCoats.push('Ceramic Pro Strong 1000 top coat');
+    finishCoatRows.push({ label: 'Finish Base Coat', value: finishTintNote || 'Osmo Natural Oil base coat' });
+    finishCoatRows.push({ label: 'Finish Second Coat', value: 'Osmo Natural Oil second coat' });
+    finishCoatRows.push({ label: 'Finish Top Coat', value: 'Ceramic Pro Strong 1000 top coat' });
   } else if (finishCoatingTitle) {
-    finishCoats.push(finishTypeLabel);
+    finishCoatRows.push({ label: 'Finish Base Coat', value: finishTypeLabel });
   }
 
   const colorEntry = summaryData && summaryData.colors ? summaryData.colors.get(opts.color) : null;
@@ -1550,15 +1593,12 @@ async function exportPdf() {
   addTechRow('Material', materialTitle || 'TBD');
   addTechRow('Material Density (lb/ft^3)', materialSpecs ? materialSpecs.density : 'TBD');
   addTechRow('Material Hardness (Janka, lbf)', materialSpecs ? materialSpecs.hardness : 'TBD');
+  addTechRow('Moisture Content (WMC)', '5-10%');
 
   addTechRow('Finish Type', finishTypeLabel);
   addTechRow('Finish Sheen', finishSheenLabel);
   addTechRow('Finish Tint', finishTintLabel);
-  finishCoats.forEach((coat, index) => {
-    const isOsmoTopCoat = finishCoatingTitle === 'Natural Oil' && coat === 'Ceramic Pro Strong 1000 top coat';
-    const label = isOsmoTopCoat ? 'Finish Top Coat' : `Finish Coat ${index + 1}`;
-    addTechRow(label, coat);
-  });
+  finishCoatRows.forEach((row) => addTechRow(row.label, row.value));
   addTechRow('Base Epoxy Layer', 'Seal coat <0.25 in');
   addTechRow('Main Epoxy Layer', 'River 2-2.5 in');
   addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
@@ -1576,6 +1616,9 @@ async function exportPdf() {
     if (legException) addTechRow('Leg Exceptions', legException);
     addTechRow('Leg Dimensions', legDimensions);
     addTechRow('Mounting Plate Size', plateSize);
+    addTechRow('Mounting Hardware Bolts', '3/8"-16 x 1"/1.25"Button Head Bolt (5-8 per leg)');
+    addTechRow('Bolt Head Socket', '7/32" Socket');
+    addTechRow('Mounting Hardware Inserts', '3/8"-16 ID 1/2" OD 5/8"/1" Brass Inserts (5-8 per leg)');
     addTechRow('Leg Finish Color', legFinishLabel);
     addTechRow('Leg Weight (per leg)', formatWeight(legWeightPerLeg));
     addTechRow('Setback to Leg (from end)', legEndSetback);
@@ -1590,6 +1633,12 @@ async function exportPdf() {
   const lightingAddonId = addons.find(id => id && id.startsWith('addon-lighting-'));
   const lightingEntry = lightingAddonId && summaryData ? summaryData.addons.get(lightingAddonId) : null;
   const lightingTitle = lightingEntry ? lightingEntry.title : 'Lighting';
+  const hasTechAddons = !!powerStripId ||
+    addons.includes('addon-wireless-charging') ||
+    addons.includes('addon-ethernet') ||
+    addons.includes('addon-hdmi') ||
+    !!lightingAddonId ||
+    addons.includes('addon-custom-tech');
 
   const hasAddonSpecs = addons.includes('addon-glass-top') ||
     addons.includes('addon-wireless-charging') ||
@@ -1607,15 +1656,41 @@ async function exportPdf() {
     addTechSubheading('Add-ons');
     addTechRow('Edge Style', edgeDetailLabel);
     if (addons.includes('addon-live-edge')) addTechRow('Live Edge', 'Natural slab edge');
-    if (addons.includes('addon-glass-top')) addTechRow('Glass Top', '1/4 in thick; glass type TBD');
-    if (powerStripId) addTechRow(`Power Strip (${powerStripTitle})`, getPowerStripSpecs(powerStripId, selections.techCableLength));
-    if (addons.includes('addon-wireless-charging')) addTechRow('Wireless Charging', 'Up to 15W output, 20W input');
-    if (addons.includes('addon-ethernet')) addTechRow('Ethernet', 'Cat5e cabling');
-    if (addons.includes('addon-hdmi')) addTechRow('HDMI', 'HDMI 2.0');
-    if (lightingAddonId) {
-      addTechRow('Lighting Operating Temp', '-10C to 45C');
-      addTechRow(`Lighting (${lightingTitle})`, LIGHTING_SPECS_BY_ID[lightingAddonId] || lightingTitle);
+    if (addons.includes('addon-glass-top')) {
+      addTechRow('Glass thickness', '1/4 in');
+      addTechRow('Glass type', 'TBD');
     }
+    if (powerStripId) {
+      const powerStripSpecs = POWER_STRIP_SPECS[powerStripId];
+      addTechRow('Power strip option', powerStripTitle);
+      if (powerStripSpecs) {
+        addTechRow('Power rating', powerStripSpecs.powerRating);
+        addTechRow('# of ports', powerStripSpecs.ports);
+        addTechRow('Rail length', powerStripSpecs.railLength);
+        addTechRow('Color', powerStripSpecs.color);
+      }
+    }
+    if (addons.includes('addon-wireless-charging')) {
+      addTechRow('Wireless charging input', 'Up to 20W');
+      addTechRow('Wireless charging output', 'Up to 15W');
+    }
+    if (addons.includes('addon-ethernet')) addTechRow('Ethernet cable type', 'Cat5e');
+    if (addons.includes('addon-hdmi')) addTechRow('HDMI version', 'HDMI 2.0');
+    if (lightingAddonId) {
+      const lightingSpecs = LIGHTING_SPECS_BY_ID[lightingAddonId];
+      addTechRow('Lighting option', lightingTitle);
+      addTechRow('Lighting operating temp', '-10C to 45C');
+      if (lightingSpecs) {
+        if (lightingSpecs.voltage) addTechRow('Lighting voltage', lightingSpecs.voltage);
+        if (lightingSpecs.cri) addTechRow('Lighting CRI', lightingSpecs.cri);
+        if (lightingSpecs.color) addTechRow('Lighting color', lightingSpecs.color);
+        if (lightingSpecs.type) addTechRow('Lighting type', lightingSpecs.type);
+        if (lightingSpecs.control) addTechRow('Lighting control', lightingSpecs.control);
+        if (lightingSpecs.compatibility) addTechRow('Lighting compatibility', lightingSpecs.compatibility);
+        if (lightingSpecs.density) addTechRow('Lighting density', lightingSpecs.density);
+      }
+    }
+    if (hasTechAddons) addTechRow('Cable length', getTechCableLengthLabel(selections.techCableLength));
     if (addons.includes('addon-custom-tech')) addTechRow('Custom Tech', 'Quoted separately');
     if (addons.includes('addon-custom-river')) addTechRow('Custom River Design', 'Quoted separately');
     if (addons.includes('addon-embedded-logo')) addTechRow('Embedded Logo', 'Custom inlay');
@@ -1635,6 +1710,7 @@ async function exportPdf() {
   addTechRow('Crate Material (walls/floor/top)', '7/16 in OSB walls/floor/top');
   addTechRow('Crate Material (frame)', 'Frame 2x2/2x4/2x6 lumber');
   addTechRow('Crate Hardware', 'T-25 screws 3/4in - 3in');
+  addTechRow('Crate seal', 'DAP Alex Plus Clear');
   addTechRow('Table Packaging', 'Table wrap: 1/4 in PE foam + 80 Ga stretch wrap');
   addTechRow('Crate Packaging', 'Crate lining: 1 in EPS foam');
   addTechRow('Estimated Empty Crate Weight', formatWeight(emptyCrateWeight));
