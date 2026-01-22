@@ -1310,6 +1310,7 @@ async function exportPdf() {
   const edgeDetails = [];
   if (addons.includes('addon-live-edge')) edgeDetails.push('Live edge');
   if (addons.includes('addon-rounded-corners')) edgeDetails.push('Rounded corners');
+  if (addons.includes('addon-angled-corners')) edgeDetails.push('Angled corners');
   if (addons.includes('addon-chamfered-edges')) edgeDetails.push('Chamfered edges');
   if (addons.includes('addon-squoval')) edgeDetails.push('Squoval');
   if (waterfallCount > 0) edgeDetails.push(waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall');
@@ -1415,6 +1416,7 @@ async function exportPdf() {
   addTechRow('Tabletop Thickness', tabletopThicknessLabel);
   addTechRow('Edge Detail', edgeDetailLabel);
   if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
+  if (addons.includes('addon-angled-corners')) addTechRow('Angled Corners', 'TBD');
   if (addons.includes('addon-chamfered-edges')) addTechRow('Chamfered Edges', '0.25 in at 45 degrees');
   if (addons.includes('addon-squoval')) addTechRow('Squoval', 'Min width is 20% less than tabletop width');
   if (waterfallCount > 0) {

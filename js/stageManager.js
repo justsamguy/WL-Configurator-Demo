@@ -8,7 +8,7 @@
 const STAGES = [
   'Models',
   'Designs',
-  'Materials',
+  'Tabletop',
   'Finish',
   'Dimensions',
   'Legs',

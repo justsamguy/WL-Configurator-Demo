@@ -1,6 +1,6 @@
 add an individual line for the crate/packaging costs instead of including it in the shipping estimator. put this line with the shipping accessories so it shows/hides with them, but at the top of the list. style like the accessories are styled
 add a horizontal-center-center (text & field) description field for each shipping accessory line.
-
+change the capture snapshot button to one that lets the user copy a text version of their configuration by adding the config to the user's clipboard. make it identical to the console json output, but formatted for humans instead of computers (style it markdown, not json).
 
 Overhaul media to improve loading times
 

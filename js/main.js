@@ -244,13 +244,17 @@ function updateWaterfallAddonAvailability(appState = state) {
   updateAllIndicators();
 }
 
-const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-squoval'];
+const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
   if (addonId === 'addon-rounded-corners') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round';
-    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs, Chamfered Edges, or Squoval' : '' };
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs' : '' };
+  }
+  if (addonId === 'addon-angled-corners') {
+    const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round';
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs' : '' };
   }
   if (addonId === 'addon-chamfered-edges') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge');
@@ -920,6 +924,6 @@ if (designsSection) {
   // Log successful app load with timestamp
   console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
   console.log('Last updated: 2026-01-14 15:46');
-  console.log('Edit ver: 467');
+  console.log('Edit ver: 468');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

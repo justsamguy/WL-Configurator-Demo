@@ -1569,7 +1569,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   font: inherit;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #4b5563;
+  color: #374151;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: help;
@@ -1580,7 +1580,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
 
 .materials-help-link:hover,
 .materials-help-link:focus-visible {
-  color: #374151;
+  color: #1f2937;
 }
 
 .materials-help-link:focus-visible {
