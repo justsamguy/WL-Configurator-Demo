@@ -56,7 +56,7 @@ export function populateHelpDrawer() {
           In the final stage, you can:
         </p>
         <ul class="list-disc list-inside text-gray-600 space-y-1 ml-2">
-          <li>Capture a snapshot of your configuration</li>
+          <li>Copy a markdown summary of your configuration</li>
           <li>Export a PDF summary with all your selections</li>
           <li>Start over if you want to create a new configuration</li>
         </ul>

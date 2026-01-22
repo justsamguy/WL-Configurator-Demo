@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { loadData } from '../dataLoader.js';
 import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
+import { buildExportMarkdown } from '../export.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('Summary');
@@ -898,6 +899,43 @@ async function captureSnapshot() {
   }
 }
 
+async function writeClipboardText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!ok) throw new Error('Clipboard copy failed');
+}
+
+function setCopyStatus(message, isError = false) {
+  const statusEl = document.getElementById('config-copy-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.classList.toggle('is-error', isError);
+}
+
+async function copyConfigMarkdown() {
+  setCopyStatus('');
+  try {
+    const markdown = await buildExportMarkdown(state, loadData);
+    await writeClipboardText(markdown);
+    setCopyStatus('Configuration copied as markdown.');
+  } catch (e) {
+    log.warn('Copy configuration failed', e);
+    setCopyStatus('Unable to copy configuration. Please try again.', true);
+  }
+}
+
 async function loadLogoDataUrl() {
   const logoPath = 'assets/icons/WoodLab_logo_-_official.png';
   try {
@@ -1779,12 +1817,12 @@ function initShippingControls() {
 }
 
 export function initSummaryActions() {
-  const cap = document.getElementById('capture-snapshot');
+  const cap = document.getElementById('copy-config');
   const exp = document.getElementById('export-pdf');
   const rst = document.getElementById('restart-config');
   if (cap && cap.dataset.wlBound !== 'true') {
     cap.dataset.wlBound = 'true';
-    cap.addEventListener('click', async (ev) => { ev.preventDefault(); await captureSnapshot(); });
+    cap.addEventListener('click', async (ev) => { ev.preventDefault(); await copyConfigMarkdown(); });
   }
   if (exp && exp.dataset.wlBound !== 'true') {
     exp.dataset.wlBound = 'true';

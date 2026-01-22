@@ -475,6 +475,22 @@ header .flex.justify-center.items-center {
   padding-top: 0.25rem;
 }
 
+.summary-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summary-copy-status {
+  min-height: 1rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.summary-copy-status.is-error {
+  color: #b91c1c;
+}
+
 .summary-shipping-warning {
   display: flex;
   flex-direction: column;

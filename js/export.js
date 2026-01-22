@@ -125,4 +125,79 @@ export async function buildExportJSON(appState, dataLoader) {
   };
 }
 
-export default { buildExportJSON };
+function formatLiteral(value) {
+  if (value === null || value === undefined) return '`null`';
+  if (value === '') return '`""`';
+  return String(value);
+}
+
+function formatListValues(values) {
+  if (!Array.isArray(values) || values.length === 0) return '`[]`';
+  return values.map(value => `- ${formatLiteral(value)}`).join('\n');
+}
+
+function formatInlineList(values) {
+  if (!Array.isArray(values) || values.length === 0) return '`[]`';
+  return values.map(value => formatLiteral(value)).join(', ');
+}
+
+export async function buildExportMarkdown(appState, dataLoader) {
+  const payload = await buildExportJSON(appState, dataLoader);
+  const config = payload.configuration || {};
+  const materials = config.materials || {};
+  const finish = config.finish || {};
+  const legs = config.legs || {};
+  const pricing = payload.pricing || {};
+  const shipping = payload.shipping || {};
+  const lineItems = Array.isArray(pricing.lineItems) ? pricing.lineItems : [];
+  const lineItemsText = lineItems.length
+    ? lineItems.map(item => `- ${formatLiteral(item.label)}: ${formatLiteral(item.price)}`).join('\n')
+    : '`[]`';
+  const addonsText = formatListValues(Array.isArray(config.addons) ? config.addons : []);
+  const accessorialsText = formatInlineList(Array.isArray(shipping.accessorials) ? shipping.accessorials : []);
+
+  return [
+    '# WoodLab Configuration',
+    '',
+    '## Metadata',
+    `- Timestamp: ${formatLiteral(payload.metadata && payload.metadata.timestamp)}`,
+    `- App version: ${formatLiteral(payload.metadata && payload.metadata.appVersion)}`,
+    '',
+    '## Configuration',
+    `- Model: ${formatLiteral(config.model)}`,
+    `- Design: ${formatLiteral(config.design)}`,
+    '### Materials',
+    `- Material: ${formatLiteral(materials.material)}`,
+    `- Color: ${formatLiteral(materials.color)}`,
+    `- Custom color note: ${formatLiteral(materials.customColorNote)}`,
+    '',
+    '### Finish',
+    `- Coating: ${formatLiteral(finish.coating)}`,
+    `- Sheen: ${formatLiteral(finish.sheen)}`,
+    `- Tint: ${formatLiteral(finish.tint)}`,
+    `- Dimensions: ${formatLiteral(config.dimensions)}`,
+    '',
+    '### Legs',
+    `- Style: ${formatLiteral(legs.style)}`,
+    `- Tube: ${formatLiteral(legs.tube)}`,
+    `- Finish: ${formatLiteral(legs.finish)}`,
+    '',
+    '### Add-ons',
+    addonsText,
+    '',
+    '## Pricing',
+    `- Subtotal: ${formatLiteral(pricing.subtotal)}`,
+    '### Line items',
+    lineItemsText,
+    '',
+    '## Shipping',
+    `- Mode: ${formatLiteral(shipping.mode)}`,
+    `- Zip code: ${formatLiteral(shipping.zipCode)}`,
+    `- Region: ${formatLiteral(shipping.region)}`,
+    `- Estimated cost: ${formatLiteral(shipping.estimatedCost)}`,
+    `- Accessorials: ${accessorialsText}`,
+    `- Notes: ${formatLiteral(shipping.notes)}`
+  ].join('\n');
+}
+
+export default { buildExportJSON, buildExportMarkdown };
