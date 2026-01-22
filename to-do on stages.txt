@@ -1,8 +1,14 @@
 
 
+
+
 Overhaul media to improve loading times
 
 use the output system to make popular designs as design presets, so the user can navigate all customization stages with pre-selected options ready to customize - existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.
+
+Set app ver to 1.0 in console and github
+
+add effects to the website to make it feel more polished
 
 branch and code mobile website
 

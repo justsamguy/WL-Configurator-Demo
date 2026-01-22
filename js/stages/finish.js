@@ -80,10 +80,9 @@ export function restoreFromState(appState) {
       }
     });
 
-    // Handle sheen slider and tiles
+    // Handle sheen tiles
     const sheenId = opts['finish-sheen'];
     if (sheenId) {
-      const slider = document.querySelector('.sheen-slider');
       const tiles = document.querySelectorAll('.sheen-tile');
       const sheenRoot = document.getElementById('finish-sheen-slider');
 
@@ -99,13 +98,6 @@ export function restoreFromState(appState) {
         if (sheenSetter) {
           sheenSetter(value, { dispatch: false });
         } else {
-          if (slider) {
-            const fallbackCenters = sheenRoot && sheenRoot.__sheenFallbackCenters;
-            const fallbackValue = fallbackCenters && typeof fallbackCenters[value] === 'number'
-              ? fallbackCenters[value]
-              : value;
-            slider.value = String(fallbackValue);
-          }
           tiles.forEach((tile, index) => {
             const isSelected = index === value;
             tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
