@@ -939,6 +939,7 @@ function setCopyStatus(message, isError = false) {
   if (!statusEl) return;
   statusEl.textContent = message;
   statusEl.classList.toggle('is-error', isError);
+  statusEl.hidden = !message;
 }
 
 async function copyConfigMarkdown() {
