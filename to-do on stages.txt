@@ -1,5 +1,3 @@
-add an individual line for the crate/packaging costs instead of including it in the shipping estimator. put this line with the shipping accessories so it shows/hides with them, but at the top of the list. style like the accessories are styled
-add a horizontal-center-center (text & field) description field for each shipping accessory line.
 
 
 

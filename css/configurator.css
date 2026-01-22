@@ -703,6 +703,13 @@ header .flex.justify-center.items-center {
   display: flex;
 }
 
+.summary-shipping-switch-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
 .summary-shipping-switch {
   position: relative;
   display: grid;
@@ -719,6 +726,10 @@ header .flex.justify-center.items-center {
 
 .summary-shipping-switch-row {
   display: contents;
+}
+
+.summary-shipping-switch-static {
+  padding-bottom: 0;
 }
 
 .summary-shipping-switch-input {
@@ -818,6 +829,24 @@ header .flex.justify-center.items-center {
 
 .summary-shipping-switch-input:disabled ~ .summary-shipping-switch-track .summary-shipping-switch-knob {
   background: #d1d5db;
+}
+
+.summary-shipping-switch-description {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.summary-shipping-switch-description-label {
+  font-weight: 600;
+}
+
+.summary-shipping-switch-description-input {
+  width: min(100%, 18rem);
 }
 
 .summary-shipping-notes {

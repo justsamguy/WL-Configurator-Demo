@@ -59,48 +59,78 @@
         </div>
       </div>
       <div id="summary-shipping-toggles" class="summary-shipping-toggles" aria-hidden="true">
-        <label class="summary-shipping-switch">
-          <input id="shipping-commercial" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-row">
-            <span class="summary-shipping-switch-sides" aria-hidden="true">
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-left">Commercial</span>
-              <span class="summary-shipping-switch-separator">/</span>
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Residential</span>
+        <div class="summary-shipping-switch-group">
+          <div class="summary-shipping-switch summary-shipping-switch-static">
+            <div class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides">Crate + packaging</span>
+              <span id="shipping-crate-price" class="summary-shipping-switch-price summary-option-price is-visible" aria-hidden="true"></span>
+            </div>
+          </div>
+          <label class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-label">Description</span>
+            <input id="shipping-crate-description" type="text" class="summary-shipping-input summary-shipping-switch-description-input" placeholder="Optional details">
+          </label>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-commercial" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">Commercial</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Residential</span>
+              </span>
+              <span id="shipping-commercial-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
             </span>
-            <span id="shipping-commercial-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
-        <label class="summary-shipping-switch">
-          <input id="shipping-liftgate" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-row">
-            <span class="summary-shipping-switch-sides" aria-hidden="true">
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I have a forklift</span>
-              <span class="summary-shipping-switch-separator">/</span>
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Liftgate</span>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
             </span>
-            <span id="shipping-liftgate-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
-        <label class="summary-shipping-switch">
-          <input id="shipping-white-glove" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-row">
-            <span class="summary-shipping-switch-sides" aria-hidden="true">
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I'll unpack</span>
-              <span class="summary-shipping-switch-separator">/</span>
-              <span class="summary-shipping-switch-side summary-shipping-switch-side-right">White glove</span>
+          </label>
+          <label class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-label">Description</span>
+            <input id="shipping-commercial-description" type="text" class="summary-shipping-input summary-shipping-switch-description-input" placeholder="Optional details">
+          </label>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-liftgate" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I have a forklift</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Liftgate</span>
+              </span>
+              <span id="shipping-liftgate-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
             </span>
-            <span id="shipping-white-glove-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
+            </span>
+          </label>
+          <label class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-label">Description</span>
+            <input id="shipping-liftgate-description" type="text" class="summary-shipping-input summary-shipping-switch-description-input" placeholder="Optional details">
+          </label>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-white-glove" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I'll unpack</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">White glove</span>
+              </span>
+              <span id="shipping-white-glove-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
+            </span>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
+            </span>
+          </label>
+          <label class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-label">Description</span>
+            <input id="shipping-white-glove-description" type="text" class="summary-shipping-input summary-shipping-switch-description-input" placeholder="Optional details">
+          </label>
+        </div>
       </div>
       <div id="summary-shipping-notes" class="summary-shipping-notes" aria-hidden="true">
         <label class="summary-shipping-field summary-shipping-notes-field">

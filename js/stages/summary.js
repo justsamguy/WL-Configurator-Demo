@@ -215,6 +215,7 @@ const SHIPPING_ACCESSORIAL_PRICES = {
   liftgate: 200,
   whiteGlove: 750
 };
+const SHIPPING_CRATE_COST = 350;
 
 const POWER_STRIP_ADDONS = new Set(['addon-power-ac', 'addon-power-ac-usb', 'addon-power-ac-usb-usbc']);
 const ADDITIONAL_CONNECTIVITY_ADDONS = new Set(['addon-ethernet', 'addon-hdmi']);
@@ -421,8 +422,6 @@ function calculateShippingEstimate({ zip, selections, accessorials }) {
   const estimate = Math.max(SHIPPING_RATE_CONFIG.minimum, raw);
 
   let total = estimate;
-  // Add $350 for custom crate
-  total += 350;
   if (accessorials && accessorials.residential) total += SHIPPING_ACCESSORIAL_PRICES.residential;
   if (accessorials && accessorials.liftgate) total += SHIPPING_ACCESSORIAL_PRICES.liftgate;
   if (accessorials && accessorials.whiteGlove) total += SHIPPING_ACCESSORIAL_PRICES.whiteGlove;
@@ -435,7 +434,11 @@ function getShippingCost() {
   const estimate = document.getElementById('shipping-estimate') || document.getElementById('shipping-estimate-header');
   if (!estimate) return 0;
   const numeric = estimate.textContent.trim().replace(/[^\d]/g, '');
-  return numeric ? parseInt(numeric, 10) : 0;
+  const baseValue = numeric ? parseInt(numeric, 10) : null;
+  if (baseValue === null) return 0;
+  const toggles = document.getElementById('summary-shipping-toggles');
+  const includeCrate = !!(toggles && toggles.classList.contains('is-visible'));
+  return baseValue + (includeCrate ? SHIPPING_CRATE_COST : 0);
 }
 
 export function getShippingDetails() {
@@ -1624,6 +1627,11 @@ function initShippingControls() {
   const commercialPrice = document.getElementById('shipping-commercial-price');
   const liftgatePrice = document.getElementById('shipping-liftgate-price');
   const whiteGlovePrice = document.getElementById('shipping-white-glove-price');
+  const cratePrice = document.getElementById('shipping-crate-price');
+  const crateDescription = document.getElementById('shipping-crate-description');
+  const commercialDescription = document.getElementById('shipping-commercial-description');
+  const liftgateDescription = document.getElementById('shipping-liftgate-description');
+  const whiteGloveDescription = document.getElementById('shipping-white-glove-description');
   const notes = document.getElementById('summary-shipping-notes');
   const notesInput = document.getElementById('shipping-notes');
   const warning = document.getElementById('summary-shipping-warning');
@@ -1658,6 +1666,11 @@ function initShippingControls() {
       node.textContent = '';
       node.classList.remove('is-visible');
     }
+  };
+  const setStaticPrice = (node, value, isVisible) => {
+    if (!node) return;
+    node.textContent = value;
+    node.classList.toggle('is-visible', isVisible);
   };
 
   const hasGlassTopAddon = () => {
@@ -1747,6 +1760,10 @@ function initShippingControls() {
     [commercial, liftgate, whiteGlove].forEach((input) => {
       if (input) input.disabled = !showExtras;
     });
+    [crateDescription, commercialDescription, liftgateDescription, whiteGloveDescription].forEach((input) => {
+      if (input) input.disabled = !showExtras;
+    });
+    setStaticPrice(cratePrice, formatAccessorialPrice(SHIPPING_CRATE_COST), showExtras);
     setTogglePrice(commercialPrice, !!(commercial && commercial.checked), SHIPPING_ACCESSORIAL_PRICES.residential);
     setTogglePrice(liftgatePrice, !!(liftgate && liftgate.checked), SHIPPING_ACCESSORIAL_PRICES.liftgate);
     setTogglePrice(whiteGlovePrice, !!(whiteGlove && whiteGlove.checked), SHIPPING_ACCESSORIAL_PRICES.whiteGlove);
