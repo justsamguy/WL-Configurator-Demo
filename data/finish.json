@@ -11,6 +11,7 @@
   "tints": [
     { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish" },
     { "id": "fin-tint-02", "title": "Natural", "price": 100, "description": "Maintain the raw wood color as closely as possible" },
-    { "id": "fin-tint-03", "title": "Darken", "price": 250, "description": "We will use a dark stain to tone the wood to your liking" }
+    { "id": "fin-tint-03", "title": "Darken", "price": 250, "description": "We will use a dark stain to tone the wood to your liking" },
+    { "id": "fin-tint-04", "title": "Custom", "price": 250, "description": "Match the stain to my reference" }
   ]
 }

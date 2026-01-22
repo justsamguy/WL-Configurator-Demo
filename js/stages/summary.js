@@ -1283,9 +1283,11 @@ async function exportPdf() {
   const finishSheenLabel = getFinishSheenSpec(finishCoatingTitle, finishSheenTitle) || finishSheenTitle || 'TBD';
   const finishTintLabel = finishTintTitle || 'TBD';
   const finishTintNote = getFinishTintNote(finishCoatingTitle, finishTintTitle);
-  const finishCoatsLabel = finishCoatingTitle === '2K Poly'
-    ? 'Single coat'
-    : (finishCoatingTitle === 'Natural Oil' ? 'Multi-coat with Ceramic Pro Strong 1000 top coat' : null);
+  const finishCoatsLabel = finishTintTitle === 'Custom'
+    ? 'TBD'
+    : (finishCoatingTitle === '2K Poly'
+      ? 'Single coat'
+      : (finishCoatingTitle === 'Natural Oil' ? 'Multi-coat with Ceramic Pro Strong 1000 top coat' : null));
 
   const colorEntry = summaryData && summaryData.colors ? summaryData.colors.get(opts.color) : null;
   const colorTitle = getEntryTitle(colorEntry, opts.color);
