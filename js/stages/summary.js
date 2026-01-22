@@ -167,8 +167,13 @@ const BREAKDOWN_LABELS = {
 };
 
 export function formatCurrency(val) {
-  if (typeof val !== 'number') return 'USD $0';
-  return `USD $${val.toLocaleString()}`;
+  if (typeof val !== 'number') return '$0';
+  return `$${val.toLocaleString()}`;
+}
+
+function formatTotalCurrency(val) {
+  if (typeof val !== 'number') return '$0 USD';
+  return `$${val.toLocaleString()} USD`;
 }
 
 const HEIGHT_PRESETS_BY_MODEL = {
@@ -884,7 +889,7 @@ export async function populateSummaryPanel() {
     : (s.pricing && typeof s.pricing.total === 'number' ? s.pricing.total : 0);
   const shippingCost = getShippingCost();
   const finalTotal = totalValue + shippingCost;
-  total.textContent = formatCurrency(finalTotal);
+  total.textContent = formatTotalCurrency(finalTotal);
 }
 
 async function captureSnapshot() {
@@ -1222,7 +1227,7 @@ async function exportPdf() {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...accent);
-  doc.text(formatCurrency(finalTotal), pageWidth - margin - 14, y + 26, { align: 'right' });
+  doc.text(formatTotalCurrency(finalTotal), pageWidth - margin - 14, y + 26, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...textMuted);
@@ -1333,7 +1338,7 @@ async function exportPdf() {
   doc.setFontSize(12);
   doc.setTextColor(...accent);
   doc.text('Total', margin + 2, y);
-  doc.text(formatCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
+  doc.text(formatTotalCurrency(finalTotal), pageWidth - margin, y, { align: 'right' });
   y += 16;
 
   // Disclosure
