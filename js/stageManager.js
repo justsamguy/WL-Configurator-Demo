@@ -468,11 +468,11 @@ async function setStage(index, options = {}) {
     } catch (e) { /* ignore */ }
   }
 
-  // NOW set display styles for all panels (after moving them if needed)
+  // NOW toggle visibility classes for all panels (after moving them if needed)
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
-    panel.style.display = idx === managerState.current ? '' : 'none';
+    panel.classList.toggle('is-hidden', idx !== managerState.current);
   });
 
   // Also hide/show the MaterialsPanel (containing materials-options and color-options containers)

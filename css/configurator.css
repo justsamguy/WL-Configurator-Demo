@@ -984,30 +984,6 @@ header .flex.justify-center.items-center {
   white-space: nowrap;
 }
 
-/* More specific override to ensure the summary button doesn't inherit the global .btn-icon fixed sizing */
-.btn-icon.footer-summary-btn {
-  width: auto !important;
-  height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  padding: 0.125rem 0.25rem !important;
-  border-radius: 6px !important;
-}
-
-/* Make the summary button look like a tangible control: subtle bg, border, and a tiny shadow */
-.btn-icon.footer-summary-btn {
-  background: #ffffff;
-  border: 1px solid rgba(16,24,40,0.06);
-  box-shadow: 0 1px 4px rgba(16,24,40,0.06);
-  color: #374151;
-}
-.btn-icon.footer-summary-btn:hover {
-  background: #f8fafc;
-}
-.btn-icon.footer-summary-btn:focus {
-  outline: 3px solid rgba(59,130,246,0.18);
-  outline-offset: 2px;
-}
 
 #app-footer .footer-next-btn {
   flex: 0 0 auto;
@@ -1379,9 +1355,12 @@ body.show-model-tiles #stage-panel-0 #model-options,
   }
 }
 
-/* Base styles for all stage panels: visibility controlled by JS via style.display */
+/* Base styles for all stage panels: visibility controlled via .is-hidden class. */
 .stage-panel {
   width: 100%;
+}
+.stage-panel.is-hidden {
+  display: none;
 }
 
 /* Model selection stage layout */
@@ -1392,10 +1371,9 @@ body.show-model-tiles #stage-panel-0 #model-options,
   width: 100%;
 }
 
-/* Emergency fallback: ensure the Select Model panel and its inner grids/cards
-   are visible and laid out even when JS toggles or timing is inconsistent. */
+/* Ensure the Select Model panel is visible unless explicitly hidden via .is-hidden. */
 #stage-panel-0 {
-  display: block !important;
+  display: block;
 }
 #stage-panel-0 .model-row-grid {
   display: flex;
@@ -2644,6 +2622,27 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 .btn-icon svg {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+/* Override icon sizing for the footer summary button so it stays inline with price text. */
+.btn-icon.footer-summary-btn {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.125rem 0.25rem;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(16,24,40,0.06);
+  box-shadow: 0 1px 4px rgba(16,24,40,0.06);
+  color: #374151;
+}
+.btn-icon.footer-summary-btn:hover {
+  background: #f8fafc;
+}
+.btn-icon.footer-summary-btn:focus {
+  outline: 3px solid rgba(59,130,246,0.18);
+  outline-offset: 2px;
 }
 
 /* Primary icon button variant */
