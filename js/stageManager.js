@@ -41,6 +41,7 @@ const log = createLogger('StageManager');
 const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
+  dimensionsVisited: false,
   config: {
     model: null,
     material: null,
@@ -54,6 +55,8 @@ const managerState = {
 
 // Stages that are optional (no selection required to advance)
 const OPTIONAL_STAGES = [6]; // index 6 = 'Add-ons'
+const DIMENSIONS_STAGE_INDEX = 4;
+const LEGS_STAGE_INDEX = 5;
 
 function $(sel) {
   return document.querySelector(sel);
@@ -68,11 +71,28 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
+function isStageCompleteForNav(index) {
+  if (OPTIONAL_STAGES.includes(index)) return true;
+  if (index === DIMENSIONS_STAGE_INDEX && managerState.dimensionsVisited) return true;
+  return !!managerState.completed[index];
+}
+
+function hasVisitedDimensions(appState) {
+  const dimSelected = !!(appState && appState.selections && appState.selections.options && appState.selections.options.dimensions);
+  return managerState.dimensionsVisited || dimSelected;
+}
+
+function canAccessLegs(appState) {
+  const preDimsComplete = managerState.completed[0] && managerState.completed[1] &&
+    managerState.completed[2] && managerState.completed[3];
+  return preDimsComplete && hasVisitedDimensions(appState);
+}
+
 function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
   const isLastStage = managerState.current >= STAGES.length - 1;
-  const isCurrentComplete = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
+  const isCurrentComplete = isStageCompleteForNav(managerState.current);
   const shouldDisable = isLastStage || !isCurrentComplete;
   nextBtn.disabled = shouldDisable;
   nextBtn.setAttribute('aria-disabled', shouldDisable ? 'true' : 'false');
@@ -159,6 +179,10 @@ async function setStage(index, options = {}) {
           log.warn('Failed to apply finish defaults via module', e);
         }
       }
+      // Require Dimensions to be seen at least once before accessing Legs.
+      if (index >= LEGS_STAGE_INDEX && !hasVisitedDimensions(appState)) {
+        return;
+      }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
       // (unless "none" leg is selected, which doesn't require tube-size or leg-finish)
       // (or custom leg is selected, which makes tube-size optional)
@@ -191,11 +215,15 @@ async function setStage(index, options = {}) {
     }
   }
   managerState.current = index;
+  if (managerState.current === DIMENSIONS_STAGE_INDEX) {
+    managerState.dimensionsVisited = true;
+  }
   // treat optional stages as implicitly completed for gating decisions
-  const currentCompleted = !!managerState.completed[managerState.current] || OPTIONAL_STAGES.includes(managerState.current);
+  const currentCompleted = isStageCompleteForNav(managerState.current);
   // Check if all required stages (0-5) are complete to unlock Add-ons (6) and Summary (7) for free navigation
   const allRequiredStagesComplete = managerState.completed[0] && managerState.completed[1] && managerState.completed[2] && 
                                     managerState.completed[3] && managerState.completed[4] && managerState.completed[5];
+  const canJumpToLegs = canAccessLegs(appState);
   
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
@@ -212,7 +240,9 @@ async function setStage(index, options = {}) {
         // For future stages (idx > current):
         // - if all required stages (0-5) are complete, allow free access to Add-ons (6) and Summary (7)
         // - otherwise, allow if that future stage is already completed or only the immediate next stage when current is completed
-        if (idx >= 6 && allRequiredStagesComplete) {
+        if (idx === LEGS_STAGE_INDEX && canJumpToLegs) {
+          btn.disabled = false;
+        } else if (idx >= 6 && allRequiredStagesComplete) {
           btn.disabled = false;
         } else if (managerState.completed[idx]) {
           btn.disabled = false;
@@ -598,6 +628,7 @@ export function initStageManager() {
       if (category === 'model') {
         const hasModel = !!(appState.selections && appState.selections.model);
         markCompleted(0, !!hasModel);
+        managerState.dimensionsVisited = false;
         
         // When model changes, all other selections are cleared by main.js
         // Reset completion status for all dependent stages (1-5)
@@ -699,6 +730,10 @@ export function initStageManager() {
     if (managerState.current === 6) {
       setStage(managerState.current);
     }
+  });
+
+  document.addEventListener('request-restart', () => {
+    managerState.dimensionsVisited = false;
   });
 
   updateLivePrice();
