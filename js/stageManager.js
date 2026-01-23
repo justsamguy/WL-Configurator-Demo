@@ -41,7 +41,6 @@ const log = createLogger('StageManager');
 const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
-  dimensionsVisited: false,
   config: {
     model: null,
     material: null,
@@ -73,19 +72,26 @@ function formatPrice(centsOrUnits) {
 
 function isStageCompleteForNav(index) {
   if (OPTIONAL_STAGES.includes(index)) return true;
-  if (index === DIMENSIONS_STAGE_INDEX && managerState.dimensionsVisited) return true;
+  if (index === DIMENSIONS_STAGE_INDEX) return hasSelectedDimensions(appState);
   return !!managerState.completed[index];
 }
 
-function hasVisitedDimensions(appState) {
+function hasSelectedDimensions(appState) {
   const dimSelected = !!(appState && appState.selections && appState.selections.options && appState.selections.options.dimensions);
-  return managerState.dimensionsVisited || dimSelected;
+  if (dimSelected) return true;
+  const detail = appState && appState.selections && appState.selections.dimensionsDetail;
+  return Number.isFinite(detail && detail.length) && Number.isFinite(detail && detail.width);
 }
 
 function canAccessLegs(appState) {
-  const preDimsComplete = managerState.completed[0] && managerState.completed[1] &&
-    managerState.completed[2] && managerState.completed[3];
-  return preDimsComplete && hasVisitedDimensions(appState);
+  const hasModel = !!(appState && appState.selections && appState.selections.model);
+  const hasDesign = !!(appState && appState.selections && appState.selections.design);
+  const hasMaterial = !!(appState && appState.selections && appState.selections.options && appState.selections.options.material);
+  const hasColor = !!(appState && appState.selections && appState.selections.options && appState.selections.options.color);
+  const hasCoating = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
+  const hasSheen = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-sheen']);
+  const hasTint = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
+  return hasModel && hasDesign && hasMaterial && hasColor && hasCoating && hasSheen && hasTint && hasSelectedDimensions(appState);
 }
 
 function updateNextButton() {
@@ -179,8 +185,8 @@ async function setStage(index, options = {}) {
           log.warn('Failed to apply finish defaults via module', e);
         }
       }
-      // Require Dimensions to be seen at least once before accessing Legs.
-      if (index >= LEGS_STAGE_INDEX && !hasVisitedDimensions(appState)) {
+      // Require dimensions selection before accessing Legs.
+      if (index >= LEGS_STAGE_INDEX && !hasSelectedDimensions(appState)) {
         return;
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
@@ -215,9 +221,6 @@ async function setStage(index, options = {}) {
     }
   }
   managerState.current = index;
-  if (managerState.current === DIMENSIONS_STAGE_INDEX) {
-    managerState.dimensionsVisited = true;
-  }
   // treat optional stages as implicitly completed for gating decisions
   const currentCompleted = isStageCompleteForNav(managerState.current);
   // Check if all required stages (0-5) are complete to unlock Add-ons (6) and Summary (7) for free navigation
@@ -628,7 +631,6 @@ export function initStageManager() {
       if (category === 'model') {
         const hasModel = !!(appState.selections && appState.selections.model);
         markCompleted(0, !!hasModel);
-        managerState.dimensionsVisited = false;
         
         // When model changes, all other selections are cleared by main.js
         // Reset completion status for all dependent stages (1-5)
@@ -730,10 +732,6 @@ export function initStageManager() {
     if (managerState.current === 6) {
       setStage(managerState.current);
     }
-  });
-
-  document.addEventListener('request-restart', () => {
-    managerState.dimensionsVisited = false;
   });
 
   updateLivePrice();
