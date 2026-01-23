@@ -1674,6 +1674,18 @@ body.show-model-tiles #stage-panel-0 #model-options,
   border-radius: 4px;
   margin-bottom: 8px;
 }
+
+#materials-options .viewer-placeholder-img,
+#color-options .viewer-placeholder-img,
+#finish-coating-options .viewer-placeholder-img,
+#finish-tint-options .viewer-placeholder-img {
+  height: auto;
+  object-fit: contain;
+  background-color: #f3f4f6;
+  padding: 4px;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
 .stage-options-grid .option-card .title {
   font-weight: 600;
   font-size: 14px;
@@ -3753,7 +3765,10 @@ body.stage-1 #designs-stage-section > div {
 .sheen-tile .viewer-placeholder-img {
   width: 60px;
   height: 60px;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: #f3f4f6;
+  padding: 4px;
+  box-sizing: border-box;
   border-radius: 4px;
   margin-bottom: 0.5rem;
 }
