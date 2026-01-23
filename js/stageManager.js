@@ -650,10 +650,6 @@ export function initStageManager() {
       if (category === 'design') {
         const hasDesign = !!(appState.selections && appState.selections.design);
         markCompleted(1, !!hasDesign);
-        
-        if (managerState.current === 1 && hasDesign) {
-          setStage(2, { skipConfirm: true });
-        }
         return;
       }
       

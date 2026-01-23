@@ -996,12 +996,12 @@ body.stage-7 #app-footer {
 }
 
 body.stage-0 #app-footer,
-body.stage-1 #app-footer {
+body.stage-1:not(.has-design) #app-footer {
   display: none;
 }
 
 body.stage-0 .footer-price-row,
-body.stage-1 .footer-price-row {
+body.stage-1:not(.has-design) .footer-price-row {
   display: none;
 }
 
