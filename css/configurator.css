@@ -1324,6 +1324,7 @@ header .site-logo {
 
 .option-card[aria-pressed="true"] {
   border-color: #2563eb;
+  border-width: 2px;
   box-shadow: 0 0 0 2px #2563eb33, 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
@@ -1550,7 +1551,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 .model-row .option-card.selected {
-  border-width: 3px;
+  border-width: 4px;
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
@@ -1739,7 +1740,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   font-weight: bold;
 }
 .stage-options-grid .option-card.selected {
-  border-width: 3px;
+  border-width: 4px;
   border-color: #2563eb;
 }
 .stage-options-grid .option-card.selected .title {
@@ -2501,11 +2502,11 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   transition: all 0.2s;
 }
 .option-card:hover { border-color: #818cf8; }
-.option-card.selected { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+.option-card.selected { border-color: #6366f1; border-width: 2px; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
 .option-card.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; }
 
 /* Override selected style for stage-options-grid to use consistent blue styling */
-.stage-options-grid .option-card.selected { border-color: #2563eb; border-width: 3px; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+.stage-options-grid .option-card.selected { border-color: #2563eb; border-width: 4px; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
 
 .stage-btn { flex: 1; padding: 0.5rem 0.25rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; }
 .stage-btn.active { border-bottom-color: #6366f1; color: #4f46e5; }
@@ -2714,6 +2715,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
 .option-card[aria-pressed="true"] {
   border-color: #2563eb; /* Blue 600 */
+  border-width: 2px;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
@@ -2884,6 +2886,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 .preset-tile.active,
 .preset-tile[aria-pressed="true"] {
   border-color: #3b82f6;
+  border-width: 3px;
   background-color: #eff6ff;
 }
 
@@ -3648,6 +3651,7 @@ body.stage-1 #designs-stage-section > div {
 
 .addons-tile.selected {
   border-color: #2563eb;
+  border-width: 2px;
   background-color: #eff6ff;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
