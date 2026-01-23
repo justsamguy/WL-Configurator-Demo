@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('Pricing');
+
 function shouldLogPricing() {
   return typeof window !== 'undefined' && window.__wl_price_debug;
 }
@@ -15,6 +19,45 @@ function getHeightPriceForSelection(height) {
   if (height === 'bar') return 120;
   if (height === 'custom') return 250;
   return 0;
+}
+
+const DIMENSION_TIER_PRICE = 500;
+const DIMENSION_TIER_STEPS = { length: 12, width: 6 };
+const DIMENSION_BASELINES = {
+  'mdl-coffee': { length: 24, width: 48 },
+  'mdl-dining': { length: 72, width: 36 },
+  'mdl-conference': { length: 72, width: 36 }
+};
+
+function getDimensionBaseline(modelId, detail) {
+  const baseline = DIMENSION_BASELINES[modelId];
+  if (baseline) return baseline;
+  return {
+    length: detail && typeof detail.length === 'number' ? detail.length : 0,
+    width: detail && typeof detail.width === 'number' ? detail.width : 0
+  };
+}
+
+function getTierCount(value, baseline, step) {
+  if (!Number.isFinite(value) || !Number.isFinite(baseline) || !Number.isFinite(step) || step <= 0) return 0;
+  const delta = value - baseline;
+  if (delta <= 0) return 0;
+  return Math.ceil(delta / step);
+}
+
+function getOversizeCharge(detail, dimensionsData) {
+  const thresholds = dimensionsData && dimensionsData.oversizeThresholds ? dimensionsData.oversizeThresholds : null;
+  if (!thresholds || !detail) return 0;
+  let charge = 0;
+  ['length', 'width'].forEach((axis) => {
+    const threshold = thresholds[axis];
+    const value = detail[axis];
+    if (!threshold || !Number.isFinite(value) || !Number.isFinite(threshold.threshold)) return;
+    if (value > threshold.threshold && threshold.charge != null) {
+      charge += normalizeNumericPrice(threshold.charge);
+    }
+  });
+  return charge;
 }
 
 function formatDimensionLabel(detail, preset) {
@@ -70,44 +113,16 @@ function resolveDimensionPricing(state, dimensionsData) {
   } else if (detail && typeof detail.length === 'number' && typeof detail.width === 'number') {
     const length = detail.length;
     const width = detail.width;
-
-    if (modelId === 'mdl-coffee') {
-      if (length > 24 || width > 48) basePrice = 250;
-    } else if (modelId === 'mdl-dining' || modelId === 'mdl-conference') {
-      // Dining/Conference pricing
-      let price = 0;
-
-      // Length pricing: 72" +0, every 12" increment up to 120" +500, 120-132 +1000, then +500 up to 192"
-      if (length > 72) {
-        const lengthOver = length - 72;
-        if (length <= 120) {
-          price += Math.ceil(lengthOver / 12) * 500;
-        } else if (length <= 132) {
-          price += (120 - 72) / 12 * 500 + 1000; // up to 120 +1000 for 120-132
-        } else {
-          price += (120 - 72) / 12 * 500 + 1000 + Math.ceil((length - 132) / 12) * 500;
-        }
-      }
-
-      // Width pricing: 36" +0, every 6" increment up to 52" +500, 52-58 +1000, then +500 up to 70"
-      if (width > 36) {
-        const widthOver = width - 36;
-        if (width <= 52) {
-          price += Math.ceil(widthOver / 6) * 500;
-        } else if (width <= 58) {
-          price += (52 - 36) / 6 * 500 + 1000; // up to 52 +1000 for 52-58
-        } else {
-          price += (52 - 36) / 6 * 500 + 1000 + Math.ceil((width - 58) / 6) * 500;
-        }
-      }
-
-      basePrice = price;
-    }
+    const baseline = getDimensionBaseline(modelId, detail);
+    const lengthTiers = getTierCount(length, baseline.length, DIMENSION_TIER_STEPS.length);
+    const widthTiers = getTierCount(width, baseline.width, DIMENSION_TIER_STEPS.width);
+    basePrice = (lengthTiers + widthTiers) * DIMENSION_TIER_PRICE;
   }
 
-  const total = basePrice + heightPrice;
+  const oversizeCharge = detail ? getOversizeCharge(detail, dimensionsData) : 0;
+  const total = basePrice + heightPrice + oversizeCharge;
   if (shouldLogPricing()) {
-    console.log('[Pricing] dimensions', { modelId, presetId, basePrice, heightPrice, total, detail });
+    log.debug('dimensions', { modelId, presetId, basePrice, heightPrice, oversizeCharge, total, detail });
   }
 
   return { price: total, label: formatDimensionLabel(detail, matchedPreset) };
@@ -325,12 +340,12 @@ export async function computePrice(state) {
       });
     }
   } catch (e) {
-    console.warn('computePrice: failed to compute from DOM/state', e);
+    log.warn('computePrice: failed to compute from DOM/state', e);
   }
 
   const total = base + extras;
   if (shouldLogPricing()) {
-    console.log('[Pricing] total', { base, extras, total, breakdown });
+    log.debug('total', { base, extras, total, breakdown });
   }
   return { base, extras, total, breakdown };
 }

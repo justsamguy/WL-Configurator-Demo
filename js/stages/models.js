@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Models');
+
 // Models stage module
 // Single responsibility: wire model option-card interactions and restore visual selections from state.
 // Exports:
@@ -33,7 +37,7 @@ export function restoreFromState(state) {
     }
   } catch (e) {
     // fail silently
-    console.warn('models.restoreFromState failed', e);
+    log.warn('restoreFromState failed', e);
   }
 }
 

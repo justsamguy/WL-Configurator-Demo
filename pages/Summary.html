@@ -23,6 +23,13 @@
       </span>
     </button>
     <div id="summary-shipping-body" class="summary-shipping-body">
+      <div id="summary-shipping-warning" class="summary-shipping-warning" aria-live="polite" aria-atomic="true" hidden>
+        <div class="summary-shipping-warning-text">
+          <span class="summary-shipping-warning-title">Glass sheets cannot be shipped.</span>
+          <span class="summary-shipping-warning-subtitle">Remove the glass top add-on to continue with shipping.</span>
+        </div>
+        <button id="summary-shipping-warning-remove" class="summary-shipping-warning-action" type="button">Remove from Order</button>
+      </div>
       <div class="summary-shipping-options">
         <label class="summary-shipping-choice">
           <input id="shipping-quote-separately" type="checkbox" class="summary-shipping-choice-input">
@@ -52,39 +59,74 @@
         </div>
       </div>
       <div id="summary-shipping-toggles" class="summary-shipping-toggles" aria-hidden="true">
-        <label class="summary-shipping-switch">
-          <input id="shipping-commercial" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-sides" aria-hidden="true">
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-left">Commercial</span>
-            <span class="summary-shipping-switch-separator">/</span>
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Residential</span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
-        <label class="summary-shipping-switch">
-          <input id="shipping-liftgate" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-sides" aria-hidden="true">
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-left">Forklift</span>
-            <span class="summary-shipping-switch-separator">/</span>
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Liftgate</span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
-        <label class="summary-shipping-switch">
-          <input id="shipping-white-glove" type="checkbox" class="summary-shipping-switch-input">
-          <span class="summary-shipping-switch-sides" aria-hidden="true">
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I'll unpack</span>
-            <span class="summary-shipping-switch-separator">/</span>
-            <span class="summary-shipping-switch-side summary-shipping-switch-side-right">White glove</span>
-          </span>
-          <span class="summary-shipping-switch-track" aria-hidden="true">
-            <span class="summary-shipping-switch-knob"></span>
-          </span>
-        </label>
+        <div class="summary-shipping-switch-group">
+          <div class="summary-shipping-switch summary-shipping-switch-static">
+            <div class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides">Crate + packaging</span>
+              <span id="shipping-crate-price" class="summary-shipping-switch-price summary-option-price is-visible" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-text">We will build a custom crate for your Table.</span>
+          </div>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-commercial" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">Commercial</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Residential</span>
+              </span>
+              <span id="shipping-commercial-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
+            </span>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
+            </span>
+          </label>
+          <div class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-text">Where is the table being delivered?</span>
+          </div>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-liftgate" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I have a forklift</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">Liftgate</span>
+              </span>
+              <span id="shipping-liftgate-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
+            </span>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
+            </span>
+          </label>
+          <div class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-text">Choose how the crate is unloaded from the truck.</span>
+          </div>
+        </div>
+        <div class="summary-shipping-switch-group">
+          <label class="summary-shipping-switch">
+            <input id="shipping-white-glove" type="checkbox" class="summary-shipping-switch-input">
+            <span class="summary-shipping-switch-row">
+              <span class="summary-shipping-switch-sides" aria-hidden="true">
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-left">I'll unpack</span>
+                <span class="summary-shipping-switch-separator">/</span>
+                <span class="summary-shipping-switch-side summary-shipping-switch-side-right">White glove</span>
+              </span>
+              <span id="shipping-white-glove-price" class="summary-shipping-switch-price summary-option-price" aria-hidden="true"></span>
+            </span>
+            <span class="summary-shipping-switch-track" aria-hidden="true">
+              <span class="summary-shipping-switch-knob"></span>
+            </span>
+          </label>
+          <div class="summary-shipping-switch-description">
+            <span class="summary-shipping-switch-description-text">White glove service includes unpacking, disposal of the crate, and delivery.</span>
+          </div>
+        </div>
       </div>
       <div id="summary-shipping-notes" class="summary-shipping-notes" aria-hidden="true">
         <label class="summary-shipping-field summary-shipping-notes-field">
@@ -107,13 +149,14 @@
   </div>
 </section>
 
-<div class="flex flex-col gap-3">
-  <button id="capture-snapshot" class="btn btn-secondary btn-md w-full">
-    Capture Snapshot
-  </button>
+<div class="summary-actions">
   <button id="export-pdf" class="btn btn-primary btn-md w-full">
-    Export PDF
+    Download PDF
   </button>
+  <button id="copy-config" class="btn btn-secondary btn-md w-full">
+    Copy Configuration to Clipboard
+  </button>
+  <p id="config-copy-status" class="summary-copy-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
   <button id="restart-config" class="btn btn-tertiary btn-md w-full">
     Start Over
   </button>

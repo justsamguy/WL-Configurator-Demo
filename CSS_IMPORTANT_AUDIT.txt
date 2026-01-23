@@ -1,0 +1,334 @@
+================================================================================
+WoodLab Configurator - CSS !important & Override Audit
+Generated: 2025-01-13
+================================================================================
+
+SUMMARY:
+--------
+Found 10 instances of !important in configurator.css
+All instances are documented below with analysis and suggested replacements.
+
+================================================================================
+INSTANCE 1: .hidden utility class
+================================================================================
+Location: configurator.css:31
+Current code:
+  .hidden { display: none !important; }
+
+Intent:
+  Utility helper to forcefully hide UI rows/elements via JS.
+  The !important is used to ensure this class always hides elements 
+  regardless of other display properties.
+
+Suggested Replacement:
+  KEEP AS-IS - This is a valid utility class pattern.
+  
+  Rationale: .hidden is an intentional utility class designed to 
+  forcefully hide elements. The !important is appropriate here because
+  it needs to override any inline/computed display values set by JS 
+  or other CSS rules. This is a common and accepted pattern in utility 
+  CSS libraries (similar to display: none !important in Tailwind).
+  
+  Alternative (if stricter specificity needed):
+  - Could scope as [hidden] { display: none; } but this conflicts 
+    with HTML5 hidden attribute semantics
+  - Could use visibility: hidden instead, but not semantically correct 
+    for the intended use (hiding entire rows)
+
+================================================================================
+INSTANCE 2: .btn-icon.footer-summary-btn sizing overrides
+================================================================================
+Location: configurator.css:900-905
+Current code:
+  .btn-icon.footer-summary-btn {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0.125rem 0.25rem !important;
+    border-radius: 6px !important;
+  }
+
+Intent:
+  Override global .btn-icon sizing rules (width: 2.5rem, height: 2.5rem)
+  for the footer summary button, which should be smaller and inline with text.
+  The !important overrides are needed because .btn-icon selector is more 
+  specific than the compound selector alone.
+
+Suggested Replacement:
+  BEST APPROACH - Restructure the CSS specificity:
+  
+  Current (2 levels of selectors):
+    .btn-icon { width: 2.5rem; height: 2.5rem; }
+    .btn-icon.footer-summary-btn { width: auto !important; }
+  
+  Proposed (1 level using compound selector):
+    .btn-icon { width: 2.5rem; height: 2.5rem; }
+    .btn-icon.footer-summary-btn {
+      width: auto;
+      height: auto;
+      min-width: 0;
+      min-height: 0;
+      padding: 0.125rem 0.25rem;
+      border-radius: 6px;
+    }
+  
+  Why this works: Using a compound selector (.btn-icon.footer-summary-btn) 
+  has the same specificity as .btn-icon combined with another selector.
+  Since both selectors appear in the same stylesheet, the one declared 
+  later will naturally override the earlier one (cascade).
+  
+  Action needed in code:
+  1. Keep the global .btn-icon styles unchanged
+  2. Remove !important from the .btn-icon.footer-summary-btn rule
+  3. Ensure this rule appears AFTER the global .btn-icon rule in the stylesheet
+  4. Verify in browser that summary button still renders correctly
+
+================================================================================
+INSTANCE 3: #stage-panel-0 emergency fallback display
+================================================================================
+Location: configurator.css:1308
+Current code:
+  #stage-panel-0 {
+    display: block !important;
+  }
+
+Intent:
+  Emergency fallback to ensure the Model Selection panel is visible even 
+  when JS toggles timing is inconsistent. Comment notes this is for 
+  safety against JS timing issues.
+
+Suggested Replacement:
+  KEEP AS-IS with minor consideration:
+  
+  This !important is a legitimate defensive pattern for:
+  - Guarding against JS timing bugs that might set display: none
+  - Ensuring critical stage panels are visible for accessibility
+  
+  Alternative approach (RECOMMENDED - more robust):
+  Instead of relying on !important, consider:
+  
+  1. Remove the !important:
+     #stage-panel-0 {
+       display: block;
+     }
+  
+  2. Ensure this rule has higher specificity than any conflicting rules by:
+     - Placing it near the end of the stylesheet (after other stage-panel rules)
+     - OR scope it more specifically: body #stage-panel-0 { display: block; }
+  
+  3. In JS, use classList.add/remove instead of direct style.display manipulation
+     This keeps display state managed by CSS classes, not inline styles.
+  
+  Note: If JS currently sets inline display: none, the !important is necessary
+  as a band-aid. The real fix is to move all display state into CSS classes.
+
+================================================================================
+INSTANCE 4: body.show-model-tiles #app-header positioning
+================================================================================
+Location: configurator.css:1899-1904
+Current code:
+  /* Comment indicates !important was PREVIOUSLY used but has been removed
+     via scoping strategy using body.show-model-tiles prefix */
+  body.show-model-tiles #app-header {
+    position: static;
+    top: auto;
+    z-index: 1;
+  }
+
+Finding: NO !important present here (comment documents previous removal)
+Status: ALREADY FIXED - Good pattern to follow for other overrides
+
+Rationale explained in code comments:
+  The body.show-model-tiles prefix increases specificity enough that 
+  !important is NOT required. The cascade naturally handles it because:
+  - Original rule: #app-header { position: sticky; top: 0; z-index: 60; }
+  - Override rule: body.show-model-tiles #app-header { position: static; }
+  Both have 2-level specificity (ID+class vs ID+class), but the latter 
+  appears later in the stylesheet, so cascade wins.
+
+This is EXEMPLARY - use this pattern for the footer-summary-btn case above.
+
+================================================================================
+INSTANCE 5: body.show-model-tiles #stage-bar positioning
+================================================================================
+Location: configurator.css:2012-2017
+Current code:
+  body.show-model-tiles #stage-bar {
+    /* Scoped rule so we can remove !important */
+    position: static;
+    margin-bottom: 1rem;
+  }
+
+Finding: NO !important present (comment explains prevention strategy)
+Status: ALREADY FIXED - Good pattern established
+
+Rationale: Using body.show-model-tiles scope increases specificity without 
+needing !important. The cascade handles the override naturally.
+
+================================================================================
+SUMMARY TABLE OF !important INSTANCES
+================================================================================
+
+┌─────────┬──────────────────────────────┬─────────────┬──────────────────────┐
+│ Instance│ Selector                     │ Properties  │ Recommendation       │
+├─────────┼──────────────────────────────┼─────────────┼──────────────────────┤
+│    1    │ .hidden                      │ display     │ KEEP - Valid utility │
+│         │                              │             │ class pattern        │
+├─────────┼──────────────────────────────┼─────────────┼──────────────────────┤
+│    2    │ .btn-icon.footer-summary-btn │ width,      │ REFACTOR - Remove    │
+│         │                              │ height,     │ !important, ensure   │
+│         │                              │ min-*, pad, │ rule appears after   │
+│         │                              │ border-r    │ global .btn-icon     │
+├─────────┼──────────────────────────────┼─────────────┼──────────────────────┤
+│    3    │ #stage-panel-0               │ display     │ REFACTOR - Move      │
+│         │                              │             │ display state to CSS │
+│         │                              │             │ classes, not JS      │
+│         │                              │             │ inline styles        │
+├─────────┼──────────────────────────────┼─────────────┼──────────────────────┤
+│  4 & 5  │ body.show-model-tiles        │ position,   │ ALREADY FIXED - No   │
+│         │ selectors (#app-header,      │ z-index,    │ !important needed;   │
+│         │ #stage-bar)                  │ top, margin │ using scoping        │
+│         │                              │             │ strategy             │
+└─────────┴──────────────────────────────┴─────────────┴──────────────────────┘
+
+================================================================================
+DETAILED RECOMMENDATIONS
+================================================================================
+
+HIGH PRIORITY - Fix for Code Health:
+─────────────────────────────────────
+
+Fix #2: .btn-icon.footer-summary-btn overrides
+  - Current: Uses 6 x !important across width/height/padding/border-radius
+  - Status: Problematic because it masks a specificity issue
+  - Action: Remove !important, rely on cascade (rule appears after base .btn-icon)
+  - Testing: Check footer summary button dimensions don't collapse
+  - Files to edit: css/configurator.css (lines 900-905)
+  - Effort: LOW - Just remove !important keywords, keep properties
+
+Fix #3: #stage-panel-0 emergency fallback
+  - Current: Uses !important as band-aid for JS timing issues
+  - Status: Indicates deeper problem with JS state management
+  - Action: Investigate how #stage-panel-0 gets display: none set in JS
+  - Preferred fix: Move display state into CSS classes (e.g., .is-hidden)
+             Instead of: el.style.display = 'none'
+             Use: el.classList.add('is-hidden') with CSS rule .is-hidden { display: none; }
+  - Fallback: If JS must set inline styles, keep !important as safety net
+  - Files to check: js/stageManager.js, js/stageRenderer.js
+  - Effort: MEDIUM - May require JS refactor
+
+
+MAINTENANCE NOTE:
+─────────────────
+
+Instance #1 (.hidden utility) and Instances #4/#5 (show-model-tiles scoped rules)
+demonstrate that !important is NOT necessary when:
+
+  1. CSS rules use proper specificity hierarchy (compound selectors, scoping)
+  2. Rules are ordered correctly in cascade (later rules override earlier)
+  3. State is managed in CSS classes, not inline styles
+
+The codebase shows good awareness of this (evidenced by the comments explaining 
+why !important was removed from show-model-tiles rules). Apply the same thinking 
+to remaining instances.
+
+
+================================================================================
+IMPLEMENTATION CHECKLIST
+================================================================================
+
+[ ] 1. Review .btn-icon vs .btn-icon.footer-summary-btn specificity
+       - Verify both rules exist and correct ordering
+       - Test removing !important keywords
+       - Verify footer summary button renders correctly
+
+[ ] 2. Audit JS code for inline style.display manipulation
+       - Check js/stageManager.js, js/stageRenderer.js, js/main.js
+       - List all instances where display is set via .style or setAttribute
+       - Create plan to migrate to CSS classes
+
+[ ] 3. Document final decision on #stage-panel-0 display state
+       - Either refactor JS to use CSS classes
+       - Or document why !important is necessary
+       - Update comment with rationale
+
+[ ] 4. Add comment to .hidden rule explaining why !important is appropriate
+       - Document that it's an intentional utility pattern
+       - Reference Tailwind or Bootstrap precedent if helpful
+
+[ ] 5. Verify no new inline styles created during feature development
+       - Remind team: Use CSS classes for state, not inline styles
+       - Reference the "show-model-tiles" pattern as example of correct approach
+
+
+================================================================================
+CSS STANDARDS & PATTERNS TO FOLLOW
+================================================================================
+
+GOOD PATTERN (from show-model-tiles example):
+  body.show-model-tiles #app-header {
+    position: static;
+  }
+  
+Why good:
+  - Uses scope + element selector for high specificity
+  - No !important needed
+  - Easy to understand: "when model tiles are shown, header is static"
+  - Cascade handles override naturally
+
+
+BAD PATTERN (to avoid):
+  .btn-icon { width: 2.5rem !important; }
+  .btn-icon.footer-summary-btn { width: auto !important; }
+  
+Why bad:
+  - Both rules use !important, creating arms race
+  - Unclear which should win
+  - Hard to override in future if needed
+  - Indicates specificity problem, not a solution
+
+
+BEST PATTERN (recommended):
+  /* Base styles */
+  .btn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  /* Specific variant - appears later in stylesheet */
+  .btn-icon.footer-summary-btn {
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 0.125rem 0.25rem;
+    border-radius: 6px;
+  }
+  
+Why best:
+  - Clean cascade with natural specificity
+  - No !important needed
+  - Easy to read and maintain
+  - Follows HTML/CSS standard patterns
+
+
+================================================================================
+REFERENCES
+================================================================================
+
+Related files in project:
+  - css/configurator.css - Main stylesheet (3719 lines)
+  - js/stageManager.js - Stage logic and state
+  - js/stageRenderer.js - Rendering and DOM manipulation
+  - js/main.js - App orchestration
+
+Related patterns in repo:
+  - body.show-model-tiles class-based approach (GOOD)
+  - .hidden utility class (VALID)
+
+External resources:
+  - MDN CSS Specificity: https://developer.mozilla.org/en-US/docs/Web/CSS/Specificity
+  - CSS Cascade & Inheritance: https://developer.mozilla.org/en-US/docs/Web/CSS/Cascade
+
+================================================================================

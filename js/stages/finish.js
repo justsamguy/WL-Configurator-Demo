@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Finish');
+
 // Finish stage specific logic: constraints and defaults
 let lastKnownModel = null; // Track the model to detect changes
 
@@ -38,7 +42,7 @@ export function applyFinishDefaults(appState) {
       try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }
     }
   } catch (e) {
-    console.warn('applyFinishDefaults failed', e);
+    log.warn('applyFinishDefaults failed', e);
   }
 }
 
@@ -76,10 +80,9 @@ export function restoreFromState(appState) {
       }
     });
 
-    // Handle sheen slider and tiles
+    // Handle sheen tiles
     const sheenId = opts['finish-sheen'];
     if (sheenId) {
-      const slider = document.querySelector('.sheen-slider');
       const tiles = document.querySelectorAll('.sheen-tile');
       const sheenRoot = document.getElementById('finish-sheen-slider');
 
@@ -95,13 +98,6 @@ export function restoreFromState(appState) {
         if (sheenSetter) {
           sheenSetter(value, { dispatch: false });
         } else {
-          if (slider) {
-            const fallbackCenters = sheenRoot && sheenRoot.__sheenFallbackCenters;
-            const fallbackValue = fallbackCenters && typeof fallbackCenters[value] === 'number'
-              ? fallbackCenters[value]
-              : value;
-            slider.value = String(fallbackValue);
-          }
           tiles.forEach((tile, index) => {
             const isSelected = index === value;
             tile.setAttribute('aria-pressed', isSelected ? 'true' : 'false');

@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Addons');
+
 // Addons stage module
 // Addons are multi-select; dispatch 'addon-toggled' events with { id, price, checked }
 // Updated to handle dropdown tiles with checkboxes instead of option cards
@@ -8,11 +12,34 @@ export function init() {
   root.dataset.addonsDelegated = 'true';
 
   const refreshIndicators = (ev) => {
-    console.log('[Addons] Refresh indicators from event:', ev.type, ev.detail || {});
+    log.debug('Refresh indicators from event', { type: ev.type, detail: ev.detail || {} });
     updateAllIndicators();
+    updateTechCableLengthState();
   };
   document.addEventListener('addon-toggled', refreshIndicators);
   document.addEventListener('addon-selected', refreshIndicators);
+
+  const updateTechCableLengthState = () => {
+    const cableLengthInput = document.getElementById('tech-cable-length-input');
+    if (!cableLengthInput) return;
+    
+    // Check if any tech option is selected
+    const powerStripSelected = root.querySelector('[data-addon-id^="addon-power"]:not([data-addon-id*="none"])[aria-pressed="true"]');
+    const wirelessSelected = root.querySelector('[data-addon-id="addon-wireless-charging"][aria-pressed="true"]');
+    const ethernetSelected = root.querySelector('[data-addon-id="addon-ethernet"][class*="selected"]');
+    const hdmiSelected = root.querySelector('[data-addon-id="addon-hdmi"][class*="selected"]');
+    const lightingSelected = root.querySelector('[data-addon-id^="addon-lighting-"]:not([data-addon-id*="none"])[aria-pressed="true"]');
+    const customTechSelected = root.querySelector('[data-addon-id="addon-custom-tech"][aria-pressed="true"]');
+    
+    const anyTechSelected = powerStripSelected || wirelessSelected || ethernetSelected || hdmiSelected || lightingSelected || customTechSelected;
+    
+    cableLengthInput.disabled = !anyTechSelected;
+    if (!anyTechSelected) {
+      cableLengthInput.setAttribute('data-tooltip', 'Please make a selection');
+    } else {
+      cableLengthInput.removeAttribute('data-tooltip');
+    }
+  };
 
   if (typeof MutationObserver !== 'undefined') {
     const disabledObserver = new MutationObserver((mutations) => {
@@ -43,6 +70,20 @@ export function init() {
       if (mode === 'single') {
         const group = tile.getAttribute('data-addon-group');
         const groupTiles = getTilesByGroup(root, group);
+        const isSelected = tile.getAttribute('aria-pressed') === 'true';
+        if (isSelected) {
+          groupTiles.forEach(btn => {
+            btn.setAttribute('aria-pressed', 'false');
+            btn.classList.remove('selected');
+          });
+          const id = tile.getAttribute('data-addon-id');
+          log.debug('Tile deselect', { group, id });
+          document.dispatchEvent(new CustomEvent('addon-selected', {
+            detail: { group, id: null, price: 0 }
+          }));
+          updateAllIndicators();
+          return;
+        }
         groupTiles.forEach(btn => {
           btn.setAttribute('aria-pressed', 'false');
           btn.classList.remove('selected');
@@ -51,7 +92,7 @@ export function init() {
         tile.classList.add('selected');
         const id = tile.getAttribute('data-addon-id');
         const price = parsePrice(tile.getAttribute('data-price'));
-        console.log('[Addons] Tile select:', { group, id, price });
+        log.debug('Tile select', { group, id, price });
         document.dispatchEvent(new CustomEvent('addon-selected', {
           detail: { group, id, price }
         }));
@@ -64,7 +105,7 @@ export function init() {
       tile.classList.toggle('selected', !isPressed);
       const id = tile.getAttribute('data-addon-id');
       const price = parsePrice(tile.getAttribute('data-price'));
-      console.log('[Addons] Tile toggle:', { id, price, checked: !isPressed });
+      log.debug('Tile toggle', { id, price, checked: !isPressed });
       document.dispatchEvent(new CustomEvent('addon-toggled', {
         detail: { id, price, checked: !isPressed }
       }));
@@ -80,7 +121,7 @@ export function init() {
       if (optionDiv) optionDiv.classList.toggle('selected', checked);
       const id = checkbox.getAttribute('data-addon-id');
       const price = parsePrice(checkbox.getAttribute('data-price'));
-      console.log('[Addons] Checkbox change:', { id, price, checked });
+      log.debug('Checkbox change', { id, price, checked });
       document.dispatchEvent(new CustomEvent('addon-toggled', {
         detail: { id, price, checked }
       }));
@@ -94,7 +135,7 @@ export function init() {
       const id = selectedOption ? selectedOption.value : null;
       const price = selectedOption ? parsePrice(selectedOption.getAttribute('data-price')) : 0;
       const group = select.getAttribute('data-addon-group');
-      console.log('[Addons] Dropdown change:', { group, id, price });
+      log.debug('Dropdown change', { group, id, price });
       document.dispatchEvent(new CustomEvent('addon-selected', {
         detail: { group, id, price }
       }));
@@ -102,13 +143,26 @@ export function init() {
     }
   });
 
+  // Handle tech cable length input
+  const cableLengthInput = document.getElementById('tech-cable-length-input');
+  if (cableLengthInput) {
+    cableLengthInput.addEventListener('input', (event) => {
+      const value = event.target.value ? parseFloat(event.target.value) : null;
+      document.dispatchEvent(new CustomEvent('tech-cable-length-changed', {
+        detail: { cableLength: value }
+      }));
+      log.debug('Cable length changed', { cableLength: value });
+    });
+  }
+
   updateAllIndicators();
+  updateTechCableLengthState();
 }
 
 export function restoreFromState(state) {
   try {
     const arr = state && state.selections && state.selections.options && Array.isArray(state.selections.options.addon) ? state.selections.options.addon : [];
-    console.log('[Addons] restoreFromState selections:', arr);
+    log.debug('restoreFromState selections', { selections: arr });
     // Handle checkboxes
     document.querySelectorAll('.addons-dropdown-option-checkbox').forEach(checkbox => {
       const id = checkbox.getAttribute('data-addon-id');
@@ -176,6 +230,12 @@ export function restoreFromState(state) {
     });
     // Update all indicators after restoring state
     updateAllIndicators();
+    // Restore cable length if present
+    const cableLengthInput = document.getElementById('tech-cable-length-input');
+    if (cableLengthInput && state && state.selections && state.selections.techCableLength) {
+      cableLengthInput.value = state.selections.techCableLength;
+    }
+    updateTechCableLengthState();
   } catch (e) { /* ignore */ }
 }
 
@@ -341,7 +401,7 @@ function updateAllIndicators() {
     });
   });
   if (summaries.length > 0) {
-    console.log('[Addons] Indicator summary:', summaries);
+    log.debug('Indicator summary', summaries);
   }
 }
 

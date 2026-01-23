@@ -1,0 +1,62 @@
+Perfect — here’s the **final one-cell Excel / Google Sheets formula** using **overall outside dimensions** (**L, W, H in inches**) where **H includes the top 2x2 battens** and **2x4 cross-members sit on top of the 2x6 skids**.
+
+### ✅ Paste this into your “Weight (lbs)” cell
+
+Assume:
+
+* **A2 = Length (in)**
+* **B2 = Width (in)**
+* **C2 = Overall Height (in)**
+
+```excel
+=LET(
+  L_in, A2,
+  W_in, B2,
+  H_in, C2,
+
+  osbT, 7/16,
+  skidH, 5.5,
+  crossH, 3.5,
+  top2x2H, 1.5,
+
+  sideH_in, MAX(0, H_in - skidH - crossH - top2x2H),
+
+  L_ft, L_in/12,
+  W_ft, W_in/12,
+  sideH_ft, sideH_in/12,
+
+  wOSB_sqft, 46/32,
+  w2x4_ft, 11/8,
+  w2x6_ft, 16/8,
+  w2x2_ft, w2x4_ft/2,
+
+  runners, CEILING(W_in/24,1)+1,
+  cross,   CEILING(L_in/24,1)+1,
+
+  studL, CEILING(L_in/48,1)+1,
+  studW, CEILING(W_in/48,1)+1,
+  studs, 2*studL + 2*studW - 4,
+
+  topBatt, CEILING(L_in/48,1)+1,
+
+  osbArea_ft2,
+    2*(L_ft*W_ft) +
+    2*(L_ft*sideH_ft) +
+    2*(W_ft*sideH_ft),
+
+  osb_lb, osbArea_ft2*wOSB_sqft,
+
+  lf_2x6, runners*L_ft,
+  lf_2x4, cross*W_ft,
+  lf_2x2, 2*(L_ft+W_ft) + studs*sideH_ft + topBatt*W_ft,
+
+  lumber_lb, lf_2x6*w2x6_ft + lf_2x4*w2x4_ft + lf_2x2*w2x2_ft,
+
+  ROUND((osb_lb + lumber_lb)*1.05, 1)
+)
+```
+
+**Notes**
+
+* The `*1.05` adds **5%** for screws, waste, short blocks, etc.
+* If you want it “tighter,” change **1.05 → 1.00**.

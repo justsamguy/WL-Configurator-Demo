@@ -41,7 +41,7 @@ export function populateHelpDrawer() {
           In the Customize stage, you can personalize your table with:
         </p>
         <ul class="list-disc list-inside text-gray-600 space-y-1 ml-2">
-          <li><strong>Materials:</strong> Choose from oak, walnut, or maple</li>
+          <li><strong>Tabletop:</strong> Choose from oak, walnut, or maple</li>
           <li><strong>Finishes:</strong> Select natural or stained options</li>
           <li><strong>Legs:</strong> Pick standard or modern leg styles</li>
         </ul>
@@ -56,7 +56,7 @@ export function populateHelpDrawer() {
           In the final stage, you can:
         </p>
         <ul class="list-disc list-inside text-gray-600 space-y-1 ml-2">
-          <li>Capture a snapshot of your configuration</li>
+          <li>Copy a markdown summary of your configuration</li>
           <li>Export a PDF summary with all your selections</li>
           <li>Start over if you want to create a new configuration</li>
         </ul>

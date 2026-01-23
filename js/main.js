@@ -7,6 +7,27 @@ import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
+import * as dataLoader from './dataLoader.js';
+import { buildExportJSON } from './export.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('Main');
+const addonsLog = createLogger('Addons');
+
+if (typeof window !== 'undefined') {
+  window.exportConfig = async () => {
+    try {
+      const payload = await buildExportJSON(state, dataLoader);
+      console.log('Configuration exported. Copy the JSON below and paste into your LLM:');
+      console.log(JSON.stringify(payload, null, 2));
+      return payload;
+    } catch (e) {
+      log.warn('Export config failed', e);
+      console.warn('Configuration export failed. See log for details.');
+      return null;
+    }
+  };
+}
 
 /**
  * Filter designs by model compatibility
@@ -84,7 +105,7 @@ import { recomputeTubeSizeConstraints } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
-  console.log('[Main] State changed:', ev.detail.state.selections);
+  log.debug('State changed', ev.detail.state.selections);
   // main orchestrator can react to state changes here if needed.
   // ev.detail.state contains the latest state object.
   // If the summary page is active, refresh its contents
@@ -223,6 +244,85 @@ function updateWaterfallAddonAvailability(appState = state) {
   updateAllIndicators();
 }
 
+const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
+
+function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
+  if (addonId === 'addon-rounded-corners') {
+    const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round';
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs' : '' };
+  }
+  if (addonId === 'addon-angled-corners') {
+    const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round';
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs' : '' };
+  }
+  if (addonId === 'addon-chamfered-edges') {
+    const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge');
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge' : '' };
+  }
+  return { incompatible: false, tooltip: '' };
+}
+
+function updateEdgeProfileAddonAvailability(appState = state) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : [];
+  const currentAddons = Array.isArray(addons) ? addons : [];
+  const currentDesign = appState && appState.selections ? appState.selections.design : null;
+  const selectedEdge = EDGE_PROFILE_ADDONS.find(id => currentAddons.includes(id)) || '';
+
+  EDGE_PROFILE_ADDONS.forEach((addonId) => {
+    const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
+    const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${addonId}"]`);
+    if (!checkbox || !option) return;
+
+    const base = getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons);
+    const disableBySelection = selectedEdge && addonId !== selectedEdge;
+    const shouldDisable = base.incompatible || disableBySelection;
+
+    if (shouldDisable) {
+      checkbox.disabled = true;
+      if (disableBySelection) {
+        checkbox.checked = false;
+      }
+      const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
+      if (tooltip) {
+        checkbox.setAttribute('data-tooltip', tooltip);
+        option.setAttribute('data-tooltip', tooltip);
+      }
+      if (disableBySelection) {
+        checkbox.setAttribute('data-disabled-by', 'edge-profile');
+        option.setAttribute('data-disabled-by', 'edge-profile');
+      }
+      option.classList.add('disabled');
+      option.classList.remove('selected');
+      option.setAttribute('aria-disabled', 'true');
+      return;
+    }
+
+    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+    if (disabledBy === 'edge-profile') {
+      checkbox.disabled = false;
+      checkbox.removeAttribute('data-disabled-by');
+      if (checkbox.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
+        checkbox.removeAttribute('data-tooltip');
+      }
+      option.classList.remove('disabled');
+      option.removeAttribute('aria-disabled');
+      if (option.getAttribute('data-disabled-by') === 'edge-profile') {
+        option.removeAttribute('data-disabled-by');
+      }
+      if (option.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
+        option.removeAttribute('data-tooltip');
+      }
+    }
+  });
+
+  updateAllIndicators();
+}
+
 /**
  * Update legs and tube size options based on selected model and design
  * Filters legs to only show those compatible with the model and design
@@ -257,7 +357,7 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   try {
     recomputeTubeSizeConstraints();
   } catch (e) {
-    console.warn('Failed to recompute constraints:', e);
+    log.warn('Failed to recompute constraints', e);
   }
   updateLegPricingUI(state, allLegs);
 }
@@ -265,16 +365,18 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
 document.addEventListener('option-selected', async (ev) => {
   const { id, category, price } = ev.detail || { id: null, category: null, price: 0 };
-  console.log('[Main] option-selected event:', { id, category, price }, 'current state:', state.selections);
+  log.debug('option-selected event', { id, category, price, selections: state.selections });
   
   // Ignore events with null or undefined category (malformed events)
   if (!category) {
-    console.warn('[Main] Ignoring malformed option-selected event with null/undefined category');
+    log.warn('Ignoring malformed option-selected event with null/undefined category');
     return;
   }
   
   // Handle model selection (category: 'model')
   if (category === 'model') {
+    const stageManager = window.stageManager || null;
+    const originStage = stageManager && stageManager.getCurrentStage ? stageManager.getCurrentStage() : null;
     // When model changes, clear ALL selections (design and all options)
     setState({ 
       selections: { 
@@ -305,7 +407,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateLegsOptionsForModel(id, allLegs, allTubeSizes);
       }
     } catch (e) {
-      console.warn('Failed to update legs options:', e);
+      log.warn('Failed to update legs options', e);
     }
 
     // Re-render designs filtered by the newly selected model
@@ -329,18 +431,17 @@ document.addEventListener('option-selected', async (ev) => {
         }
       }
     } catch (e) {
-      console.warn('Failed to re-render designs after model change:', e);
+      log.warn('Failed to re-render designs after model change', e);
     }
 
-    // If user selected a model from a stage other than 0 (Models), navigate back to Models stage
+    // If user selected a model from a stage beyond Designs, navigate back to Models stage
     try {
-      const stageManager = window.stageManager;
-      if (stageManager && stageManager.getCurrentStage && stageManager.getCurrentStage() > 0) {
-        console.log('[Main] Model selected from stage', stageManager.getCurrentStage(), '- navigating to stage 0');
+      if (stageManager && typeof stageManager.setStage === 'function' && originStage !== null && originStage > 1) {
+        log.debug('Model selected from stage, navigating to stage 0', { originStage });
         await stageManager.setStage(0, { skipConfirm: true });
       }
     } catch (e) {
-      console.warn('Failed to navigate back to Models stage:', e);
+      log.warn('Failed to navigate back to Models stage', e);
     }
   }
   // Handle design selection (category: 'design')
@@ -372,7 +473,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateLegsOptionsForModel(state.selections.model, allLegs, allTubeSizes, id);
       }
     } catch (e) {
-      console.warn('Failed to update legs options after design change:', e);
+      log.warn('Failed to update legs options after design change', e);
     }
 
     // Update addon compatibility based on the selected design
@@ -386,7 +487,7 @@ document.addEventListener('option-selected', async (ev) => {
         updateWaterfallAddonAvailability(state);
       }
     } catch (e) {
-      console.warn('Failed to update addon compatibility after design change:', e);
+      log.warn('Failed to update addon compatibility after design change', e);
     }
 
     // Update materials based on the selected design
@@ -402,7 +503,7 @@ document.addEventListener('option-selected', async (ev) => {
         }
       }
     } catch (e) {
-      console.warn('Failed to update materials after design change:', e);
+      log.warn('Failed to update materials after design change', e);
     }
   }
   // Handle other category selections (material, finish, legs, color, etc.)
@@ -452,7 +553,7 @@ document.addEventListener('legs-none-selected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle legs-none-selected:', e);
+    log.warn('Failed to handle legs-none-selected', e);
   }
 });
 
@@ -466,7 +567,7 @@ document.addEventListener('tube-size-cleared-due-to-incompatibility', async (ev)
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle tube-size-cleared-due-to-incompatibility:', e);
+    log.warn('Failed to handle tube-size-cleared-due-to-incompatibility', e);
   }
 });
 
@@ -480,23 +581,29 @@ document.addEventListener('tube-size-deselected', async (ev) => {
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
   } catch (e) {
-    console.warn('Failed to handle tube-size-deselected:', e);
+    log.warn('Failed to handle tube-size-deselected', e);
   }
 });
 
 // Handle addon toggles (multi-select). Expect detail: { id, price, checked }
 document.addEventListener('addon-toggled', async (ev) => {
   const { id, price, checked } = ev.detail || { id: null, price: 0, checked: false };
-  console.log('[Addons] addon-toggled event:', { id, price, checked });
+  addonsLog.debug('addon-toggled event', { id, price, checked });
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   if (checked) selectedAddons.add(id);
   else selectedAddons.delete(id);
+  if (checked && EDGE_PROFILE_ADDONS.includes(id)) {
+    EDGE_PROFILE_ADDONS.forEach((addonId) => {
+      if (addonId !== id) selectedAddons.delete(addonId);
+    });
+  }
   if (id === 'addon-waterfall-single' && !checked) {
     selectedAddons.delete('addon-waterfall-second');
   }
   const addonsArray = Array.from(selectedAddons);
   // persist selections then compute price via pricing module
   setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
+  updateEdgeProfileAddonAvailability(state);
   const p = await computePrice(state);
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
@@ -508,7 +615,7 @@ document.addEventListener('addon-toggled', async (ev) => {
 // Handle addon selections (single-select per group). Expect detail: { group, id, price }
 document.addEventListener('addon-selected', async (ev) => {
   const { group, id, price } = ev.detail || { group: null, id: null, price: 0 };
-  console.log('[Addons] addon-selected event:', { group, id, price });
+  addonsLog.debug('addon-selected event', { group, id, price });
   if (!group) return;
   const selectedAddons = new Set((state.selections.options.addon && Array.isArray(state.selections.options.addon)) ? state.selections.options.addon : []);
   // Remove any previous selection in this group
@@ -533,13 +640,20 @@ document.addEventListener('addon-selected', async (ev) => {
   updateWaterfallAddonAvailability(state);
 });
 
+// Handle tech cable length changes
+document.addEventListener('tech-cable-length-changed', (ev) => {
+  const { cableLength } = ev.detail || { cableLength: null };
+  addonsLog.debug('tech-cable-length-changed event', { cableLength });
+  setState({ selections: { ...state.selections, techCableLength: cableLength } });
+});
+
 // Request-based restart: stage modules should dispatch 'request-restart' and
 // main.js (the canonical mutator) will reset the shared state and navigate to
 // the first stage.
 document.addEventListener('request-restart', (ev) => {
   try {
     const from = state.pricing.total || state.pricing.base || 0;
-    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null }, pricing: { base: 0, extras: 0, total: 0 } });
+    setState({ selections: { model: null, design: null, options: {}, dimensionsDetail: null, techCableLength: null }, pricing: { base: 0, extras: 0, total: 0 } });
     animatePrice(from, 0, 320, (val) => updatePriceUI(val));
     const stageManager = window.stageManager || null;
     if (stageManager && typeof stageManager.setStage === 'function') {
@@ -559,7 +673,7 @@ document.addEventListener('request-price-refresh', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
   } catch (e) {
-    console.warn('Failed to refresh price', e);
+    log.warn('Failed to refresh price', e);
   }
 });
 
@@ -636,7 +750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sb = document.getElementById('summary-btn');
     if (sb) initSummaryTooltip(sb);
   } catch (e) {
-    console.warn('Failed to initialize summary tooltip', e);
+    log.warn('Failed to initialize summary tooltip', e);
   }
 
   // Render model and materials option cards from data files (if placeholders exist)
@@ -752,7 +866,7 @@ if (designsSection) {
       updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
-    console.warn('Failed to render stage data from JSON files', e);
+    log.warn('Failed to render stage data from JSON files', e);
   }
 
   // Initial state update to render the first stage (use setState to dispatch standardized event)
@@ -764,11 +878,11 @@ if (designsSection) {
     stageManager.initStageManager();
   // expose for other modules (summary/restart) to programmatically change stage
   window.stageManager = stageManager;
-    console.log('Stage manager initialized from main.js');
+    log.info('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
   } catch (err) {
-    console.warn('Failed to initialize stage manager from main.js', err);
+    log.warn('Failed to initialize stage manager from main.js', err);
   }
 
   // If we loaded the Summary page markup, populate its panel now
@@ -784,7 +898,7 @@ if (designsSection) {
   } catch (e) { /* ignore */ }
 
   // Initialize placeholder interactions (click handlers, price animation, skeleton)
-  try { initPlaceholderInteractions(); } catch (e) { console.warn('Failed to init placeholder interactions', e); }
+  try { initPlaceholderInteractions(); } catch (e) { log.warn('Failed to init placeholder interactions', e); }
 
   const loadingScreen = document.getElementById('app-loading');
   if (loadingScreen) {
@@ -792,8 +906,24 @@ if (designsSection) {
     loadingScreen.setAttribute('aria-hidden', 'true');
   }
 
+  // Set up beforeunload warning for unsaved customizations
+  window.addEventListener('beforeunload', (event) => {
+    const { selections } = state;
+    // Check if user has made any customizations beyond the initial empty state
+    const hasCustomizations = selections.model || selections.design || 
+                              Object.keys(selections.options || {}).length > 0 ||
+                              selections.dimensionsDetail;
+    if (hasCustomizations) {
+      // Set returnValue to trigger browser warning dialog
+      event.returnValue = '';
+      event.preventDefault();
+      return '';
+    }
+  });
+
   // Log successful app load with timestamp
-  console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-  console.log('Last updated: 2026-01-12 12:19');
-  console.log('Edit ver: 419');
+console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
+console.log('Last updated: 2026-01-23 11:26');
+console.log('Edit ver: 505');
+  console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

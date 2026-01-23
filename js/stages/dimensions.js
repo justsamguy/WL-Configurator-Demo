@@ -3,6 +3,9 @@
 // Also dispatches 'request-stage-change' for Apply & Next button
 
 import { state } from '../state.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Dimensions');
 
 let dimensionsData = null;
 let currentDimensions = {
@@ -25,7 +28,7 @@ async function loadDimensionsData() {
     dimensionsData = await response.json();
     return dimensionsData;
   } catch (e) {
-    console.error('Failed to load dimensions data:', e);
+    log.error('Failed to load dimensions data', e);
     return null;
   }
 }
@@ -57,7 +60,7 @@ function resetDimensions() {
   if (widthInput) widthInput.value = '';
   if (heightCustomInput) heightCustomInput.value = '';
   
-  console.log('[Dimensions] Reset dimensions state');
+  log.debug('Reset dimensions state');
 }
 
 // Initialize current dimensions from preset if available
@@ -66,7 +69,7 @@ function initializeFromState(appState) {
     // Check if model has changed since last initialization
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Dimensions] Model changed from', lastKnownModel, 'to', currentModel, '- resetting dimensions');
+      log.debug('Model changed, resetting dimensions', { from: lastKnownModel, to: currentModel });
       resetDimensions();
       lastKnownModel = currentModel;
       return; // Don't restore old dimensions when model changes
@@ -108,7 +111,7 @@ function initializeFromState(appState) {
     // Stages should require explicit user selection; this respects the principle
     // that stage modules do not mutate state without user action.
   } catch (e) {
-    console.warn('Failed to initialize dimensions from state:', e);
+    log.warn('Failed to initialize dimensions from state', e);
   }
 }
 
@@ -205,8 +208,9 @@ function validateAxisValue(axis, value) {
 // Check if dimension exceeds oversize threshold
 function checkOversizeThreshold(axis, value) {
   const constraints = getConstraints();
-  if (!constraints || !constraints.oversizeThresholds) return null;
-  const threshold = constraints.oversizeThresholds[axis];
+  const thresholds = (constraints && constraints.oversizeThresholds) || (dimensionsData && dimensionsData.oversizeThresholds);
+  if (!thresholds) return null;
+  const threshold = thresholds[axis];
   if (!threshold) return null;
   if (value > threshold.threshold) {
     return threshold.message;
@@ -248,29 +252,30 @@ function updateOversizeBanners() {
   
   bannersContainer.innerHTML = '';
   
-  const checks = [
-    { axis: 'length', value: currentDimensions.length },
-    { axis: 'width', value: currentDimensions.width }
-  ];
-  
-  checks.forEach(({ axis, value }) => {
-    if (value === null) return;
-    const message = checkOversizeThreshold(axis, value);
-    if (message) {
-      const banner = document.createElement('div');
-      banner.className = 'oversize-banner bg-gray-100 border-l-4 border-amber-500 p-3 rounded text-sm';
-      banner.innerHTML = `
-        <div class="font-semibold text-gray-900 flex items-center gap-2">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          Oversize
-        </div>
-        <p class="text-gray-700 mt-1">${message}</p>
-      `;
-      bannersContainer.appendChild(banner);
-    }
-  });
+  if (currentDimensions.width === null) return;
+  const message = checkOversizeThreshold('width', currentDimensions.width);
+  if (!message) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'summary-shipping-warning';
+  banner.setAttribute('aria-live', 'polite');
+  banner.setAttribute('aria-atomic', 'true');
+
+  const textWrap = document.createElement('div');
+  textWrap.className = 'summary-shipping-warning-text';
+
+  const title = document.createElement('span');
+  title.className = 'summary-shipping-warning-title';
+  title.textContent = 'Oversize width';
+
+  const subtitle = document.createElement('span');
+  subtitle.className = 'summary-shipping-warning-subtitle';
+  subtitle.textContent = message;
+
+  textWrap.appendChild(title);
+  textWrap.appendChild(subtitle);
+  banner.appendChild(textWrap);
+  bannersContainer.appendChild(banner);
 }
 
 // Show/hide custom dimension controls based on selection
@@ -420,6 +425,7 @@ function initPresets() {
     const tile = document.createElement('button');
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
+    tile.setAttribute('data-ignore-placeholder', 'true');
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
@@ -439,6 +445,7 @@ function initPresets() {
   const customTile = document.createElement('button');
   customTile.className = 'option-card flex-shrink-0';
   customTile.setAttribute('data-preset-id', 'custom');
+  customTile.setAttribute('data-ignore-placeholder', 'true');
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
@@ -686,7 +693,7 @@ export async function init() {
   // Load data first
   const data = await loadDimensionsData();
   if (!data) {
-    console.error('Failed to load dimensions data');
+    log.error('Failed to load dimensions data');
     return;
   }
   
@@ -718,7 +725,7 @@ export function restoreFromState(appState) {
     // Check if model has changed and reset if needed
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Dimensions] Model changed in restoreFromState - resetting');
+      log.debug('Model changed in restoreFromState, resetting');
       resetDimensions();
       lastKnownModel = currentModel;
       // Re-initialize presets for the new model
@@ -728,7 +735,7 @@ export function restoreFromState(appState) {
     initializeFromState(appState);
     updateUIControls();
   } catch (e) {
-    console.warn('Failed to restore dimensions from state:', e);
+    log.warn('Failed to restore dimensions from state', e);
   }
 }
 

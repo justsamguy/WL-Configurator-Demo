@@ -3,6 +3,9 @@
 // With model-based filtering and incompatibility constraints
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
 import { state } from '../state.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('Legs');
 
 let lastKnownModel = null; // Track the model to detect changes
 
@@ -16,16 +19,16 @@ function isTubeSizeOptional(legId) {
 }
 
 export function init() {
-  console.log('[Legs] init() STARTED');
-  console.log('[Legs] Module-level state at init time:', { ...state });
-  console.log('[Legs] Adding click listener to document');
+  log.debug('init() started');
+  log.debug('Module-level state at init time', { ...state });
+  log.debug('Adding click listener to document');
   document.addEventListener('click', (ev) => {
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
     const tubeSizeCard = ev.target.closest && ev.target.closest('.option-card[data-category="tube-size"]');
     const legFinishCard = ev.target.closest && ev.target.closest('.option-card[data-category="leg-finish"]');
 
     if (legCard && !legCard.hasAttribute('disabled')) {
-      console.log('[Legs] Leg card clicked:', legCard.getAttribute('data-id'));
+      log.debug('Leg card clicked', { id: legCard.getAttribute('data-id') });
       document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       legCard.setAttribute('aria-pressed', 'true');
       const id = legCard.getAttribute('data-id');
@@ -38,7 +41,7 @@ export function init() {
         document.dispatchEvent(new CustomEvent('legs-none-selected'));
       }
       // Recompute tube size constraints when leg changes
-      console.log('[Legs] Leg clicked, calling recomputeTubeSizeConstraints() without state parameter, module-level state.selections:', state.selections);
+      log.debug('Leg clicked, recomputeTubeSizeConstraints without state', { selections: state.selections });
       recomputeTubeSizeConstraints();
     } else if (tubeSizeCard) {
       // Check if the tube size card is disabled; if so, don't allow selection
@@ -83,7 +86,7 @@ export function recomputeTubeSizeConstraints(appState) {
   try {
     // Use provided state or fall back to imported global state
     const currentState = appState || state;
-    console.log('[Legs] recomputeTubeSizeConstraints - appState provided?', !!appState, 'appState:', appState, 'falling back to module state:', !appState);
+    log.debug('recomputeTubeSizeConstraints', { hasAppState: !!appState, appState, usingModuleState: !appState });
     
     const selectedLegEl = document.querySelector('.option-card[data-category="legs"][aria-pressed="true"]');
     const selectedLegId = selectedLegEl && selectedLegEl.getAttribute('data-id');
@@ -91,7 +94,7 @@ export function recomputeTubeSizeConstraints(appState) {
     // Get the selected model from application state (more reliable than searching DOM)
     const selectedModelId = currentState.selections && currentState.selections.model;
     
-    console.log('[Legs] recomputeTubeSizeConstraints called - leg:', selectedLegId, 'model:', selectedModelId);
+    log.debug('recomputeTubeSizeConstraints called', { legId: selectedLegId, modelId: selectedModelId });
     
     // Helper: get list of disabled-by sources from element
     function _getDisabledByList(el) {
@@ -131,7 +134,7 @@ export function recomputeTubeSizeConstraints(appState) {
       let selectedTubeWasDisabled = false;
       let disabledCount = 0;
       
-      console.log('[Legs] Applying constraints for leg:', selectedLegId, 'model:', selectedModelId);
+      log.debug('Applying constraints', { legId: selectedLegId, modelId: selectedModelId });
       
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
         const tubeId = el.getAttribute('data-id');
@@ -143,7 +146,7 @@ export function recomputeTubeSizeConstraints(appState) {
         });
         
         if (reasons.length > 0) {
-          console.log('[Legs] Disabled:', tubeId, 'reasons:', reasons);
+          log.debug('Disabled tube size', { tubeId, reasons });
           disabledCount++;
         }
         
@@ -163,18 +166,18 @@ export function recomputeTubeSizeConstraints(appState) {
       }
     }
   } catch (e) {
-    console.warn('Failed to recompute tube size constraints:', e);
+    log.warn('Failed to recompute tube size constraints', e);
   }
 }
 
 export function restoreFromState(appState) {
   try {
-    console.log('[Legs] restoreFromState called with state.selections:', appState.selections);
+    log.debug('restoreFromState called', { selections: appState.selections });
     
     // Check if model has changed and clear disabled states if needed
     const currentModel = appState && appState.selections && appState.selections.model;
     if (currentModel !== lastKnownModel) {
-      console.log('[Legs] Model changed from', lastKnownModel, 'to', currentModel, '- clearing constraints');
+      log.debug('Model changed, clearing constraints', { from: lastKnownModel, to: currentModel });
       // Clear all disabled states and tooltips when model changes
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
         el.removeAttribute('data-disabled-by');

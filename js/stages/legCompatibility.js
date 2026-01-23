@@ -1,3 +1,7 @@
+import { createLogger } from '../logger.js';
+
+const log = createLogger('LegCompat');
+
 // Leg compatibility constraints and filtering logic
 // Defines model-to-leg-design compatibility and leg-design-to-tube-size compatibility
 
@@ -128,7 +132,7 @@ export function getTubeIncompatibilityReasons(tubeId, selectedLegId, modelId) {
     reasons.push(modelTitle);
   }
   
-  console.log('[LegCompat] getTubeIncompatibilityReasons for tube:', tubeId, 'leg:', selectedLegId, 'model:', modelId, '-> reasons:', reasons);
+  log.debug('getTubeIncompatibilityReasons', { tubeId, selectedLegId, modelId, reasons });
   return reasons;
 }
 

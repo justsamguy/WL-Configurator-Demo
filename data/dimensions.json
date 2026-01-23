@@ -15,7 +15,6 @@
     "height": { "standard": 30, "bar": 42, "unit": "in" }
   },
   "oversizeThresholds": {
-    "length": { "threshold": 94, "message": "May affect lead time" },
-    "width": { "threshold": 39, "message": "May affect lead time" }
+    "width": { "threshold": 52, "message": "Width over 52 in adds a $1000 oversize charge", "charge": 1000 }
   }
 }
