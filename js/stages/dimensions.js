@@ -425,6 +425,7 @@ function initPresets() {
     const tile = document.createElement('button');
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
+    tile.setAttribute('data-ignore-placeholder', 'true');
     tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
@@ -444,6 +445,7 @@ function initPresets() {
   const customTile = document.createElement('button');
   customTile.className = 'option-card flex-shrink-0';
   customTile.setAttribute('data-preset-id', 'custom');
+  customTile.setAttribute('data-ignore-placeholder', 'true');
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `

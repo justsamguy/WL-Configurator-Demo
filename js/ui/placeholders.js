@@ -149,6 +149,7 @@ export function initPlaceholderInteractions() {
   document.addEventListener('click', (ev) => {
     const btn = ev.target.closest('.option-card');
     if (!btn) return;
+    if (btn.hasAttribute('data-ignore-placeholder')) return;
     if (btn.hasAttribute('disabled')) return;
 
     // read price from data-price (fallback to 0)

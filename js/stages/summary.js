@@ -1772,7 +1772,7 @@ async function exportPdf() {
     if (addons.includes('addon-embedded-logo')) addTechRow('Embedded Logo', 'Custom inlay');
   }
 
-  addTechSubheading('Shipping Specs');
+  addTechSubheading('Shipping');
   const shippingMode = shippingDetails.mode || 'Standard shipping';
   const shippingMethod = shippingMode === 'Standard shipping' ? 'LTL' : shippingMode;
   const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
