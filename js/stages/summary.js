@@ -295,14 +295,14 @@ const COLOR_LAYOUT_SPECS = {
 
 const FINISH_SHEEN_SPECS = {
   '2K Poly': { Satin: '20 sheen', Matte: '10 sheen', Gloss: '30 sheen' },
-  'Natural Oil': { Satin: '3043 Clear Satin', Matte: '3031 Clear Matte', Gloss: '3011 Clear Gloss' }
+  'Natural Oil': { Satin: 'osmo Polyx-Oil 3043 Clear Satin', Matte: 'osmo Polyx-Oil 3031 Clear Matte', Gloss: 'osmo Polyx-Oil 3011 Clear Gloss' }
 };
 
 const FINISH_TINT_NOTES = {
   'Natural Oil': {
-    Clear: 'Base coat 1101 Clear Satin',
-    Natural: 'Base coat 3051 Raw Matte',
-    Darken: 'Base coat 3166 Walnut'
+    Clear: 'osmo Wood Wax Finish Extra Thin 1101 Clear Satin',
+    Natural: 'osmo Polyx-Oil 3051 Raw Matte',
+    Darken: 'osmo Wood Wax Transparent Finish 3166 Walnut'
   }
 };
 
@@ -618,6 +618,7 @@ function getColorSpecs(title) {
 
 function getFinishSheenSpec(coatingTitle, sheenTitle) {
   if (!sheenTitle) return null;
+  if (coatingTitle === 'Natural Oil') return 'Osmo Polyx-Oil';
   const spec = FINISH_SHEEN_SPECS[coatingTitle];
   if (spec && spec[sheenTitle]) return `${sheenTitle} (${spec[sheenTitle]})`;
   return sheenTitle;
@@ -1223,7 +1224,7 @@ async function exportPdf() {
   const techValueWidth = pageWidth - margin * 2 - techLabelWidth;
   const techLineColor = [229, 231, 235];
   const techSubheadingFontSize = 10;
-  const techSubheadingTopGap = 12;
+  const techSubheadingTopGap = 14;
   const techSubheadingBottomGap = 0;
   const techSubheadingLineHeight = 12;
 
@@ -1475,7 +1476,11 @@ async function exportPdf() {
     finishCoatRows.push({ label: 'Finish Base Coat', value: '2K Polyurethane' });
   } else if (finishCoatingTitle === 'Natural Oil') {
     finishCoatRows.push({ label: 'Finish Base Coat', value: finishTintNote || 'Osmo Natural Oil base coat' });
-    finishCoatRows.push({ label: 'Finish Second Coat', value: 'Osmo Natural Oil second coat' });
+    if (finishTintTitle === 'Natural') {
+      finishCoatRows.push({ label: 'Finish Second Coat', value: finishTintNote || 'Osmo Natural Oil second coat' });
+    } else {
+      finishCoatRows.push({ label: 'Finish Second Coat', value: FINISH_SHEEN_SPECS['Natural Oil'][finishSheenTitle] || 'Osmo Natural Oil second coat' });
+    }
     finishCoatRows.push({ label: 'Finish Top Coat', value: 'Ceramic Pro Strong 1000 top coat' });
   } else if (finishCoatingTitle) {
     finishCoatRows.push({ label: 'Finish Base Coat', value: finishTypeLabel });
