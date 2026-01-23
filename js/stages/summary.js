@@ -295,7 +295,7 @@ const COLOR_LAYOUT_SPECS = {
 
 const FINISH_SHEEN_SPECS = {
   '2K Poly': { Satin: '20 sheen', Matte: '10 sheen', Gloss: '30 sheen' },
-  'Natural Oil': { Satin: 'osmo Polyx-Oil 3043 Clear Satin', Matte: 'osmo Polyx-Oil 3031 Clear Matte', Gloss: 'osmo Polyx-Oil 3011 Clear Gloss' }
+  'Natural Oil': { Satin: 'osmo Polyx-Oil (Satin) 3043 Clear Satin', Matte: 'osmo Polyx-Oil (Matte) 3031 Clear Matte', Gloss: 'osmo Polyx-Oil (Gloss) 3011 Clear Gloss' }
 };
 
 const FINISH_TINT_NOTES = {
@@ -307,33 +307,36 @@ const FINISH_TINT_NOTES = {
 };
 
 const LEG_FINISH_BRANDS = {
-  'Matte Black': 'Behr Metallic Matte Black',
-  'Satin Black': 'Rustoleum Satin Black',
-  'Oil Rubbed Bronze': 'Behr Oil Rubbed Bronze',
-  'Satin Bronze': 'Rustoleum Satin Bronze',
-  'Gunmetal Grey': 'Rustoleum Gunmetal Grey',
-  'Titanium Silver': 'Rustoleum Titanium Silver',
-  'Raw Metal': 'Rustoleum Clear'
+  'Matte Black': 'Behr matte black B002144',
+  'Satin Black': 'Behr satin black 346951',
+  'Oil Rubbed Bronze': 'Behr oil rubbed bronze B060244',
+  'Satin Bronze': 'Behr satin bronze 314560',
+  'Gunmetal Grey': 'Behr gunmetal grey 353091',
+  'Titanium Silver': 'Behr titanium silver 245220',
+  'Raw Metal': 'Behr raw metal Clear Satin 285092'
 };
 
 const TECH_CABLE_LENGTH_DEFAULT = '12 ft';
+const MOUNTING_PLATE_THICKNESS = 0.25;
 
 const POWER_STRIP_SPECS = {
   'addon-power-ac': {
     powerRating: '125V 15A',
-    ports: '6 AC',
+    ports: '6 AC (per 5 ft rail)',
     railLength: '5 ft or 3 ft',
     color: 'Black'
   },
   'addon-power-ac-usb': {
     powerRating: '125V 15A',
-    ports: '3 AC + 6 USB (5V 2.4A each)',
+    ports: '3 AC + 6 USB (per 5 ft rail)',
+    usbOutput: '5V 2.4A each',
     railLength: '5 ft or 3 ft',
     color: 'Black'
   },
   'addon-power-ac-usb-usbc': {
     powerRating: '125V 15A',
-    ports: '3 AC + 3 USB + 3 USB-C (5V 2.4A each)',
+    ports: '3 AC + 3 USB + 3 USB-C (per 5 ft rail)',
+    usbOutput: '5V 2.4A each',
     railLength: '5 ft or 3 ft',
     color: 'Black'
   }
@@ -660,6 +663,38 @@ function getLegSideSetbackLabel({ width, legWidth, plateLength, legId, designId 
     leg: Number.isFinite(legSetback) ? formatSideSetback(legSetback) : 'TBD',
     plate: Number.isFinite(plateSetback) ? formatSideSetback(plateSetback) : 'TBD'
   };
+}
+
+function getPlateEndSetbackLabel(legEndSetback) {
+  if (!legEndSetback || legEndSetback === 'TBD') return 'TBD';
+  const rangeMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*in$/);
+  if (rangeMatch) {
+    const min = Math.max(0, Number(rangeMatch[1]) - 2);
+    const max = Math.max(0, Number(rangeMatch[2]) - 2);
+    return `${formatNumber(min)}-${formatNumber(max)} in`;
+  }
+  const plusMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\+\s*in$/);
+  if (plusMatch) {
+    const value = Math.max(0, Number(plusMatch[1]) - 2);
+    return `${formatNumber(value)}+ in`;
+  }
+  const singleMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\s*in$/);
+  if (singleMatch) {
+    const value = Math.max(0, Number(singleMatch[1]) - 2);
+    return `${formatNumber(value)} in`;
+  }
+  return legEndSetback;
+}
+
+function parseSetbackValue(setbackLabel) {
+  if (!setbackLabel || setbackLabel === 'TBD') return null;
+  const rangeMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*in$/);
+  if (rangeMatch) return (Number(rangeMatch[1]) + Number(rangeMatch[2])) / 2;
+  const plusMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\+\s*in$/);
+  if (plusMatch) return Number(plusMatch[1]);
+  const singleMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\s*in$/);
+  if (singleMatch) return Number(singleMatch[1]);
+  return null;
 }
 
 function calculateEmptyCrateWeight(lengthIn, widthIn, heightIn) {
@@ -1504,9 +1539,6 @@ async function exportPdf() {
   const legHeight = Number.isFinite(height) && Number.isFinite(tabletopThickness)
     ? Math.max(0, height - tabletopThickness)
     : null;
-  const legHeightLabel = Number.isFinite(legHeight)
-    ? formatInches(legHeight)
-    : (isCookieDesign ? 'TBD (cookie quoted separately)' : 'TBD');
   const legCount = (hasLegs && Number.isFinite(length)) ? getLegCount(length) : null;
   let legEndSetback = 'TBD';
   let plateEndSetback = 'TBD';
@@ -1514,14 +1546,20 @@ async function exportPdf() {
     if (selections.model === 'mdl-coffee') legEndSetback = '5-7 in';
     else if (Number.isFinite(length) && length >= 120) legEndSetback = '18-20 in';
     else legEndSetback = '12-14 in';
-    plateEndSetback = legEndSetback;
+    plateEndSetback = getPlateEndSetbackLabel(legEndSetback);
   }
   const tubeDims = parseTubeDimensions(tubeTitle);
   const tubeDepth = tubeDims.length ? Math.max(...tubeDims) : null;
-  const legDimensions = (hasLegs && Number.isFinite(legWidth) && Number.isFinite(tubeDepth) && Number.isFinite(legHeight))
-    ? `${formatNumber(legWidth)} in W x ${formatNumber(tubeDepth)} in D x ${formatNumber(legHeight)} in H`
+  const legHeightWithoutPlate = Number.isFinite(legHeight)
+    ? Math.max(0, legHeight - MOUNTING_PLATE_THICKNESS)
+    : null;
+  const legDimensions = (hasLegs && Number.isFinite(legWidth) && Number.isFinite(tubeDepth) && Number.isFinite(legHeightWithoutPlate))
+    ? `${formatNumber(legWidth)} in W x ${formatNumber(tubeDepth)} in D x ${formatNumber(legHeightWithoutPlate)} in H`
     : 'TBD';
   const plateLength = Number.isFinite(width) ? Math.max(0, width - 6) : null;
+  const legDimensionsWithPlate = (hasLegs && Number.isFinite(plateLength) && Number.isFinite(legHeight))
+    ? `${formatNumber(plateLength)} in L x 6 in W x ${formatNumber(legHeight)} in H`
+    : 'TBD';
   const plateSize = hasLegs && Number.isFinite(plateLength)
     ? `${formatNumber(plateLength)} in L x 6 in W x 0.25 in T`
     : 'TBD';
@@ -1584,8 +1622,6 @@ async function exportPdf() {
   addTechRow('Tabletop Thickness', tabletopThicknessLabel);
   if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
   if (addons.includes('addon-angled-corners')) addTechRow('Angled Corners', 'TBD');
-  if (addons.includes('addon-chamfered-edges')) addTechRow('Chamfered Edges', '0.25 in at 45 degrees');
-  if (addons.includes('addon-squoval')) addTechRow('Squoval', 'Min width is 20% less than tabletop width');
   if (waterfallCount > 0) {
     const dropLabel = Number.isFinite(height) ? formatInches(height) : 'TBD';
     const calcLabel = (Number.isFinite(width) && Number.isFinite(height))
@@ -1609,27 +1645,45 @@ async function exportPdf() {
   addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
   addTechRow('Color Layout', (colorSpecs && colorSpecs.layout) || (colorTitle ? 'Custom' : 'TBD'));
 
-  addTechSubheading('Legs');
+  addTechSubheading('Hardware');
   addTechRow('Leg Style', legStyleLabel);
   if (hasLegs) {
     addTechRow('Leg Material', 'HSS steel');
     addTechRow('Leg Tube Size', tubeTitle || 'TBD');
     addTechRow('Leg Tube Wall Thickness', '14 gauge (0.083 in)');
-    addTechRow('Leg Width', Number.isFinite(legWidth) ? formatInches(legWidth) : 'TBD');
-    addTechRow('Leg Height', legHeightLabel);
     addTechRow('Legs (qty)', Number.isFinite(legCount) ? String(legCount) : 'TBD');
     if (legException) addTechRow('Leg Exceptions', legException);
-    addTechRow('Leg Dimensions', legDimensions);
+    addTechRow('Leg Dimensions (without mounting plate)', legDimensions);
+    addTechRow('Leg Dimensions (with mounting plate)', legDimensionsWithPlate);
     addTechRow('Mounting Plate Size', plateSize);
     addTechRow('Mounting Hardware Bolts', '3/8"-16 x 1"/1.25"Button Head Bolt (5-8 per leg)');
     addTechRow('Bolt Head Socket', '7/32" Socket');
-    addTechRow('Mounting Hardware Inserts', '3/8"-16 ID 1/2" OD 5/8"/1" Brass Inserts (5-8 per leg)');
+    addTechRow('Mounting Hardware Inserts', '3/8"-16 ID 1/2" OD x 5/8"/1" Brass Inserts (5-8 per leg)');
     addTechRow('Leg Finish Color', legFinishLabel);
     addTechRow('Leg Weight (per leg)', formatWeight(legWeightPerLeg));
     addTechRow('Setback to Leg (from end)', legEndSetback);
     addTechRow('Setback to Plate (from end)', plateEndSetback);
     addTechRow('Setback to Leg (from side)', legSideSetback);
     addTechRow('Setback to Plate (from side)', plateSideSetback);
+    if (Number.isFinite(length) && length > 72) {
+      const plateSetbackValue = parseSetbackValue(plateEndSetback);
+      const channelLength = Number.isFinite(plateSetbackValue)
+        ? Math.max(0, length - plateSetbackValue * 2)
+        : null;
+      const screwsPerChannel = Number.isFinite(channelLength)
+        ? Math.max(1, Math.round(channelLength / 8))
+        : null;
+      addTechRow('Undercarriage', 'Steel U-Channel');
+      addTechRow('Channel Profile', 'Low profile, routered into tabletop');
+      addTechRow('Channel Size', '3x1 in');
+      addTechRow('Channel Length', Number.isFinite(channelLength) ? `${formatNumber(channelLength)} in` : 'TBD');
+      addTechRow('Channel Color', 'Matte Black');
+      addTechRow('Channel Hardware', '#10 1-1/4" Black Oxide Button Head Phillips');
+      addTechRow(
+        'Screws per channel',
+        Number.isFinite(screwsPerChannel) ? `${formatNumber(screwsPerChannel)} +/- 3` : 'TBD'
+      );
+    }
   }
 
   const powerStripId = addons.find(id => POWER_STRIP_SPECS[id]);
@@ -1660,7 +1714,6 @@ async function exportPdf() {
   if (hasAddonSpecs) {
     addTechSubheading('Add-ons');
     addTechRow('Edge Style', edgeDetailLabel);
-    if (addons.includes('addon-live-edge')) addTechRow('Live Edge', 'Natural slab edge');
     if (addons.includes('addon-glass-top')) {
       addTechRow('Glass thickness', '1/4 in');
       addTechRow('Glass type', 'TBD');
@@ -1671,16 +1724,29 @@ async function exportPdf() {
       if (powerStripSpecs) {
         addTechRow('Power rating', powerStripSpecs.powerRating);
         addTechRow('# of ports', powerStripSpecs.ports);
-        addTechRow('Rail length', powerStripSpecs.railLength);
-        addTechRow('Color', powerStripSpecs.color);
+        if (powerStripSpecs.usbOutput) addTechRow('USB power output', powerStripSpecs.usbOutput);
+        addTechRow('Power rail length', powerStripSpecs.railLength);
+        addTechRow('Power rail color', powerStripSpecs.color);
       }
     }
     if (addons.includes('addon-wireless-charging')) {
       addTechRow('Wireless charging input', 'Up to 20W');
       addTechRow('Wireless charging output', 'Up to 15W');
     }
-    if (addons.includes('addon-ethernet')) addTechRow('Ethernet cable type', 'Cat5e');
-    if (addons.includes('addon-hdmi')) addTechRow('HDMI version', 'HDMI 2.0');
+    if (addons.includes('addon-ethernet')) {
+      addTechRow('Ethernet keystone ports', '2-8 ports');
+      addTechRow('Ethernet cable type', 'Cat5e');
+      addTechRow('Ethernet switch wattage', '67.5W (upgradable to 130W)');
+      addTechRow('# of switch ports', '8');
+      addTechRow('Switch management style', 'Unmanaged');
+      addTechRow('POE budget (single port)', '25.5W');
+      addTechRow('Max POE budget', '60W (upgradable to 123W)');
+    }
+    if (addons.includes('addon-hdmi')) {
+      addTechRow('HDMI keystone ports', '2 ports');
+      addTechRow('HDMI version', 'HDMI 2.0');
+      addTechRow('HDMI cable routing', 'Cables to bottom of leg');
+    }
     if (lightingAddonId) {
       const lightingSpecs = LIGHTING_SPECS_BY_ID[lightingAddonId];
       addTechRow('Lighting option', lightingTitle);
@@ -1695,7 +1761,12 @@ async function exportPdf() {
         if (lightingSpecs.density) addTechRow('Lighting density', lightingSpecs.density);
       }
     }
-    if (hasTechAddons) addTechRow('Cable length', getTechCableLengthLabel(selections.techCableLength));
+    if (hasTechAddons) {
+      const techCableLabel = addons.includes('addon-hdmi')
+        ? 'Tech Cable Lengths (excluding HDMI)'
+        : 'Tech Cable Lengths';
+      addTechRow(techCableLabel, getTechCableLengthLabel(selections.techCableLength));
+    }
     if (addons.includes('addon-custom-tech')) addTechRow('Custom Tech', 'Quoted separately');
     if (addons.includes('addon-custom-river')) addTechRow('Custom River Design', 'Quoted separately');
     if (addons.includes('addon-embedded-logo')) addTechRow('Embedded Logo', 'Custom inlay');
@@ -1712,8 +1783,8 @@ async function exportPdf() {
   addTechRow('Estimated Transit Time', transitTime);
   addTechRow('Delivery Region', destinationLabel);
   addTechRow('Crate Dimensions', crateDimensions);
-  addTechRow('Crate Material (walls/floor/top)', '7/16 in OSB walls/floor/top');
-  addTechRow('Crate Material (frame)', 'Frame 2x2/2x4/2x6 lumber');
+  addTechRow('Crate Material (walls/floor/top)', '7/16 in OSB');
+  addTechRow('Crate Material (frame)', '2x2/2x4/2x6 lumber');
   addTechRow('Crate Hardware', 'T-25 screws 3/4in - 3in');
   addTechRow('Crate seal', 'DAP Alex Plus Clear');
   addTechRow('Table Packaging', 'Table wrap: 1/4 in PE foam + 80 Ga stretch wrap');
@@ -1724,7 +1795,8 @@ async function exportPdf() {
   // Technical specs disclaimer
   const techDisclaimer = 'These specifications are standard and may not be identical for every custom project.';
   const techDisclaimerLines = doc.splitTextToSize(techDisclaimer, pageWidth - margin * 2);
-  ensureSpace(techDisclaimerLines.length * 12 + 4);
+  ensureSpace(techDisclaimerLines.length * 12 + 16);
+  y += 12;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...textMuted);
