@@ -1664,6 +1664,9 @@ body.show-model-tiles #stage-panel-0 #model-options,
   position: relative;
   box-sizing: border-box; /* make padding included in card width */
 }
+:root {
+  --option-tile-image-size: clamp(90px, 14vw, 130px);
+}
 .model-row-grid .option-card {
   text-align: center;
 }
@@ -1679,12 +1682,19 @@ body.show-model-tiles #stage-panel-0 #model-options,
 #color-options .viewer-placeholder-img,
 #finish-coating-options .viewer-placeholder-img,
 #finish-tint-options .viewer-placeholder-img {
-  height: auto;
+  width: var(--option-tile-image-size);
+  height: var(--option-tile-image-size);
+  max-width: 100%;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
   box-sizing: border-box;
   margin-bottom: 4px;
+}
+
+#color-options .viewer-placeholder-img {
+  object-fit: cover;
+  padding: 0;
 }
 .stage-options-grid .option-card .title {
   font-weight: 600;
@@ -1824,8 +1834,9 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #legs-options .viewer-placeholder-img {
-  width: 100%;
-  height: auto;
+  width: var(--option-tile-image-size);
+  height: var(--option-tile-image-size);
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
@@ -1883,8 +1894,9 @@ body.show-model-tiles #stage-panel-0 #model-options,
 }
 
 #leg-finish-options .viewer-placeholder-img {
-  width: 100%;
-  height: auto;
+  width: var(--option-tile-image-size);
+  height: var(--option-tile-image-size);
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: contain;
   background-color: #f3f4f6;
@@ -3763,8 +3775,9 @@ body.stage-1 #designs-stage-section > div {
 }
 
 .sheen-tile .viewer-placeholder-img {
-  width: 60px;
-  height: 60px;
+  width: var(--option-tile-image-size);
+  height: var(--option-tile-image-size);
+  max-width: 100%;
   object-fit: contain;
   background-color: #f3f4f6;
   padding: 4px;
@@ -3824,8 +3837,8 @@ body.stage-1 #designs-stage-section > div {
   }
 
   .sheen-tile .viewer-placeholder-img {
-    width: 50px;
-    height: 50px;
+    width: var(--option-tile-image-size);
+    height: var(--option-tile-image-size);
   }
 }
 /* Tech addon cable length input */
