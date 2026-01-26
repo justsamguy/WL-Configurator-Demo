@@ -207,3 +207,255 @@ DINING PRESETS
 
 CONFERENCE PRESETS
 
+# 10' x 4' Walnut Blue River Table
+
+## Metadata
+- Timestamp: 2026-01-26T19:33:44.275Z
+- App version: `null`
+
+## Configuration
+- Model: Conference Table
+- Design: River
+### Materials
+- Material: Black Walnut
+- Color: Multi-Blue
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 120 in x 48 in, standard height
+
+### Legs
+- Style: Hourglass
+- Tube: 2×4"
+- Finish: Matte Black
+
+### Add-ons
+`[]`
+
+## Pricing
+- Subtotal: $8,550
+### Line items
+- Design: River: $4,950
+- Material: Black Walnut: +$500
+- Color: Multi-Grey: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 120 in x 48 in, standard height: +$2,000
+- Legs: Hourglass: +$1,100
+- Tube Size: 2×4": $0
+- Leg Finish: Matte Black: $0
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`
+
+# 12' x 4' Walnut Grey River Table
+
+## Metadata
+- Timestamp: 2026-01-26T19:38:40.409Z
+- App version: `null`
+
+## Configuration
+- Model: Conference Table
+- Design: River
+### Materials
+- Material: Black Walnut
+- Color: Multi-Grey
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 144 in x 48 in, standard height
+
+### Legs
+- Style: Hourglass
+- Tube: 2×4"
+- Finish: Matte Black
+
+### Add-ons
+`[]`
+
+## Pricing
+- Subtotal: $10,100
+### Line items
+- Design: River: $4,950
+- Material: Black Walnut: +$500
+- Color: Multi-Grey: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 144 in x 48 in, standard height: +$3,000
+- Legs: Hourglass: +$1,650
+- Tube Size: 2×4": $0
+- Leg Finish: Matte Black: $0
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`
+
+# 12' x 4' Table w/ Power Installed
+
+## Metadata
+- Timestamp: 2026-01-26T19:39:31.439Z
+- App version: `null`
+
+## Configuration
+- Model: Conference Table
+- Design: River
+### Materials
+- Material: Black Walnut
+- Color: Multi-Grey
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 144 in x 48 in, standard height
+
+### Legs
+- Style: Hourglass
+- Tube: 2×4"
+- Finish: Matte Black
+
+### Add-ons
+- Tech: Power Strips - AC+USB+USB-C
+
+## Pricing
+- Subtotal: $10,420
+### Line items
+- Design: River: $4,950
+- Material: Black Walnut: +$500
+- Color: Multi-Grey: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 144 in x 48 in, standard height: +$3,000
+- Legs: Hourglass: +$1,650
+- Tube Size: 2×4": $0
+- Leg Finish: Matte Black: $0
+- Add-on: Tech: Power Strips - AC+USB+USB-C: +$320
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`
+
+COFFEE PRESETS
+
+# Walnut Blue River Table, 48" x 24"
+
+## Metadata
+- Timestamp: 2026-01-26T19:51:57.914Z
+- App version: `null`
+
+## Configuration
+- Model: Coffee Table
+- Design: River
+### Materials
+- Material: Black Walnut
+- Color: Multi-Blue
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 48 in x 24 in, standard height
+
+### Legs
+- Style: Tapered
+- Tube: 1×3"
+- Finish: Matte Black
+
+### Add-ons
+`[]`
+
+## Pricing
+- Subtotal: $5,650
+### Line items
+- Design: River: $4,450
+- Material: Black Walnut: +$500
+- Color: Multi-Blue: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 24 in x 48 in, standard height: $0
+- Legs: Tapered: +$700
+- Tube Size: 1×3": $0
+- Leg Finish: Matte Black: $0
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`
+
+# Walnut Grey Round Table, 48" x 48"
+
+## Metadata
+- Timestamp: 2026-01-26T20:15:54.385Z
+- App version: `null`
+
+## Configuration
+- Model: Coffee Table
+- Design: Round
+### Materials
+- Material: Black Walnut
+- Color: Multi-Grey
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 48 in x 48 in, standard height
+
+### Legs
+- Style: Tripod
+- Tube: 1×3"
+- Finish: Matte Black
+
+### Add-ons
+`[]`
+
+## Pricing
+- Subtotal: $7,050
+### Line items
+- Design: Round: $4,450
+- Material: Black Walnut: +$500
+- Color: Multi-Grey: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 48 in x 48 in, standard height: +$1,000
+- Legs: Tripod: +$1,100
+- Tube Size: 1×3": $0
+- Leg Finish: Matte Black: $0
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`

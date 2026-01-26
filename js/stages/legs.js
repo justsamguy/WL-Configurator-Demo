@@ -15,7 +15,7 @@ let lastKnownModel = null; // Track the model to detect changes
  * @returns {boolean} True if tube size is optional for this leg
  */
 function isTubeSizeOptional(legId) {
-  return legId === 'leg-sample-07'; // Custom leg makes tube size optional
+  return legId === 'leg-sample-07' || legId === 'leg-signature'; // Custom/signature legs make tube size optional
 }
 
 export function init() {
@@ -93,6 +93,11 @@ export function recomputeTubeSizeConstraints(appState) {
     
     // Get the selected model from application state (more reliable than searching DOM)
     const selectedModelId = currentState.selections && currentState.selections.model;
+    const dimensionDetail = currentState.selections && currentState.selections.dimensionsDetail;
+    const width = dimensionDetail ? Number(dimensionDetail.width) : NaN;
+    const length = dimensionDetail ? Number(dimensionDetail.length) : NaN;
+    const requires2x4Tube = (Number.isFinite(width) && width > 48) || (Number.isFinite(length) && length > 120);
+    const requiredTubeTooltip = '2x4 Tube is required on tables over 48" wide or 120" long';
     
     log.debug('recomputeTubeSizeConstraints called', { legId: selectedLegId, modelId: selectedModelId });
     
@@ -138,6 +143,16 @@ export function recomputeTubeSizeConstraints(appState) {
       
       document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(el => {
         const tubeId = el.getAttribute('data-id');
+        if (requires2x4Tube && tubeId !== 'tube-2x4') {
+          el.setAttribute('data-disabled-by', 'size-requirement');
+          el.setAttribute('disabled', 'true');
+          el.setAttribute('data-tooltip', requiredTubeTooltip);
+          if (tubeId === currentlySelectedTubeId) {
+            selectedTubeWasDisabled = true;
+          }
+          disabledCount++;
+          return;
+        }
         const reasons = getTubeIncompatibilityReasons(tubeId, selectedLegId, selectedModelId);
         
         // reasons is an array of incompatible sources (e.g., ["Cube", "model"])
@@ -232,6 +247,7 @@ export function updateLegsUIVisibility(legId) {
   // Find the h4 headings before these containers
   const tubeSizeHeading = tubeSizeOptions?.previousElementSibling;
   const legFinishHeading = legFinishOptions?.previousElementSibling;
+  const isSignatureDesign = state.selections && state.selections.design === 'des-signature';
   
   if (legId === 'leg-none') {
     // Hide tube size and leg finish sections (both heading and container)
@@ -248,8 +264,8 @@ export function updateLegsUIVisibility(legId) {
     });
   } else {
     // Show tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) tubeSizeHeading.style.display = '';
-    if (tubeSizeOptions) tubeSizeOptions.style.display = '';
+    if (tubeSizeHeading) tubeSizeHeading.style.display = isSignatureDesign ? 'none' : '';
+    if (tubeSizeOptions) tubeSizeOptions.style.display = isSignatureDesign ? 'none' : '';
     if (legFinishHeading) legFinishHeading.style.display = '';
     if (legFinishOptions) legFinishOptions.style.display = '';
   }

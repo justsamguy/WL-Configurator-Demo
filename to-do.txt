@@ -1,20 +1,21 @@
-make slab design auto-include the live edge addon, and increase base design price by 500.
-make live edge and waterfall edge incompatible with squoval.
-
 
 use the output system to make popular designs as design presets,
- so the user can navigate all customization stages with pre-selected options ready to customize
+ so the user can navigate all customization stages with pre-selected options ready to customize (but they still navigate the stages as they like)
  existing tiles remain in a section below that uses the existing one-stage-at-a-time approach.
 
 Set app ver to 1.0 in console and github
 
 convert images to webp versions
 
+add addon for shelf, only visible with coffee model and only enabled when square legs are selected, costs $1500.
+
 add effects to the website to make it feel more polished:
 Add an info ⓘ button to the right side of each tile's title. when this button is selected, use a card-flip transition on the tile to reveal "the other side", where the description is centered horizontally and vertically in the tile with the only other element being an X button in the top left to return to the front view of the tile. this does not apply to addons. For the custom resin color tile in tabletop, instead of the infobutton the card flips over when the tile is selected to reveal the custom input. it flips back if de-selected.
 change the feedback of the copy configuration button to fade into green with the message "Copied ✓" and then back. remove the text that pops up below it. make the same animation for the download PDF button "Download Complete ✓".
 change the top navbar button design: make all the buttons parallellograms slanted towards the right, remove rounded corners, and remove space between the buttons in such a way the right side of a button is nested up against the left side of the next button. on the ends (models and summary), have their respective left and right ends vertical instead of diagonal.
-
+reorder add-ons based on the model
+in the summary/pdf, change the the height to say <inches>" (<Standard/Bartop/Custom> Height).
+add a corner/rounding spec to the pdf technical section
 
 branch and code mobile website
 

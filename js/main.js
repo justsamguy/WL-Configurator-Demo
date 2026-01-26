@@ -101,7 +101,7 @@ function filterMaterialsByDesign(materials, designId) {
 import { populateSummaryPanel } from './stages/summary.js';
 import { updateAllIndicators } from './stages/addons.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
-import { recomputeTubeSizeConstraints } from './stages/legs.js';
+import { recomputeTubeSizeConstraints, updateLegsUIVisibility } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
@@ -209,6 +209,7 @@ function updateWaterfallAddonAvailability(appState = state) {
   const addons = appState && appState.selections && appState.selections.options
     ? appState.selections.options.addon
     : [];
+  if (Array.isArray(addons) && addons.includes('addon-squoval')) return;
   const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
   const shouldDisableSecond = !hasSingle;
   const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
@@ -246,7 +247,65 @@ function updateWaterfallAddonAvailability(appState = state) {
   updateAllIndicators();
 }
 
+function updateEdgeAddonCompatibility(appState = state) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : [];
+  const hasSquoval = Array.isArray(addons) && addons.includes('addon-squoval');
+  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second'];
+  ids.forEach(id => {
+    const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${id}"]`);
+    const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${id}"]`);
+    if (!checkbox) return;
+    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+    if (hasSquoval) {
+      checkbox.disabled = true;
+      checkbox.checked = false;
+      checkbox.setAttribute('data-disabled-by', 'squoval');
+      checkbox.setAttribute('data-tooltip', 'Not compatible with Squoval');
+      if (option) {
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
+        option.setAttribute('data-tooltip', 'Not compatible with Squoval');
+        option.setAttribute('data-disabled-by', 'squoval');
+      }
+      return;
+    }
+    if (disabledBy === 'squoval') {
+      checkbox.disabled = false;
+      checkbox.removeAttribute('data-disabled-by');
+      if (checkbox.getAttribute('data-tooltip') === 'Not compatible with Squoval') {
+        checkbox.removeAttribute('data-tooltip');
+      }
+      if (option) {
+        option.classList.remove('disabled');
+        option.removeAttribute('aria-disabled');
+        if (option.getAttribute('data-disabled-by') === 'squoval') {
+          option.removeAttribute('data-disabled-by');
+        }
+        if (option.getAttribute('data-tooltip') === 'Not compatible with Squoval') {
+          option.removeAttribute('data-tooltip');
+        }
+      }
+    }
+  });
+
+  updateAllIndicators();
+}
+
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const EDGE_CORNER_ADDONS = [
+  'addon-live-edge',
+  'addon-waterfall-single',
+  'addon-waterfall-second',
+  'addon-chamfered-edges',
+  'addon-squoval',
+  'addon-rounded-corners',
+  'addon-angled-corners'
+];
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
@@ -261,6 +320,11 @@ function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons
   if (addonId === 'addon-chamfered-edges') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge');
     return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge' : '' };
+  }
+  if (addonId === 'addon-squoval') {
+    const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
+    const incompatible = currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || currentAddons.includes('addon-live-edge') || hasWaterfall;
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge' : '' };
   }
   return { incompatible: false, tooltip: '' };
 }
@@ -362,6 +426,8 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
     log.warn('Failed to recompute constraints', e);
   }
   updateLegPricingUI(state, allLegs);
+  const selectedLegId = state.selections && state.selections.options && state.selections.options.legs;
+  updateLegsUIVisibility(selectedLegId || '');
 }
 
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
@@ -449,17 +515,34 @@ document.addEventListener('option-selected', async (ev) => {
   // Handle design selection (category: 'design')
   else if (category === 'design') {
     // Check if addons need to be disabled due to design incompatibility
-    const currentAddons = state.selections.options.addon || [];
+    const existingAddons = state.selections.options.addon || [];
+    const nextAddonsSet = new Set(Array.isArray(existingAddons) ? existingAddons : []);
+    if (id === 'des-slab') {
+      nextAddonsSet.add('addon-live-edge');
+    }
+    if (id === 'des-round') {
+      EDGE_CORNER_ADDONS.forEach(addonId => nextAddonsSet.delete(addonId));
+    }
+    if (id === 'des-signature') {
+      EDGE_CORNER_ADDONS.forEach(addonId => {
+        if (addonId !== 'addon-live-edge') nextAddonsSet.delete(addonId);
+      });
+    }
+    if (nextAddonsSet.has('addon-live-edge') || nextAddonsSet.has('addon-waterfall-single') || nextAddonsSet.has('addon-waterfall-second')) {
+      nextAddonsSet.delete('addon-squoval');
+    }
+    const currentAddons = Array.from(nextAddonsSet);
     // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
 
+    const nextOptions = { ...state.selections.options, addon: currentAddons };
+    if (id === 'des-signature') {
+      nextOptions['tube-size'] = undefined;
+    }
     setState({
       selections: {
         ...state.selections,
         design: id,
-        options: {
-          ...state.selections.options,
-          addon: currentAddons
-        }
+        options: nextOptions
       }
     });
     const p = await computePrice(state);
@@ -486,6 +569,7 @@ document.addEventListener('option-selected', async (ev) => {
         const { renderAddonsDropdown } = await import('./stageRenderer.js');
         const addons = await loadData('data/addons.json');
         if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
       }
     } catch (e) {
@@ -520,6 +604,11 @@ document.addEventListener('option-selected', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
     updateLegPricingUI(state);
+    try {
+      recomputeTubeSizeConstraints(state);
+    } catch (e) {
+      log.warn('Failed to recompute tube size constraints after dimensions update', e);
+    }
   }
   else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
@@ -599,6 +688,14 @@ document.addEventListener('addon-toggled', async (ev) => {
       if (addonId !== id) selectedAddons.delete(addonId);
     });
   }
+  if (checked && id === 'addon-squoval') {
+    selectedAddons.delete('addon-live-edge');
+    selectedAddons.delete('addon-waterfall-single');
+    selectedAddons.delete('addon-waterfall-second');
+  }
+  if (checked && (id === 'addon-live-edge' || id === 'addon-waterfall-single' || id === 'addon-waterfall-second')) {
+    selectedAddons.delete('addon-squoval');
+  }
   if (id === 'addon-waterfall-single' && !checked) {
     selectedAddons.delete('addon-waterfall-second');
   }
@@ -606,6 +703,7 @@ document.addEventListener('addon-toggled', async (ev) => {
   // persist selections then compute price via pricing module
   setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
   updateEdgeProfileAddonAvailability(state);
+  updateEdgeAddonCompatibility(state);
   const p = await computePrice(state);
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
@@ -865,6 +963,7 @@ if (designsSection) {
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
       if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      updateEdgeAddonCompatibility(state);
       updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
@@ -925,7 +1024,7 @@ if (designsSection) {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-01-26 11:11');
-console.log('Edit ver: 509');
+console.log('Last updated: 2026-01-26 12:44');
+console.log('Edit ver: 512');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

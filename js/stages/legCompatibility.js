@@ -8,7 +8,7 @@ const log = createLogger('LegCompat');
 export const LEG_COMPATIBILITY = {
   // Model compatibility: which leg designs are available for each model
   modelToLegs: {
-    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
+    'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-08', 'leg-sample-07', 'leg-signature', 'leg-none'],
     'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
     'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none']
   },
@@ -22,6 +22,7 @@ export const LEG_COMPATIBILITY = {
     'leg-sample-06': ['tube-1x3', 'tube-2x4'],   // X Style
     'leg-sample-08': ['tube-1x3', 'tube-2x4'],   // Tripod
     'leg-sample-07': ['tube-1x0.5', 'tube-1x1', 'tube-1x3', 'tube-2x4'], // Custom
+    'leg-signature': ['tube-2x4'], // Signature
     'leg-none': [] // No tubes needed for no legs
   },
   // Model tube restrictions: some models cannot use certain tube sizes
@@ -48,6 +49,9 @@ export function getAvailableLegsForModel(modelId) {
 export function getVisibleLegs(modelId, allLegs, designId = null) {
   const availableLegIds = getAvailableLegsForModel(modelId);
   return allLegs.filter(leg => {
+    if (designId === 'des-signature') {
+      return (leg.id === 'leg-signature' || leg.id === 'leg-none');
+    }
     // Must be available for model and not hidden
     if (!availableLegIds.includes(leg.id) || leg.hidden) return false;
     

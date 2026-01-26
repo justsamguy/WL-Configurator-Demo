@@ -6,9 +6,9 @@
     { "id": "dim-preset-04", "title": "10-12 seater", "price": 1500, "description": "", "length": 108, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/Generated 10-12 Seater.png" },
     { "id": "dim-preset-05", "title": "12-14 seater", "price": 2000, "description": "", "length": 120, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/Edited 12-14 Seater.png" },
     { "id": "dim-preset-09", "title": "16-18 seater", "price": 3000, "description": "", "length": 144, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
-    { "id": "dim-preset-06", "title": "24x48", "price": 0, "description": "", "length": 24, "width": 48, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
-    { "id": "dim-preset-07", "title": "26x52", "price": 0, "description": "", "length": 26, "width": 52, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
-    { "id": "dim-preset-08", "title": "30x60", "price": 0, "description": "", "length": 30, "width": 60, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" }
+    { "id": "dim-preset-06", "title": "24x48", "price": 0, "description": "", "length": 48, "width": 24, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
+    { "id": "dim-preset-07", "title": "26x52", "price": 0, "description": "", "length": 52, "width": 26, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" },
+    { "id": "dim-preset-08", "title": "30x60", "price": 0, "description": "", "length": 60, "width": 30, "height": "standard", "lengthUnit": "in", "image": "assets/images/model1_placeholder.png" }
   ],
   "constraints": {
     "length": { "min": 24, "max": 118, "step": 12, "unit": "in" },

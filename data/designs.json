@@ -1,6 +1,6 @@
 [
   {"id": "des-river", "title": "River", "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg", "description": "Flowing edge design", "prices": {"mdl-coffee": 4450, "mdl-dining": 4950, "mdl-conference": 4950}},
-  {"id": "des-slab", "title": "Slab", "image": "assets/images/Black Walnut Solid Slab Table.JPG", "description": "Clean, minimalist", "prices": {"mdl-coffee": 4450, "mdl-dining": 4950, "mdl-conference": 4950}},
+  {"id": "des-slab", "title": "Slab", "image": "assets/images/Black Walnut Solid Slab Table.JPG", "description": "Clean, minimalist", "prices": {"mdl-coffee": 4950, "mdl-dining": 5450, "mdl-conference": 5450}},
   {"id": "des-encasement", "title": "Encasement", "image": "assets/images/Black Walnut Encased Slab Espresso Coffee Table with Shelf.JPG", "description": "Structured edges", "prices": {"mdl-coffee": 4450, "mdl-dining": 4950, "mdl-conference": 4950}},
   {"id": "des-custom", "title": "Custom", "image": "assets/images/Custom Conference design.jpg", "description": "Bespoke design", "prices": {"mdl-coffee": 4450, "mdl-dining": 4950, "mdl-conference": 4950}},
   {"id": "des-keystone", "title": "Keystone", "image": "assets/images/model1_placeholder.png", "description": "Conference exclusive", "prices": {"mdl-conference": 4950}},

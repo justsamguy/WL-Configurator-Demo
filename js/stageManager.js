@@ -195,8 +195,11 @@ async function setStage(index, options = {}) {
       if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         if (!hasLegs) {
           return;
@@ -206,7 +209,7 @@ async function setStage(index, options = {}) {
         if (!isNoneLeg) {
           const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
           const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-          const tubeSizeRequired = !isCustomLeg;
+          const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
           if ((tubeSizeRequired && !hasTubeSize) || !hasLegFinish) {
             return;
           }
@@ -543,8 +546,11 @@ async function setStage(index, options = {}) {
         // (or custom leg is selected, which makes tube-size optional)
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -553,7 +559,7 @@ async function setStage(index, options = {}) {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg;
+            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
             isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
@@ -696,8 +702,11 @@ export function initStageManager() {
       if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -706,7 +715,7 @@ export function initStageManager() {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg;
+            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
             isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
