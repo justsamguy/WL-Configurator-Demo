@@ -394,7 +394,8 @@ function filterPresetsByModel(presets) {
 
   // Model-specific preset exclusions
   const modelExclusions = {
-    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'] // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'], // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+    'mdl-conference': ['dim-preset-01'] // Hide 4-6 seater for conference tables
   };
 
   const excludedIds = modelExclusions[selectedModel] || [];
