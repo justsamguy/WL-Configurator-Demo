@@ -97,7 +97,8 @@ function initializeFromState(appState) {
       const presetBySize = dimDetail
         ? dimensionsData.presets.find(p => p.length === dimDetail.length && p.width === dimDetail.width)
         : null;
-      const resolvedPreset = presetById || presetBySize;
+      const explicitCustom = dimSel === 'dimensions-custom' || (dimDetail && dimDetail.presetId === 'custom');
+      const resolvedPreset = explicitCustom ? null : (presetById || presetBySize);
       if (dimDetail && typeof dimDetail === 'object') {
         // Restore from stored detail payload first
         currentDimensions = { ...currentDimensions, ...dimDetail };
@@ -106,6 +107,10 @@ function initializeFromState(appState) {
         }
         selectedTileId = resolvedPreset ? resolvedPreset.id : 'custom';
       } else if (typeof dimSel === 'string') {
+        if (dimSel === 'dimensions-custom') {
+          selectedTileId = 'custom';
+          return;
+        }
         const preset = dimensionsData.presets.find(p => p.id === dimSel);
         if (preset) {
           currentDimensions.length = preset.length;
@@ -197,21 +202,23 @@ function updateAxisInputConstraints() {
   if (constraints.length && lengthInput) {
     lengthInput.min = constraints.length.min;
     lengthInput.max = constraints.length.max;
-    lengthInput.step = constraints.length.step;
+    // Keep +/- controls on fixed increments while allowing free numeric input.
+    lengthInput.step = 'any';
     axisSteps.length = constraints.length.step;
   }
 
   if (constraints.width && widthInput) {
     widthInput.min = constraints.width.min;
     widthInput.max = constraints.width.max;
-    widthInput.step = constraints.width.step;
+    // Keep +/- controls on fixed increments while allowing free numeric input.
+    widthInput.step = 'any';
     axisSteps.width = constraints.width.step;
   }
 
   if (heightCustomInput) {
     heightCustomInput.min = 16;
     heightCustomInput.max = 50;
-    heightCustomInput.step = axisSteps['height-custom'];
+    heightCustomInput.step = 'any';
   }
 }
 
@@ -326,6 +333,26 @@ function updateCustomFieldVisibility() {
   }
 }
 
+function syncPresetTileSelection() {
+  const presetsContainer = document.getElementById('dimensions-presets');
+  if (!presetsContainer) return;
+
+  const tiles = presetsContainer.querySelectorAll('.option-card[data-preset-id]');
+  let selectedTile = null;
+  tiles.forEach((tile) => {
+    tile.classList.remove('selected');
+    tile.setAttribute('aria-pressed', 'false');
+    if (selectedTileId && tile.getAttribute('data-preset-id') === selectedTileId) {
+      selectedTile = tile;
+    }
+  });
+
+  if (selectedTile) {
+    selectedTile.classList.add('selected');
+    selectedTile.setAttribute('aria-pressed', 'true');
+  }
+}
+
 // Update UI controls to reflect current state
 function updateUIControls() {
   const lengthInput = document.getElementById('dim-length-input');
@@ -359,6 +386,7 @@ function updateUIControls() {
   updateValidationMessage('width');
   updateValidationMessage('height-custom');
   updateOversizeBanners();
+  syncPresetTileSelection();
   updateCustomFieldVisibility();
   updateHeightButtonSelection();
   updateApplyButtonState();
@@ -368,12 +396,26 @@ function updateUIControls() {
 function isComplete() {
   const roundDimensionsValid = !isRoundDesignSelected() || currentDimensions.length === currentDimensions.width;
   return (
+    !hasVisibleRangeInvalidInput() &&
     roundDimensionsValid &&
     currentDimensions.length !== null && validateAxisValue('length', currentDimensions.length) &&
     currentDimensions.width !== null && validateAxisValue('width', currentDimensions.width) &&
     currentDimensions.height !== null &&
     (currentDimensions.height !== 'custom' || (currentDimensions.heightCustom !== null && validateAxisValue('height-custom', currentDimensions.heightCustom)))
   );
+}
+
+function hasVisibleRangeInvalidInput() {
+  const panel = document.getElementById('dimensions-stage-panel');
+  if (!panel) return false;
+
+  const inputs = panel.querySelectorAll('.control-input');
+  return Array.from(inputs).some((input) => {
+    if (input.closest('.hidden') || input.offsetParent === null) return false;
+    const validity = input.validity;
+    if (!validity) return false;
+    return validity.rangeUnderflow || validity.rangeOverflow || validity.badInput;
+  });
 }
 
 // Update apply button state
@@ -513,12 +555,12 @@ function initPresets() {
   customTile.addEventListener('click', () => {
     // Custom tile selection
     selectedTileId = 'custom';
-    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
-    customTile.classList.add('selected');
+    syncPresetTileSelection();
     updateCustomFieldVisibility();
   });
   
   presetsContainer.appendChild(customTile);
+  syncPresetTileSelection();
 }
 
 // Update custom field visibility based on manual tile selection
@@ -535,8 +577,8 @@ function selectPreset(preset, tileElement) {
 
   // Mark this preset as selected
   selectedTileId = preset.id;
-  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
-  if (tileElement) tileElement.classList.add('selected');
+  if (tileElement) tileElement.setAttribute('aria-pressed', 'true');
+  syncPresetTileSelection();
 
   // Update UI and dispatch
   updateUIControls();
@@ -769,7 +811,8 @@ function initResetButton() {
     updateUIControls();
     
     // Clear tile selections
-    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+    selectedTileId = null;
+    syncPresetTileSelection();
   });
 }
 

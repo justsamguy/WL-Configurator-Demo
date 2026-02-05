@@ -14,6 +14,7 @@ reorder add-ons based on the model
 in the summary/pdf, change the the height to say <inches>" (<Standard/Bartop/Custom> Height).
 add a corner/rounding spec to the pdf technical section
 add automatic light/dark theming based on detected system theme, with a toggle switch in the upper right corner.
+in the space under the pricing bar, instead of opaque white, make it transparent with a blur to give it a sort of glassy effect.
 
 branch and code mobile website
 
