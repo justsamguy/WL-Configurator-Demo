@@ -13,17 +13,19 @@ export function init() {
   // Delegate clicks on design option-cards. Dispatch 'option-selected' event with category 'design'
   // for main.js to handle global state mutation and price updates.
   document.addEventListener('click', (ev) => {
-    const card = ev.target.closest && ev.target.closest('.option-card[data-id^="des-"]');
+    const card = ev.target.closest && ev.target.closest('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]');
     if (!card) return;
     if (card.hasAttribute('disabled')) return;
+
     // Set visual pressed state
-    document.querySelectorAll('.option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
     card.setAttribute('aria-pressed', 'true');
 
-    const id = card.getAttribute('data-id');
+    const id = card.getAttribute('data-design-id') || card.getAttribute('data-id');
+    const presetId = card.getAttribute('data-preset-id') || null;
 
     // Dispatch the standardized selection event with category 'design' for main.js to handle
-    document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, category: 'design' } }));
+    document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, category: 'design', presetId } }));
   });
 }
 
@@ -31,9 +33,10 @@ export function restoreFromState(state) {
   try {
     const designId = state && state.selections && state.selections.design;
     if (!designId) return;
-    const el = document.querySelector(`.option-card[data-id="${designId}"]`);
+    const el = document.querySelector(`#design-layout-options .option-card[data-id="${designId}"]`) ||
+      document.querySelector(`#designs-stage-section .option-card[data-id="${designId}"]:not([data-preset-id])`);
     if (el) {
-      document.querySelectorAll('.option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
       el.setAttribute('aria-pressed', 'true');
     }
   } catch (e) {

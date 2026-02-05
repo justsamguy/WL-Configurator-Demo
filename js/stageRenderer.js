@@ -24,6 +24,13 @@ export function renderOptionCards(container, data = [], opts = {}) {
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
     if (item.customNote) btn.setAttribute('data-custom-note', 'true');
+    if (opts.ignorePlaceholder) btn.setAttribute('data-ignore-placeholder', 'true');
+    if (item.attributes && typeof item.attributes === 'object') {
+      Object.entries(item.attributes).forEach(([name, value]) => {
+        if (typeof name !== 'string' || !name || value === null || typeof value === 'undefined') return;
+        btn.setAttribute(name, String(value));
+      });
+    }
     // Use aria-checked for multi-select (addon) category, aria-pressed for single-select
     const isMultiSelect = opts.category === 'addon';
     if (isMultiSelect) {

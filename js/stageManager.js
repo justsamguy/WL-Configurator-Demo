@@ -360,33 +360,10 @@ async function setStage(index, options = {}) {
           if (managerState.current === 0) {
             modelsStageModule.restoreFromState && modelsStageModule.restoreFromState(appState);
           } else if (managerState.current === 1) {
-            // Re-render designs filtered by selected model
-            // Design filtering is data-driven: designs are shown based on their "prices" object in data/designs.json
-            // If a design has a price for the selected model ID, it will be displayed
             try {
-              const designsSection = document.getElementById('designs-stage-section');
-              if (designsSection) {
-                const { loadData } = await import('./dataLoader.js');
-                const { renderOptionCards } = await import('./stageRenderer.js');
-                const designs = await loadData('data/designs.json');
-                if (designs) {
-                const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-                if (designGrids && designGrids.length) {
-                  // Filter designs based on selected model
-                  const selectedModel = appState.selections && appState.selections.model;
-                  const filteredDesigns = designs.filter(design => {
-                    if (!selectedModel) return true;
-                    // Design is available if it has pricing for this model
-                    return design.prices && design.prices[selectedModel];
-                  });
-                  // Add price field for rendering
-                  const designsWithPrice = filteredDesigns.map(design => ({
-                    ...design,
-                    price: selectedModel && design.prices ? design.prices[selectedModel] : 0
-                  }));
-                  renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-                }
-                }
+              const selectedModel = appState.selections && appState.selections.model;
+              if (typeof window.__wlRenderDesignOptions === 'function') {
+                await window.__wlRenderDesignOptions(selectedModel);
               }
             } catch (e) {
               log.warn('Failed to re-render designs on stage entry', e);

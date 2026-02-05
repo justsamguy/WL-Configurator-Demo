@@ -98,6 +98,136 @@ function filterMaterialsByDesign(materials, designId) {
     return Array.isArray(material.designs) && material.designs.includes(designId);
   });
 }
+
+function filterDesignPresetsByModel(presets, modelId) {
+  if (!Array.isArray(presets)) return [];
+  if (!modelId) return presets;
+  return presets.filter((preset) => preset && preset.modelId === modelId);
+}
+
+async function renderDesignOptionsForModel(modelId = (state.selections && state.selections.model)) {
+  const designsSection = document.getElementById('designs-stage-section');
+  if (!designsSection) return;
+
+  try {
+    const { loadData } = await import('./dataLoader.js');
+    const { renderOptionCards } = await import('./stageRenderer.js');
+    const [designs, presets] = await Promise.all([
+      loadData('data/designs.json'),
+      loadData('data/design-presets.json')
+    ]);
+
+    const layoutGrid = document.getElementById('design-layout-options') ||
+      designsSection.querySelector('.stage-options-grid');
+    if (layoutGrid && Array.isArray(designs)) {
+      const filteredDesigns = filterDesignsByModel(designs, modelId);
+      const designsWithPrice = filteredDesigns.map((design) => ({
+        ...design,
+        price: modelId && design.prices ? design.prices[modelId] : 0
+      }));
+      renderOptionCards(layoutGrid, designsWithPrice, { category: 'design', ignorePlaceholder: true });
+    }
+
+    const presetGrid = document.getElementById('design-presets-options');
+    if (presetGrid) {
+      const filteredPresets = filterDesignPresetsByModel(presets, modelId);
+      const presetCards = filteredPresets.map((preset) => ({
+        id: preset.id,
+        title: preset.title,
+        image: preset.image,
+        description: preset.description,
+        attributes: {
+          'data-preset-id': preset.id,
+          'data-design-id': preset.designId
+        }
+      }));
+      renderOptionCards(presetGrid, presetCards, { category: 'design', showPrice: false, ignorePlaceholder: true });
+    }
+  } catch (e) {
+    log.warn('Failed to render design options', e);
+  }
+}
+
+async function applyDesignPreset(presetId, selectedDesignId = null) {
+  if (!presetId) return;
+
+  try {
+    const { loadData } = await import('./dataLoader.js');
+    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
+    const presets = await loadData('data/design-presets.json');
+    if (!Array.isArray(presets)) return;
+
+    const preset = presets.find((entry) => entry && entry.id === presetId);
+    if (!preset) return;
+
+    const modelId = (state.selections && state.selections.model) || preset.modelId;
+    const designId = selectedDesignId || preset.designId;
+    const nextOptions = preset.selections ? { ...preset.selections } : {};
+    nextOptions.addon = Array.isArray(preset.addons) ? [...preset.addons] : [];
+    if (!nextOptions.dimensions && preset.dimensionsDetail) {
+      nextOptions.dimensions = preset.dimensionsDetail.presetId || 'dimensions-custom';
+    }
+
+    setState({
+      selections: {
+        ...state.selections,
+        model: modelId,
+        design: designId,
+        options: nextOptions,
+        dimensionsDetail: preset.dimensionsDetail ? { ...preset.dimensionsDetail } : null,
+        techCableLength: preset.techCableLength || null
+      }
+    });
+
+    const allLegs = window._allLegsData || [];
+    const allTubeSizes = window._allTubeSizesData || [];
+    if (allLegs.length > 0 && allTubeSizes.length > 0) {
+      updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designId);
+      updateLegPricingUI(state, allLegs);
+    }
+    updateLegsUIVisibility(nextOptions.legs || '');
+
+    const materialsOptionsRoot = document.getElementById('materials-options');
+    if (materialsOptionsRoot) {
+      const mats = await loadData('data/materials.json');
+      if (Array.isArray(mats)) {
+        const filteredMaterials = filterMaterialsByDesign(mats, designId);
+        renderOptionCards(materialsOptionsRoot, filteredMaterials, { category: 'material' });
+      }
+    }
+
+    const addonsRoot = document.getElementById('addons-options');
+    if (addonsRoot) {
+      const addons = await loadData('data/addons.json');
+      if (addons) {
+        renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeProfileAddonAvailability(state);
+        updateEdgeAddonCompatibility(state);
+        updateWaterfallAddonAvailability(state);
+      }
+      try {
+        const addonsStage = await import('./stages/addons.js');
+        if (addonsStage && typeof addonsStage.restoreFromState === 'function') {
+          addonsStage.restoreFromState(state);
+        }
+      } catch (e) {
+        log.warn('Failed to restore addon visuals after preset apply', e);
+      }
+    }
+
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  } catch (e) {
+    log.warn('Failed to apply design preset', { presetId, error: e });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__wlRenderDesignOptions = renderDesignOptionsForModel;
+}
+
 import { populateSummaryPanel } from './stages/summary.js';
 import { updateAllIndicators } from './stages/addons.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
@@ -478,29 +608,8 @@ document.addEventListener('option-selected', async (ev) => {
       log.warn('Failed to update legs options', e);
     }
 
-    // Re-render designs filtered by the newly selected model
-    try {
-      const designsSection = document.getElementById('designs-stage-section');
-      if (designsSection) {
-        const { loadData } = await import('./dataLoader.js');
-        const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
-        const designs = await loadData('data/designs.json');
-        if (designs) {
-          const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-          if (designGrids && designGrids.length) {
-            const filteredDesigns = filterDesignsByModel(designs, id);
-            // Add price field for rendering
-            const designsWithPrice = filteredDesigns.map(design => ({
-              ...design,
-              price: id && design.prices ? design.prices[id] : 0
-            }));
-            renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-          }
-        }
-      }
-    } catch (e) {
-      log.warn('Failed to re-render designs after model change', e);
-    }
+    // Re-render design layouts and presets filtered by the selected model
+    await renderDesignOptionsForModel(id);
 
     // If user selected a model from a stage beyond Designs, navigate back to Models stage
     try {
@@ -514,6 +623,11 @@ document.addEventListener('option-selected', async (ev) => {
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
+    if (ev.detail && ev.detail.presetId) {
+      await applyDesignPreset(ev.detail.presetId, id);
+      return;
+    }
+
     // Check if addons need to be disabled due to design incompatibility
     const existingAddons = state.selections.options.addon || [];
     const nextAddonsSet = new Set(Array.isArray(existingAddons) ? existingAddons : []);
@@ -886,27 +1000,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
-// Render designs stage from data/designs.json
-// Try to find design grids in the designs section (supports multiple rows)
-const designsSection = document.getElementById('designs-stage-section');
-if (designsSection) {
-  const designs = await loadData('data/designs.json');
-  if (designs) {
-    // Clear existing design option cards and render from data
-    const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-    if (designGrids && designGrids.length) {
-      // Filter designs based on currently selected model
-      const currentModel = state.selections && state.selections.model;
-      const filteredDesigns = filterDesignsByModel(designs, currentModel);
-      // Add price field for rendering
-      const designsWithPrice = filteredDesigns.map(design => ({
-        ...design,
-        price: currentModel && design.prices ? design.prices[currentModel] : 0
-      }));
-      renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-    }
-  }
-}
+    // Render designs stage with presets + layouts filtered by selected model
+    await renderDesignOptionsForModel(state.selections && state.selections.model);
 
     // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
@@ -1025,6 +1120,6 @@ if (designsSection) {
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-01-26 12:44');
-console.log('Edit ver: 512');
+console.log('Edit ver: 514');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

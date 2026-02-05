@@ -459,3 +459,53 @@ COFFEE PRESETS
 - Estimated cost: --
 - Accessorials: `[]`
 - Notes: `null`
+
+# Signature Maple
+
+## Metadata
+- Timestamp: 2026-01-26T20:48:50.843Z
+- App version: `null`
+
+## Configuration
+- Model: Coffee Table
+- Design: Signature
+### Materials
+- Material: Spalted Maple
+- Color: Multi-Grey
+- Custom color note: `null`
+
+### Finish
+- Coating: 2K Poly
+- Sheen: Satin
+- Tint: Clear
+- Dimensions: 60 in x 30 in, standard height
+
+### Legs
+- Style: Signature
+- Tube: `null`
+- Finish: Matte Black
+
+### Add-ons
+- Live Edge
+
+## Pricing
+- Subtotal: $7,450
+### Line items
+- Design: Signature: $4,450
+- Material: Spalted Maple: +$500
+- Color: Multi-Grey: $0
+- Finish Coating: 2K Poly: $0
+- Finish Sheen: Satin: $0
+- Finish Tint: Clear: $0
+- Dimensions: 60 in x 30 in, standard height: $0
+- Legs: Signature: +$2,000
+- Leg Finish: Matte Black: $0
+- Add-on: Live Edge: Live Edge: +$500
+
+## Shipping
+- Mode: Standard shipping
+- Zip code: `""`
+- Region: Auto US
+- Estimated cost: --
+- Accessorials: `[]`
+- Notes: `null`
