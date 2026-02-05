@@ -1979,6 +1979,12 @@ body.show-model-tiles #app-main {
   overflow-y: auto; 
   height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
 }
+
+/* Stage 1 keeps show-model-tiles enabled, but when footer is hidden there
+   should be no reserved footer gap at the bottom of #app-main. */
+body.stage-1:not(.has-design).show-model-tiles #app-main {
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height));
+}
 /* Ensure app-main is offset below the header during model selection to avoid overlap */
 body.show-model-tiles #app-main { padding-top: 0.25rem; }
 /* Override viewer container max width while on model stage */

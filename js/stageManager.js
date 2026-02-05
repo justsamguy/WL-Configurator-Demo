@@ -41,6 +41,7 @@ const log = createLogger('StageManager');
 const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
+  opened: new Array(STAGES.length).fill(false),
   config: {
     model: null,
     material: null,
@@ -83,17 +84,6 @@ function hasSelectedDimensions(appState) {
   return Number.isFinite(detail && detail.length) && Number.isFinite(detail && detail.width);
 }
 
-function canAccessLegs(appState) {
-  const hasModel = !!(appState && appState.selections && appState.selections.model);
-  const hasDesign = !!(appState && appState.selections && appState.selections.design);
-  const hasMaterial = !!(appState && appState.selections && appState.selections.options && appState.selections.options.material);
-  const hasColor = !!(appState && appState.selections && appState.selections.options && appState.selections.options.color);
-  const hasCoating = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
-  const hasSheen = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-sheen']);
-  const hasTint = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
-  return hasModel && hasDesign && hasMaterial && hasColor && hasCoating && hasSheen && hasTint && hasSelectedDimensions(appState);
-}
-
 function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
@@ -128,6 +118,14 @@ async function updateLivePrice() {
 async function setStage(index, options = {}) {
   // options: { allowSkip: boolean, skipConfirm: boolean }
   if (index < 0 || index >= STAGES.length) return;
+
+  // If the configurator was reset (no model selected), clear unlocked/completed progress.
+  if (index === 0 && !(appState && appState.selections && appState.selections.model)) {
+    for (let i = 1; i < STAGES.length; i++) {
+      managerState.completed[i] = false;
+      managerState.opened[i] = false;
+    }
+  }
   
   // Special handling: if navigating back to Models (index 0) and design is already selected,
   // show confirmation dialog unless skipConfirm is true
@@ -145,7 +143,8 @@ async function setStage(index, options = {}) {
   
   // gating: normally prevent jumping forward past first incomplete required stage
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
-  if (index > managerState.current && !options.allowSkip) {
+  const isAlreadyOpened = !!managerState.opened[index];
+  if (index > managerState.current && !options.allowSkip && !isAlreadyOpened) {
     // require model selected to advance beyond stage 0 (Models)
     if (managerState.current <= 0 && !appState.selections.model) {
       return;
@@ -224,12 +223,9 @@ async function setStage(index, options = {}) {
     }
   }
   managerState.current = index;
+  managerState.opened[index] = true;
   // treat optional stages as implicitly completed for gating decisions
   const currentCompleted = isStageCompleteForNav(managerState.current);
-  // Check if all required stages (0-5) are complete to unlock Add-ons (6) and Summary (7) for free navigation
-  const allRequiredStagesComplete = managerState.completed[0] && managerState.completed[1] && managerState.completed[2] && 
-                                    managerState.completed[3] && managerState.completed[4] && managerState.completed[5];
-  const canJumpToLegs = canAccessLegs(appState);
   
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
@@ -243,20 +239,10 @@ async function setStage(index, options = {}) {
       if (idx < managerState.current) {
         btn.disabled = false;
       } else {
-        // For future stages (idx > current):
-        // - if all required stages (0-5) are complete, allow free access to Add-ons (6) and Summary (7)
-        // - otherwise, allow if that future stage is already completed or only the immediate next stage when current is completed
-        if (idx === LEGS_STAGE_INDEX && canJumpToLegs) {
-          btn.disabled = false;
-        } else if (idx >= 6 && allRequiredStagesComplete) {
-          btn.disabled = false;
-        } else if (managerState.completed[idx]) {
-          btn.disabled = false;
-        } else if (idx === managerState.current + 1 && currentCompleted) {
-          btn.disabled = false;
-        } else {
-          btn.disabled = true;
-        }
+        // Sequential unlock: only immediate next stage can be opened first.
+        // After a stage has been opened once, it remains available from any view.
+        const canOpenFirstTime = idx === managerState.current + 1 && currentCompleted;
+        btn.disabled = !(managerState.opened[idx] || canOpenFirstTime);
       }
     }
   });
@@ -607,21 +593,20 @@ export function initStageManager() {
   try { summaryStage.init && summaryStage.init(); } catch (e) { /* ignore */ }
   // Mark stages completed only when ALL required selections are made
   document.addEventListener('option-selected', (ev) => {
-    const { category } = ev.detail || {};
+    const { category, id } = ev.detail || {};
     
     try {
       // Models stage (index 0): mark complete only when model is selected
       if (category === 'model') {
-        const hasModel = !!(appState.selections && appState.selections.model);
+        const hasModel = !!(id || (appState.selections && appState.selections.model));
         markCompleted(0, !!hasModel);
         
         // When model changes, all other selections are cleared by main.js
-        // Reset completion status for all dependent stages (1-5)
-        markCompleted(1, false); // Designs
-        markCompleted(2, false); // Materials
-        markCompleted(3, false); // Finish
-        markCompleted(4, false); // Dimensions
-        markCompleted(5, false); // Legs
+        // Reset completion/opened status for all dependent stages (1-7)
+        for (let i = 1; i < STAGES.length; i++) {
+          managerState.completed[i] = false;
+          managerState.opened[i] = false;
+        }
         
         if (managerState.current === 0 && hasModel) {
           setStage(1, { skipConfirm: true });
@@ -631,7 +616,7 @@ export function initStageManager() {
       
       // Designs stage (index 1): mark complete only when design is selected
       if (category === 'design') {
-        const hasDesign = !!(appState.selections && appState.selections.design);
+        const hasDesign = !!(id || (appState.selections && appState.selections.design));
         markCompleted(1, !!hasDesign);
         return;
       }
