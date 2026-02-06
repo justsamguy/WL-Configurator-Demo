@@ -57,7 +57,7 @@
     "id": "preset-dining-grey-river-maple-10-12",
     "title": "Grey River Maple Table",
     "description": "10-12 seater preset with Spalted Maple, Multi-Grey, and squared legs.",
-    "image": "assets/images/WoodLab Silver Maple Signature Coffee Table.jpg",
+    "image": "assets/images/Multi-Grey Maple River Dining Table.jpg",
     "modelId": "mdl-dining",
     "designId": "des-river",
     "selections": {
@@ -109,13 +109,13 @@
   },
   {
     "id": "preset-dining-walnut-river-squoval-6-8",
-    "title": "Walnut River Squoval",
-    "description": "6-8 seater River preset with Squoval edge profile.",
-    "image": "assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.JPG",
+    "title": "Maple River Squoval",
+    "description": "6-8 seater River preset with Spalted Maple and a Squoval edge profile.",
+    "image": "assets/images/Multi-Grey maple squoval dining table.jpg",
     "modelId": "mdl-dining",
     "designId": "des-river",
     "selections": {
-      "material": "mat-01",
+      "material": "mat-02",
       "color": "color-03",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
@@ -165,7 +165,7 @@
     "id": "preset-conference-walnut-grey-river-12x4",
     "title": "Walnut Grey River 12 x 4",
     "description": "Conference preset with 12-foot length and Hourglass legs.",
-    "image": "assets/images/Walnut Multi-Grey Dining Table.jpg",
+    "image": "assets/images/Live Edge Multi-Grey River Walnut Conference Table with 2x4 Hourglass.png",
     "modelId": "mdl-conference",
     "designId": "des-river",
     "selections": {
@@ -186,7 +186,7 @@
       "heightCustom": null,
       "presetId": "dim-preset-09"
     },
-    "addons": []
+    "addons": ["addon-live-edge"]
   },
   {
     "id": "preset-conference-power-river-12x4",
@@ -219,12 +219,39 @@
     "id": "preset-coffee-walnut-blue-river-48x24",
     "title": "Walnut Blue River 48 x 24",
     "description": "Coffee preset with tapered legs and 1x3 tube.",
-    "image": "assets/images/Walnut Solid White Coffee.jpg",
+    "image": "assets/images/Multi-Blue River Walnut Coffee Table.jpg",
     "modelId": "mdl-coffee",
     "designId": "des-river",
     "selections": {
       "material": "mat-01",
       "color": "color-02",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-06",
+      "legs": "leg-sample-05",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 48,
+      "width": 24,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-06"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-coffee-walnut-grey-river-48x24",
+    "title": "Walnut Grey River 48 x 24",
+    "description": "Coffee preset with tapered legs and 1x3 tube.",
+    "image": "assets/images/Multi-Grey River Walnut Coffee Table.jpg",
+    "modelId": "mdl-coffee",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",

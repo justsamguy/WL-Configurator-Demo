@@ -121,7 +121,14 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
       designsSection.querySelector('.stage-options-grid');
     if (layoutGrid && Array.isArray(designs)) {
       const filteredDesigns = filterDesignsByModel(designs, modelId);
-      const designsWithPrice = filteredDesigns.map((design) => ({
+      const seenDesignIds = new Set();
+      const dedupedDesigns = filteredDesigns.filter((design) => {
+        if (!design || !design.id) return false;
+        if (seenDesignIds.has(design.id)) return false;
+        seenDesignIds.add(design.id);
+        return true;
+      });
+      const designsWithPrice = dedupedDesigns.map((design) => ({
         ...design,
         price: modelId && design.prices ? design.prices[modelId] : 0
       }));
@@ -1120,6 +1127,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-01-26 12:44');
-console.log('Edit ver: 521');
+console.log('Edit ver: 524');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

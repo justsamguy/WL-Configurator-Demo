@@ -232,7 +232,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
             // Check for addon compatibility with current design
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
-              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
             const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
 
@@ -291,7 +291,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             // Check for addon compatibility with current design
             const currentDesign = currentState.selections && currentState.selections.design;
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
-              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
             const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
 
@@ -338,7 +338,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-rounded-corners'));
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
-            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge') || currentAddons.includes('addon-angled-corners'));
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
