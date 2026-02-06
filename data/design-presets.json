@@ -1,0 +1,325 @@
+[
+  {
+    "id": "preset-dining-blue-river-walnut-8-10",
+    "title": "Blue River Walnut Table",
+    "description": "8-10 seater preset with Walnut, Multi-Blue, and squared legs.",
+    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg",
+    "modelId": "mdl-dining",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-02",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-03",
+      "legs": "leg-sample-04",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 96,
+      "width": 42,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-03"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-dining-grey-river-walnut-8-10",
+    "title": "Grey River Walnut Table",
+    "description": "8-10 seater preset with Walnut, Multi-Grey, and squared legs.",
+    "image": "assets/images/Walnut Multi-Grey Dining Table.jpg",
+    "modelId": "mdl-dining",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-03",
+      "legs": "leg-sample-04",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 96,
+      "width": 42,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-03"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-dining-grey-river-maple-10-12",
+    "title": "Grey River Maple Table",
+    "description": "10-12 seater preset with Spalted Maple, Multi-Grey, and squared legs.",
+    "image": "assets/images/Multi-Grey Maple River Dining Table.jpg",
+    "modelId": "mdl-dining",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-02",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-04",
+      "legs": "leg-sample-04",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 108,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-04"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-dining-solid-walnut-slab-10ft",
+    "title": "10 ft Solid Walnut Slab",
+    "description": "Slab preset with Copper Blend resin and Live Edge.",
+    "image": "assets/images/Black Walnut Solid Slab Table.JPG",
+    "modelId": "mdl-dining",
+    "designId": "des-slab",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-04",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-05",
+      "legs": "leg-sample-04",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 120,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-05"
+    },
+    "addons": ["addon-live-edge"]
+  },
+  {
+    "id": "preset-dining-walnut-river-squoval-6-8",
+    "title": "Maple River Squoval",
+    "description": "6-8 seater River preset with Spalted Maple and a Squoval edge profile.",
+    "image": "assets/images/Multi-Grey maple squoval dining table.jpg",
+    "modelId": "mdl-dining",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-02",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-02",
+      "legs": "leg-sample-04",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 84,
+      "width": 42,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-02"
+    },
+    "addons": ["addon-squoval"]
+  },
+  {
+    "id": "preset-conference-walnut-blue-river-10x4",
+    "title": "Walnut Blue River 10 x 4",
+    "description": "Conference preset with Hourglass legs and 2x4 tube.",
+    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg",
+    "modelId": "mdl-conference",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-02",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-05",
+      "legs": "leg-sample-03",
+      "tube-size": "tube-2x4",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 120,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-05"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-conference-walnut-grey-river-12x4",
+    "title": "Walnut Grey River 12 x 4",
+    "description": "Conference preset with 12-foot length and Hourglass legs.",
+    "image": "assets/images/Live Edge Multi-Grey River Walnut Conference Table with 2x4 Hourglass.png",
+    "modelId": "mdl-conference",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-09",
+      "legs": "leg-sample-03",
+      "tube-size": "tube-2x4",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 144,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-09"
+    },
+    "addons": ["addon-live-edge"]
+  },
+  {
+    "id": "preset-conference-power-river-12x4",
+    "title": "12 x 4 with Power",
+    "description": "Conference preset with integrated AC + USB + USB-C power.",
+    "image": "assets/images/Power Strips.jpg",
+    "modelId": "mdl-conference",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-09",
+      "legs": "leg-sample-03",
+      "tube-size": "tube-2x4",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 144,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-09"
+    },
+    "addons": ["addon-power-ac-usb-usbc"]
+  },
+  {
+    "id": "preset-coffee-walnut-blue-river-48x24",
+    "title": "Walnut Blue River 48 x 24",
+    "description": "Coffee preset with tapered legs and 1x3 tube.",
+    "image": "assets/images/Multi-Blue River Walnut Coffee Table.jpg",
+    "modelId": "mdl-coffee",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-02",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-06",
+      "legs": "leg-sample-05",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 48,
+      "width": 24,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-06"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-coffee-walnut-grey-river-48x24",
+    "title": "Walnut Grey River 48 x 24",
+    "description": "Coffee preset with tapered legs and 1x3 tube.",
+    "image": "assets/images/Multi-Grey River Walnut Coffee Table.jpg",
+    "modelId": "mdl-coffee",
+    "designId": "des-river",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-06",
+      "legs": "leg-sample-05",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 48,
+      "width": 24,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-06"
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-coffee-walnut-grey-round-48x48",
+    "title": "Walnut Grey Round 48 x 48",
+    "description": "Round coffee preset with tripod legs.",
+    "image": "assets/images/Black Walnut Multi-Grey Round Coffee Table.jpg",
+    "modelId": "mdl-coffee",
+    "designId": "des-round",
+    "selections": {
+      "material": "mat-01",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dimensions-custom",
+      "legs": "leg-sample-08",
+      "tube-size": "tube-1x3",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 48,
+      "width": 48,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": null
+    },
+    "addons": []
+  },
+  {
+    "id": "preset-coffee-signature-maple",
+    "title": "Signature Maple",
+    "description": "Signature coffee preset with Spalted Maple and Live Edge.",
+    "image": "assets/images/WoodLab Silver Maple Signature Coffee Table.jpg",
+    "modelId": "mdl-coffee",
+    "designId": "des-signature",
+    "selections": {
+      "material": "mat-02",
+      "color": "color-03",
+      "finish-coating": "fin-coat-02",
+      "finish-sheen": "fin-sheen-02",
+      "finish-tint": "fin-tint-01",
+      "dimensions": "dim-preset-08",
+      "legs": "leg-signature",
+      "leg-finish": "leg-finish-01"
+    },
+    "dimensionsDetail": {
+      "length": 60,
+      "width": 30,
+      "height": "standard",
+      "heightCustom": null,
+      "presetId": "dim-preset-08"
+    },
+    "addons": ["addon-live-edge"]
+  }
+]

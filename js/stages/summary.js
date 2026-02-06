@@ -2010,8 +2010,8 @@ function initShippingControls() {
         : 0;
       const shippingCost = tableLength >= 120 ? 750 : 500;
       const freightText = formatCurrency(shippingCost);
-      setEstimateText(freightText, effectiveDisabled);
-      setHeaderEstimateText(formatCurrency(shippingCost + accessoryTotal), effectiveDisabled);
+      setEstimateText(freightText, false);
+      setHeaderEstimateText(formatCurrency(shippingCost + accessoryTotal), false);
     } else {
       const shippingEstimate = effectiveDisabled ? null : calculateShippingEstimate({
         zip: normalizedZip,

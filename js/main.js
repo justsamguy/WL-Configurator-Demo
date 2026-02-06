@@ -98,16 +98,155 @@ function filterMaterialsByDesign(materials, designId) {
     return Array.isArray(material.designs) && material.designs.includes(designId);
   });
 }
+
+function filterDesignPresetsByModel(presets, modelId) {
+  if (!Array.isArray(presets)) return [];
+  if (!modelId) return presets;
+  return presets.filter((preset) => preset && preset.modelId === modelId);
+}
+
+async function renderDesignOptionsForModel(modelId = (state.selections && state.selections.model)) {
+  const designsSection = document.getElementById('designs-stage-section');
+  if (!designsSection) return;
+
+  try {
+    const { loadData } = await import('./dataLoader.js');
+    const { renderOptionCards } = await import('./stageRenderer.js');
+    const [designs, presets] = await Promise.all([
+      loadData('data/designs.json'),
+      loadData('data/design-presets.json')
+    ]);
+
+    const layoutGrid = document.getElementById('design-layout-options') ||
+      designsSection.querySelector('.stage-options-grid');
+    if (layoutGrid && Array.isArray(designs)) {
+      const filteredDesigns = filterDesignsByModel(designs, modelId);
+      const seenDesignIds = new Set();
+      const dedupedDesigns = filteredDesigns.filter((design) => {
+        if (!design || !design.id) return false;
+        if (seenDesignIds.has(design.id)) return false;
+        seenDesignIds.add(design.id);
+        return true;
+      });
+      const designsWithPrice = dedupedDesigns.map((design) => ({
+        ...design,
+        price: modelId && design.prices ? design.prices[modelId] : 0
+      }));
+      renderOptionCards(layoutGrid, designsWithPrice, { category: 'design', ignorePlaceholder: true });
+    }
+
+    const presetGrid = document.getElementById('design-presets-options');
+    if (presetGrid) {
+      const filteredPresets = filterDesignPresetsByModel(presets, modelId);
+      const presetCards = filteredPresets.map((preset) => ({
+        id: preset.id,
+        title: preset.title,
+        image: preset.image,
+        description: preset.description,
+        attributes: {
+          'data-preset-id': preset.id,
+          'data-design-id': preset.designId
+        }
+      }));
+      renderOptionCards(presetGrid, presetCards, { category: 'design', showPrice: false, ignorePlaceholder: true });
+    }
+  } catch (e) {
+    log.warn('Failed to render design options', e);
+  }
+}
+
+async function applyDesignPreset(presetId, selectedDesignId = null) {
+  if (!presetId) return;
+
+  try {
+    const { loadData } = await import('./dataLoader.js');
+    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
+    const presets = await loadData('data/design-presets.json');
+    if (!Array.isArray(presets)) return;
+
+    const preset = presets.find((entry) => entry && entry.id === presetId);
+    if (!preset) return;
+
+    const modelId = (state.selections && state.selections.model) || preset.modelId;
+    const designId = selectedDesignId || preset.designId;
+    const nextOptions = preset.selections ? { ...preset.selections } : {};
+    nextOptions.addon = Array.isArray(preset.addons) ? [...preset.addons] : [];
+    if (!nextOptions.dimensions && preset.dimensionsDetail) {
+      nextOptions.dimensions = preset.dimensionsDetail.presetId || 'dimensions-custom';
+    }
+
+    setState({
+      selections: {
+        ...state.selections,
+        model: modelId,
+        design: designId,
+        options: nextOptions,
+        dimensionsDetail: preset.dimensionsDetail ? { ...preset.dimensionsDetail } : null,
+        techCableLength: preset.techCableLength || null
+      }
+    });
+
+    const allLegs = window._allLegsData || [];
+    const allTubeSizes = window._allTubeSizesData || [];
+    if (allLegs.length > 0 && allTubeSizes.length > 0) {
+      updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designId);
+      updateLegPricingUI(state, allLegs);
+    }
+    updateLegsUIVisibility(nextOptions.legs || '');
+
+    const materialsOptionsRoot = document.getElementById('materials-options');
+    if (materialsOptionsRoot) {
+      const mats = await loadData('data/materials.json');
+      if (Array.isArray(mats)) {
+        const filteredMaterials = filterMaterialsByDesign(mats, designId);
+        renderOptionCards(materialsOptionsRoot, filteredMaterials, { category: 'material' });
+      }
+    }
+
+    const addonsRoot = document.getElementById('addons-options');
+    if (addonsRoot) {
+      const addons = await loadData('data/addons.json');
+      if (addons) {
+        renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeProfileAddonAvailability(state);
+        updateEdgeAddonCompatibility(state);
+        updateWaterfallAddonAvailability(state);
+      }
+      try {
+        const addonsStage = await import('./stages/addons.js');
+        if (addonsStage && typeof addonsStage.restoreFromState === 'function') {
+          addonsStage.restoreFromState(state);
+        }
+      } catch (e) {
+        log.warn('Failed to restore addon visuals after preset apply', e);
+      }
+    }
+
+    const p = await computePrice(state);
+    const from = state.pricing.total || state.pricing.base;
+    animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
+    setState({ pricing: { ...state.pricing, base: p.base, extras: p.extras, total: p.total } });
+  } catch (e) {
+    log.warn('Failed to apply design preset', { presetId, error: e });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__wlRenderDesignOptions = renderDesignOptionsForModel;
+}
+
 import { populateSummaryPanel } from './stages/summary.js';
 import { updateAllIndicators } from './stages/addons.js';
 import { getVisibleLegs, getAvailableTubeSizes } from './stages/legCompatibility.js';
-import { recomputeTubeSizeConstraints } from './stages/legs.js';
+import { recomputeTubeSizeConstraints, updateLegsUIVisibility } from './stages/legs.js';
 
 // Listen for state changes to update UI
 document.addEventListener('statechange', (ev) => {
   log.debug('State changed', ev.detail.state.selections);
   // main orchestrator can react to state changes here if needed.
   // ev.detail.state contains the latest state object.
+  const hasDesign = !!(ev.detail.state.selections && ev.detail.state.selections.design);
+  document.body.classList.toggle('has-design', hasDesign);
   // If the summary page is active, refresh its contents
   try {
     const summaryRoot = document.getElementById('summary-panel');
@@ -207,6 +346,7 @@ function updateWaterfallAddonAvailability(appState = state) {
   const addons = appState && appState.selections && appState.selections.options
     ? appState.selections.options.addon
     : [];
+  if (Array.isArray(addons) && addons.includes('addon-squoval')) return;
   const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
   const shouldDisableSecond = !hasSingle;
   const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
@@ -244,7 +384,65 @@ function updateWaterfallAddonAvailability(appState = state) {
   updateAllIndicators();
 }
 
+function updateEdgeAddonCompatibility(appState = state) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const addons = appState && appState.selections && appState.selections.options
+    ? appState.selections.options.addon
+    : [];
+  const hasSquoval = Array.isArray(addons) && addons.includes('addon-squoval');
+  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second'];
+  ids.forEach(id => {
+    const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${id}"]`);
+    const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${id}"]`);
+    if (!checkbox) return;
+    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+    if (hasSquoval) {
+      checkbox.disabled = true;
+      checkbox.checked = false;
+      checkbox.setAttribute('data-disabled-by', 'squoval');
+      checkbox.setAttribute('data-tooltip', 'Not compatible with Squoval');
+      if (option) {
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
+        option.setAttribute('data-tooltip', 'Not compatible with Squoval');
+        option.setAttribute('data-disabled-by', 'squoval');
+      }
+      return;
+    }
+    if (disabledBy === 'squoval') {
+      checkbox.disabled = false;
+      checkbox.removeAttribute('data-disabled-by');
+      if (checkbox.getAttribute('data-tooltip') === 'Not compatible with Squoval') {
+        checkbox.removeAttribute('data-tooltip');
+      }
+      if (option) {
+        option.classList.remove('disabled');
+        option.removeAttribute('aria-disabled');
+        if (option.getAttribute('data-disabled-by') === 'squoval') {
+          option.removeAttribute('data-disabled-by');
+        }
+        if (option.getAttribute('data-tooltip') === 'Not compatible with Squoval') {
+          option.removeAttribute('data-tooltip');
+        }
+      }
+    }
+  });
+
+  updateAllIndicators();
+}
+
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const EDGE_CORNER_ADDONS = [
+  'addon-live-edge',
+  'addon-waterfall-single',
+  'addon-waterfall-second',
+  'addon-chamfered-edges',
+  'addon-squoval',
+  'addon-rounded-corners',
+  'addon-angled-corners'
+];
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
@@ -259,6 +457,11 @@ function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons
   if (addonId === 'addon-chamfered-edges') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge');
     return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge' : '' };
+  }
+  if (addonId === 'addon-squoval') {
+    const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
+    const incompatible = currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || currentAddons.includes('addon-live-edge') || hasWaterfall;
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge' : '' };
   }
   return { incompatible: false, tooltip: '' };
 }
@@ -360,6 +563,8 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
     log.warn('Failed to recompute constraints', e);
   }
   updateLegPricingUI(state, allLegs);
+  const selectedLegId = state.selections && state.selections.options && state.selections.options.legs;
+  updateLegsUIVisibility(selectedLegId || '');
 }
 
 // Listen for placeholder selection events dispatched by placeholders.js and stage modules
@@ -410,29 +615,8 @@ document.addEventListener('option-selected', async (ev) => {
       log.warn('Failed to update legs options', e);
     }
 
-    // Re-render designs filtered by the newly selected model
-    try {
-      const designsSection = document.getElementById('designs-stage-section');
-      if (designsSection) {
-        const { loadData } = await import('./dataLoader.js');
-        const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
-        const designs = await loadData('data/designs.json');
-        if (designs) {
-          const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-          if (designGrids && designGrids.length) {
-            const filteredDesigns = filterDesignsByModel(designs, id);
-            // Add price field for rendering
-            const designsWithPrice = filteredDesigns.map(design => ({
-              ...design,
-              price: id && design.prices ? design.prices[id] : 0
-            }));
-            renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-          }
-        }
-      }
-    } catch (e) {
-      log.warn('Failed to re-render designs after model change', e);
-    }
+    // Re-render design layouts and presets filtered by the selected model
+    await renderDesignOptionsForModel(id);
 
     // If user selected a model from a stage beyond Designs, navigate back to Models stage
     try {
@@ -446,18 +630,40 @@ document.addEventListener('option-selected', async (ev) => {
   }
   // Handle design selection (category: 'design')
   else if (category === 'design') {
+    if (ev.detail && ev.detail.presetId) {
+      await applyDesignPreset(ev.detail.presetId, id);
+      return;
+    }
+
     // Check if addons need to be disabled due to design incompatibility
-    const currentAddons = state.selections.options.addon || [];
+    const existingAddons = state.selections.options.addon || [];
+    const nextAddonsSet = new Set(Array.isArray(existingAddons) ? existingAddons : []);
+    if (id === 'des-slab') {
+      nextAddonsSet.add('addon-live-edge');
+    }
+    if (id === 'des-round') {
+      EDGE_CORNER_ADDONS.forEach(addonId => nextAddonsSet.delete(addonId));
+    }
+    if (id === 'des-signature') {
+      EDGE_CORNER_ADDONS.forEach(addonId => {
+        if (addonId !== 'addon-live-edge') nextAddonsSet.delete(addonId);
+      });
+    }
+    if (nextAddonsSet.has('addon-live-edge') || nextAddonsSet.has('addon-waterfall-single') || nextAddonsSet.has('addon-waterfall-second')) {
+      nextAddonsSet.delete('addon-squoval');
+    }
+    const currentAddons = Array.from(nextAddonsSet);
     // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
 
+    const nextOptions = { ...state.selections.options, addon: currentAddons };
+    if (id === 'des-signature') {
+      nextOptions['tube-size'] = undefined;
+    }
     setState({
       selections: {
         ...state.selections,
         design: id,
-        options: {
-          ...state.selections.options,
-          addon: currentAddons
-        }
+        options: nextOptions
       }
     });
     const p = await computePrice(state);
@@ -484,6 +690,7 @@ document.addEventListener('option-selected', async (ev) => {
         const { renderAddonsDropdown } = await import('./stageRenderer.js');
         const addons = await loadData('data/addons.json');
         if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
       }
     } catch (e) {
@@ -518,6 +725,11 @@ document.addEventListener('option-selected', async (ev) => {
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
     setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
     updateLegPricingUI(state);
+    try {
+      recomputeTubeSizeConstraints(state);
+    } catch (e) {
+      log.warn('Failed to recompute tube size constraints after dimensions update', e);
+    }
   }
   else if (category) {
     const newOptions = { ...state.selections.options, [category]: id };
@@ -597,6 +809,14 @@ document.addEventListener('addon-toggled', async (ev) => {
       if (addonId !== id) selectedAddons.delete(addonId);
     });
   }
+  if (checked && id === 'addon-squoval') {
+    selectedAddons.delete('addon-live-edge');
+    selectedAddons.delete('addon-waterfall-single');
+    selectedAddons.delete('addon-waterfall-second');
+  }
+  if (checked && (id === 'addon-live-edge' || id === 'addon-waterfall-single' || id === 'addon-waterfall-second')) {
+    selectedAddons.delete('addon-squoval');
+  }
   if (id === 'addon-waterfall-single' && !checked) {
     selectedAddons.delete('addon-waterfall-second');
   }
@@ -604,6 +824,7 @@ document.addEventListener('addon-toggled', async (ev) => {
   // persist selections then compute price via pricing module
   setState({ selections: { ...state.selections, options: { ...state.selections.options, addon: addonsArray } } });
   updateEdgeProfileAddonAvailability(state);
+  updateEdgeAddonCompatibility(state);
   const p = await computePrice(state);
   setState({ pricing: { ...state.pricing, extras: p.extras, total: p.total } });
   const from = state.pricing.total || state.pricing.base;
@@ -786,27 +1007,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
-// Render designs stage from data/designs.json
-// Try to find design grids in the designs section (supports multiple rows)
-const designsSection = document.getElementById('designs-stage-section');
-if (designsSection) {
-  const designs = await loadData('data/designs.json');
-  if (designs) {
-    // Clear existing design option cards and render from data
-    const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-    if (designGrids && designGrids.length) {
-      // Filter designs based on currently selected model
-      const currentModel = state.selections && state.selections.model;
-      const filteredDesigns = filterDesignsByModel(designs, currentModel);
-      // Add price field for rendering
-      const designsWithPrice = filteredDesigns.map(design => ({
-        ...design,
-        price: currentModel && design.prices ? design.prices[currentModel] : 0
-      }));
-      renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-    }
-  }
-}
+    // Render designs stage with presets + layouts filtered by selected model
+    await renderDesignOptionsForModel(state.selections && state.selections.model);
 
     // Render finish stage (coatings + sheens + tints)
     const finishCoatingRoot = document.getElementById('finish-coating-options');
@@ -863,6 +1065,7 @@ if (designsSection) {
     if (addonsRoot) {
   const addons = await loadData('data/addons.json');
       if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      updateEdgeAddonCompatibility(state);
       updateWaterfallAddonAvailability(state);
     }
   } catch (e) {
@@ -923,7 +1126,7 @@ if (designsSection) {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-01-23 11:26');
-console.log('Edit ver: 505');
+console.log('Last updated: 2026-01-26 12:44');
+console.log('Edit ver: 530');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

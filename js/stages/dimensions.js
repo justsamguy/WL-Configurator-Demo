@@ -16,6 +16,7 @@ let currentDimensions = {
 };
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
+let lastKnownDesign = null; // Track the design to detect round/non-round changes
 let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
 
 
@@ -31,6 +32,18 @@ async function loadDimensionsData() {
     log.error('Failed to load dimensions data', e);
     return null;
   }
+}
+
+function getSelectedModelId() {
+  return state && state.selections && state.selections.model;
+}
+
+function getSelectedDesignId() {
+  return state && state.selections && state.selections.design;
+}
+
+function isRoundDesignSelected() {
+  return getSelectedDesignId() === 'des-round';
 }
 
 // Reset dimensions to default state
@@ -84,7 +97,8 @@ function initializeFromState(appState) {
       const presetBySize = dimDetail
         ? dimensionsData.presets.find(p => p.length === dimDetail.length && p.width === dimDetail.width)
         : null;
-      const resolvedPreset = presetById || presetBySize;
+      const explicitCustom = dimSel === 'dimensions-custom' || (dimDetail && dimDetail.presetId === 'custom');
+      const resolvedPreset = explicitCustom ? null : (presetById || presetBySize);
       if (dimDetail && typeof dimDetail === 'object') {
         // Restore from stored detail payload first
         currentDimensions = { ...currentDimensions, ...dimDetail };
@@ -93,6 +107,10 @@ function initializeFromState(appState) {
         }
         selectedTileId = resolvedPreset ? resolvedPreset.id : 'custom';
       } else if (typeof dimSel === 'string') {
+        if (dimSel === 'dimensions-custom') {
+          selectedTileId = 'custom';
+          return;
+        }
         const preset = dimensionsData.presets.find(p => p.id === dimSel);
         if (preset) {
           currentDimensions.length = preset.length;
@@ -120,7 +138,8 @@ function getConstraints() {
   if (!dimensionsData) return null;
   
   // Get the currently selected model from state
-  const selectedModel = state && state.selections && state.selections.model;
+  const selectedModel = getSelectedModelId();
+  const selectedDesign = getSelectedDesignId();
   
   // Define model-specific constraints
   const modelConstraints = {
@@ -140,9 +159,31 @@ function getConstraints() {
       height: { min: 26, max: 42, standard: 30, bar: 36, unit: "in" }
     }
   };
+
+  const roundConstraints = {
+    'mdl-coffee': {
+      length: { min: 30, max: 60, step: 6, unit: 'in' },
+      width: { min: 30, max: 60, step: 6, unit: 'in' }
+    },
+    'mdl-dining': {
+      length: { min: 42, max: 60, step: 6, unit: 'in' },
+      width: { min: 42, max: 60, step: 6, unit: 'in' }
+    },
+    'mdl-conference': {
+      length: { min: 54, max: 72, step: 6, unit: 'in' },
+      width: { min: 54, max: 72, step: 6, unit: 'in' }
+    }
+  };
   
   // Return model-specific constraints if model is selected, otherwise use default
   if (selectedModel && modelConstraints[selectedModel]) {
+    if (selectedDesign === 'des-round' && roundConstraints[selectedModel]) {
+      return {
+        ...modelConstraints[selectedModel],
+        ...roundConstraints[selectedModel],
+        height: modelConstraints[selectedModel].height
+      };
+    }
     return modelConstraints[selectedModel];
   }
   
@@ -161,21 +202,23 @@ function updateAxisInputConstraints() {
   if (constraints.length && lengthInput) {
     lengthInput.min = constraints.length.min;
     lengthInput.max = constraints.length.max;
-    lengthInput.step = constraints.length.step;
+    // Keep +/- controls on fixed increments while allowing free numeric input.
+    lengthInput.step = 'any';
     axisSteps.length = constraints.length.step;
   }
 
   if (constraints.width && widthInput) {
     widthInput.min = constraints.width.min;
     widthInput.max = constraints.width.max;
-    widthInput.step = constraints.width.step;
+    // Keep +/- controls on fixed increments while allowing free numeric input.
+    widthInput.step = 'any';
     axisSteps.width = constraints.width.step;
   }
 
   if (heightCustomInput) {
     heightCustomInput.min = 16;
     heightCustomInput.max = 50;
-    heightCustomInput.step = axisSteps['height-custom'];
+    heightCustomInput.step = 'any';
   }
 }
 
@@ -290,12 +333,36 @@ function updateCustomFieldVisibility() {
   }
 }
 
+function syncPresetTileSelection() {
+  const presetsContainer = document.getElementById('dimensions-presets');
+  if (!presetsContainer) return;
+
+  const tiles = presetsContainer.querySelectorAll('.option-card[data-preset-id]');
+  let selectedTile = null;
+  tiles.forEach((tile) => {
+    tile.classList.remove('selected');
+    tile.setAttribute('aria-pressed', 'false');
+    if (selectedTileId && tile.getAttribute('data-preset-id') === selectedTileId) {
+      selectedTile = tile;
+    }
+  });
+
+  if (selectedTile) {
+    selectedTile.classList.add('selected');
+    selectedTile.setAttribute('aria-pressed', 'true');
+  }
+}
+
 // Update UI controls to reflect current state
 function updateUIControls() {
   const lengthInput = document.getElementById('dim-length-input');
   const widthInput = document.getElementById('dim-width-input');
   const heightCustomInput = document.getElementById('dim-height-custom-input');
   const customHeightContainer = document.getElementById('custom-height-container');
+
+  if (isRoundDesignSelected() && Number.isFinite(currentDimensions.length) && Number.isFinite(currentDimensions.width)) {
+    currentDimensions.width = currentDimensions.length;
+  }
 
   updateAxisInputConstraints();
   
@@ -319,6 +386,7 @@ function updateUIControls() {
   updateValidationMessage('width');
   updateValidationMessage('height-custom');
   updateOversizeBanners();
+  syncPresetTileSelection();
   updateCustomFieldVisibility();
   updateHeightButtonSelection();
   updateApplyButtonState();
@@ -326,12 +394,28 @@ function updateUIControls() {
 
 // Check if all required values are valid
 function isComplete() {
+  const roundDimensionsValid = !isRoundDesignSelected() || currentDimensions.length === currentDimensions.width;
   return (
+    !hasVisibleRangeInvalidInput() &&
+    roundDimensionsValid &&
     currentDimensions.length !== null && validateAxisValue('length', currentDimensions.length) &&
     currentDimensions.width !== null && validateAxisValue('width', currentDimensions.width) &&
     currentDimensions.height !== null &&
     (currentDimensions.height !== 'custom' || (currentDimensions.heightCustom !== null && validateAxisValue('height-custom', currentDimensions.heightCustom)))
   );
+}
+
+function hasVisibleRangeInvalidInput() {
+  const panel = document.getElementById('dimensions-stage-panel');
+  if (!panel) return false;
+
+  const inputs = panel.querySelectorAll('.control-input');
+  return Array.from(inputs).some((input) => {
+    if (input.closest('.hidden') || input.offsetParent === null) return false;
+    const validity = input.validity;
+    if (!validity) return false;
+    return validity.rangeUnderflow || validity.rangeOverflow || validity.badInput;
+  });
 }
 
 // Update apply button state
@@ -390,18 +474,32 @@ function filterPresetsByModel(presets) {
   const constraints = getConstraints();
   if (!constraints) return presets;
 
-  const selectedModel = state && state.selections && state.selections.model;
+  const selectedModel = getSelectedModelId();
+  const selectedDesign = getSelectedDesignId();
+  const roundDesignActive = selectedDesign === 'des-round';
 
   // Model-specific preset exclusions
   const modelExclusions = {
-    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'] // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+    'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'], // Hide 4-6, 6-8, 8-10 seaters for coffee tables
+    'mdl-conference': ['dim-preset-01'] // Hide 4-6 seater for conference tables
   };
 
   const excludedIds = modelExclusions[selectedModel] || [];
 
   return presets.filter(preset => {
+    const designScope = Array.isArray(preset.designScope) ? preset.designScope : null;
+    const modelScope = Array.isArray(preset.modelScope) ? preset.modelScope : null;
+
+    if (roundDesignActive) {
+      if (!designScope || !designScope.includes('des-round')) return false;
+    } else if (designScope && designScope.includes('des-round')) {
+      return false;
+    }
+
+    if (modelScope && !modelScope.includes(selectedModel)) return false;
+
     // Check model-specific exclusions first
-    if (excludedIds.includes(preset.id)) return false;
+    if (!roundDesignActive && excludedIds.includes(preset.id)) return false;
 
     // Then check technical constraints
     const lengthValid = preset.length >= constraints.length.min && preset.length <= constraints.length.max;
@@ -422,15 +520,16 @@ function initPresets() {
   
   // Add preset tiles (only those valid for the selected model)
   filteredPresets.forEach(preset => {
+    const presetTitle = preset.displayTitle || preset.title;
     const tile = document.createElement('button');
     tile.className = 'option-card flex-shrink-0';
     tile.setAttribute('data-preset-id', preset.id);
     tile.setAttribute('data-ignore-placeholder', 'true');
-    tile.setAttribute('aria-label', `${preset.title}: ${preset.length}″ × ${preset.width}″`);
+    tile.setAttribute('aria-label', `${presetTitle}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
-      ${preset.image ? `<img src="${preset.image}" alt="${preset.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
-      <div class="title">${preset.title}</div>
+      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
+      <div class="title">${presetTitle}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
 
@@ -456,12 +555,12 @@ function initPresets() {
   customTile.addEventListener('click', () => {
     // Custom tile selection
     selectedTileId = 'custom';
-    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
-    customTile.classList.add('selected');
+    syncPresetTileSelection();
     updateCustomFieldVisibility();
   });
   
   presetsContainer.appendChild(customTile);
+  syncPresetTileSelection();
 }
 
 // Update custom field visibility based on manual tile selection
@@ -478,8 +577,8 @@ function selectPreset(preset, tileElement) {
 
   // Mark this preset as selected
   selectedTileId = preset.id;
-  document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
-  if (tileElement) tileElement.classList.add('selected');
+  if (tileElement) tileElement.setAttribute('aria-pressed', 'true');
+  syncPresetTileSelection();
 
   // Update UI and dispatch
   updateUIControls();
@@ -507,7 +606,20 @@ function initAxisControls() {
     
     if (axis === 'length') {
       const newVal = currentDimensions.length + (isIncrement ? step : -step);
-      if (validateAxisValue('length', newVal)) {
+      if (isRoundDesignSelected()) {
+        if (validateAxisValue('length', newVal) && validateAxisValue('width', newVal)) {
+          currentDimensions.length = newVal;
+          currentDimensions.width = newVal;
+          document.getElementById('dim-length-input').value = newVal;
+          document.getElementById('dim-width-input').value = newVal;
+          updateValidationMessage('length');
+          updateValidationMessage('width');
+          updateOversizeBanners();
+          updateApplyButtonState();
+          updateCustomFieldVisibility();
+          dispatchDimensionSelection();
+        }
+      } else if (validateAxisValue('length', newVal)) {
         currentDimensions.length = newVal;
         document.getElementById('dim-length-input').value = newVal;
         updateValidationMessage('length');
@@ -518,7 +630,20 @@ function initAxisControls() {
       }
     } else if (axis === 'width') {
       const newVal = currentDimensions.width + (isIncrement ? step : -step);
-      if (validateAxisValue('width', newVal)) {
+      if (isRoundDesignSelected()) {
+        if (validateAxisValue('length', newVal) && validateAxisValue('width', newVal)) {
+          currentDimensions.length = newVal;
+          currentDimensions.width = newVal;
+          document.getElementById('dim-length-input').value = newVal;
+          document.getElementById('dim-width-input').value = newVal;
+          updateValidationMessage('length');
+          updateValidationMessage('width');
+          updateOversizeBanners();
+          updateApplyButtonState();
+          updateCustomFieldVisibility();
+          dispatchDimensionSelection();
+        }
+      } else if (validateAxisValue('width', newVal)) {
         currentDimensions.width = newVal;
         document.getElementById('dim-width-input').value = newVal;
         updateValidationMessage('width');
@@ -552,19 +677,37 @@ function initNumericInputs() {
     if (isNaN(value)) return;
     
     if (axis === 'length') {
-      if (validateAxisValue('length', value)) {
+      if (isRoundDesignSelected()) {
+        if (validateAxisValue('length', value) && validateAxisValue('width', value)) {
+          currentDimensions.length = value;
+          currentDimensions.width = value;
+          const widthInput = document.getElementById('dim-width-input');
+          if (widthInput) widthInput.value = value;
+          dispatchDimensionSelection();
+        }
+      } else if (validateAxisValue('length', value)) {
         currentDimensions.length = value;
         dispatchDimensionSelection();
       }
       updateValidationMessage('length');
+      updateValidationMessage('width');
       updateOversizeBanners();
       updateApplyButtonState();
       updateCustomFieldVisibility();
     } else if (axis === 'width') {
-      if (validateAxisValue('width', value)) {
+      if (isRoundDesignSelected()) {
+        if (validateAxisValue('length', value) && validateAxisValue('width', value)) {
+          currentDimensions.length = value;
+          currentDimensions.width = value;
+          const lengthInput = document.getElementById('dim-length-input');
+          if (lengthInput) lengthInput.value = value;
+          dispatchDimensionSelection();
+        }
+      } else if (validateAxisValue('width', value)) {
         currentDimensions.width = value;
         dispatchDimensionSelection();
       }
+      updateValidationMessage('length');
       updateValidationMessage('width');
       updateOversizeBanners();
       updateApplyButtonState();
@@ -668,7 +811,8 @@ function initResetButton() {
     updateUIControls();
     
     // Clear tile selections
-    document.querySelectorAll('.option-card').forEach(t => t.classList.remove('selected'));
+    selectedTileId = null;
+    syncPresetTileSelection();
   });
 }
 
@@ -706,6 +850,7 @@ export async function init() {
   
   // Initialize from current state
   initializeFromState(state);
+  lastKnownDesign = getSelectedDesignId();
   
   // Wire up controls
   initPresets();
@@ -724,11 +869,18 @@ export function restoreFromState(appState) {
   try {
     // Check if model has changed and reset if needed
     const currentModel = appState && appState.selections && appState.selections.model;
-    if (currentModel !== lastKnownModel) {
+    const currentDesign = appState && appState.selections && appState.selections.design;
+    const modelChanged = currentModel !== lastKnownModel;
+    const designChanged = currentDesign !== lastKnownDesign;
+
+    if (modelChanged) {
       log.debug('Model changed in restoreFromState, resetting');
       resetDimensions();
+    }
+
+    if (modelChanged || designChanged) {
       lastKnownModel = currentModel;
-      // Re-initialize presets for the new model
+      lastKnownDesign = currentDesign;
       initPresets();
     }
     

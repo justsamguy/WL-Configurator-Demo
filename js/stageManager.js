@@ -41,6 +41,7 @@ const log = createLogger('StageManager');
 const managerState = {
   current: 0,
   completed: new Array(STAGES.length).fill(false),
+  opened: new Array(STAGES.length).fill(false),
   config: {
     model: null,
     material: null,
@@ -83,17 +84,6 @@ function hasSelectedDimensions(appState) {
   return Number.isFinite(detail && detail.length) && Number.isFinite(detail && detail.width);
 }
 
-function canAccessLegs(appState) {
-  const hasModel = !!(appState && appState.selections && appState.selections.model);
-  const hasDesign = !!(appState && appState.selections && appState.selections.design);
-  const hasMaterial = !!(appState && appState.selections && appState.selections.options && appState.selections.options.material);
-  const hasColor = !!(appState && appState.selections && appState.selections.options && appState.selections.options.color);
-  const hasCoating = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
-  const hasSheen = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-sheen']);
-  const hasTint = !!(appState && appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
-  return hasModel && hasDesign && hasMaterial && hasColor && hasCoating && hasSheen && hasTint && hasSelectedDimensions(appState);
-}
-
 function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
@@ -128,6 +118,14 @@ async function updateLivePrice() {
 async function setStage(index, options = {}) {
   // options: { allowSkip: boolean, skipConfirm: boolean }
   if (index < 0 || index >= STAGES.length) return;
+
+  // If the configurator was reset (no model selected), clear unlocked/completed progress.
+  if (index === 0 && !(appState && appState.selections && appState.selections.model)) {
+    for (let i = 1; i < STAGES.length; i++) {
+      managerState.completed[i] = false;
+      managerState.opened[i] = false;
+    }
+  }
   
   // Special handling: if navigating back to Models (index 0) and design is already selected,
   // show confirmation dialog unless skipConfirm is true
@@ -145,7 +143,8 @@ async function setStage(index, options = {}) {
   
   // gating: normally prevent jumping forward past first incomplete required stage
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
-  if (index > managerState.current && !options.allowSkip) {
+  const isAlreadyOpened = !!managerState.opened[index];
+  if (index > managerState.current && !options.allowSkip && !isAlreadyOpened) {
     // require model selected to advance beyond stage 0 (Models)
     if (managerState.current <= 0 && !appState.selections.model) {
       return;
@@ -195,8 +194,11 @@ async function setStage(index, options = {}) {
       if (index > 5) {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         if (!hasLegs) {
           return;
@@ -206,7 +208,7 @@ async function setStage(index, options = {}) {
         if (!isNoneLeg) {
           const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
           const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-          const tubeSizeRequired = !isCustomLeg;
+          const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
           if ((tubeSizeRequired && !hasTubeSize) || !hasLegFinish) {
             return;
           }
@@ -221,12 +223,9 @@ async function setStage(index, options = {}) {
     }
   }
   managerState.current = index;
+  managerState.opened[index] = true;
   // treat optional stages as implicitly completed for gating decisions
   const currentCompleted = isStageCompleteForNav(managerState.current);
-  // Check if all required stages (0-5) are complete to unlock Add-ons (6) and Summary (7) for free navigation
-  const allRequiredStagesComplete = managerState.completed[0] && managerState.completed[1] && managerState.completed[2] && 
-                                    managerState.completed[3] && managerState.completed[4] && managerState.completed[5];
-  const canJumpToLegs = canAccessLegs(appState);
   
   // update buttons
   $all('#stage-bar .stage-btn').forEach(btn => {
@@ -240,20 +239,10 @@ async function setStage(index, options = {}) {
       if (idx < managerState.current) {
         btn.disabled = false;
       } else {
-        // For future stages (idx > current):
-        // - if all required stages (0-5) are complete, allow free access to Add-ons (6) and Summary (7)
-        // - otherwise, allow if that future stage is already completed or only the immediate next stage when current is completed
-        if (idx === LEGS_STAGE_INDEX && canJumpToLegs) {
-          btn.disabled = false;
-        } else if (idx >= 6 && allRequiredStagesComplete) {
-          btn.disabled = false;
-        } else if (managerState.completed[idx]) {
-          btn.disabled = false;
-        } else if (idx === managerState.current + 1 && currentCompleted) {
-          btn.disabled = false;
-        } else {
-          btn.disabled = true;
-        }
+        // Sequential unlock: only immediate next stage can be opened first.
+        // After a stage has been opened once, it remains available from any view.
+        const canOpenFirstTime = idx === managerState.current + 1 && currentCompleted;
+        btn.disabled = !(managerState.opened[idx] || canOpenFirstTime);
       }
     }
   });
@@ -357,33 +346,10 @@ async function setStage(index, options = {}) {
           if (managerState.current === 0) {
             modelsStageModule.restoreFromState && modelsStageModule.restoreFromState(appState);
           } else if (managerState.current === 1) {
-            // Re-render designs filtered by selected model
-            // Design filtering is data-driven: designs are shown based on their "prices" object in data/designs.json
-            // If a design has a price for the selected model ID, it will be displayed
             try {
-              const designsSection = document.getElementById('designs-stage-section');
-              if (designsSection) {
-                const { loadData } = await import('./dataLoader.js');
-                const { renderOptionCards } = await import('./stageRenderer.js');
-                const designs = await loadData('data/designs.json');
-                if (designs) {
-                const designGrids = designsSection.querySelectorAll('.stage-options-grid');
-                if (designGrids && designGrids.length) {
-                  // Filter designs based on selected model
-                  const selectedModel = appState.selections && appState.selections.model;
-                  const filteredDesigns = designs.filter(design => {
-                    if (!selectedModel) return true;
-                    // Design is available if it has pricing for this model
-                    return design.prices && design.prices[selectedModel];
-                  });
-                  // Add price field for rendering
-                  const designsWithPrice = filteredDesigns.map(design => ({
-                    ...design,
-                    price: selectedModel && design.prices ? design.prices[selectedModel] : 0
-                  }));
-                  renderOptionCards(designGrids[0], designsWithPrice, { category: null });
-                }
-                }
+              const selectedModel = appState.selections && appState.selections.model;
+              if (typeof window.__wlRenderDesignOptions === 'function') {
+                await window.__wlRenderDesignOptions(selectedModel);
               }
             } catch (e) {
               log.warn('Failed to re-render designs on stage entry', e);
@@ -468,11 +434,11 @@ async function setStage(index, options = {}) {
     } catch (e) { /* ignore */ }
   }
 
-  // NOW set display styles for all panels (after moving them if needed)
+  // NOW toggle visibility classes for all panels (after moving them if needed)
   // show/hide stage content panels if present (convention: panels use id stage-panel-<index>)
   $all('[id^="stage-panel-"]').forEach(panel => {
     const idx = Number(panel.id.replace('stage-panel-', ''));
-    panel.style.display = idx === managerState.current ? '' : 'none';
+    panel.classList.toggle('is-hidden', idx !== managerState.current);
   });
 
   // Also hide/show the MaterialsPanel (containing materials-options and color-options containers)
@@ -543,8 +509,11 @@ async function setStage(index, options = {}) {
         // (or custom leg is selected, which makes tube-size optional)
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -553,7 +522,7 @@ async function setStage(index, options = {}) {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg;
+            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
             isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }
@@ -624,21 +593,20 @@ export function initStageManager() {
   try { summaryStage.init && summaryStage.init(); } catch (e) { /* ignore */ }
   // Mark stages completed only when ALL required selections are made
   document.addEventListener('option-selected', (ev) => {
-    const { category } = ev.detail || {};
+    const { category, id } = ev.detail || {};
     
     try {
       // Models stage (index 0): mark complete only when model is selected
       if (category === 'model') {
-        const hasModel = !!(appState.selections && appState.selections.model);
+        const hasModel = !!(id || (appState.selections && appState.selections.model));
         markCompleted(0, !!hasModel);
         
         // When model changes, all other selections are cleared by main.js
-        // Reset completion status for all dependent stages (1-5)
-        markCompleted(1, false); // Designs
-        markCompleted(2, false); // Materials
-        markCompleted(3, false); // Finish
-        markCompleted(4, false); // Dimensions
-        markCompleted(5, false); // Legs
+        // Reset completion/opened status for all dependent stages (1-7)
+        for (let i = 1; i < STAGES.length; i++) {
+          managerState.completed[i] = false;
+          managerState.opened[i] = false;
+        }
         
         if (managerState.current === 0 && hasModel) {
           setStage(1, { skipConfirm: true });
@@ -648,12 +616,8 @@ export function initStageManager() {
       
       // Designs stage (index 1): mark complete only when design is selected
       if (category === 'design') {
-        const hasDesign = !!(appState.selections && appState.selections.design);
+        const hasDesign = !!(id || (appState.selections && appState.selections.design));
         markCompleted(1, !!hasDesign);
-        
-        if (managerState.current === 1 && hasDesign) {
-          setStage(2, { skipConfirm: true });
-        }
         return;
       }
       
@@ -700,8 +664,11 @@ export function initStageManager() {
       if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
         const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
         const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
+        const designId = appState.selections && appState.selections.design;
         const isNoneLeg = legId === 'leg-none';
         const isCustomLeg = legId === 'leg-sample-07';
+        const isSignatureLeg = legId === 'leg-signature';
+        const isSignatureDesign = designId === 'des-signature';
 
         let isLegStageComplete = false;
         if (hasLegs) {
@@ -710,7 +677,7 @@ export function initStageManager() {
           } else {
             const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
             const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg;
+            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
             isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
           }
         }

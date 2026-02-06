@@ -155,6 +155,21 @@ export async function buildExportMarkdown(appState, dataLoader) {
   const addonsText = formatListValues(Array.isArray(config.addons) ? config.addons : []);
   const accessorialsText = formatInlineList(Array.isArray(shipping.accessorials) ? shipping.accessorials : []);
 
+  const isLocalDelivery = shipping.mode === 'Local delivery';
+  const modeLine = isLocalDelivery
+    ? `- Mode: ${formatLiteral(shipping.mode)} (Estimated cost: ${formatLiteral(shipping.estimatedCost)})`
+    : `- Mode: ${formatLiteral(shipping.mode)}`;
+  const shippingLines = [
+    modeLine,
+    ...(isLocalDelivery ? [] : [
+      `- Zip code: ${formatLiteral(shipping.zipCode)}`,
+      `- Region: ${formatLiteral(shipping.region)}`,
+      `- Estimated cost: ${formatLiteral(shipping.estimatedCost)}`
+    ]),
+    `- Accessorials: ${accessorialsText}`,
+    `- Notes: ${formatLiteral(shipping.notes)}`
+  ];
+
   return [
     '# WoodLab Configuration',
     '',
@@ -190,12 +205,7 @@ export async function buildExportMarkdown(appState, dataLoader) {
     lineItemsText,
     '',
     '## Shipping',
-    `- Mode: ${formatLiteral(shipping.mode)}`,
-    `- Zip code: ${formatLiteral(shipping.zipCode)}`,
-    `- Region: ${formatLiteral(shipping.region)}`,
-    `- Estimated cost: ${formatLiteral(shipping.estimatedCost)}`,
-    `- Accessorials: ${accessorialsText}`,
-    `- Notes: ${formatLiteral(shipping.notes)}`
+    ...shippingLines
   ].join('\n');
 }
 

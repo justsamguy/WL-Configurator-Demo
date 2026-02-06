@@ -24,6 +24,13 @@ export function renderOptionCards(container, data = [], opts = {}) {
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
     if (item.customNote) btn.setAttribute('data-custom-note', 'true');
+    if (opts.ignorePlaceholder) btn.setAttribute('data-ignore-placeholder', 'true');
+    if (item.attributes && typeof item.attributes === 'object') {
+      Object.entries(item.attributes).forEach(([name, value]) => {
+        if (typeof name !== 'string' || !name || value === null || typeof value === 'undefined') return;
+        btn.setAttribute(name, String(value));
+      });
+    }
     // Use aria-checked for multi-select (addon) category, aria-pressed for single-select
     const isMultiSelect = opts.category === 'addon';
     if (isMultiSelect) {
@@ -95,8 +102,29 @@ function buildAddonIntro(group = {}) {
 export function renderAddonsDropdown(container, data = [], currentState = {}) {
   if (!container) return;
   container.innerHTML = '';
+  const currentDesign = currentState.selections && currentState.selections.design;
+  const edgeAddonIds = [
+    'addon-live-edge',
+    'addon-waterfall-single',
+    'addon-waterfall-second',
+    'addon-chamfered-edges',
+    'addon-squoval',
+    'addon-rounded-corners',
+    'addon-angled-corners'
+  ];
+  const hiddenAddonIds = new Set();
+  if (currentDesign === 'des-round') {
+    edgeAddonIds.forEach(id => hiddenAddonIds.add(id));
+  } else if (currentDesign === 'des-signature') {
+    edgeAddonIds.forEach(id => {
+      if (id !== 'addon-live-edge') hiddenAddonIds.add(id);
+    });
+  }
 
   data.forEach(group => {
+    if (group.options && group.options.length && group.options.every(option => hiddenAddonIds.has(option.id))) {
+      return;
+    }
     const resolveTooltip = (option = {}, subsection = {}) => {
       return option.tooltip || subsection.tooltip || group.tooltip || '';
     };
@@ -203,9 +231,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             }
 
             // Check for addon compatibility with current design
-            const currentDesign = currentState.selections && currentState.selections.design;
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
-              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
             const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
 
@@ -264,7 +291,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             // Check for addon compatibility with current design
             const currentDesign = currentState.selections && currentState.selections.design;
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
-              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+              (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
             const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
 
@@ -288,6 +315,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
       // Options for this group
       if (group.options) {
         group.options.forEach(option => {
+          if (hiddenAddonIds.has(option.id)) return;
           const tooltip = resolveTooltip(option);
           const optionDiv = document.createElement('div');
           optionDiv.className = 'addons-dropdown-option';
@@ -301,21 +329,26 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           checkbox.setAttribute('data-price', option.price || 0);
 
           // Check for addon compatibility with current design
-          const currentDesign = currentState.selections && currentState.selections.design;
           const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
+          const hasSquoval = currentAddons.includes('addon-squoval');
+          const hasLiveEdge = currentAddons.includes('addon-live-edge');
+          const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-angled-corners'));
           const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-rounded-corners'));
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
-            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-cookie');
+            (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
             (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge') || currentAddons.includes('addon-angled-corners'));
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
-            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners'));
+            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || hasLiveEdge || hasWaterfall);
+          const isLiveEdgeIncompatible = option.id === 'addon-live-edge' && hasSquoval;
+          const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
-          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || requiresWaterfallSingle;
-          const isDisabled = group.disabled || option.disabled || isIncompatible;
+          const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle;
+          const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
 
           if (isDisabled) {
             checkbox.disabled = true;
@@ -335,7 +368,11 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             } else if (isChamferedEdgesIncompatible) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, Live Edge, or Angled Corners';
             } else if (isSquovalIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, or Angled Corners';
+              incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge';
+            } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Squoval';
+            } else if (isLiveEdgeRequired) {
+              incompatibilityTooltip = 'Included with Slab design';
             }
             if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
           }
