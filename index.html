@@ -4,6 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WoodLab Configurator Mockup</title>
+  <script>
+    (function () {
+      const storageKey = 'wl-theme-mode';
+      const storedMode = (() => {
+        try {
+          return localStorage.getItem(storageKey);
+        } catch (e) {
+          return null;
+        }
+      })();
+      const mode = storedMode === 'light' || storedMode === 'dark' || storedMode === 'system'
+        ? storedMode
+        : 'system';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const resolvedTheme = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
+      document.documentElement.setAttribute('data-theme-mode', mode);
+      document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+    })();
+  </script>
   <!-- Tailwind CSS via CDN for rapid prototyping -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet" onerror="this.onerror=null;this.href='https://unpkg.com/tailwindcss@3.4.1/dist/tailwind.min.css';">
   <!-- Google Fonts: Assistant for modern look -->

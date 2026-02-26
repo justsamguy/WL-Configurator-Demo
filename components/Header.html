@@ -1,11 +1,20 @@
 <!-- App Header (fragment injected into #app-header) -->
+<div class="header-theme-slot">
+  <button id="theme-cycle-toggle" class="theme-cycle-toggle" type="button" data-theme-mode="system" aria-label="Theme mode: System. Activate to switch to Light." aria-describedby="theme-toggle-status">
+    <span class="theme-cycle-track" aria-hidden="true">
+      <span class="theme-cycle-thumb"></span>
+    </span>
+    <span id="theme-cycle-label" class="theme-cycle-label">System</span>
+  </button>
+  <span id="theme-toggle-status" class="sr-only" aria-live="polite" aria-atomic="true"></span>
+</div>
 <!-- Logo Section -->
 <div class="flex justify-center items-center mb-4 w-full">
   <!-- Use official brand asset from assets/icons for logo (icons are the source of web-ready PNGs) -->
   <img src="assets/icons/WoodLab_logo_-_official.png" alt="WoodLab Logo" title="WoodLab" class="h-8 w-auto object-contain site-logo" />
 </div>
 <!-- Navigation Section -->
-<nav id="stage-bar" class="flex flex-row items-center justify-center space-x-4">
+<nav id="stage-bar" class="flex flex-row items-center justify-center">
   <!-- Eight stages: Models, Designs, Tabletop, Finish, Dimensions, Legs, Addons, Summary & Export -->
   <button class="stage-btn btn-tertiary" data-stage-index="0" aria-current="step">Models</button>
   <button class="stage-btn btn-tertiary" data-stage-index="1" disabled>Designs</button>

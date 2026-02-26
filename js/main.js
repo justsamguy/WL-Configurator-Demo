@@ -13,6 +13,137 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
+const THEME_STORAGE_KEY = 'wl-theme-mode';
+const THEME_MODES = ['system', 'light', 'dark'];
+let systemThemeMediaQuery = null;
+let systemThemeListenerBound = false;
+
+function normalizeThemeMode(mode) {
+  return THEME_MODES.includes(mode) ? mode : 'system';
+}
+
+function getStoredThemeMode() {
+  try {
+    return normalizeThemeMode(localStorage.getItem(THEME_STORAGE_KEY));
+  } catch (e) {
+    return 'system';
+  }
+}
+
+function saveThemeMode(mode) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch (e) {
+    // ignore storage failures in private browsing / strict privacy modes
+  }
+}
+
+function resolveThemeMode(mode) {
+  const normalizedMode = normalizeThemeMode(mode);
+  if (normalizedMode !== 'system') return normalizedMode;
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+}
+
+function getNextThemeMode(mode) {
+  const normalizedMode = normalizeThemeMode(mode);
+  const currentIndex = THEME_MODES.indexOf(normalizedMode);
+  const nextIndex = (currentIndex + 1) % THEME_MODES.length;
+  return THEME_MODES[nextIndex];
+}
+
+function formatThemeModeLabel(mode) {
+  if (mode === 'system') return 'System';
+  if (mode === 'light') return 'Light';
+  if (mode === 'dark') return 'Dark';
+  return 'System';
+}
+
+function updateThemeToggleUI(mode, resolvedTheme) {
+  const button = document.getElementById('theme-cycle-toggle');
+  const label = document.getElementById('theme-cycle-label');
+  if (!button) return;
+  const nextMode = getNextThemeMode(mode);
+  const modeLabel = formatThemeModeLabel(mode);
+  const nextModeLabel = formatThemeModeLabel(nextMode);
+
+  button.dataset.themeMode = mode;
+  button.dataset.resolvedTheme = resolvedTheme;
+  button.setAttribute('aria-label', `Theme mode: ${modeLabel}. Activate to switch to ${nextModeLabel}.`);
+  button.setAttribute('title', `Theme: ${modeLabel} (next: ${nextModeLabel})`);
+
+  if (label) {
+    label.textContent = mode === 'system'
+      ? `${modeLabel} (${formatThemeModeLabel(resolvedTheme)})`
+      : modeLabel;
+  }
+}
+
+function announceThemeStatus(mode, resolvedTheme) {
+  const status = document.getElementById('theme-toggle-status');
+  if (!status) return;
+  const modeLabel = formatThemeModeLabel(mode);
+  if (mode === 'system') {
+    status.textContent = `Theme set to System. Using ${formatThemeModeLabel(resolvedTheme)} appearance.`;
+    return;
+  }
+  status.textContent = `Theme set to ${modeLabel}.`;
+}
+
+function applyThemeMode(mode, { persist = false, announce = false } = {}) {
+  const normalizedMode = normalizeThemeMode(mode);
+  const resolvedTheme = resolveThemeMode(normalizedMode);
+
+  document.documentElement.setAttribute('data-theme-mode', normalizedMode);
+  document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+  if (document.body) {
+    document.body.setAttribute('data-theme-mode', normalizedMode);
+    document.body.setAttribute('data-resolved-theme', resolvedTheme);
+  }
+
+  updateThemeToggleUI(normalizedMode, resolvedTheme);
+  if (persist) saveThemeMode(normalizedMode);
+  if (announce) announceThemeStatus(normalizedMode, resolvedTheme);
+}
+
+function initThemeToggle() {
+  const initialMode = getStoredThemeMode();
+  applyThemeMode(initialMode);
+
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    if (!systemThemeMediaQuery) {
+      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    }
+    if (!systemThemeListenerBound) {
+      const handleSystemThemeChange = () => {
+        const currentMode = normalizeThemeMode(document.documentElement.getAttribute('data-theme-mode'));
+        if (currentMode === 'system') applyThemeMode('system');
+      };
+      if (typeof systemThemeMediaQuery.addEventListener === 'function') {
+        systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
+      } else if (typeof systemThemeMediaQuery.addListener === 'function') {
+        systemThemeMediaQuery.addListener(handleSystemThemeChange);
+      }
+      systemThemeListenerBound = true;
+    }
+  }
+
+  const button = document.getElementById('theme-cycle-toggle');
+  if (!button || button.dataset.listenerBound === 'true') return;
+
+  button.addEventListener('click', () => {
+    const currentMode = normalizeThemeMode(document.documentElement.getAttribute('data-theme-mode'));
+    const nextMode = getNextThemeMode(currentMode);
+    applyThemeMode(nextMode, { persist: true, announce: true });
+  });
+  button.dataset.listenerBound = 'true';
+}
+
+if (typeof document !== 'undefined') {
+  applyThemeMode(getStoredThemeMode());
+}
 
 if (typeof window !== 'undefined') {
   window.exportConfig = async () => {
@@ -1027,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ModelSelection is loaded lazily into the main stage-panel by the stage manager when
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
+  initThemeToggle();
 
   // Initialize viewer and controls after MainContent is loaded
   await initViewer();
@@ -1078,7 +1210,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
+    const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoFlips } = await import('./stageRenderer.js');
+    initOptionCardInfoFlips(document.body);
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
@@ -1236,6 +1369,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 536');
+console.log('Edit ver: 541');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

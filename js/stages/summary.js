@@ -1059,23 +1059,24 @@ async function writeClipboardText(text) {
   if (!ok) throw new Error('Clipboard copy failed');
 }
 
-function setCopyStatus(message, isError = false) {
-  const statusEl = document.getElementById('config-copy-status');
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.classList.toggle('is-error', isError);
-  statusEl.hidden = !message;
+function setButtonFeedback(btn, successText) {
+  const originalText = btn.textContent.trim();
+  btn.textContent = successText;
+  btn.classList.add('btn-success');
+  setTimeout(() => {
+    btn.classList.remove('btn-success');
+    setTimeout(() => { btn.textContent = originalText; }, 300);
+  }, 2000);
 }
 
 async function copyConfigMarkdown() {
-  setCopyStatus('');
+  const btn = document.getElementById('copy-config');
   try {
     const markdown = await buildExportMarkdown(state, loadData);
     await writeClipboardText(markdown);
-    setCopyStatus('Configuration copied as markdown.');
+    if (btn) setButtonFeedback(btn, 'Copied ✓');
   } catch (e) {
     log.warn('Copy configuration failed', e);
-    setCopyStatus('Unable to copy configuration. Please try again.', true);
   }
 }
 
@@ -1833,6 +1834,8 @@ async function exportPdf() {
     now.getHours().toString().padStart(2, '0') +
     now.getMinutes().toString().padStart(2, '0');
   doc.save(`woodlab-summary-${timestamp}.pdf`);
+  const expBtn = document.getElementById('export-pdf');
+  if (expBtn) setButtonFeedback(expBtn, 'Download Complete ✓');
   pdfLog.info('Export finished');
   console.log('[PDF Export] Export complete');
 }
