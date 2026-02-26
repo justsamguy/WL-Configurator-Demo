@@ -490,10 +490,11 @@ async function setStage(index, options = {}) {
   // setTimeout(() => { // REMOVED: This causes infinite loop when combined with setStage calls
     try {
       if (managerState.current === 2) {
-        // Materials stage: check if both material and color are selected
+        // Materials stage: check if material, color, and color gradient are selected
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        markCompleted(2, !!(hasMaterial && hasColor));
+        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
+        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
       } else if (managerState.current === 3) {
         // Finish stage: check if coating, sheen, and tint are all selected
         const hasCoating = !!(appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
@@ -623,10 +624,11 @@ export function initStageManager() {
       
       // For all other stages, validate completion based on current stage and update accordingly
       if (managerState.current === 2) {
-        // Materials stage (index 2): require both material and color
+        // Materials stage (index 2): require material, color, and color gradient
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        markCompleted(2, !!(hasMaterial && hasColor));
+        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
+        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
       } else if (managerState.current === 3) {
         // Finish stage (index 3): require coating, sheen, and tint
         const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));

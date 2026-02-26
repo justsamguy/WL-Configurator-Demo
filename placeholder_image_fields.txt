@@ -4,3 +4,6 @@
 
 data/addons.json :: Waterfall Edge > addon-waterfall-art :: image :: assets/images/model1_placeholder.png
 data/addons.json :: Lower Shelf :: image :: assets/images/model1_placeholder.png
+data/color-gradients.json :: color-gradient-01 :: image :: assets/images/model1_placeholder.png
+data/color-gradients.json :: color-gradient-02 :: image :: assets/images/model1_placeholder.png
+data/color-gradients.json :: color-gradient-03 :: image :: assets/images/model1_placeholder.png

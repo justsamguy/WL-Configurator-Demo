@@ -843,6 +843,19 @@ document.addEventListener('custom-color-note-updated', (ev) => {
   });
 });
 
+document.addEventListener('custom-color-gradient-note-updated', (ev) => {
+  const value = ev.detail && typeof ev.detail.value === 'string' ? ev.detail.value : '';
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        customColorGradientNote: value
+      }
+    }
+  });
+});
+
 // Handle "none" leg selection - clear dependent selections without dispatching events with null ids
 document.addEventListener('legs-none-selected', async (ev) => {
   try {
@@ -1095,6 +1108,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
     }
 
+    const colorGradientOptionsRoot = document.getElementById('color-gradient-options');
+    if (colorGradientOptionsRoot) {
+      const colorGradients = await loadData('data/color-gradients.json');
+      if (colorGradients) renderOptionCards(colorGradientOptionsRoot, colorGradients, { category: 'color-gradient' });
+    }
+
     // Render designs stage with presets + layouts filtered by selected model
     await renderDesignOptionsForModel(state.selections && state.selections.model);
 
@@ -1217,6 +1236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 533');
+console.log('Edit ver: 536');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

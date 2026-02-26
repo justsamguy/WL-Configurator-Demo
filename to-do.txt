@@ -1,11 +1,4 @@
 
-
-
-in the summary/pdf, change the the height to say: <inches>" (<Standard/Bartop/Custom> Height).
-add a corner/rounding spec to the pdf technical section. make that spec 
-re-write all of the tile descriptions
-add color gradient as it's own section after the color option with 3 options: dark to light, light center, and custom (with a custom input field, just like the custom color tile)
-
 add effects to the website to make it feel more polished:
 Add an info ⓘ button to the right side of each tile's title. when this button is selected, use a card-flip transition on the tile to reveal "the other side", where the description is centered horizontally and vertically in the tile with the only other element being an X button in the top left to return to the front view of the tile. this does not apply to addons. For the custom resin color tile in tabletop, instead of the infobutton the card flips over when the tile is selected to reveal the custom input. it flips back if de-selected.
 change the feedback of the copy configuration button to fade into green with the message "Copied ✓" and then back. remove the text that pops up below it. make the same animation for the download PDF button "Download Complete ✓".

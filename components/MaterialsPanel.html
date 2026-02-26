@@ -1,7 +1,8 @@
 <!-- Materials panel: only option containers (stage-specific help moved to components/StageInfo.html) -->
 <div id="materials-panel" class="">
   <div id="materials-root">
-    <div class="materials-heading-row">
+    <div class="materials-heading-row flex items-center gap-2 mt-6 mb-2">
+      <h4 class="text-sm font-semibold">Wood</h4>
       <button
         type="button"
         class="tooltip materials-help-link"
@@ -14,7 +15,6 @@
         We select wood to match the size of your project and budget. We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" option.
       </span>
     </div>
-    <h4 class="text-sm font-semibold mb-2 mt-6">Wood</h4>
     <div id="materials-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
       <!-- Option cards are rendered at runtime by js/main.js -> stageRenderer.renderOptionCards -->
     </div>
@@ -22,6 +22,11 @@
     <h4 class="text-sm font-semibold mb-2 mt-6">Color</h4>
     <div id="color-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
       <!-- Color option cards rendered at runtime from data/colors.json via main.js -> stageRenderer.renderOptionCards -->
+    </div>
+
+    <h4 class="text-sm font-semibold mb-2 mt-6">Color Gradient</h4>
+    <div id="color-gradient-options" class="stage-options-grid mt-3" aria-live="polite" aria-atomic="true">
+      <!-- Color gradient option cards rendered at runtime from data/color-gradients.json via main.js -> stageRenderer.renderOptionCards -->
     </div>
   </div>
 </div>
