@@ -1,11 +1,7 @@
 
 
-Set app ver to 1.0 in console and github
 
-add rule: when adding new features or options, make sure the technical section of the pdf is also updated to reflect the changes. If new specs are needed, do everything else in the task first and then ask for technical specs at the end.
 
-add addon for shelf, only visible with coffee model and only enabled when square legs are selected, costs $1500.
-add waterfall art option in addon, costs 2500.
 reorder add-ons based on the model
 in the summary/pdf, change the the height to say <inches>" (<Standard/Bartop/Custom> Height).
 add a corner/rounding spec to the pdf technical section
@@ -21,6 +17,14 @@ in the space under the pricing bar, instead of opaque white, make it transparent
 
 convert images to webp versions
 
-branch and code mobile website
+Set app ver to 1.1
+
+
+branch? and code mobile website
+
+Set app ver to 1.2
+
 
 fork and rebuild entire app to use react code
+
+Set app ver to 2.0

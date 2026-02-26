@@ -434,6 +434,10 @@ function updateEdgeAddonCompatibility(appState = state) {
 }
 
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
+const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
+const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
+const LOWER_SHELF_DISABLED_TOOLTIP = 'Select Squared legs to enable';
 const EDGE_CORNER_ADDONS = [
   'addon-live-edge',
   'addon-waterfall-single',
@@ -443,6 +447,69 @@ const EDGE_CORNER_ADDONS = [
   'addon-rounded-corners',
   'addon-angled-corners'
 ];
+
+function isLowerShelfAddonContextValid(appState) {
+  const modelId = appState && appState.selections && appState.selections.model;
+  const legId = appState && appState.selections && appState.selections.options && appState.selections.options.legs;
+  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID && legId === LOWER_SHELF_COMPATIBLE_LEG_ID;
+}
+
+function stripInvalidLowerShelfAddon(appState) {
+  const addons = appState && appState.selections && appState.selections.options && Array.isArray(appState.selections.options.addon)
+    ? appState.selections.options.addon
+    : [];
+  if (!addons.includes(LOWER_SHELF_ADDON_ID)) return false;
+  if (isLowerShelfAddonContextValid(appState)) return false;
+  const nextAddons = addons.filter(id => id !== LOWER_SHELF_ADDON_ID);
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        addon: nextAddons
+      }
+    }
+  });
+  return true;
+}
+
+function updateLowerShelfAddonAvailability(appState) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${LOWER_SHELF_ADDON_ID}"]`);
+  const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${LOWER_SHELF_ADDON_ID}"]`);
+  if (!checkbox || !option) return;
+  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+  const shouldDisable = !isLowerShelfAddonContextValid(appState);
+
+  if (shouldDisable) {
+    checkbox.disabled = true;
+    checkbox.checked = false;
+    checkbox.setAttribute('data-disabled-by', 'lower-shelf');
+    checkbox.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    option.classList.add('disabled');
+    option.classList.remove('selected');
+    option.setAttribute('aria-disabled', 'true');
+    option.setAttribute('data-disabled-by', 'lower-shelf');
+    option.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+  } else if (disabledBy === 'lower-shelf') {
+    checkbox.disabled = false;
+    checkbox.removeAttribute('data-disabled-by');
+    if (checkbox.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+      checkbox.removeAttribute('data-tooltip');
+    }
+    option.classList.remove('disabled');
+    option.removeAttribute('aria-disabled');
+    if (option.getAttribute('data-disabled-by') === 'lower-shelf') {
+      option.removeAttribute('data-disabled-by');
+    }
+    if (option.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+      option.removeAttribute('data-tooltip');
+    }
+  }
+
+  updateAllIndicators();
+}
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
@@ -615,6 +682,21 @@ document.addEventListener('option-selected', async (ev) => {
       log.warn('Failed to update legs options', e);
     }
 
+    try {
+      const addonsRoot = document.getElementById('addons-options');
+      if (addonsRoot) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderAddonsDropdown } = await import('./stageRenderer.js');
+        const addons = await loadData('data/addons.json');
+        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeAddonCompatibility(state);
+        updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
+      }
+    } catch (e) {
+      log.warn('Failed to update addons after model change', e);
+    }
+
     // Re-render design layouts and presets filtered by the selected model
     await renderDesignOptionsForModel(id);
 
@@ -689,9 +771,10 @@ document.addEventListener('option-selected', async (ev) => {
         const { loadData } = await import('./dataLoader.js');
         const { renderAddonsDropdown } = await import('./stageRenderer.js');
         const addons = await loadData('data/addons.json');
-        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      if (addons) renderAddonsDropdown(addonsRoot, addons, state);
         updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
       }
     } catch (e) {
       log.warn('Failed to update addon compatibility after design change', e);
@@ -735,6 +818,10 @@ document.addEventListener('option-selected', async (ev) => {
     const newOptions = { ...state.selections.options, [category]: id };
     // update selections first and then recompute price via computePrice
     setState({ selections: { ...state.selections, options: newOptions } });
+    if (category === 'legs') {
+      stripInvalidLowerShelfAddon(state);
+      updateLowerShelfAddonAvailability(state);
+    }
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
@@ -1067,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (addons) renderAddonsDropdown(addonsRoot, addons, state);
       updateEdgeAddonCompatibility(state);
       updateWaterfallAddonAvailability(state);
+      updateLowerShelfAddonAvailability(state);
     }
   } catch (e) {
     log.warn('Failed to render stage data from JSON files', e);
@@ -1128,6 +1216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 530');
+console.log('Edit ver: 531');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

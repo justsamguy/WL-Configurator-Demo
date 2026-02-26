@@ -76,6 +76,10 @@ export function renderOptionCards(container, data = [], opts = {}) {
 }
 
 const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
+const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
+const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
+const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
+const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
 
 function buildAddonIntro(group = {}) {
   const introWrapper = document.createElement('div');
@@ -103,6 +107,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
   if (!container) return;
   container.innerHTML = '';
   const currentDesign = currentState.selections && currentState.selections.design;
+  const currentModel = currentState.selections && currentState.selections.model;
+  const currentLeg = currentState.selections && currentState.selections.options && currentState.selections.options.legs;
   const edgeAddonIds = [
     'addon-live-edge',
     'addon-waterfall-single',
@@ -122,6 +128,10 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
   }
 
   data.forEach(group => {
+    const hasLowerShelfOption = Array.isArray(group.options) && group.options.some(option => option && option.id === LOWER_SHELF_ADDON_ID);
+    if (hasLowerShelfOption && currentModel !== LOWER_SHELF_COMPATIBLE_MODEL_ID) {
+      return;
+    }
     if (group.options && group.options.length && group.options.every(option => hiddenAddonIds.has(option.id))) {
       return;
     }
@@ -347,7 +357,10 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
           const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
-          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle;
+          const isLowerShelfLegIncompatible = option.id === LOWER_SHELF_ADDON_ID &&
+            currentModel === LOWER_SHELF_COMPATIBLE_MODEL_ID &&
+            currentLeg !== LOWER_SHELF_COMPATIBLE_LEG_ID;
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle || isLowerShelfLegIncompatible;
           const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
 
           if (isDisabled) {
@@ -371,6 +384,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge';
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
+            } else if (isLowerShelfLegIncompatible) {
+              incompatibilityTooltip = LOWER_SHELF_TOOLTIP;
             } else if (isLiveEdgeRequired) {
               incompatibilityTooltip = 'Included with Slab design';
             }

@@ -79,6 +79,7 @@ If the user approves changing a rule, **update this file** to reflect the new ag
 When making a change, keep the repo consistent end-to-end:
 - Update all call sites, imports, event listeners, docs/comments, and any stage/router mappings impacted by the change.
 - If files are moved/renamed, update references everywhere so the app remains functional.
+- When adding new features/options, update the exported PDF’s **Technical** section to reflect the change; if new specs are needed, complete the rest of the task first and then ask for the missing technical specs at the end.
 
 ### Known recent conventions (informational)
 - `applyFinishDefaults(appState)` in `js/stages/finish.js` dispatches `option-selected` events for defaults and does **not** call `setState`.
@@ -105,6 +106,11 @@ If repeated attempts don’t resolve an issue:
 ### TODO/FIXME policy
 - If uncertainty remains and it matters, **ask the user** whether they want a TODO/FIXME left in the code.
 - If the user indicates they’ll revisit later and something actionable is needed, add a clear `TODO:` with a short note.
+
+### Placeholder image tracking (required)
+- Track placeholder-backed image fields in the root file `placeholder_image_fields.txt`.
+- When creating a new image field that uses a placeholder image, add an entry to `placeholder_image_fields.txt`.
+- When replacing a placeholder with a final image, remove that entry from `placeholder_image_fields.txt` if it exists.
 
 ---
 
@@ -145,6 +151,7 @@ After completing any requested edit to the app:
 
 ### UI styling convention
 - For JS-generated UI (e.g., summary lists), prefer stable class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography so styling stays consistent across the app.
+- When using placeholder images for new fields, record them in `placeholder_image_fields.txt` per the workflow rule above.
 
 ### Codebase comment convention
 - Prefer single-sentence inline comments to capture **intent** and/or **what changed**, consistent with the existing codebase style.
