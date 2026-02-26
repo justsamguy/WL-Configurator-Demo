@@ -1,11 +1,6 @@
 
 
 
-
-reorder the displayed add-ons based on the model:
-conference:
-dining:
-coffee:
 in the summary/pdf, change the the height to say: <inches>" (<Standard/Bartop/Custom> Height).
 add a corner/rounding spec to the pdf technical section. make that spec 
 re-write all of the tile descriptions

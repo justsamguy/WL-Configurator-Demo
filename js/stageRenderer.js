@@ -80,6 +80,43 @@ const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
 const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
 const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
+const HIDDEN_ADDON_GROUP_TITLES = new Set(['installation']);
+
+function reorderAddonGroupsForModel(groups = [], modelId = '') {
+  const visibleGroups = groups.filter(group => {
+    const title = (group && group.title ? String(group.title) : '').trim().toLowerCase();
+    return !HIDDEN_ADDON_GROUP_TITLES.has(title);
+  });
+
+  if (!modelId) return visibleGroups;
+
+  const ordered = [...visibleGroups];
+  const moveAfter = (titleToMove, afterTitle) => {
+    const fromIndex = ordered.findIndex(group => group && group.title === titleToMove);
+    const afterIndex = ordered.findIndex(group => group && group.title === afterTitle);
+    if (fromIndex === -1 || afterIndex === -1 || fromIndex === afterIndex + 1) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    const targetAfterIndex = ordered.findIndex(group => group && group.title === afterTitle);
+    ordered.splice(targetAfterIndex + 1, 0, moved);
+  };
+
+  const moveToIndex = (titleToMove, targetIndex) => {
+    const fromIndex = ordered.findIndex(group => group && group.title === titleToMove);
+    if (fromIndex === -1 || fromIndex === targetIndex) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    const clampedIndex = Math.max(0, Math.min(targetIndex, ordered.length));
+    ordered.splice(clampedIndex, 0, moved);
+  };
+
+  if (modelId === 'mdl-conference') {
+    moveAfter('Glass Top', 'Tech');
+    moveAfter('Waterfall Edge', 'Glass Top');
+  } else if (modelId === 'mdl-dining') {
+    moveToIndex('Custom River Design', 1); // Keep expedited at the top.
+  }
+
+  return ordered;
+}
 
 function buildAddonIntro(group = {}) {
   const introWrapper = document.createElement('div');
@@ -127,7 +164,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     });
   }
 
-  data.forEach(group => {
+  const orderedGroups = reorderAddonGroupsForModel(Array.isArray(data) ? data : [], currentModel);
+
+  orderedGroups.forEach(group => {
     const hasLowerShelfOption = Array.isArray(group.options) && group.options.some(option => option && option.id === LOWER_SHELF_ADDON_ID);
     if (hasLowerShelfOption && currentModel !== LOWER_SHELF_COMPATIBLE_MODEL_ID) {
       return;
