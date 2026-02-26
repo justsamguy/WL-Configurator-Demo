@@ -4,7 +4,7 @@ const log = createLogger('Icon');
 
 // js/ui/icon.js
 export async function loadIcon(element, iconName, title = '') {
-    const iconBaseUrl = 'assets/icons/'; // Local path as per project rules
+    const iconBaseUrl = 'assets/brand/icons/'; // Local path as per project rules
     const iconUrl = `${iconBaseUrl}${iconName}.svg`;
 
     try {

@@ -1081,7 +1081,7 @@ async function copyConfigMarkdown() {
 }
 
 async function loadLogoDataUrl() {
-  const logoPath = 'assets/icons/WoodLab_logo_-_official.png';
+  const logoPath = 'assets/brand/icons/WoodLab_logo_-_official.png';
   try {
     const response = await fetch(logoPath);
     if (!response.ok) throw new Error(`Logo fetch failed: ${response.status}`);
