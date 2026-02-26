@@ -211,6 +211,7 @@ async function applyDesignPreset(presetId, selectedDesignId = null) {
         updateEdgeProfileAddonAvailability(state);
         updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
       }
       try {
         const addonsStage = await import('./stages/addons.js');
@@ -1216,6 +1217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 531');
+console.log('Edit ver: 532');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

@@ -386,6 +386,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               incompatibilityTooltip = 'Not compatible with Squoval';
             } else if (isLowerShelfLegIncompatible) {
               incompatibilityTooltip = LOWER_SHELF_TOOLTIP;
+              checkbox.setAttribute('data-disabled-by', 'lower-shelf');
+              optionDiv.setAttribute('data-disabled-by', 'lower-shelf');
             } else if (isLiveEdgeRequired) {
               incompatibilityTooltip = 'Included with Slab design';
             }
