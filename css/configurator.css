@@ -966,13 +966,12 @@ header .flex.justify-center.items-center {
 
 /* Floating footer bar for price preview and Next action */
 #app-footer {
-  --footer-bottom-gap: var(--footer-glass-gap, 1.25rem);
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 45;
-  padding: 0.75rem 0 var(--footer-bottom-gap);
+  padding: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -980,21 +979,6 @@ header .flex.justify-center.items-center {
   box-sizing: border-box;
   max-width: 100%;
   isolation: isolate;
-}
-
-#app-footer::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--footer-bottom-gap);
-  z-index: 0;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.04) 0%, rgba(248, 250, 252, 0.16) 100%);
-  border-top: 1px solid rgba(148, 163, 184, 0.24);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  pointer-events: none;
 }
 
 .footer-bar {
@@ -2059,8 +2043,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
-  --footer-glass-gap: 1.25rem; /* Keep this in sync with #app-footer bottom glass strip */
-  --footer-reserved-height: calc(var(--footer-height) - var(--footer-glass-gap)); /* Reserve only the opaque bar so the glass gap overlays content */
+  --footer-reserved-height: 0px; /* Allow content to reach the viewport bottom behind the fixed footer */
   --nav-offset: calc(var(--header-height) + var(--stage-bar-height));
   /* Spacing and typographic tokens (merged from later definitions) */
   --space-xs: 6px;
@@ -2257,10 +2240,6 @@ body.show-model-tiles #stage-bar {
     padding: 0;
     background: #ffffff;
     pointer-events: auto;
-  }
-
-  #app-footer::after {
-    display: none;
   }
 
   .footer-bar {
@@ -4351,11 +4330,6 @@ body[data-resolved-theme="dark"] .preview-snapshot,
 body[data-resolved-theme="dark"] .oversize-banner {
   background-color: #111827;
   border-color: #334155;
-}
-
-body[data-resolved-theme="dark"] #app-footer::after {
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.26) 100%);
-  border-top-color: rgba(148, 163, 184, 0.2);
 }
 
 body[data-resolved-theme="dark"] .app-loading {
