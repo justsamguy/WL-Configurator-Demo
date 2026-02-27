@@ -171,6 +171,93 @@ if (typeof window !== 'undefined') {
   };
 }
 
+function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
+  if (!dropdown) return;
+  const { animate = true } = opts;
+  const header = dropdown.querySelector('.stage-subsection-header');
+  const content = dropdown.querySelector('.stage-subsection-content');
+  if (!header || !content) return;
+
+  const isExpanded = dropdown.classList.contains('expanded');
+  if (isExpanded === shouldExpand) return;
+
+  header.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
+
+  if (shouldExpand) {
+    dropdown.classList.add('expanded');
+    content.hidden = false;
+    if (!animate) {
+      content.style.maxHeight = 'none';
+      return;
+    }
+
+    content.style.maxHeight = '0px';
+    const targetHeight = content.scrollHeight;
+    const expandFrame = () => {
+      content.style.maxHeight = `${targetHeight}px`;
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(expandFrame);
+    else expandFrame();
+
+    const onExpandTransitionEnd = (ev) => {
+      if (ev.propertyName !== 'max-height') return;
+      if (dropdown.classList.contains('expanded')) {
+        content.style.maxHeight = 'none';
+      }
+      content.removeEventListener('transitionend', onExpandTransitionEnd);
+    };
+    content.addEventListener('transitionend', onExpandTransitionEnd);
+    return;
+  }
+
+  if (!animate) {
+    dropdown.classList.remove('expanded');
+    content.style.maxHeight = '0px';
+    content.hidden = true;
+    return;
+  }
+
+  content.style.maxHeight = `${content.scrollHeight}px`;
+  const collapseFrame = () => {
+    dropdown.classList.remove('expanded');
+    content.style.maxHeight = '0px';
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(collapseFrame);
+  else collapseFrame();
+
+  const onCollapseTransitionEnd = (ev) => {
+    if (ev.propertyName !== 'max-height') return;
+    if (!dropdown.classList.contains('expanded')) {
+      content.hidden = true;
+    }
+    content.removeEventListener('transitionend', onCollapseTransitionEnd);
+  };
+  content.addEventListener('transitionend', onCollapseTransitionEnd);
+}
+
+function initStageSubsectionDropdowns(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  const dropdowns = root.querySelectorAll('.stage-subsection-dropdown');
+  dropdowns.forEach((dropdown, index) => {
+    if (dropdown.dataset.dropdownBound === 'true') return;
+    const header = dropdown.querySelector('.stage-subsection-header');
+    const content = dropdown.querySelector('.stage-subsection-content');
+    if (!header || !content) return;
+
+    if (!content.id) content.id = `stage-subsection-content-${index + 1}`;
+    header.setAttribute('aria-controls', content.id);
+    dropdown.dataset.dropdownBound = 'true';
+
+    const startExpanded = dropdown.dataset.defaultExpanded === 'true';
+    setStageSubsectionExpanded(dropdown, startExpanded, { animate: false });
+
+    header.addEventListener('click', () => {
+      const shouldExpand = !dropdown.classList.contains('expanded');
+      setStageSubsectionExpanded(dropdown, shouldExpand, { animate: true });
+    });
+  });
+}
+
 /**
  * Filter designs by model compatibility
  *
@@ -1170,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
   initThemeToggle();
+  initStageSubsectionDropdowns(document);
 
   // Initialize viewer and controls after MainContent is loaded
   await initViewer();
@@ -1380,6 +1468,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 551');
+console.log('Edit ver: 554');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

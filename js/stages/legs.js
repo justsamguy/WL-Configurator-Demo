@@ -241,20 +241,18 @@ export function restoreFromState(appState) {
  * If "leg-none" is selected, hide both sections; otherwise show them
  */
 export function updateLegsUIVisibility(legId) {
+  const tubeSizeSubsection = document.getElementById('legs-subsection-tube-size');
+  const legFinishSubsection = document.getElementById('legs-subsection-leg-finish');
   const tubeSizeOptions = document.querySelector('#tube-size-options');
   const legFinishOptions = document.querySelector('#leg-finish-options');
-  
-  // Find the h4 headings before these containers
-  const tubeSizeHeading = tubeSizeOptions?.previousElementSibling;
-  const legFinishHeading = legFinishOptions?.previousElementSibling;
   const isSignatureDesign = state.selections && state.selections.design === 'des-signature';
   
   if (legId === 'leg-none') {
-    // Hide tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) tubeSizeHeading.style.display = 'none';
-    if (tubeSizeOptions) tubeSizeOptions.style.display = 'none';
-    if (legFinishHeading) legFinishHeading.style.display = 'none';
-    if (legFinishOptions) legFinishOptions.style.display = 'none';
+    // Hide tube size and leg finish sections when no leg style is selected.
+    if (tubeSizeSubsection) tubeSizeSubsection.style.display = 'none';
+    if (legFinishSubsection) legFinishSubsection.style.display = 'none';
+    if (!tubeSizeSubsection && tubeSizeOptions) tubeSizeOptions.style.display = 'none';
+    if (!legFinishSubsection && legFinishOptions) legFinishOptions.style.display = 'none';
     // Clear any existing selections when "none" is chosen
     document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
@@ -263,11 +261,11 @@ export function updateLegsUIVisibility(legId) {
       c.setAttribute('aria-pressed', 'false');
     });
   } else {
-    // Show tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) tubeSizeHeading.style.display = isSignatureDesign ? 'none' : '';
-    if (tubeSizeOptions) tubeSizeOptions.style.display = isSignatureDesign ? 'none' : '';
-    if (legFinishHeading) legFinishHeading.style.display = '';
-    if (legFinishOptions) legFinishOptions.style.display = '';
+    // Show tube size and leg finish sections for compatible leg choices.
+    if (tubeSizeSubsection) tubeSizeSubsection.style.display = isSignatureDesign ? 'none' : '';
+    if (legFinishSubsection) legFinishSubsection.style.display = '';
+    if (!tubeSizeSubsection && tubeSizeOptions) tubeSizeOptions.style.display = isSignatureDesign ? 'none' : '';
+    if (!legFinishSubsection && legFinishOptions) legFinishOptions.style.display = '';
   }
 }
 

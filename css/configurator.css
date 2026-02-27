@@ -3483,6 +3483,103 @@ body.stage-1 #stage-panel-1 > .flex {
   text-align: left;
 }
 
+/* Shared subsection dropdown styles for Tabletop, Finish, and Legs stages */
+.stage-subsection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stage-subsection-dropdown {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.stage-subsection-dropdown:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stage-subsection-dropdown:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.stage-subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  cursor: pointer;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  min-height: 3.5rem;
+}
+
+.stage-subsection-header:hover {
+  background-color: #f9fafb;
+}
+
+.stage-subsection-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.stage-subsection-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.stage-subsection-chevron {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.stage-subsection-dropdown.expanded .stage-subsection-chevron {
+  transform: rotate(180deg);
+  color: #2563eb;
+}
+
+.stage-subsection-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.stage-subsection-content[hidden] {
+  display: none;
+}
+
+.stage-subsection-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.stage-subsection-help-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#materials-root .stage-subsection-body .stage-options-grid {
+  margin-top: 0;
+}
+
 /* Addons dropdown list styles */
 .addons-dropdown-list {
   display: flex;
@@ -4238,6 +4335,8 @@ body[data-resolved-theme="dark"] .summary-shipping-section,
 body[data-resolved-theme="dark"] .summary-shipping-body,
 body[data-resolved-theme="dark"] .addons-dropdown-tile,
 body[data-resolved-theme="dark"] .addons-dropdown-content,
+body[data-resolved-theme="dark"] .stage-subsection-dropdown,
+body[data-resolved-theme="dark"] .stage-subsection-content,
 body[data-resolved-theme="dark"] .addons-dropdown-option,
 body[data-resolved-theme="dark"] .addons-tile,
 body[data-resolved-theme="dark"] .addons-dropdown-select,
@@ -4313,6 +4412,7 @@ body[data-resolved-theme="dark"] .addons-dropdown-price,
 body[data-resolved-theme="dark"] .addons-dropdown-option-label,
 body[data-resolved-theme="dark"] .addons-tile-label,
 body[data-resolved-theme="dark"] .addons-subsection-title,
+body[data-resolved-theme="dark"] .stage-subsection-title,
 body[data-resolved-theme="dark"] .sheen-tile .title,
 body[data-resolved-theme="dark"] .addons-cable-length-label,
 body[data-resolved-theme="dark"] .designs-stage-heading,
@@ -4328,6 +4428,7 @@ body[data-resolved-theme="dark"] .summary-tax-row,
 body[data-resolved-theme="dark"] .summary-shipping-section:not(.is-collapsed) .summary-shipping-toggle,
 body[data-resolved-theme="dark"] .summary-tooltip-row + .summary-tooltip-row,
 body[data-resolved-theme="dark"] .addons-subsection,
+body[data-resolved-theme="dark"] .stage-subsection-content,
 body[data-resolved-theme="dark"] .action-row,
 body[data-resolved-theme="dark"] .summary-tooltip .tooltip-header,
 body[data-resolved-theme="dark"] .summary-tooltip .tooltip-footer,
@@ -4400,12 +4501,19 @@ body[data-resolved-theme="dark"] .summary-shipping-switch-input:disabled ~ .summ
 }
 
 body[data-resolved-theme="dark"] .addons-dropdown-header:hover,
+body[data-resolved-theme="dark"] .stage-subsection-header:hover,
 body[data-resolved-theme="dark"] .addons-dropdown-option:hover {
   background-color: #1f2937;
 }
 
-body[data-resolved-theme="dark"] .addons-dropdown-chevron {
+body[data-resolved-theme="dark"] .addons-dropdown-chevron,
+body[data-resolved-theme="dark"] .stage-subsection-chevron {
   color: #94a3b8;
+}
+
+body[data-resolved-theme="dark"] .option-card-info-trigger,
+body[data-resolved-theme="dark"] .option-card-info-close {
+  color: #f8fafc;
 }
 
 body[data-resolved-theme="dark"] .addons-dropdown-option.selected,
@@ -4499,8 +4607,8 @@ body[data-resolved-theme="dark"] #viewer-controls svg {
 }
 
 body[data-resolved-theme="dark"] #stage-bar .stage-btn[disabled] {
-  background-color: #334155;
-  color: #334155;
+  background-color: #0f172a;
+  color: #64748b;
 }
 
 body[data-resolved-theme="dark"] #stage-bar .stage-btn:not([aria-current="step"]):not([disabled]) {
@@ -4526,8 +4634,8 @@ body[data-resolved-theme="dark"] .btn-tertiary:hover {
 }
 
 body[data-resolved-theme="dark"] .nav-btn:disabled {
-  background-color: #334155;
-  color: #334155;
+  background-color: #0f172a;
+  color: #64748b;
 }
 
 body[data-resolved-theme="dark"] .nav-btn:not([disabled]) {
@@ -4541,8 +4649,8 @@ body[data-resolved-theme="dark"] .nav-btn:not([disabled]):hover {
 }
 
 body[data-resolved-theme="dark"] #app-footer .footer-next-btn[disabled] {
-  background-color: #334155;
-  color: #334155;
+  background-color: #0f172a;
+  color: #64748b;
 }
 
 body[data-resolved-theme="dark"] #app-footer .footer-next-btn:not([disabled]) {
