@@ -209,27 +209,78 @@ function initFooterLiquidGlass() {
     setGlassVar('--footer-glass-ambient-alpha', resolvedTheme === 'dark' ? '0.33' : '0.22');
   };
 
+  const scrollSources = new Set();
+  const bindScrollSource = (element, handler) => {
+    if (!element || element.dataset.glassScrollBound === 'true') return;
+    element.addEventListener('scroll', handler, { passive: true });
+    element.dataset.glassScrollBound = 'true';
+  };
+  const syncScrollSources = () => {
+    scrollSources.clear();
+    const appMain = document.getElementById('app-main');
+    const appSidebar = document.getElementById('app-sidebar');
+    if (appMain) scrollSources.add(appMain);
+    if (appSidebar) scrollSources.add(appSidebar);
+    document.querySelectorAll('.stage-panel, body > #stage-panel-0').forEach((element) => scrollSources.add(element));
+  };
+
+  const getScrollSignal = () => {
+    let signal = window.scrollY || window.pageYOffset || 0;
+    scrollSources.forEach((element) => {
+      if (!element || !element.isConnected) return;
+      const maxScrollable = element.scrollHeight - element.clientHeight;
+      if (maxScrollable <= 1) return;
+      signal += element.scrollTop || 0;
+    });
+    return signal;
+  };
+
   const updateViewportSheen = () => {
     const viewportHeight = Math.max(1, window.innerHeight || 1);
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    const ratio = ((scrollY % viewportHeight) / viewportHeight);
+    const ratio = ((getScrollSignal() % viewportHeight) / viewportHeight);
     const sheenPosition = 45 + (ratio * 24);
     setGlassVar('--footer-glass-sheen', `${sheenPosition.toFixed(1)}%`);
   };
 
+  const refreshGlassContext = () => {
+    syncScrollSources();
+    updateAmbientTint();
+    updateViewportSheen();
+    scrollSources.forEach((element) => bindScrollSource(element, updateViewportSheen));
+  };
+  let refreshScheduled = false;
+  const scheduleGlassContextRefresh = () => {
+    if (refreshScheduled) return;
+    refreshScheduled = true;
+    const run = () => {
+      refreshScheduled = false;
+      refreshGlassContext();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+    else setTimeout(run, 0);
+  };
+
+  syncScrollSources();
+
   footerBar.addEventListener('pointermove', (event) => updatePointerState(event.clientX, event.clientY));
   footerBar.addEventListener('pointerdown', (event) => updatePointerState(event.clientX, event.clientY));
   footerBar.addEventListener('pointerleave', resetPointerState);
-  window.addEventListener('resize', updateAmbientTint, { passive: true });
+  window.addEventListener('resize', () => {
+    refreshGlassContext();
+  }, { passive: true });
   window.addEventListener('scroll', updateViewportSheen, { passive: true });
+  scrollSources.forEach((element) => bindScrollSource(element, updateViewportSheen));
 
   if (typeof MutationObserver === 'function') {
-    const observer = new MutationObserver(() => updateAmbientTint());
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-resolved-theme'] });
+    const observer = new MutationObserver(() => scheduleGlassContextRefresh());
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-resolved-theme', 'class'] });
+    const appMain = document.getElementById('app-main');
+    const appSidebar = document.getElementById('app-sidebar');
+    if (appMain) observer.observe(appMain, { childList: true, subtree: true });
+    if (appSidebar) observer.observe(appSidebar, { childList: true, subtree: true });
   }
 
-  updateAmbientTint();
-  updateViewportSheen();
+  refreshGlassContext();
 }
 
 if (typeof document !== 'undefined') {
@@ -1549,6 +1600,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 561');
+console.log('Edit ver: 565');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

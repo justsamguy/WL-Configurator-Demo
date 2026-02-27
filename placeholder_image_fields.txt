@@ -8,3 +8,11 @@ data/color-gradients.json :: color-gradient-01 :: image :: assets/images/model1_
 data/color-gradients.json :: color-gradient-02 :: image :: assets/images/model1_placeholder.png
 data/color-gradients.json :: color-gradient-04 :: image :: assets/images/model1_placeholder.png
 data/color-gradients.json :: color-gradient-03 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-coat-02 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-coat-01 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-tint-01 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-tint-02 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-tint-03 :: image :: assets/images/model1_placeholder.png
+data/finish.json :: fin-tint-04 :: image :: assets/images/model1_placeholder.png
+js/stages/dimensions.js :: customTile.innerHTML image :: image :: assets/images/model1_placeholder.png
+js/stages/dimensions.js :: heights[id=custom] :: image :: assets/images/model1_placeholder.png

@@ -6,6 +6,7 @@ import { state } from '../state.js';
 import { createLogger } from '../logger.js';
 
 const log = createLogger('Dimensions');
+const OPTION_PLACEHOLDER_IMAGE = 'assets/images/model1_placeholder.png';
 
 let dimensionsData = null;
 let currentDimensions = {
@@ -548,6 +549,7 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
+    <img src="${OPTION_PLACEHOLDER_IMAGE}" alt="Custom dimensions" class="w-full h-24 object-cover rounded-t mb-2">
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;
@@ -732,7 +734,7 @@ function initHeightButtons() {
   const heights = [
     { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0, image: 'assets/images/Generated Sitting Height.png' },
     { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120, image: 'assets/images/Generated Standing Height.png' },
-    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250 }
+    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250, image: OPTION_PLACEHOLDER_IMAGE }
   ];
   
   heightOptions.innerHTML = '';
