@@ -296,6 +296,13 @@ const COLOR_LAYOUT_SPECS = {
   'Custom': 'Custom'
 };
 
+const COLOR_GRADIENT_LAYOUT_SPECS = {
+  'Dark to Light': 'Gradient (dark on one end, light on the other)',
+  'Light Center': 'Gradient (light center highlight)',
+  'Single Color': 'Solid',
+  'Custom': 'Custom'
+};
+
 const FINISH_SHEEN_SPECS = {
   '2K Poly': { Satin: '20 sheen', Matte: '10 sheen', Gloss: '30 sheen' },
   'Natural Oil': { Satin: 'osmo Polyx-Oil (Satin) 3043 Clear Satin', Matte: 'osmo Polyx-Oil (Matte) 3031 Clear Matte', Gloss: 'osmo Polyx-Oil (Gloss) 3011 Clear Gloss' }
@@ -622,6 +629,17 @@ function getColorSpecs(title) {
     pigment: COLOR_PIGMENT_SPECS[title] || null,
     layout: COLOR_LAYOUT_SPECS[title] || null
   };
+}
+
+function getColorLayoutSpec(colorTitle, colorGradientTitle) {
+  if (colorGradientTitle && COLOR_GRADIENT_LAYOUT_SPECS[colorGradientTitle]) {
+    return COLOR_GRADIENT_LAYOUT_SPECS[colorGradientTitle];
+  }
+  if (colorTitle && COLOR_LAYOUT_SPECS[colorTitle]) {
+    return COLOR_LAYOUT_SPECS[colorTitle];
+  }
+  if (colorGradientTitle === 'Custom') return 'Custom';
+  return colorTitle ? 'Custom' : 'TBD';
 }
 
 function getFinishSheenSpec(coatingTitle, sheenTitle) {
@@ -1541,6 +1559,7 @@ async function exportPdf() {
   const colorSpecs = getColorSpecs(colorTitle);
   const colorGradientEntry = summaryData && summaryData.colorGradients ? summaryData.colorGradients.get(opts['color-gradient']) : null;
   const colorGradientTitle = getEntryTitle(colorGradientEntry, opts['color-gradient']);
+  const colorLayoutLabel = getColorLayoutSpec(colorTitle, colorGradientTitle);
   const customColorGradientNote = typeof opts.customColorGradientNote === 'string' ? opts.customColorGradientNote.trim() : '';
 
   const legEntry = summaryData && summaryData.legs ? summaryData.legs.get(opts.legs) : null;
@@ -1662,7 +1681,7 @@ async function exportPdf() {
   addTechRow('Base Epoxy Layer', 'Seal coat <0.25 in');
   addTechRow('Main Epoxy Layer', 'River 2-2.5 in');
   addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
-  addTechRow('Color Layout', (colorSpecs && colorSpecs.layout) || (colorTitle ? 'Custom' : 'TBD'));
+  addTechRow('Color Layout', colorLayoutLabel);
   addTechRow('Color Gradient', colorGradientTitle || 'None');
   if (customColorGradientNote) addTechRow('Color Gradient Notes', customColorGradientNote);
 

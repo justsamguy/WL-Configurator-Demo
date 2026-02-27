@@ -61,9 +61,16 @@ function formatThemeModeLabel(mode) {
   return 'System';
 }
 
+function getThemeIconClass(mode) {
+  if (mode === 'light') return 'fa-solid fa-sun';
+  if (mode === 'dark') return 'fa-regular fa-moon';
+  return 'fa-solid fa-computer';
+}
+
 function updateThemeToggleUI(mode, resolvedTheme) {
   const button = document.getElementById('theme-cycle-toggle');
   const label = document.getElementById('theme-cycle-label');
+  const icon = document.getElementById('theme-cycle-icon');
   if (!button) return;
   const nextMode = getNextThemeMode(mode);
   const modeLabel = formatThemeModeLabel(mode);
@@ -73,6 +80,10 @@ function updateThemeToggleUI(mode, resolvedTheme) {
   button.dataset.resolvedTheme = resolvedTheme;
   button.setAttribute('aria-label', `Theme mode: ${modeLabel}. Activate to switch to ${nextModeLabel}.`);
   button.setAttribute('title', `Theme: ${modeLabel} (next: ${nextModeLabel})`);
+
+  if (icon) {
+    icon.className = `${getThemeIconClass(mode)} theme-cycle-icon-glyph`;
+  }
 
   if (label) {
     label.textContent = mode === 'system'
@@ -1369,6 +1380,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 541');
+console.log('Edit ver: 548');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

@@ -108,21 +108,21 @@ body {
 }
 
 .theme-cycle-toggle {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
   border: 1px solid #d1d5db;
-  border-radius: 9999px;
+  border-radius: 999px;
   background: #ffffff;
   color: #111827;
-  padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+  padding: 0;
   cursor: pointer;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 1rem;
   line-height: 1;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
 }
 
 .theme-cycle-toggle:hover {
@@ -130,62 +130,31 @@ body {
   border-color: #9ca3af;
 }
 
+.theme-cycle-toggle:active {
+  transform: translateY(1px);
+}
+
 .theme-cycle-toggle:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-.theme-cycle-track {
-  position: relative;
-  width: 2.8rem;
-  height: 1.3rem;
-  border-radius: 999px;
-  background: #e5e7eb;
-  display: inline-flex;
-  align-items: center;
+.theme-cycle-icon-glyph {
+  color: currentColor;
+  font-size: 1rem;
+  line-height: 1;
 }
 
-.theme-cycle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.22);
-  transition: transform 160ms ease, background-color 160ms ease;
+.theme-cycle-toggle[data-theme-mode="system"] {
+  color: #2563eb;
 }
 
-.theme-cycle-toggle[data-theme-mode="light"] .theme-cycle-track {
-  background: #dbeafe;
+.theme-cycle-toggle[data-theme-mode="light"] {
+  color: #d97706;
 }
 
-.theme-cycle-toggle[data-theme-mode="system"] .theme-cycle-track {
-  background: #e5e7eb;
-}
-
-.theme-cycle-toggle[data-theme-mode="dark"] .theme-cycle-track {
-  background: #334155;
-}
-
-.theme-cycle-toggle[data-theme-mode="light"] .theme-cycle-thumb {
-  transform: translateX(0);
-}
-
-.theme-cycle-toggle[data-theme-mode="system"] .theme-cycle-thumb {
-  transform: translateX(0.85rem);
-}
-
-.theme-cycle-toggle[data-theme-mode="dark"] .theme-cycle-thumb {
-  transform: translateX(1.7rem);
-  background: #0f172a;
-}
-
-.theme-cycle-label {
-  min-width: 5.75rem;
-  text-align: left;
-  white-space: nowrap;
+.theme-cycle-toggle[data-theme-mode="dark"] {
+  color: #334155;
 }
 
 @media (max-width: 640px) {
@@ -195,13 +164,9 @@ body {
   }
 
   .theme-cycle-toggle {
-    padding-right: 0.42rem;
-    gap: 0.4rem;
-  }
-
-  .theme-cycle-label {
-    min-width: 4.8rem;
-    font-size: 0.66rem;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -1001,7 +966,7 @@ header .flex.justify-center.items-center {
 
 /* Floating footer bar for price preview and Next action */
 #app-footer {
-  --footer-bottom-gap: 1.25rem;
+  --footer-bottom-gap: var(--footer-glass-gap, 1.25rem);
   position: fixed;
   left: 0;
   right: 0;
@@ -1104,6 +1069,16 @@ header .flex.justify-center.items-center {
   border-radius: 0.5rem;
 }
 
+#app-footer .footer-next-btn:not([disabled]) {
+  background-color: #1f2937; /* Gray 800 / dark when clickable */
+  color: #ffffff;
+}
+
+#app-footer .footer-next-btn:not([disabled]):hover {
+  background-color: #2563eb; /* Blue 600 on hover */
+  color: #ffffff;
+}
+
 body.stage-7 #app-footer {
   display: none;
 }
@@ -1139,7 +1114,7 @@ body.stage-1:not(.has-design) .footer-price-row {
 /* Make the viewer area respect available viewport height (account for header/stage/footer) */
 #viewer {
   width: 100%;
-  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 3rem);
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)) - 3rem);
   max-height: 900px;
 }
 
@@ -1240,8 +1215,8 @@ header .site-logo {
     /* Sidebar should be a flex column so we can split scrollable region and fixed footer-like area */
     display: flex;
     flex-direction: column;
-    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
-    max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)));
+    max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)));
     overflow-y: auto; /* Let the sidebar handle scrolling as a whole */
     overflow-x: hidden;
   }
@@ -1276,7 +1251,7 @@ header .site-logo {
   
   /* Ensure viewer takes full height */
   #viewer {
-    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+    height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)));
     /* The actual height will be managed by flex-1 in main-content */
   }
   
@@ -2077,6 +2052,8 @@ body.show-model-tiles #stage-panel-0 #model-options,
   --header-height: 60px; /* Approximate height of header */
   --stage-bar-height: 50px; /* Approximate height of stage bar */
   --footer-height: 80px; /* Approximate height of footer */
+  --footer-glass-gap: 1.25rem; /* Keep this in sync with #app-footer bottom glass strip */
+  --footer-reserved-height: calc(var(--footer-height) - var(--footer-glass-gap)); /* Reserve only the opaque bar so the glass gap overlays content */
   --nav-offset: calc(var(--header-height) + var(--stage-bar-height));
   /* Spacing and typographic tokens (merged from later definitions) */
   --space-xs: 6px;
@@ -2119,7 +2096,7 @@ body.show-model-tiles #app-main {
   max-width: none; 
   width: 100%; 
   overflow-y: auto; 
-  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height));
+  height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)));
 }
 
 /* Stage 1 keeps show-model-tiles enabled, but when footer is hidden there
@@ -2244,7 +2221,7 @@ body > #stage-panel-0 > .flex,
 body > .fullwidth-model-stage,
 body > #stage-panel-0 {
   overflow-y: auto;
-  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-height) - 1rem);
+  max-height: calc(100vh - var(--header-height) - var(--stage-bar-height) - var(--footer-reserved-height, var(--footer-height)) - 1rem);
 }
 
 /* Center the model rows and allow wrapping/centering of option-cards */
@@ -4104,13 +4081,12 @@ body.stage-1 #stage-panel-1 > .flex {
 /* Flip-card info interaction for non-addon option tiles with descriptions. */
 .option-card.option-card-info-enabled {
   perspective: 1200px;
+  overflow: hidden;
 }
 
 .option-card-info-enabled .option-card-flip-inner {
   position: relative;
   width: 100%;
-  min-height: inherit;
-  height: 100%;
   transform-style: preserve-3d;
   transition: transform 0.45s ease;
 }
@@ -4121,11 +4097,11 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .option-card-info-enabled .option-card-face {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  text-align: center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -4141,6 +4117,7 @@ body.stage-1 #stage-panel-1 > .flex {
   justify-content: center;
   padding: 0.875rem;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .option-card.option-card-info-open .option-card-face-back {
@@ -4149,8 +4126,16 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .option-card-info-enabled .title,
 .option-card-info-enabled .title-price-row {
+  width: 100%;
+  padding-left: 1.75rem;
   padding-right: 1.75rem;
   box-sizing: border-box;
+  text-align: center;
+}
+
+.option-card-info-enabled .title-price-row {
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .option-card-info-trigger,
@@ -4197,7 +4182,7 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .option-card-info-description {
   width: 100%;
-  height: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4206,6 +4191,7 @@ body.stage-1 #stage-panel-1 > .flex {
   color: #4b5563;
   line-height: 1.35;
   padding: 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 .option-card.option-card-info-enabled.selected::after,
@@ -4539,6 +4525,16 @@ body[data-resolved-theme="dark"] .nav-btn:not([disabled]):hover {
   background-color: #2563eb;
 }
 
+body[data-resolved-theme="dark"] #app-footer .footer-next-btn:not([disabled]) {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+body[data-resolved-theme="dark"] #app-footer .footer-next-btn:not([disabled]):hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
 body[data-resolved-theme="dark"] .top-stepper {
   background: #0f172a;
   box-shadow: 0 1px 0 rgba(148, 163, 184, 0.16) inset;
@@ -4568,8 +4564,16 @@ body[data-resolved-theme="dark"] .theme-cycle-toggle:hover {
   border-color: #475569;
 }
 
-body[data-resolved-theme="dark"] .theme-cycle-toggle[data-theme-mode="dark"] .theme-cycle-thumb {
-  background: #f8fafc;
+body[data-resolved-theme="dark"] .theme-cycle-toggle[data-theme-mode="system"] {
+  color: #93c5fd;
+}
+
+body[data-resolved-theme="dark"] .theme-cycle-toggle[data-theme-mode="light"] {
+  color: #fcd34d;
+}
+
+body[data-resolved-theme="dark"] .theme-cycle-toggle[data-theme-mode="dark"] {
+  color: #e2e8f0;
 }
 
 body[data-resolved-theme="dark"] .text-gray-900 { color: #f8fafc !important; }

@@ -9,6 +9,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-02",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -36,6 +37,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -63,6 +65,7 @@
     "selections": {
       "material": "mat-02",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -90,6 +93,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-04",
+      "color-gradient": "color-gradient-04",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -117,6 +121,7 @@
     "selections": {
       "material": "mat-02",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -144,6 +149,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-02",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -171,6 +177,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -198,6 +205,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -225,6 +233,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-02",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -252,6 +261,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -279,6 +289,7 @@
     "selections": {
       "material": "mat-01",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",
@@ -306,6 +317,7 @@
     "selections": {
       "material": "mat-02",
       "color": "color-03",
+      "color-gradient": "color-gradient-01",
       "finish-coating": "fin-coat-02",
       "finish-sheen": "fin-sheen-02",
       "finish-tint": "fin-tint-01",

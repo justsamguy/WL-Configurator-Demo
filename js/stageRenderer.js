@@ -23,6 +23,11 @@ function isAddonTile(card) {
   return !!card.closest('#addons-options, #stage-panel-6, .addons-dropdown-list, .addons-dropdown-tile, .addons-tiles-container');
 }
 
+function isExcludedStageTile(card) {
+  if (!card) return false;
+  return !!card.closest('#stage-panel-0, #stage-panel-1, #stage-panel-4, #models-stage-section, #designs-stage-section, #dimensions-stage-panel');
+}
+
 function isCustomInputTile(card) {
   if (!card) return false;
   if (card.hasAttribute('data-custom-note')) return true;
@@ -42,7 +47,7 @@ function isActivationEvent(ev) {
 
 function applyOptionCardInfoFlip(card) {
   if (!card || card.dataset.infoEnhanced === 'true') return;
-  if (isAddonTile(card) || isCustomInputTile(card)) return;
+  if (isAddonTile(card) || isExcludedStageTile(card) || isCustomInputTile(card)) return;
 
   const titleEl = card.querySelector('.title');
   const descriptionEl = card.querySelector('.description');

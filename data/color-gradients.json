@@ -14,6 +14,13 @@
     "description": "Gradient brightens toward the center for a highlighted river effect."
   },
   {
+    "id": "color-gradient-04",
+    "title": "Single Color",
+    "price": 0,
+    "image": "assets/images/model1_placeholder.png",
+    "description": "No gradient. Keeps a consistent color tone across the river."
+  },
+  {
     "id": "color-gradient-03",
     "title": "Custom",
     "price": 0,
