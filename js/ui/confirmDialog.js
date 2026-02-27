@@ -3,14 +3,16 @@ export function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 
   return new Promise((resolve) => {
     // Create modal backdrop
     const modal = document.createElement('div');
-    modal.style.cssText = 'position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10000; pointer-events: auto;';
+    modal.className = 'confirm-dialog-backdrop';
 
     // Create dialog box
     const dialogBox = document.createElement('div');
-    dialogBox.style.cssText = 'background-color: white; border-radius: 0.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); padding: 2rem; max-width: 28rem; width: 90%; pointer-events: auto;';
+    dialogBox.className = 'confirm-dialog-panel';
+    dialogBox.setAttribute('role', 'dialog');
+    dialogBox.setAttribute('aria-modal', 'true');
     dialogBox.innerHTML = `
-      <p class="text-gray-900 text-base mb-8">${message}</p>
-      <div class="flex justify-end gap-3">
+      <p class="confirm-dialog-message">${message}</p>
+      <div class="confirm-dialog-actions">
         <button class="btn btn-secondary btn-md" id="confirm-cancel">${cancelText}</button>
         <button class="btn btn-primary btn-md" id="confirm-ok">${confirmText}</button>
       </div>
@@ -18,12 +20,17 @@ export function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 
 
     modal.appendChild(dialogBox);
 
-    const onCancel = () => {
+    const cleanup = () => {
+      document.removeEventListener('keydown', handleKeydown);
       modal.remove();
+    };
+
+    const onCancel = () => {
+      cleanup();
       resolve(false);
     };
     const onConfirm = () => {
-      modal.remove();
+      cleanup();
       resolve(true);
     };
 
@@ -31,7 +38,6 @@ export function showConfirmDialog(message, cancelText = 'Cancel', confirmText = 
     const handleKeydown = (e) => {
       if (e.key === 'Escape') {
         onCancel();
-        document.removeEventListener('keydown', handleKeydown);
       }
     };
 

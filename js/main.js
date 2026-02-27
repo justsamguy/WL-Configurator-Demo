@@ -152,6 +152,86 @@ function initThemeToggle() {
   button.dataset.listenerBound = 'true';
 }
 
+function parseRgbColor(value) {
+  if (!value || typeof value !== 'string') return null;
+  const channels = value.match(/[\d.]+/g);
+  if (!channels || channels.length < 3) return null;
+  return channels.slice(0, 3).map((channel) => Math.max(0, Math.min(255, Math.round(Number(channel)))));
+}
+
+function mixRgbColor(a, b, weight = 0.5) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return null;
+  const mix = Math.max(0, Math.min(1, Number(weight)));
+  return [
+    Math.round((a[0] * (1 - mix)) + (b[0] * mix)),
+    Math.round((a[1] * (1 - mix)) + (b[1] * mix)),
+    Math.round((a[2] * (1 - mix)) + (b[2] * mix))
+  ];
+}
+
+function initFooterLiquidGlass() {
+  const footerBar = document.querySelector('.footer-bar');
+  if (!footerBar || footerBar.dataset.glassBound === 'true') return;
+  footerBar.dataset.glassBound = 'true';
+
+  const setGlassVar = (name, value) => footerBar.style.setProperty(name, value);
+  const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const resetPointerState = () => {
+    setGlassVar('--footer-glass-x', '50%');
+    setGlassVar('--footer-glass-y', '45%');
+    setGlassVar('--footer-glass-shift', '0px');
+  };
+
+  const updatePointerState = (clientX, clientY) => {
+    if (reducedMotion) return;
+    const rect = footerBar.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const yRatio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const shift = ((xRatio - 0.5) + (0.5 - yRatio)) * 3.4;
+    setGlassVar('--footer-glass-x', `${(xRatio * 100).toFixed(1)}%`);
+    setGlassVar('--footer-glass-y', `${(yRatio * 100).toFixed(1)}%`);
+    setGlassVar('--footer-glass-shift', `${shift.toFixed(2)}px`);
+  };
+
+  const updateAmbientTint = () => {
+    const bodyColor = parseRgbColor(window.getComputedStyle(document.body).backgroundColor) || [235, 241, 248];
+    const mainEl = document.getElementById('app-main');
+    const mainColor = mainEl ? parseRgbColor(window.getComputedStyle(mainEl).backgroundColor) || bodyColor : bodyColor;
+    const resolvedTheme = document.body.getAttribute('data-resolved-theme') || 'light';
+    const tintBase = mixRgbColor(bodyColor, mainColor, 0.5) || bodyColor;
+    const tint = mixRgbColor(tintBase, resolvedTheme === 'dark' ? [116, 148, 199] : [255, 255, 255], resolvedTheme === 'dark' ? 0.28 : 0.42) || tintBase;
+    const edge = mixRgbColor(tint, [255, 255, 255], resolvedTheme === 'dark' ? 0.2 : 0.62) || tint;
+    const shadow = mixRgbColor(bodyColor, [6, 10, 21], resolvedTheme === 'dark' ? 0.85 : 0.56) || [15, 23, 42];
+    setGlassVar('--footer-glass-tint-rgb', `${tint.join(', ')}`);
+    setGlassVar('--footer-glass-edge-rgb', `${edge.join(', ')}`);
+    setGlassVar('--footer-glass-shadow-rgb', `${shadow.join(', ')}`);
+    setGlassVar('--footer-glass-ambient-alpha', resolvedTheme === 'dark' ? '0.33' : '0.22');
+  };
+
+  const updateViewportSheen = () => {
+    const viewportHeight = Math.max(1, window.innerHeight || 1);
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const ratio = ((scrollY % viewportHeight) / viewportHeight);
+    const sheenPosition = 45 + (ratio * 24);
+    setGlassVar('--footer-glass-sheen', `${sheenPosition.toFixed(1)}%`);
+  };
+
+  footerBar.addEventListener('pointermove', (event) => updatePointerState(event.clientX, event.clientY));
+  footerBar.addEventListener('pointerdown', (event) => updatePointerState(event.clientX, event.clientY));
+  footerBar.addEventListener('pointerleave', resetPointerState);
+  window.addEventListener('resize', updateAmbientTint, { passive: true });
+  window.addEventListener('scroll', updateViewportSheen, { passive: true });
+
+  if (typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(() => updateAmbientTint());
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-resolved-theme'] });
+  }
+
+  updateAmbientTint();
+  updateViewportSheen();
+}
+
 if (typeof document !== 'undefined') {
   applyThemeMode(getStoredThemeMode());
 }
@@ -1257,6 +1337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
   initThemeToggle();
+  initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
 
   // Initialize viewer and controls after MainContent is loaded
@@ -1468,6 +1549,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 557');
+console.log('Edit ver: 561');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
