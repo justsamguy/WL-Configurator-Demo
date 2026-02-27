@@ -4,9 +4,9 @@
     { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "A plant-based oil finish with a wide range of stain customization. Recommended for food-safe, sensitive, or user-maintenance applications." }
   ],
   "sheens": [
-    { "id": "fin-sheen-01", "title": "Matte", "price": 50, "description": "Low reflection finish best for high-glare spaces.", "image": "assets/images/Matte.jpg", "alt": "Matte finish" },
-    { "id": "fin-sheen-02", "title": "Satin", "price": 0, "description": "Standard level for furniture. Maintains a \"natural\" look.", "image": "assets/images/Satin.jpg", "alt": "Satin finish" },
-    { "id": "fin-sheen-03", "title": "Gloss", "price": 50, "description": "Highest finish clarity, but highest light reflection and scratch visibility.", "image": "assets/images/Gloss.jpg", "alt": "Gloss finish" }
+    { "id": "fin-sheen-01", "title": "Matte", "price": 50, "description": "Low reflection finish best for high-glare spaces.", "image": "assets/images/Matte.webp", "alt": "Matte finish" },
+    { "id": "fin-sheen-02", "title": "Satin", "price": 0, "description": "Standard level for furniture. Maintains a \"natural\" look.", "image": "assets/images/Satin.webp", "alt": "Satin finish" },
+    { "id": "fin-sheen-03", "title": "Gloss", "price": 50, "description": "Highest finish clarity, but highest light reflection and scratch visibility.", "image": "assets/images/Gloss.webp", "alt": "Gloss finish" }
   ],
   "tints": [
     { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish" },

@@ -3,7 +3,7 @@
     "id": "preset-dining-blue-river-walnut-8-10",
     "title": "Blue River Walnut Table",
     "description": "8-10 seater preset with Walnut, Multi-Blue, and squared legs.",
-    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg",
+    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.webp",
     "modelId": "mdl-dining",
     "designId": "des-river",
     "selections": {
@@ -31,7 +31,7 @@
     "id": "preset-dining-grey-river-walnut-8-10",
     "title": "Grey River Walnut Table",
     "description": "8-10 seater preset with Walnut, Multi-Grey, and squared legs.",
-    "image": "assets/images/Walnut Multi-Grey Dining Table.jpg",
+    "image": "assets/images/Walnut Multi-Grey Dining Table.webp",
     "modelId": "mdl-dining",
     "designId": "des-river",
     "selections": {
@@ -87,7 +87,7 @@
     "id": "preset-dining-solid-walnut-slab-10ft",
     "title": "10 ft Solid Walnut Slab",
     "description": "Slab preset with Copper Blend resin and Live Edge.",
-    "image": "assets/images/Black Walnut Solid Slab Table.JPG",
+    "image": "assets/images/Black Walnut Solid Slab Table.webp",
     "modelId": "mdl-dining",
     "designId": "des-slab",
     "selections": {
@@ -143,7 +143,7 @@
     "id": "preset-conference-walnut-blue-river-10x4",
     "title": "Walnut Blue River 10 x 4",
     "description": "Conference preset with Hourglass legs and 2x4 tube.",
-    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.jpg",
+    "image": "assets/images/Black Walnut Blue River Conference Table with Islands.webp",
     "modelId": "mdl-conference",
     "designId": "des-river",
     "selections": {
@@ -199,7 +199,7 @@
     "id": "preset-conference-power-river-12x4",
     "title": "12 x 4 with Power",
     "description": "Conference preset with integrated AC + USB + USB-C power.",
-    "image": "assets/images/Power Strips.jpg",
+    "image": "assets/images/Power Strips.webp",
     "modelId": "mdl-conference",
     "designId": "des-river",
     "selections": {
@@ -283,7 +283,7 @@
     "id": "preset-coffee-walnut-grey-round-48x48",
     "title": "Walnut Grey Round 48 x 48",
     "description": "Round coffee preset with tripod legs.",
-    "image": "assets/images/Black Walnut Multi-Grey Round Coffee Table.jpg",
+    "image": "assets/images/Black Walnut Multi-Grey Round Coffee Table.webp",
     "modelId": "mdl-coffee",
     "designId": "des-round",
     "selections": {
@@ -311,7 +311,7 @@
     "id": "preset-coffee-signature-maple",
     "title": "Signature Maple",
     "description": "Signature coffee preset with Spalted Maple and Live Edge.",
-    "image": "assets/images/WoodLab Silver Maple Signature Coffee Table.jpg",
+    "image": "assets/images/WoodLab Silver Maple Signature Coffee Table.webp",
     "modelId": "mdl-coffee",
     "designId": "des-signature",
     "selections": {
