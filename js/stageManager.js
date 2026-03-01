@@ -180,14 +180,16 @@ async function setStage(index, options = {}) {
   // show confirmation dialog unless skipConfirm is true
   if (index === 0 && appState.selections.design && !options.skipConfirm) {
     const confirmed = await showConfirmDialog(
-      'Changing models will clear your design selection. Continue?',
+      'Changing models will clear your current selection. Continue?',
       'Cancel',
       'Change Model'
     );
     if (!confirmed) return;
-    // User confirmed, proceed with clear design
-    setState({ selections: { ...appState.selections, design: null } });
-    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'design-cleared' } }));
+    // User confirmed, clear current selection immediately so reset does not wait for a new model click.
+    setState({
+      selections: { model: null, design: null, options: {}, dimensionsDetail: null, techCableLength: null }
+    });
+    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'model-change-confirmed' } }));
   }
   
   // gating: normally prevent jumping forward past first incomplete required stage

@@ -978,7 +978,6 @@ header .flex.justify-center.items-center {
   pointer-events: none;
   box-sizing: border-box;
   max-width: 100%;
-  isolation: isolate;
 }
 
 .footer-bar {
@@ -996,13 +995,15 @@ header .flex.justify-center.items-center {
   margin: 0 auto;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  background: transparent;
-  border: 1px solid rgba(var(--footer-glass-edge-rgb, 247, 250, 253), 0.46);
+  background: rgba(var(--footer-glass-tint-rgb, 228, 235, 243), 0.12);
+  border: 1px solid rgba(var(--footer-glass-edge-rgb, 247, 250, 253), 0.34);
   box-shadow:
-    0 22px 44px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.2),
-    0 6px 12px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.22);
+    0 16px 34px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.15),
+    0 6px 12px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.16);
+  backdrop-filter: blur(12px) saturate(140%) contrast(106%) brightness(104%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%) contrast(106%) brightness(104%);
   transition: box-shadow 240ms ease, border-color 240ms ease;
   box-sizing: border-box;
 }
@@ -1019,11 +1020,9 @@ header .flex.justify-center.items-center {
 .footer-bar::before {
   z-index: 0;
   background:
-    radial-gradient(150% 120% at var(--footer-glass-x, 50%) var(--footer-glass-y, 45%), rgba(var(--footer-glass-tint-rgb, 228, 235, 243), calc(var(--footer-glass-ambient-alpha, 0.22) * 0.58)) 0%, rgba(255, 255, 255, 0.09) 42%, rgba(255, 255, 255, 0.02) 70%, rgba(255, 255, 255, 0.18) 100%),
-    linear-gradient(126deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 34%, rgba(255, 255, 255, 0.04) 68%, rgba(255, 255, 255, 0.14) 100%),
-    radial-gradient(90% 130% at 12% 8%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 60%);
-  backdrop-filter: blur(16px) saturate(165%) contrast(118%) brightness(109%);
-  -webkit-backdrop-filter: blur(16px) saturate(165%) contrast(118%) brightness(109%);
+    radial-gradient(150% 120% at var(--footer-glass-x, 50%) var(--footer-glass-y, 45%), rgba(var(--footer-glass-tint-rgb, 228, 235, 243), calc(var(--footer-glass-ambient-alpha, 0.22) * 0.34)) 0%, rgba(255, 255, 255, 0.05) 42%, rgba(255, 255, 255, 0.01) 70%, rgba(255, 255, 255, 0.08) 100%),
+    linear-gradient(126deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 34%, rgba(255, 255, 255, 0.02) 68%, rgba(255, 255, 255, 0.06) 100%),
+    radial-gradient(90% 130% at 12% 8%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 60%);
   transform: translate3d(calc(var(--footer-glass-shift, 0px) * -0.28), calc(var(--footer-glass-shift, 0px) * 0.2), 0);
   transition: transform 260ms ease;
 }
@@ -1031,13 +1030,13 @@ header .flex.justify-center.items-center {
 .footer-bar::after {
   z-index: 1;
   background:
-    linear-gradient(110deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.5) calc(var(--footer-glass-sheen, 56%) - 12%), rgba(255, 255, 255, 0) calc(var(--footer-glass-sheen, 56%) + 14%)),
-    radial-gradient(145% 95% at 100% 0%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.09) 30%, rgba(255, 255, 255, 0) 62%),
-    radial-gradient(155% 100% at 0% 100%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.02) 38%, rgba(255, 255, 255, 0) 64%);
+    linear-gradient(110deg, rgba(255, 255, 255, 0) 28%, rgba(255, 255, 255, 0.24) calc(var(--footer-glass-sheen, 56%) - 12%), rgba(255, 255, 255, 0) calc(var(--footer-glass-sheen, 56%) + 14%)),
+    radial-gradient(145% 95% at 100% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.07) 30%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(155% 100% at 0% 100%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.015) 38%, rgba(255, 255, 255, 0) 64%);
   background-position: 38% 50%, 100% 0%, 0% 100%;
   transform: translate3d(calc(var(--footer-glass-shift, 0px) * 0.5), calc(var(--footer-glass-shift, 0px) * -0.2), 0);
   mix-blend-mode: screen;
-  opacity: 0.9;
+  opacity: 0.65;
   animation: footer-glass-sheen 9.5s cubic-bezier(0.4, 0.02, 0.2, 1) infinite;
   transition: transform 260ms ease, opacity 260ms ease;
 }
@@ -1048,12 +1047,12 @@ header .flex.justify-center.items-center {
 }
 
 .footer-bar:hover {
-  border-color: rgba(var(--footer-glass-edge-rgb, 247, 250, 253), 0.58);
+  border-color: rgba(var(--footer-glass-edge-rgb, 247, 250, 253), 0.48);
   box-shadow:
-    0 26px 48px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.25),
+    0 20px 40px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.2),
     0 8px 16px rgba(var(--footer-glass-shadow-rgb, 15, 23, 42), 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.66),
-    inset 0 -1px 0 rgba(148, 163, 184, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.22);
 }
 
 @keyframes footer-glass-sheen {
@@ -1080,8 +1079,8 @@ header .flex.justify-center.items-center {
 @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
   .footer-bar::before {
     background:
-      radial-gradient(150% 120% at var(--footer-glass-x, 50%) var(--footer-glass-y, 45%), rgba(var(--footer-glass-tint-rgb, 228, 235, 243), 0.42) 0%, rgba(255, 255, 255, 0.22) 45%, rgba(255, 255, 255, 0.14) 75%, rgba(255, 255, 255, 0.24) 100%),
-      linear-gradient(126deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.3) 34%, rgba(255, 255, 255, 0.2) 68%, rgba(255, 255, 255, 0.3) 100%);
+      radial-gradient(150% 120% at var(--footer-glass-x, 50%) var(--footer-glass-y, 45%), rgba(var(--footer-glass-tint-rgb, 228, 235, 243), 0.24) 0%, rgba(255, 255, 255, 0.14) 45%, rgba(255, 255, 255, 0.08) 75%, rgba(255, 255, 255, 0.15) 100%),
+      linear-gradient(126deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.2) 34%, rgba(255, 255, 255, 0.12) 68%, rgba(255, 255, 255, 0.18) 100%);
   }
 }
 
@@ -4520,16 +4519,13 @@ body[data-resolved-theme="dark"] {
 }
 
 body[data-resolved-theme="dark"] .footer-bar {
-  background: transparent;
+  background: rgba(15, 23, 42, 0.3);
   border-color: rgba(var(--footer-glass-edge-rgb, 168, 188, 220), 0.48);
   box-shadow:
     0 24px 50px rgba(var(--footer-glass-shadow-rgb, 2, 6, 23), 0.48),
     0 8px 16px rgba(var(--footer-glass-shadow-rgb, 2, 6, 23), 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 0 rgba(30, 41, 59, 0.45);
-}
-
-body[data-resolved-theme="dark"] .footer-bar::before {
   backdrop-filter: blur(17px) saturate(155%) contrast(116%) brightness(96%);
   -webkit-backdrop-filter: blur(17px) saturate(155%) contrast(116%) brightness(96%);
 }
