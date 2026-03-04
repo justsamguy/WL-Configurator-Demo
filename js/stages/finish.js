@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Finish');
 
@@ -47,18 +48,21 @@ export function applyFinishDefaults(appState) {
 }
 
 export function init() {
-  // Wire clicks for coatings, sheens, and tints to emit option-selected events (placeholders.js handles generic logic too)
+  // Wire clicks for coatings, sheens, and tints to emit option-selected events.
   document.addEventListener('click', (ev) => {
+    if (isSelectionClickHandled(ev)) return;
     const card = ev.target.closest && ev.target.closest('.option-card[data-category="finish-coating"], .option-card[data-category="finish-sheen"], .option-card[data-category="finish-tint"]');
     if (!card) return;
     if (card.hasAttribute('disabled')) return;
+    markSelectionClickHandled(ev);
     const category = card.getAttribute('data-category');
     const id = card.getAttribute('data-id');
     const price = Number(card.getAttribute('data-price')) || 0;
     // set visual pressed
     if (category) {
-      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
-      card.setAttribute('aria-pressed', 'true');
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach((c) => {
+        c.setAttribute('aria-pressed', c === card ? 'true' : 'false');
+      });
     }
     document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
     try { recomputeFinishConstraints(); } catch (e) { /* ignore */ }

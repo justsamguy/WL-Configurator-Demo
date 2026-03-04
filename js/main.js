@@ -1572,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('summary-panel')) initSummaryActions();
   } catch (e) { /* ignore */ }
 
-  // Initialize placeholder interactions (click handlers, price animation, skeleton)
+  // Initialize placeholder interactions (generic click handlers and compatibility helpers)
   try { initPlaceholderInteractions(); } catch (e) { log.warn('Failed to init placeholder interactions', e); }
 
   const loadingScreen = document.getElementById('app-loading');
@@ -1600,6 +1600,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 570');
+console.log('Edit ver: 571');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

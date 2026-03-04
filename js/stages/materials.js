@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Materials');
 
@@ -157,14 +158,17 @@ export function init() {
 
   // Delegate click handling for material and color option-cards
   document.addEventListener('click', (ev) => {
+    if (isSelectionClickHandled(ev)) return;
     const card = ev.target.closest && ev.target.closest('.option-card[data-category="material"], .option-card[data-category="color"], .option-card[data-category="color-gradient"]');
     if (!card) return;
     if (card.hasAttribute('disabled')) return;
+    markSelectionClickHandled(ev);
     // Visual pressed state for category
     const category = card.getAttribute('data-category');
     if (category) {
-      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach(c => c.setAttribute('aria-pressed', 'false'));
-      card.setAttribute('aria-pressed', 'true');
+      document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach((c) => {
+        c.setAttribute('aria-pressed', c === card ? 'true' : 'false');
+      });
       const id = card.getAttribute('data-id');
       const price = Number(card.getAttribute('data-price')) || 0;
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category } }));
