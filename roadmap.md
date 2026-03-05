@@ -1,7 +1,6 @@
 # WL Configurator — Roadmap
 
 ## v1.1
-- Style model selection tiles
 
 ## v1.2
 - Mobile website (new branch)

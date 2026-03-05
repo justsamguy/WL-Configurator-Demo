@@ -3603,6 +3603,58 @@ body.stage-0 #models-stage-section {
   display: block;
 }
 
+/* Stage 0 model tiles: center vertically and use larger square cards. */
+body.stage-0 #stage-panel-0 {
+  display: flex;
+  flex-direction: column;
+}
+
+body.stage-0 #stage-panel-0 > .flex {
+  flex: 1 1 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+body.stage-0 #models-stage-section {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.stage-0 #models-stage-section .model-row-grid {
+  width: 100%;
+  align-content: center;
+  gap: clamp(1rem, 2vh, 1.5rem);
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] {
+  width: min(100%, clamp(220px, 24vh, 330px));
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: clamp(1rem, 2vh, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(0.6rem, 1.25vh, 0.9rem);
+  box-sizing: border-box;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .viewer-placeholder-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: cover;
+  margin-bottom: 0;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .title,
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
+  margin: 0;
+}
+
 /* Show designs section ONLY on stage 1 */
 body.stage-1 #designs-stage-section {
   display: flex;
