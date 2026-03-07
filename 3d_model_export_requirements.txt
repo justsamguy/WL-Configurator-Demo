@@ -1,0 +1,282 @@
+WoodLab Configurator - 3D Model Export / Format Requirements (Blender -> Web Viewer)
+
+Context (current app state)
+- The viewer uses Three.js, but it currently shows placeholders instead of loading external 3D model files.
+- For future exported models, the best target format is glTF 2.0, preferably .glb.
+
+Supported / Viable File Types for a Three.js Viewer
+
+Preferred
+- .glb (glTF 2.0 binary, single file)
+  - Best fit for web delivery and static hosting.
+  - Keeps mesh/materials/textures/animations together in one file.
+
+Recommended (also works well)
+- .gltf (glTF 2.0 JSON) + .bin + texture files
+  - Same core format family as .glb, but split across multiple files.
+  - Good for debugging, but easier to break if files are moved or paths change.
+
+Possible but not ideal (would require adding/importing the matching Three.js loaders)
+- .obj (+ .mtl)
+  - Older format, weaker material workflow, less reliable for modern PBR materials.
+- .fbx
+  - Can work, but heavier and more inconsistent between tools.
+- .stl
+  - Geometry only (no textures/PBR materials). Usually not suitable for final product visuals.
+
+Format Decision (for this project)
+- Preferred: .glb
+- Acceptable fallback: .gltf (with all referenced files kept together)
+
+======================================================================
+EXPORT REQUIREMENTS BY IMPORTANCE
+======================================================================
+
+REQUIRED (must do)
+
+1) Export as glTF 2.0
+- Blender export path: File > Export > glTF 2.0
+- Format:
+  - Preferred: glTF Binary (.glb)
+  - Acceptable: glTF Separate (.gltf + .bin + textures)
+- Importance: REQUIRED
+- Why:
+  - This is the web-native format for Three.js and preserves modern materials/structure.
+
+2) Apply transforms before export
+- In Blender: select export objects -> Ctrl+A -> Apply Rotation & Scale
+- Apply Location too if your pipeline expects the model centered/origin-stable.
+- Importance: REQUIRED
+- Why:
+  - Prevents incorrect size/orientation in the viewer.
+  - Avoids loader/runtime surprises from non-applied scale values.
+
+3) Use a consistent unit scale (meters)
+- Blender scene units should be consistent with intended real-world dimensions.
+- Exported models should arrive in a predictable scale (example: table width in meters).
+- Importance: REQUIRED
+- Why:
+  - Camera framing, controls, and future sizing logic depend on predictable units.
+
+4) Ensure correct model orientation
+- Standard web/Three.js expectations often assume "up" is Y-up after import.
+- Verify the exported model appears upright and facing the expected direction.
+- Importance: REQUIRED
+- Why:
+  - Prevents every model needing custom correction code.
+
+5) UV unwrap any textured meshes
+- All textured surfaces need valid UVs.
+- Importance: REQUIRED (if textures are used)
+- Why:
+  - Textures will not render correctly without UV mapping.
+
+6) Use supported image textures and keep references intact
+- If using .gltf (separate files), all texture paths must remain valid.
+- Prefer common formats like .png or .jpg/.jpeg.
+- Importance: REQUIRED
+- Why:
+  - Missing or broken texture references cause incomplete renders.
+
+7) Keep geometry clean and exportable
+- Remove accidental duplicate meshes/internal junk/hidden helper meshes not needed at runtime.
+- Recalculate normals / fix flipped normals where needed.
+- Importance: REQUIRED
+- Why:
+  - Bad normals and stray geometry produce visible rendering artifacts.
+
+8) Keep object/material names stable and descriptive
+- Use clear names (example: tabletop, leg_front_left, metal_frame, walnut_finish).
+- Importance: REQUIRED
+- Why:
+  - Future app logic may target subparts/materials by name for color/finish swaps.
+
+9) Include only the intended export objects
+- In Blender export settings, use "Selected Objects" when appropriate.
+- Importance: REQUIRED
+- Why:
+  - Prevents lights/cameras/helpers/test meshes from being accidentally shipped.
+
+10) Verify the exported file opens correctly before handoff
+- Test the file in Blender re-import or a glTF viewer before giving it to the app.
+- Importance: REQUIRED
+- Why:
+  - Catches broken textures, orientation issues, and missing meshes early.
+
+----------------------------------------------------------------------
+RECOMMENDED (strongly advised)
+----------------------------------------------------------------------
+
+1) Use .glb instead of .gltf for delivery
+- Importance: RECOMMENDED (and project PREFERRED)
+- Why:
+  - Single file is easier to manage in a static app and reduces path/reference mistakes.
+
+2) Use PBR materials (Principled BSDF) with glTF-compatible settings
+- Stick to Blender material setups that export well to glTF.
+- Importance: RECOMMENDED
+- Why:
+  - glTF/Three.js material translation is best with glTF-friendly PBR workflows.
+
+3) Optimize polygon count for web performance
+- Keep topology efficient for real-time rendering in browsers.
+- Remove unseen faces where practical.
+- Importance: RECOMMENDED
+- Why:
+  - Improves load time and interaction smoothness on lower-end devices.
+
+4) Triangulate export output (or verify triangulation stability)
+- Blender/Three.js can handle quads, but final render meshes are triangles.
+- Importance: RECOMMENDED
+- Why:
+  - Prevents shading differences caused by runtime triangulation changes.
+
+5) Set object origin/pivot intentionally
+- Place origins where rotation/placement should occur (center, floor center, hinge point, etc.).
+- Importance: RECOMMENDED
+- Why:
+  - Makes camera focus, transforms, and animation behavior predictable.
+
+6) Keep texture sizes web-friendly
+- Example guidance: 1K/2K for most assets unless close-up quality requires more.
+- Importance: RECOMMENDED
+- Why:
+  - Large textures are a major source of slow loads and memory pressure.
+
+7) Pack or standardize material channels for consistency
+- Keep a consistent approach to base color / roughness / normal maps across models.
+- Importance: RECOMMENDED
+- Why:
+  - Helps produce consistent visual quality across the product catalog.
+
+8) Use smooth shading intentionally and mark hard edges where needed
+- Importance: RECOMMENDED
+- Why:
+  - Prevents unrealistic shading and preserves design details.
+
+9) Keep mesh hierarchy simple and intentional
+- Group related parts logically instead of deeply nested, inconsistent structures.
+- Importance: RECOMMENDED
+- Why:
+  - Simplifies app-side interactions and future feature expansion.
+
+10) Maintain consistent naming conventions across all models
+- Example pattern:
+  - mesh/tabletop
+  - mesh/leg_fl
+  - mat/wood_oak
+- Importance: RECOMMENDED
+- Why:
+  - Enables reusable app logic instead of per-model exceptions.
+
+----------------------------------------------------------------------
+PREFERRED (nice-to-have / best practice for this project)
+----------------------------------------------------------------------
+
+1) Deliver one .glb per selectable model variant
+- Importance: PREFERRED
+- Why:
+  - Simplifies asset mapping in the app (model selector -> single file path).
+
+2) Center model at a predictable origin with floor contact at Y=0
+- Example: model centered in X/Z, feet touching ground plane at Y=0.
+- Importance: PREFERRED
+- Why:
+  - Makes camera framing and ground alignment easier and consistent.
+
+3) Keep forward direction consistent across all models
+- Example convention: all models face +Z (or another chosen direction, but be consistent).
+- Importance: PREFERRED
+- Why:
+  - Reduces per-model orientation corrections.
+
+4) Bake/author textures specifically for web preview quality
+- Balance realism and performance rather than offline render quality.
+- Importance: PREFERRED
+- Why:
+  - Web viewers need efficient assets more than ultra-high fidelity maps.
+
+5) Include lightweight LOD variants for complex models (if needed later)
+- Example: high / medium / low detail versions.
+- Importance: PREFERRED
+- Why:
+  - Useful if the catalog grows or mobile performance becomes a concern.
+
+6) Include simple metadata handoff notes with each model
+- Example:
+  - model name
+  - real dimensions (W x D x H)
+  - pivot/origin convention
+  - texture resolution used
+  - known limitations
+- Importance: PREFERRED
+- Why:
+  - Speeds integration and reduces ambiguity during QA.
+
+======================================================================
+BLENDER EXPORT SETTINGS (practical baseline)
+======================================================================
+
+Blender: File > Export > glTF 2.0
+
+Required / Recommended baseline settings
+- Format: glTF Binary (.glb) [PREFERRED]
+- Include:
+  - Limit to: Selected Objects [RECOMMENDED when exporting a single model]
+- Transform:
+  - Apply Modifiers: Enabled [RECOMMENDED unless a specific modifier must remain procedural]
+  - Coordinate/orientation defaults: verify exported result is upright and facing correctly [REQUIRED]
+- Geometry:
+  - UVs: Enabled [REQUIRED if textured]
+  - Normals: Enabled [REQUIRED]
+  - Tangents: Enabled [RECOMMENDED for correct normal mapping]
+- Materials:
+  - Export materials: Enabled [REQUIRED if using materials]
+- Animation:
+  - Enabled only if the model actually needs animation [OPTIONAL]
+- Compression:
+  - Keep default unless the pipeline explicitly supports a compression workflow [RECOMMENDED]
+
+Notes on advanced compression
+- Draco / Meshopt compression can reduce file sizes, but only if the viewer pipeline is set up to decode it.
+- For initial integration, prefer uncompressed .glb unless/until the app explicitly adds decoder support.
+- Importance: PREFERRED (future optimization)
+
+======================================================================
+APP INTEGRATION REQUIREMENTS (future viewer implementation)
+======================================================================
+
+Required for .glb/.gltf loading in this app
+- Add Three.js GLTFLoader to the viewer implementation.
+- Host model files inside repo assets (static, client-side friendly).
+- Use local paths (example: assets/models/model1.glb).
+
+If using .gltf instead of .glb
+- Keep the .gltf, .bin, and texture files together.
+- Do not rename/move textures after export unless references are updated.
+
+If using compressed glTF (future)
+- The app must add the corresponding decoder/loader support (example: Draco decoder setup).
+
+======================================================================
+HANDOFF CHECKLIST (quick QA before delivery)
+======================================================================
+
+Required checks
+- Model exports as glTF 2.0 (.glb preferred)
+- Scale is correct and consistent
+- Orientation is correct (upright, expected facing direction)
+- Textures are present and mapped correctly
+- No missing parts / hidden junk geometry
+- Normals/shading look correct
+- Object/material names are clean and stable
+
+Recommended checks
+- File size is reasonable for web use
+- Pivot/origin matches intended interaction behavior
+- Model opens correctly in an external glTF viewer
+
+Summary (project recommendation)
+- Use Blender -> export glTF 2.0 Binary (.glb)
+- Apply transforms, maintain consistent scale/orientation, UVs/materials, and clean naming
+- Optimize for browser performance (poly count + texture sizes)
