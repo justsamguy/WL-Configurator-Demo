@@ -1,309 +1,556 @@
 // WoodLab Configurator - viewer.js
-// Three.js 3D viewer setup (uses ES module imports)
+// Persistent Three.js viewer with empty, loading, ready, and error states.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { state } from './state.js'; // Import shared state module to avoid circular imports
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { loadData } from './dataLoader.js';
+import { state } from './state.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('Viewer');
 
-let renderer, scene, camera, controls;
+const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
+const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
+const EMPTY_BADGE = '3D Preview';
+const EMPTY_COPY = 'Choose a model on the right to load the first placeholder preview.';
+const LOADING_BADGE = 'Loading Preview';
+const LOADING_COPY = 'Preparing the selected model in the viewer.';
+const ERROR_BADGE = 'Preview Unavailable';
+const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
+const INTERACTION_COPY = 'Drag to rotate. Scroll to zoom. Right-drag or Shift-drag to pan.';
+
+let renderer = null;
+let scene = null;
+let camera = null;
+let controls = null;
+let loader = null;
+let floorMesh = null;
 let initialized = false;
+let manifestPromise = null;
+let resizeObserver = null;
+let themeObserver = null;
+let resizeTimeout = null;
+let currentRenderRoot = null;
+let requestedModelId = null;
+let displayedModelId = null;
+let displayedAssetPath = null;
+let pendingRequestToken = 0;
 let isLoading = false;
-let currentPlaceholderImage = null; // To keep track of the current placeholder image
+let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
+let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 
-// Function to display SVG placeholder image
-function displayPlaceholderImage(modelId) {
-  const container = document.getElementById("viewer-canvas");
-  if (!container) return;
+const dom = {
+  surface: null,
+  canvas: null,
+  empty: null,
+  loading: null,
+  error: null,
+  errorCopy: null,
+  statusBadge: null,
+  supportingCopy: null,
+  liveRegion: null,
+  retryButton: null
+};
 
-  // Hide Three.js canvas if it exists
-  if (renderer && renderer.domElement) {
-    renderer.domElement.style.display = "none";
-  }
-
-  let placeholderDiv = document.getElementById("viewer-placeholder");
-  if (!placeholderDiv) {
-    placeholderDiv = document.createElement("div");
-    placeholderDiv.id = "viewer-placeholder";
-    placeholderDiv.className = "text-center text-gray-400 text-lg flex flex-col items-center justify-center w-full h-full";
-    container.appendChild(placeholderDiv);
-  } else {
-    placeholderDiv.style.display = "flex"; // Ensure it's visible
-  }
-
-  // Prefer model SVGs if present, otherwise fall back to the WoodLab brand placeholder
-  const svgPath = `assets/images/${modelId}.svg`;
-  const fallbackBrand = `assets/brand/icons/WoodLab_official_-_for_blackwhite_print.png`;
-  const imagePath = svgPath; // default to model SVG
-  // Check if the image already exists and is the correct one
-  if (currentPlaceholderImage && currentPlaceholderImage.src.includes(imagePath)) {
-    return; // Image is already displayed
-  }
-
-  // Clear previous image
-  placeholderDiv.innerHTML = '';
-
-  const img = document.createElement("img");
-  img.src = imagePath;
-  img.alt = `Placeholder for ${modelId}`;
-  img.className = "max-w-full max-h-full object-contain viewer-placeholder-img"; // Ensure image scales within container
-  // If the requested SVG fails to load, swap to the brand fallback
-  img.onerror = () => { img.src = fallbackBrand; img.classList.add('brand-fallback'); };
-  placeholderDiv.appendChild(img);
-
-  const label = document.createElement("p");
-  label.className = "mt-4 text-gray-600 font-semibold text-xl";
-  label.textContent = `Model: ${modelId.replace('model', 'Model ')}`; // e.g., "Model: Model 1"
-  placeholderDiv.appendChild(label);
-
-  currentPlaceholderImage = img;
+function getModelTitle(modelId, config = {}) {
+  if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
+  if (!modelId || typeof modelId !== 'string') return 'Selected Table';
+  return modelId
+    .replace(/^mdl-/, '')
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
-// Function to hide placeholder image and show Three.js canvas
-function hidePlaceholderImage() {
-  const placeholderDiv = document.getElementById("viewer-placeholder");
-  if (placeholderDiv) {
-    placeholderDiv.style.display = "none";
-  }
-  if (renderer && renderer.domElement) {
-    renderer.domElement.style.display = "block";
-  }
-  currentPlaceholderImage = null;
-}
-
-// Enhance lighting for better visualization
-function enhanceLighting() {
-  // Remove existing lights
-  scene.children.forEach(child => {
-    if (child.type === "AmbientLight" || child.type === "DirectionalLight") {
-      scene.remove(child);
-    }
-  });
-  
-  // Add improved lighting setup
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-  scene.add(ambient);
-  
-  const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  mainLight.position.set(5, 10, 7);
-  mainLight.castShadow = true;
-  scene.add(mainLight);
-  
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-  fillLight.position.set(-5, 5, -7);
-  scene.add(fillLight);
-  
-  const backLight = new THREE.DirectionalLight(0xffffff, 0.2);
-  backLight.position.set(0, 5, -10);
-  scene.add(backLight);
-}
-
-// Add a subtle ground plane for better spatial context
-function addGroundPlane() {
-  const groundGeometry = new THREE.PlaneGeometry(20, 20);
-  const groundMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0xf5f5f5,
-    roughness: 0.8,
-    metalness: 0.2,
-    side: THREE.DoubleSide
-  });
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = Math.PI / 2;
-  ground.position.y = -0.8;
-  ground.receiveShadow = true;
-  scene.add(ground);
-}
-
-// Improve material quality
-function createEnhancedMaterials() {
+function getCameraSettings(config = {}) {
+  const cameraConfig = config.camera && typeof config.camera === 'object' ? config.camera : {};
   return {
-    tableMaterial: new THREE.MeshStandardMaterial({ 
-      color: 0x8B4513,
-      roughness: 0.7,
-      metalness: 0.1,
-      envMapIntensity: 1.0
-    }),
-    legMaterial: new THREE.MeshStandardMaterial({ 
-      color: 0x8B4513,
-      roughness: 0.7,
-      metalness: 0.1,
-      envMapIntensity: 1.0
-    })
+    offset: Array.isArray(cameraConfig.offset) && cameraConfig.offset.length === 3
+      ? cameraConfig.offset
+      : FALLBACK_CAMERA_OFFSET,
+    targetHeightRatio: Number.isFinite(Number(cameraConfig.targetHeightRatio))
+      ? Number(cameraConfig.targetHeightRatio)
+      : 0.34,
+    minDistanceMultiplier: Number.isFinite(Number(cameraConfig.minDistanceMultiplier))
+      ? Number(cameraConfig.minDistanceMultiplier)
+      : 0.9,
+    maxDistanceMultiplier: Number.isFinite(Number(cameraConfig.maxDistanceMultiplier))
+      ? Number(cameraConfig.maxDistanceMultiplier)
+      : 5.8
   };
 }
 
-export async function initViewer() {
-  if (initialized) return;
-  const container = document.getElementById("viewer-canvas");
-  if (!container) {
-    log.warn('Viewer canvas container not found. Viewer initialization deferred.');
-    return;
+function getScaleVector(scaleValue) {
+  if (Array.isArray(scaleValue) && scaleValue.length === 3) {
+    return new THREE.Vector3(
+      Number(scaleValue[0]) || 1,
+      Number(scaleValue[1]) || 1,
+      Number(scaleValue[2]) || 1
+    );
   }
-
-  // Initially display a placeholder image
-  displayPlaceholderImage("model1"); // Display model1 as default placeholder
-
-  // Scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf8fafc);
-  // The Three.js scene will be hidden by default until a model is loaded
-  if (renderer && renderer.domElement) {
-    renderer.domElement.style.display = "none";
+  if (Number.isFinite(Number(scaleValue))) {
+    const uniform = Number(scaleValue) || 1;
+    return new THREE.Vector3(uniform, uniform, uniform);
   }
-
-  // Camera
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-  camera.position.set(2, 2, 3);
-
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setSize(width, height);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(renderer.domElement);
-
-  // Enhanced lighting
-  enhanceLighting();
-  
-  // Add ground plane
-  addGroundPlane();
-
-  // Controls: use imported OrbitControls
-  try {
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.target.set(0, 0.5, 0);
-    controls.update();
-  } catch (err) {
-    log.warn('OrbitControls initialization failed', err);
-    // Provide a no-op controls object to avoid breaking render loop
-    controls = {
-      update() { /* no-op */ }
-    };
-  }
-
-  // Render loop
-  function animate() {
-    if (renderer && scene && camera) { // Only render if Three.js is active
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-  
-  initialized = true;
+  return new THREE.Vector3(1, 1, 1);
 }
 
-// Update the addTableLegs function to use the enhanced material
-// This function will only be called if actual 3D models are loaded, not for placeholders
-function addTableLegs(legMaterial) {
-  // Create four legs
-  const legPositions = [
-    [-0.4, -0.4, 0.6], // front-left
-    [0.4, -0.4, 0.6],  // front-right
-    [-0.4, -0.4, -0.6], // back-left
-    [0.4, -0.4, -0.6]   // back-right
-  ];
-  
-  legPositions.forEach(pos => {
-    const leg = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1, 0.8, 0.1),
-      legMaterial
-    );
-    leg.position.set(pos[0], pos[1], pos[2]);
-    leg.castShadow = true;
-    leg.receiveShadow = true;
-    scene.add(leg);
+function disposeMaterial(material) {
+  if (!material) return;
+  ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap'].forEach((key) => {
+    if (material[key] && typeof material[key].dispose === 'function') material[key].dispose();
+  });
+  if (typeof material.dispose === 'function') material.dispose();
+}
+
+function disposeObject3D(root) {
+  if (!root) return;
+  root.traverse((child) => {
+    if (!child.isMesh) return;
+    if (child.geometry && typeof child.geometry.dispose === 'function') child.geometry.dispose();
+    if (Array.isArray(child.material)) child.material.forEach(disposeMaterial);
+    else disposeMaterial(child.material);
   });
 }
 
-// Show loading state
-function showLoadingState() {
-  const container = document.getElementById("viewer-canvas");
-  if (!container) return;
-  
-  // Create or get loading overlay
-  let loadingOverlay = document.getElementById("loading-overlay");
-  if (!loadingOverlay) {
-    loadingOverlay = document.createElement("div");
-    loadingOverlay.id = "loading-overlay";
-    loadingOverlay.className = "absolute inset-0 bg-gray-100 bg-opacity-80 flex flex-col items-center justify-center z-10";
-    loadingOverlay.innerHTML = `
-      <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p class="text-gray-700">We're building your table...</p>
-    `;
-    container.appendChild(loadingOverlay);
-  }
-  loadingOverlay.classList.remove("opacity-0");
+function setLiveStatus(message) {
+  if (dom.liveRegion) dom.liveRegion.textContent = message;
 }
 
-// Hide loading state
-function hideLoadingState() {
-  const loadingOverlay = document.getElementById("loading-overlay");
-  if (loadingOverlay) {
-    loadingOverlay.classList.add("opacity-0");
-    setTimeout(() => {
-      if (loadingOverlay.parentNode) {
-        loadingOverlay.parentNode.removeChild(loadingOverlay);
-      }
-    }, 300);
+function setSupportingCopy(message) {
+  if (dom.supportingCopy) dom.supportingCopy.textContent = message;
+}
+
+function setStatusBadge(message) {
+  if (dom.statusBadge) dom.statusBadge.textContent = message;
+}
+
+function setViewerState(mode, { badge, supportingCopy, errorCopy } = {}) {
+  if (dom.surface) dom.surface.dataset.viewerState = mode;
+  if (dom.empty) dom.empty.hidden = mode !== 'empty';
+  if (dom.loading) dom.loading.hidden = mode !== 'loading';
+  if (dom.error) dom.error.hidden = mode !== 'error';
+  if (typeof badge === 'string') setStatusBadge(badge);
+  if (typeof supportingCopy === 'string') setSupportingCopy(supportingCopy);
+  if (typeof errorCopy === 'string' && dom.errorCopy) dom.errorCopy.textContent = errorCopy;
+}
+
+function applyViewerTheme() {
+  if (!scene || !floorMesh) return;
+  const resolvedTheme = document.body?.getAttribute('data-resolved-theme')
+    || document.documentElement.getAttribute('data-resolved-theme')
+    || 'light';
+  const isDark = resolvedTheme === 'dark';
+
+  scene.background = new THREE.Color(isDark ? 0x0f172a : 0xf3f7fb);
+  floorMesh.material.color.setHex(isDark ? 0x1b2538 : 0xe7eef6);
+}
+
+function enableShadowCasters(root) {
+  root.traverse((child) => {
+    if (!child.isMesh) return;
+    child.castShadow = true;
+    child.receiveShadow = true;
+    child.frustumCulled = false;
+  });
+}
+
+function replaceCurrentRenderRoot(nextRoot) {
+  if (currentRenderRoot && currentRenderRoot.parent) {
+    currentRenderRoot.parent.remove(currentRenderRoot);
+    disposeObject3D(currentRenderRoot);
+  }
+  currentRenderRoot = nextRoot;
+  if (scene && currentRenderRoot) scene.add(currentRenderRoot);
+}
+
+function clearCurrentRenderRoot() {
+  if (currentRenderRoot && currentRenderRoot.parent) {
+    currentRenderRoot.parent.remove(currentRenderRoot);
+    disposeObject3D(currentRenderRoot);
+  }
+  currentRenderRoot = null;
+  displayedModelId = null;
+  displayedAssetPath = null;
+}
+
+function frameModel(root, config = {}) {
+  if (!root || !camera || !controls) return;
+
+  const bounds = new THREE.Box3().setFromObject(root);
+  if (bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
+
+  const size = bounds.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 1);
+  const cameraSettings = getCameraSettings(config);
+  const offset = new THREE.Vector3(
+    Number(cameraSettings.offset[0]) || FALLBACK_CAMERA_OFFSET[0],
+    Number(cameraSettings.offset[1]) || FALLBACK_CAMERA_OFFSET[1],
+    Number(cameraSettings.offset[2]) || FALLBACK_CAMERA_OFFSET[2]
+  );
+  const target = new THREE.Vector3(0, size.y * cameraSettings.targetHeightRatio, 0);
+  const cameraPosition = offset.multiplyScalar(maxDim);
+
+  camera.position.copy(cameraPosition);
+  camera.near = Math.max(0.1, maxDim / 100);
+  camera.far = Math.max(120, maxDim * 20);
+  camera.updateProjectionMatrix();
+
+  controls.target.copy(target);
+  controls.minDistance = Math.max(0.5, maxDim * cameraSettings.minDistanceMultiplier);
+  controls.maxDistance = Math.max(controls.minDistance + 1, maxDim * cameraSettings.maxDistanceMultiplier);
+  controls.update();
+  controls.saveState();
+
+  defaultCameraPosition = camera.position.clone();
+  defaultCameraTarget = controls.target.clone();
+
+  if (floorMesh) {
+    const floorScale = Math.max(maxDim * 3, 6);
+    floorMesh.scale.setScalar(floorScale);
   }
 }
 
-// Reset camera view
-export function resetView() {
-  if (!controls || !camera) return;
-  camera.position.set(2, 2, 3);
-  controls.target.set(0, 0.5, 0);
+async function loadManifest() {
+  if (!manifestPromise) manifestPromise = loadData(VIEWER_MANIFEST_PATH);
+  const manifest = await manifestPromise;
+  return manifest && typeof manifest === 'object' ? manifest : null;
+}
+
+function resolveViewerConfig(manifest, modelId) {
+  if (!manifest || !modelId) return null;
+  const defaults = manifest.defaults && typeof manifest.defaults === 'object' ? manifest.defaults : {};
+  const modelEntry = manifest.models && typeof manifest.models === 'object' ? manifest.models[modelId] : null;
+  if (!modelEntry || typeof modelEntry !== 'object') return null;
+
+  return {
+    ...defaults,
+    ...modelEntry,
+    camera: {
+      ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
+      ...(modelEntry.camera && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
+    }
+  };
+}
+
+async function buildRenderRoot(config) {
+  if (!loader) loader = new GLTFLoader();
+  const assetPath = config && typeof config.assetPath === 'string' ? config.assetPath : '';
+  if (!assetPath) throw new Error('No asset path configured for viewer model.');
+
+  const gltf = await loader.loadAsync(assetPath);
+  const sourceRoot = gltf.scene || (Array.isArray(gltf.scenes) ? gltf.scenes[0] : null);
+  if (!sourceRoot) throw new Error('GLB did not contain a scene.');
+
+  const renderRoot = new THREE.Group();
+  renderRoot.name = `viewer-model-${requestedModelId || 'selection'}`;
+  renderRoot.add(sourceRoot);
+  renderRoot.scale.copy(getScaleVector(config.scale));
+
+  if (Array.isArray(config.rotation) && config.rotation.length === 3) {
+    renderRoot.rotation.set(
+      Number(config.rotation[0]) || 0,
+      Number(config.rotation[1]) || 0,
+      Number(config.rotation[2]) || 0
+    );
+  }
+
+  enableShadowCasters(renderRoot);
+
+  const initialBounds = new THREE.Box3().setFromObject(renderRoot);
+  if (initialBounds.isEmpty()) throw new Error('Loaded model has no mesh bounds.');
+
+  const center = initialBounds.getCenter(new THREE.Vector3());
+  renderRoot.position.set(-center.x, -initialBounds.min.y, -center.z);
+
+  if (Array.isArray(config.positionOffset) && config.positionOffset.length === 3) {
+    renderRoot.position.x += Number(config.positionOffset[0]) || 0;
+    renderRoot.position.y += Number(config.positionOffset[1]) || 0;
+    renderRoot.position.z += Number(config.positionOffset[2]) || 0;
+  }
+
+  return renderRoot;
+}
+
+function showEmptyState() {
+  pendingRequestToken += 1;
+  isLoading = false;
+  requestedModelId = null;
+  clearCurrentRenderRoot();
+  setViewerState('empty', { badge: EMPTY_BADGE, supportingCopy: EMPTY_COPY });
+  setLiveStatus('3D preview ready. Choose a model to begin.');
+}
+
+function showErrorState(title, errorCopy = ERROR_COPY) {
+  isLoading = false;
+  setViewerState('error', {
+    badge: ERROR_BADGE,
+    supportingCopy: `3D preview unavailable for ${title}.`,
+    errorCopy
+  });
+  setLiveStatus(`3D preview unavailable for ${title}.`);
+}
+
+function showReadyState(modelId, config = {}) {
+  const title = getModelTitle(modelId, config);
+  const statusLabel = config.statusLabel || `${title} Preview`;
+  const limitationCopy = config.supportCopy ? `${INTERACTION_COPY} ${config.supportCopy}` : INTERACTION_COPY;
+  setViewerState('ready', {
+    badge: statusLabel,
+    supportingCopy: limitationCopy
+  });
+  setLiveStatus(`${title} 3D preview loaded.`);
+}
+
+export async function updateModel(modelId, { force = false } = {}) {
+  if (!initialized) return;
+
+  if (!modelId) {
+    showEmptyState();
+    return;
+  }
+
+  if (!force && isLoading && requestedModelId === modelId) return;
+
+  const manifest = await loadManifest();
+  if (!manifest) {
+    showErrorState(getModelTitle(modelId), 'The local viewer manifest could not be loaded.');
+    return;
+  }
+
+  const config = resolveViewerConfig(manifest, modelId);
+  if (!config || !config.assetPath) {
+    showErrorState(getModelTitle(modelId), 'No local 3D asset is mapped for the selected model yet.');
+    return;
+  }
+
+  const title = getModelTitle(modelId, config);
+  requestedModelId = modelId;
+
+  if (!force && currentRenderRoot && displayedModelId === modelId && displayedAssetPath === config.assetPath) {
+    frameModel(currentRenderRoot, config);
+    showReadyState(modelId, config);
+    return;
+  }
+
+  if (!force && currentRenderRoot && displayedAssetPath === config.assetPath) {
+    displayedModelId = modelId;
+    frameModel(currentRenderRoot, config);
+    showReadyState(modelId, config);
+    return;
+  }
+
+  const requestToken = ++pendingRequestToken;
+  isLoading = true;
+  setViewerState('loading', { badge: LOADING_BADGE, supportingCopy: LOADING_COPY });
+  setLiveStatus(`Loading ${title} 3D preview.`);
+
+  try {
+    const nextRoot = await buildRenderRoot(config);
+    if (requestToken !== pendingRequestToken) {
+      disposeObject3D(nextRoot);
+      return;
+    }
+
+    replaceCurrentRenderRoot(nextRoot);
+    displayedModelId = modelId;
+    displayedAssetPath = config.assetPath;
+    frameModel(nextRoot, config);
+    showReadyState(modelId, config);
+  } catch (error) {
+    log.warn('Failed to load 3D preview', { modelId, error });
+    if (requestToken !== pendingRequestToken) return;
+    showErrorState(title, 'The local placeholder model could not be loaded. Try again.');
+  } finally {
+    if (requestToken === pendingRequestToken) isLoading = false;
+  }
+}
+
+function orbitCamera(direction = 1) {
+  if (!camera || !controls || !currentRenderRoot) return;
+  const offset = camera.position.clone().sub(controls.target);
+  const spherical = new THREE.Spherical().setFromVector3(offset);
+  spherical.theta += (Math.PI / 8) * direction;
+  const nextOffset = new THREE.Vector3().setFromSpherical(spherical);
+  camera.position.copy(controls.target.clone().add(nextOffset));
   controls.update();
 }
 
-// Resize handler
+function zoomCamera(direction = 1) {
+  if (!camera || !controls || !currentRenderRoot) return;
+  const offset = camera.position.clone().sub(controls.target);
+  const currentDistance = offset.length();
+  const zoomScale = direction > 0 ? 0.84 : 1.18;
+  const nextDistance = THREE.MathUtils.clamp(
+    currentDistance * zoomScale,
+    controls.minDistance || 0.5,
+    controls.maxDistance || currentDistance
+  );
+  offset.setLength(nextDistance);
+  camera.position.copy(controls.target.clone().add(offset));
+  controls.update();
+}
+
+export function resetView() {
+  if (!camera || !controls || !currentRenderRoot) return;
+  camera.position.copy(defaultCameraPosition);
+  controls.target.copy(defaultCameraTarget);
+  controls.reset();
+  controls.update();
+}
+
 export function resizeViewer() {
-  if (!renderer || !camera) return;
-  const container = document.getElementById("viewer-canvas");
-  if (!container) return;
-  const width = container.clientWidth;
-  const height = container.clientHeight;
-  renderer.setSize(width, height);
+  if (!renderer || !camera || !dom.canvas) return;
+  const width = dom.canvas.clientWidth;
+  const height = dom.canvas.clientHeight;
+  if (!width || !height) return;
+  renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
 
-// Debounced resize
-let resizeTimeout = null;
-window.addEventListener("resize", () => {
+export function initViewerControls() {
+  const actions = {
+    'viewer-orbit-left': () => orbitCamera(-1),
+    'viewer-orbit-right': () => orbitCamera(1),
+    'viewer-zoom-in': () => zoomCamera(1),
+    'viewer-zoom-out': () => zoomCamera(-1),
+    'reset-view': () => resetView()
+  };
+
+  Object.entries(actions).forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || button.dataset.viewerBound === 'true') return;
+    button.addEventListener('click', handler);
+    button.dataset.viewerBound = 'true';
+  });
+
+  const retryButton = document.getElementById('viewer-retry');
+  if (retryButton && retryButton.dataset.viewerBound !== 'true') {
+    retryButton.addEventListener('click', () => {
+      const modelId = (state && state.selections && state.selections.model) || requestedModelId;
+      if (!modelId) return;
+      void updateModel(modelId, { force: true });
+    });
+    retryButton.dataset.viewerBound = 'true';
+  }
+}
+
+export async function initViewer() {
+  dom.surface = document.getElementById('viewer');
+  dom.canvas = document.getElementById('viewer-canvas');
+  dom.empty = document.getElementById('viewer-empty-state');
+  dom.loading = document.getElementById('viewer-loading-state');
+  dom.error = document.getElementById('viewer-error-state');
+  dom.errorCopy = document.getElementById('viewer-error-copy');
+  dom.statusBadge = document.getElementById('viewer-status-badge');
+  dom.supportingCopy = document.getElementById('viewer-supporting-copy');
+  dom.liveRegion = document.getElementById('viewer-status');
+  dom.retryButton = document.getElementById('viewer-retry');
+
+  if (!dom.surface || !dom.canvas) {
+    log.warn('Viewer shell not found. Viewer initialization deferred.');
+    return;
+  }
+
+  if (initialized) {
+    resizeViewer();
+    initViewerControls();
+    await updateModel(state && state.selections ? state.selections.model : null);
+    return;
+  }
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+  camera.position.copy(defaultCameraPosition);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.domElement.className = 'viewer-webgl';
+  renderer.domElement.setAttribute('aria-hidden', 'true');
+  dom.canvas.appendChild(renderer.domElement);
+
+  const ambientLight = new THREE.HemisphereLight(0xffffff, 0xcfd8e3, 1.15);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 1.7);
+  keyLight.position.set(24, 34, 18);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.camera.left = -80;
+  keyLight.shadow.camera.right = 80;
+  keyLight.shadow.camera.top = 80;
+  keyLight.shadow.camera.bottom = -80;
+  keyLight.shadow.bias = -0.00015;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0xdfe9f7, 0.8);
+  fillLight.position.set(-22, 14, 18);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
+  rimLight.position.set(-12, 20, -18);
+  scene.add(rimLight);
+
+  floorMesh = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 80),
+    new THREE.MeshStandardMaterial({
+      color: 0xe7eef6,
+      roughness: 0.98,
+      metalness: 0.02
+    })
+  );
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.position.y = -0.01;
+  floorMesh.receiveShadow = true;
+  scene.add(floorMesh);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = true;
+  controls.minPolarAngle = 0.2;
+  controls.maxPolarAngle = Math.PI / 2.02;
+  controls.target.copy(defaultCameraTarget);
+  controls.update();
+
+  applyViewerTheme();
+  renderer.setAnimationLoop(() => {
+    if (!renderer || !scene || !camera) return;
+    if (controls) controls.update();
+    renderer.render(scene, camera);
+  });
+
+  if (typeof ResizeObserver === 'function') {
+    resizeObserver = new ResizeObserver(() => resizeViewer());
+    resizeObserver.observe(dom.canvas);
+  }
+
+  if (typeof MutationObserver === 'function' && document.body) {
+    themeObserver = new MutationObserver(() => applyViewerTheme());
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-resolved-theme'] });
+  }
+
+  initialized = true;
+  initViewerControls();
+  resizeViewer();
+  showEmptyState();
+  await updateModel(state && state.selections ? state.selections.model : null);
+}
+
+window.addEventListener('resize', () => {
   if (resizeTimeout) clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(resizeViewer, 200);
+  resizeTimeout = setTimeout(() => resizeViewer(), 120);
 });
 
-// Update model based on selection
-export function updateModel(modelId) {
-  // For now, we only display placeholder images.
-  // In a real scenario, this function would load and display the actual 3D model.
-  hideLoadingState(); // Ensure loading state is hidden
-  displayPlaceholderImage(modelId);
-}
-
-// Function to initialize viewer controls after they are loaded into the DOM
-export function initViewerControls() {
-  const resetViewButton = document.getElementById("reset-view");
-  if (resetViewButton) {
-    resetViewButton.addEventListener("click", resetView);
-  } else {
-    log.warn('Reset view button not found. Viewer controls might not be loaded yet.');
-  }
-}
-
-// Listen for model selection changes
-document.addEventListener("statechange", () => {
-  if (state && state.selections && state.selections.model) {
-    updateModel(state.selections.model);
-  }
+document.addEventListener('statechange', () => {
+  if (!initialized) return;
+  void updateModel(state && state.selections ? state.selections.model : null);
 });

@@ -1,22 +1,43 @@
 <!-- Main Content - Viewer Section -->
-<section class="col-span-1 row-span-1 flex flex-col overflow-hidden lg:col-span-1 lg:row-span-1">
-  <!-- 3D Viewer Section -->
-  <section class="flex-1 flex flex-col items-center justify-center bg-white relative w-full p-4">
-    <!-- 3D Viewer -->
-    <div class="viewer-container">
-      <div id="viewer" class="w-full h-full flex-1 flex flex-col items-center justify-center bg-gray-100 rounded-lg shadow-lg border border-gray-200">
-        <div id="viewer-canvas" class="w-full h-full flex-1 flex items-center justify-center">
-          <!-- Three.js canvas will be injected here -->
-          <div id="viewer-placeholder" class="text-center text-gray-400 text-lg">
-            Select a style to begin
-          </div>
+<section class="viewer-stage-shell" aria-label="WoodLab 3D preview">
+  <div class="viewer-frame">
+    <div id="viewer" class="viewer-surface" data-viewer-state="empty" aria-label="3D table viewer">
+      <div id="viewer-canvas" class="viewer-canvas"></div>
+
+      <div id="viewer-empty-state" class="viewer-overlay viewer-overlay-empty">
+        <div class="viewer-overlay-card">
+          <img src="assets/images/Generated%20Placeholder%20Table.png" alt="" class="viewer-empty-illustration" />
+          <p class="viewer-overlay-eyebrow">WoodLab configurator</p>
+          <h2 class="viewer-overlay-title">Choose a model to begin</h2>
+          <p class="viewer-overlay-copy">The first live 3D slice uses the local placeholder model in the repo.</p>
         </div>
       </div>
+
+      <div id="viewer-loading-state" class="viewer-overlay viewer-overlay-loading" hidden>
+        <div class="viewer-overlay-card">
+          <div class="viewer-loading-spinner" aria-hidden="true"></div>
+          <p class="viewer-overlay-eyebrow">Loading preview</p>
+          <p class="viewer-overlay-copy">Preparing the selected model for the viewer.</p>
+        </div>
+      </div>
+
+      <div id="viewer-error-state" class="viewer-overlay viewer-overlay-error" hidden>
+        <div class="viewer-overlay-card">
+          <p class="viewer-overlay-eyebrow">Preview unavailable</p>
+          <h2 class="viewer-overlay-title">3D preview could not be loaded</h2>
+          <p id="viewer-error-copy" class="viewer-overlay-copy">Try loading the selected placeholder again.</p>
+          <button id="viewer-retry" type="button" class="control-btn viewer-retry-button">Retry Preview</button>
+        </div>
+      </div>
+
+      <div id="viewer-status-badge" class="viewer-status-badge">3D Preview</div>
+      <p id="viewer-supporting-copy" class="viewer-supporting-copy">Choose a model on the right to load the first placeholder preview.</p>
+
+      <div id="viewer-controls-container" class="viewer-controls-container">
+        <div data-include="components/ViewerControls.html"></div>
+      </div>
+
+      <div id="viewer-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
-    <!-- Controls Bar - Moved outside viewer but below it -->
-    <div id="viewer-controls-container" class="w-full mt-4 bg-white rounded-lg shadow-sm border border-gray-200">
-      <!-- ViewerControls.html will be included here -->
-      <div data-include="components/ViewerControls.html"></div>
-    </div>
-  </section>
+  </div>
 </section>
