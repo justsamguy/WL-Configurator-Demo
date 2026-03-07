@@ -57,6 +57,11 @@ const managerState = {
 const OPTIONAL_STAGES = [6]; // index 6 = 'Add-ons'
 const DIMENSIONS_STAGE_INDEX = 4;
 const LEGS_STAGE_INDEX = 5;
+const SUMMARY_STAGE_INDEX = 7;
+const SUMMARY_FULL_LABEL = 'Summary & Export';
+const SUMMARY_SHORT_LABEL = 'Summary';
+let summaryLabelObserver = null;
+let summaryLabelHandlersBound = false;
 
 function $(sel) {
   return document.querySelector(sel);
@@ -64,6 +69,50 @@ function $(sel) {
 
 function $all(sel) {
   return Array.from(document.querySelectorAll(sel));
+}
+
+function shouldUseShortSummaryLabel(btn) {
+  if (!btn) return false;
+  const prevLabel = btn.textContent || '';
+  if (prevLabel !== SUMMARY_FULL_LABEL) btn.textContent = SUMMARY_FULL_LABEL;
+  const style = window.getComputedStyle(btn);
+  const lineHeight = parseFloat(style.lineHeight);
+  const fontSize = parseFloat(style.fontSize) || 16;
+  const computedLineHeight = Number.isFinite(lineHeight) ? lineHeight : fontSize * 1.2;
+  const verticalPadding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+  const maxSingleLineHeight = Math.ceil(computedLineHeight + verticalPadding + 1);
+  const wraps = btn.scrollHeight > maxSingleLineHeight;
+  if (prevLabel !== SUMMARY_FULL_LABEL) btn.textContent = prevLabel;
+  return wraps;
+}
+
+function updateSummaryStageButtonLabel() {
+  const btn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${SUMMARY_STAGE_INDEX}']`);
+  if (!btn) return;
+  const shortLabelNeeded = shouldUseShortSummaryLabel(btn);
+  const targetLabel = shortLabelNeeded ? SUMMARY_SHORT_LABEL : SUMMARY_FULL_LABEL;
+  if ((btn.textContent || '') !== targetLabel) btn.textContent = targetLabel;
+  btn.setAttribute('aria-label', SUMMARY_FULL_LABEL);
+  btn.setAttribute('title', SUMMARY_FULL_LABEL);
+}
+
+function scheduleSummaryStageButtonLabelUpdate() {
+  requestAnimationFrame(() => {
+    updateSummaryStageButtonLabel();
+  });
+}
+
+function bindSummaryStageButtonLabelHandlers() {
+  if (summaryLabelHandlersBound) return;
+  summaryLabelHandlersBound = true;
+  window.addEventListener('resize', scheduleSummaryStageButtonLabelUpdate);
+  if (typeof ResizeObserver === 'function') {
+    const stageBar = document.getElementById('stage-bar');
+    if (stageBar) {
+      summaryLabelObserver = new ResizeObserver(() => scheduleSummaryStageButtonLabelUpdate());
+      summaryLabelObserver.observe(stageBar);
+    }
+  }
 }
 
 function formatPrice(centsOrUnits) {
@@ -131,14 +180,16 @@ async function setStage(index, options = {}) {
   // show confirmation dialog unless skipConfirm is true
   if (index === 0 && appState.selections.design && !options.skipConfirm) {
     const confirmed = await showConfirmDialog(
-      'Changing models will clear your design selection. Continue?',
+      'Changing models will clear your current selection. Continue?',
       'Cancel',
       'Change Model'
     );
     if (!confirmed) return;
-    // User confirmed, proceed with clear design
-    setState({ selections: { ...appState.selections, design: null } });
-    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'design-cleared' } }));
+    // User confirmed, clear current selection immediately so reset does not wait for a new model click.
+    setState({
+      selections: { model: null, design: null, options: {}, dimensionsDetail: null, techCableLength: null }
+    });
+    document.dispatchEvent(new CustomEvent('request-price-refresh', { detail: { reason: 'model-change-confirmed' } }));
   }
   
   // gating: normally prevent jumping forward past first incomplete required stage
@@ -246,6 +297,7 @@ async function setStage(index, options = {}) {
       }
     }
   });
+  scheduleSummaryStageButtonLabelUpdate();
   updateNextButton();
 
   // Special handling for Models (0) and Designs (1) stages: move panel for full-width display
@@ -490,10 +542,11 @@ async function setStage(index, options = {}) {
   // setTimeout(() => { // REMOVED: This causes infinite loop when combined with setStage calls
     try {
       if (managerState.current === 2) {
-        // Materials stage: check if both material and color are selected
+        // Materials stage: check if material, color, and color gradient are selected
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        markCompleted(2, !!(hasMaterial && hasColor));
+        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
+        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
       } else if (managerState.current === 3) {
         // Finish stage: check if coating, sheen, and tint are all selected
         const hasCoating = !!(appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
@@ -571,6 +624,7 @@ function wireStageButtons() {
 export function initStageManager() {
   // initial wiring
   wireStageButtons();
+  bindSummaryStageButtonLabelHandlers();
   const nextBtn = document.getElementById('next-stage-btn');
   if (nextBtn) nextBtn.addEventListener('click', () => nextStage());
   // Initialize models and designs stage modules which wire option-card clicks
@@ -623,10 +677,11 @@ export function initStageManager() {
       
       // For all other stages, validate completion based on current stage and update accordingly
       if (managerState.current === 2) {
-        // Materials stage (index 2): require both material and color
+        // Materials stage (index 2): require material, color, and color gradient
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        markCompleted(2, !!(hasMaterial && hasColor));
+        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
+        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
       } else if (managerState.current === 3) {
         // Finish stage (index 3): require coating, sheen, and tint
         const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
@@ -703,6 +758,7 @@ export function initStageManager() {
 
   updateLivePrice();
   setStage(0);
+  scheduleSummaryStageButtonLabelUpdate();
 }
 
 // Use shared showBanner from ui/banner.js for consistent styling and accessibility.

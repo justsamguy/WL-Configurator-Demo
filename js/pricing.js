@@ -208,6 +208,7 @@ export async function computePrice(state) {
     const singleCategories = [
       { key: 'material', label: 'material' },
       { key: 'color', label: 'color' },
+      { key: 'color-gradient', label: 'color-gradient' },
       { key: 'finish-coating', label: 'finish-coating' },
       { key: 'finish-sheen', label: 'finish-sheen' },
       { key: 'finish-tint', label: 'finish-tint' },
@@ -235,6 +236,7 @@ export async function computePrice(state) {
           let path = null;
           if (cat.key === 'material') path = 'data/materials.json';
           else if (cat.key === 'color') path = 'data/colors.json';
+          else if (cat.key === 'color-gradient') path = 'data/color-gradients.json';
           else if (cat.key === 'finish-coating' || cat.key === 'finish-sheen' || cat.key === 'finish-tint') path = 'data/finish.json';
           else if (cat.key === 'legs') path = 'data/legs.json';
           else if (cat.key === 'tube-size') path = 'data/tube-sizes.json';

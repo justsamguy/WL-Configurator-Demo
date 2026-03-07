@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Designs');
 
@@ -13,13 +14,16 @@ export function init() {
   // Delegate clicks on design option-cards. Dispatch 'option-selected' event with category 'design'
   // for main.js to handle global state mutation and price updates.
   document.addEventListener('click', (ev) => {
+    if (isSelectionClickHandled(ev)) return;
     const card = ev.target.closest && ev.target.closest('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]');
     if (!card) return;
     if (card.hasAttribute('disabled')) return;
+    markSelectionClickHandled(ev);
 
-    // Set visual pressed state
-    document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-    card.setAttribute('aria-pressed', 'true');
+    // Set visual pressed state in one pass so deselection and selection update together.
+    document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach((c) => {
+      c.setAttribute('aria-pressed', c === card ? 'true' : 'false');
+    });
 
     const id = card.getAttribute('data-design-id') || card.getAttribute('data-id');
     const presetId = card.getAttribute('data-preset-id') || null;

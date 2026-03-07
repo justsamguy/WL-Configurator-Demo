@@ -17,21 +17,60 @@
 
   <!-- Stage 3: Finish -->
   <section id="stage-panel-3" class="stage-panel">
-    <div id="finish-options" class="">
-      <h4 class="text-sm font-semibold mb-2">Coating</h4>
-      <div class="stage-options-grid mb-4" id="finish-coating-options" aria-live="polite" aria-atomic="true">
-        <!-- Option cards rendered at runtime from data/finish.json coatings via main.js -> stageRenderer.renderOptionCards -->
-      </div>
+    <div id="finish-options" class="stage-subsection-list">
+      <section id="finish-subsection-coating" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="finish-subsection-coating-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Coating</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="finish-subsection-coating-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div class="stage-options-grid" id="finish-coating-options" aria-live="polite" aria-atomic="true">
+              <!-- Option cards rendered at runtime from data/finish.json coatings via main.js -> stageRenderer.renderOptionCards -->
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <h4 class="text-sm font-semibold mb-2">Sheen</h4>
-      <div class="mb-4" id="finish-sheen-slider" aria-live="polite" aria-atomic="true">
-        <!-- Slider rendered at runtime from data/finish.json sheens via main.js -->
-      </div>
+      <section id="finish-subsection-sheen" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="finish-subsection-sheen-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Sheen</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="finish-subsection-sheen-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div id="finish-sheen-slider" aria-live="polite" aria-atomic="true">
+              <!-- Slider rendered at runtime from data/finish.json sheens via main.js -->
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <h4 class="text-sm font-semibold mb-2">Tint</h4>
-      <div class="stage-options-grid" id="finish-tint-options" aria-live="polite" aria-atomic="true">
-        <!-- Option cards rendered at runtime from data/finish.json tints via main.js -> stageRenderer.renderOptionCards -->
-      </div>
+      <section id="finish-subsection-tint" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="finish-subsection-tint-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Tint</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="finish-subsection-tint-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div class="stage-options-grid" id="finish-tint-options" aria-live="polite" aria-atomic="true">
+              <!-- Option cards rendered at runtime from data/finish.json tints via main.js -> stageRenderer.renderOptionCards -->
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -45,20 +84,60 @@
     <div id="legs-price-banner" class="hidden legs-price-banner" role="status" aria-live="polite" aria-atomic="true">
       Leg prices updated automatically because we require 3 legs on tables over 130" Long.
     </div>
-    <div id="legs-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
-      <!-- Option cards rendered at runtime from data/legs.json via main.js -> stageRenderer.renderOptionCards -->
-    </div>
+    <div id="legs-options-group" class="stage-subsection-list">
+      <section id="legs-subsection-style" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="legs-subsection-style-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Leg Style</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="legs-subsection-style-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div id="legs-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+              <!-- Option cards rendered at runtime from data/legs.json via main.js -> stageRenderer.renderOptionCards -->
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Tube Size tiles -->
-    <h4 class="text-sm font-semibold mt-4 mb-2">Tube size</h4>
-    <div id="tube-size-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
-      <!-- Option cards rendered at runtime from data/tube-sizes.json -->
-    </div>
+      <section id="legs-subsection-tube-size" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="legs-subsection-tube-size-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Tube size</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="legs-subsection-tube-size-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div id="tube-size-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+              <!-- Option cards rendered at runtime from data/tube-sizes.json -->
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Leg Finish (Color) tiles -->
-    <h4 class="text-sm font-semibold mt-4 mb-2">Leg finish</h4>
-    <div id="leg-finish-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
-      <!-- Option cards rendered at runtime from data/leg-finish.json -->
+      <section id="legs-subsection-leg-finish" class="stage-subsection-dropdown" data-default-expanded="true">
+        <button type="button" class="stage-subsection-header" aria-expanded="false" aria-controls="legs-subsection-leg-finish-content">
+          <div class="stage-subsection-header-main">
+            <div class="stage-subsection-title">Leg finish</div>
+          </div>
+          <svg class="stage-subsection-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="legs-subsection-leg-finish-content" class="stage-subsection-content" hidden>
+          <div class="stage-subsection-body">
+            <div id="leg-finish-options" class="stage-options-grid" aria-live="polite" aria-atomic="true">
+              <!-- Option cards rendered at runtime from data/leg-finish.json -->
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </section>
 

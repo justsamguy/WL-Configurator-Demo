@@ -32,3 +32,5 @@ This repo maintains multiple rule files for different tools/agents. Keep shared 
 After editing any rule file, run **“Cline: Reload Rules”** in VS Code (or restart Cline in your CLI/CI) to activate the changes.
 
 All rules in this folder are project-specific and must align with the WoodLab Configurator guidelines, locked tech stack, and deployment requirements.
+
+Shared workflow reminder: keep placeholder-backed image fields tracked in the root `placeholder_image_fields.txt` file (add on placeholder use, remove when replaced).

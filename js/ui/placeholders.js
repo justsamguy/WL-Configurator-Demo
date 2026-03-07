@@ -1,36 +1,22 @@
-// UI helpers for placeholder option cards: click handlers, price animation, and loading skeleton
+// UI helpers for placeholder option cards: click handlers and compatibility state helpers
 // Minimize imports here to avoid circular module dependency with main.js
 import { createLogger } from '../logger.js';
+import { isSelectionClickHandled, markSelectionClickHandled } from './selectionEventGuard.js';
 
 const log = createLogger('Placeholders');
-
-// Update the price UI in the footer
-function updatePriceUI(total) {
-  const el = document.getElementById('price-bar');
-  if (!el) return;
-  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
-}
-
-// Create a full-screen loading skeleton over the viewer area
-function showSkeleton(timeout = 700) {
-  let sk = document.getElementById('viewer-skeleton-overlay');
-  if (!sk) {
-    sk = document.createElement('div');
-    sk.id = 'viewer-skeleton-overlay';
-    sk.className = 'viewer-skeleton fixed inset-0 flex items-center justify-center z-40 pointer-events-none';
-    sk.innerHTML = `
-      <div class="skeleton-card w-[640px] h-[360px] bg-gray-100 rounded shadow-inner animate-pulse"></div>
-    `;
-    document.body.appendChild(sk);
-  }
-  sk.style.opacity = '1';
-  clearTimeout(sk._hideTimeout);
-  sk._hideTimeout = setTimeout(() => {
-    sk.style.opacity = '0';
-    // remove after transition
-    setTimeout(() => sk.remove(), 300);
-  }, timeout);
-}
+const STAGE_MANAGED_SINGLE_SELECT_CATEGORIES = new Set([
+  'model',
+  'design',
+  'material',
+  'color',
+  'color-gradient',
+  'finish-coating',
+  'finish-sheen',
+  'finish-tint',
+  'legs',
+  'tube-size',
+  'leg-finish'
+]);
 
 // Helpers to manage multiple incompatibility sources per tile.
 // We store a simple separator-delimited list in `data-disabled-by` and
@@ -86,17 +72,11 @@ function restoreVisualSelections() {
   // Import state dynamically to avoid circular dependency
   import('../state.js').then(({ state }) => {
     // Restore model selection
-    if (state.selections.model) {
-      // Clear all model selections first
-      document.querySelectorAll('.option-card[data-id^="mdl-"]').forEach((el) => {
-        el.setAttribute('aria-pressed', 'false');
-      });
-      // Set the selected model
-      const selectedModel = document.querySelector(`.option-card[data-id="${state.selections.model}"]`);
-      if (selectedModel) {
-        selectedModel.setAttribute('aria-pressed', 'true');
-      }
-    }
+    const selectedModelId = state && state.selections ? state.selections.model : null;
+    document.querySelectorAll('.option-card[data-id^="mdl-"]').forEach((el) => {
+      const isSelected = !!selectedModelId && el.getAttribute('data-id') === selectedModelId;
+      el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
 
     // Restore other single-choice selections. We expect stored keys to map to data-category values
     Object.entries(state.selections.options || {}).forEach(([category, id]) => {
@@ -104,20 +84,21 @@ function restoreVisualSelections() {
         // If DOM elements use data-category attributes, prefer clearing by that attribute
         const byCategoryAttr = document.querySelectorAll(`.option-card[data-category="${category}"]`);
         if (byCategoryAttr && byCategoryAttr.length) {
-          byCategoryAttr.forEach((el) => el.setAttribute('aria-pressed', 'false'));
+          byCategoryAttr.forEach((el) => {
+            const isSelected = el.getAttribute('data-id') === id;
+            el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+          });
         } else {
           // Fallback to matching id prefixes used previously
-          document.querySelectorAll(`.option-card[data-id^="${category === 'material' ? 'mat-' :
-                                                         category === 'finish' ? 'fin-' :
-                                                         category === 'dimensions' ? 'dim-' :
-                                                         category === 'legs' ? 'leg-' : ''}"]`).forEach((el) => {
-            el.setAttribute('aria-pressed', 'false');
+          const idPrefix = category === 'material' ? 'mat-' :
+            category === 'finish' ? 'fin-' :
+            category === 'dimensions' ? 'dim-' :
+            category === 'legs' ? 'leg-' : '';
+          if (!idPrefix) return;
+          document.querySelectorAll(`.option-card[data-id^="${idPrefix}"]`).forEach((el) => {
+            const isSelected = el.getAttribute('data-id') === id;
+            el.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
           });
-        }
-        // Set the selected option
-        const selectedOption = document.querySelector(`.option-card[data-id="${id}"]`);
-        if (selectedOption) {
-          selectedOption.setAttribute('aria-pressed', 'true');
         }
       }
     });
@@ -147,23 +128,29 @@ export function initPlaceholderInteractions() {
 
   // Delegate clicks from the document so option-cards in stage panels are also handled
   document.addEventListener('click', (ev) => {
+    if (isSelectionClickHandled(ev)) return;
     const btn = ev.target.closest('.option-card');
     if (!btn) return;
     if (btn.hasAttribute('data-ignore-placeholder')) return;
     if (btn.hasAttribute('disabled')) return;
 
     // read price from data-price (fallback to 0)
-  const priceAttr = btn.getAttribute('data-price') || '0';
-  const price = parseInt(priceAttr, 10) || 0;
-  const id = btn.getAttribute('data-id') || null;
-  // allow explicit data-category; this project uses more explicit categories for finishes
-  let category = btn.getAttribute('data-category') || null;
+    const priceAttr = btn.getAttribute('data-price') || '0';
+    const price = parseInt(priceAttr, 10) || 0;
+    const id = btn.getAttribute('data-id') || null;
+    // allow explicit data-category; this project uses more explicit categories for finishes
+    let category = btn.getAttribute('data-category') || null;
+    const managedByStage =
+      (category && STAGE_MANAGED_SINGLE_SELECT_CATEGORIES.has(category)) ||
+      (!category && id && (id.startsWith('mdl-') || id.startsWith('des-')));
+    if (managedByStage) return;
+    markSelectionClickHandled(ev);
 
     // For single-choice categories (default), clear previous selection in the same category
     if (category && category !== 'addon') {
       document.querySelectorAll(`.option-card[data-category="${category}"]`).forEach((el) => {
-        if (el !== btn) el.setAttribute('aria-pressed', 'false');
-        if (el.hasAttribute('role') && el.getAttribute('role') === 'checkbox') el.setAttribute('aria-checked', 'false');
+        el.setAttribute('aria-pressed', el === btn ? 'true' : 'false');
+        if (el !== btn && el.hasAttribute('role') && el.getAttribute('role') === 'checkbox') el.setAttribute('aria-checked', 'false');
       });
     }
 
@@ -192,16 +179,15 @@ export function initPlaceholderInteractions() {
       const categoryToClear = category || implicitCategory || null;
       if (categoryToClear) {
         document.querySelectorAll(`.option-card[data-category="${categoryToClear}"]`).forEach((el) => {
-          if (el !== btn) el.setAttribute('aria-pressed', 'false');
+          el.setAttribute('aria-pressed', el === btn ? 'true' : 'false');
         });
       } else {
         // Fallback: clear all non-model selections if we can't determine the category
         document.querySelectorAll('.option-card[aria-pressed="true"]:not([data-id^="mdl-"])').forEach((el) => {
           el.setAttribute('aria-pressed', 'false');
         });
+        btn.setAttribute('aria-pressed', 'true');
       }
-
-      btn.setAttribute('aria-pressed', 'true');
       // If no explicit data-category was provided, use the inferred implicitCategory
       const dispatchCategory = category || implicitCategory || null;
 
@@ -212,8 +198,7 @@ export function initPlaceholderInteractions() {
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: dispatchCategory } }));
     }
 
-    // show skeleton to mimic viewer re-render
-    showSkeleton(700);
+    // Keep tile feedback focused on selection state; avoid a delayed second visual pulse.
   });
 
   // Create a single floating tooltip element for disabled tiles to avoid clipping

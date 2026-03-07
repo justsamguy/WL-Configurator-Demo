@@ -121,11 +121,12 @@ function buildAddonMap(addons) {
 export async function loadSummaryData(loadDataOverride) {
   if (summaryDataCache) return summaryDataCache;
   const loader = typeof loadDataOverride === 'function' ? loadDataOverride : loadData;
-  const [models, designs, materials, colors, finish, dimensions, legs, tubeSizes, legFinishes, addons] = await Promise.all([
+  const [models, designs, materials, colors, colorGradients, finish, dimensions, legs, tubeSizes, legFinishes, addons] = await Promise.all([
     loader('data/models.json'),
     loader('data/designs.json'),
     loader('data/materials.json'),
     loader('data/colors.json'),
+    loader('data/color-gradients.json'),
     loader('data/finish.json'),
     loader('data/dimensions.json'),
     loader('data/legs.json'),
@@ -139,6 +140,7 @@ export async function loadSummaryData(loadDataOverride) {
     designs: buildIdMap(designs),
     materials: buildIdMap(materials),
     colors: buildIdMap(colors),
+    colorGradients: buildIdMap(colorGradients),
     finishCoatings: buildIdMap(finish && finish.coatings),
     finishSheens: buildIdMap(finish && finish.sheens),
     finishTints: buildIdMap(finish && finish.tints),
@@ -156,6 +158,7 @@ const BREAKDOWN_LABELS = {
   design: 'Design',
   material: 'Material',
   color: 'Color',
+  'color-gradient': 'Color Gradient',
   'finish-coating': 'Finish Coating',
   'finish-sheen': 'Finish Sheen',
   'finish-tint': 'Finish Tint',
@@ -290,6 +293,13 @@ const COLOR_LAYOUT_SPECS = {
   'Dark Grey': 'Solid',
   'Caviar Black': 'Solid',
   'Solid Black': 'Solid',
+  'Custom': 'Custom'
+};
+
+const COLOR_GRADIENT_LAYOUT_SPECS = {
+  'Dark to Light': 'Gradient (dark on one end, light on the other)',
+  'Light Center': 'Gradient (light center highlight)',
+  'Single Color': 'Solid',
   'Custom': 'Custom'
 };
 
@@ -561,7 +571,7 @@ export function getShippingDetails() {
   };
 }
 
-function formatDimensionsDetail(detail) {
+function formatDimensionsDetail(detail, selections = null) {
   if (!detail || typeof detail !== 'object') return '';
   const sizeParts = [];
   if (typeof detail.length === 'number') sizeParts.push(`${detail.length} in`);
@@ -570,12 +580,14 @@ function formatDimensionsDetail(detail) {
   if (sizeParts.length === 2) sizeText = `${sizeParts[0]} x ${sizeParts[1]}`;
   else if (sizeParts.length === 1) sizeText = sizeParts[0];
   let heightText = '';
-  if (detail.height === 'standard') heightText = 'standard height';
-  else if (detail.height === 'bar') heightText = 'bar height';
+  const resolvedHeight = selections ? resolveTableHeight(selections) : null;
+  if (detail.height === 'standard' && Number.isFinite(resolvedHeight)) heightText = `${formatNumber(resolvedHeight)}" (Standard Height)`;
+  else if (detail.height === 'bar' && Number.isFinite(resolvedHeight)) heightText = `${formatNumber(resolvedHeight)}" (Bartop Height)`;
   else if (detail.height === 'custom') {
-    if (typeof detail.heightCustom === 'number') heightText = `custom height ${detail.heightCustom} in`;
-    else heightText = 'custom height';
-  }
+    if (typeof detail.heightCustom === 'number') heightText = `${formatNumber(detail.heightCustom)}" (Custom Height)`;
+    else heightText = 'TBD (Custom Height)';
+  } else if (detail.height === 'standard') heightText = 'TBD (Standard Height)';
+  else if (detail.height === 'bar') heightText = 'TBD (Bartop Height)';
   if (heightText) sizeText = sizeText ? `${sizeText}, ${heightText}` : heightText;
   return sizeText;
 }
@@ -617,6 +629,17 @@ function getColorSpecs(title) {
     pigment: COLOR_PIGMENT_SPECS[title] || null,
     layout: COLOR_LAYOUT_SPECS[title] || null
   };
+}
+
+function getColorLayoutSpec(colorTitle, colorGradientTitle) {
+  if (colorGradientTitle && COLOR_GRADIENT_LAYOUT_SPECS[colorGradientTitle]) {
+    return COLOR_GRADIENT_LAYOUT_SPECS[colorGradientTitle];
+  }
+  if (colorTitle && COLOR_LAYOUT_SPECS[colorTitle]) {
+    return COLOR_LAYOUT_SPECS[colorTitle];
+  }
+  if (colorGradientTitle === 'Custom') return 'Custom';
+  return colorTitle ? 'Custom' : 'TBD';
 }
 
 function getFinishSheenSpec(coatingTitle, sheenTitle) {
@@ -780,12 +803,21 @@ export function buildOptionGroups(selections, summaryData) {
   addOptionItem(tabletopItems, 'Color', opts.color, summaryData && opts.color ? summaryData.colors.get(opts.color) : null, 'color');
   const customColorNote = typeof opts.customColorNote === 'string' ? opts.customColorNote.trim() : '';
   if (customColorNote) tabletopItems.push({ label: 'Custom Color Note', value: customColorNote, type: 'note' });
+  addOptionItem(
+    tabletopItems,
+    'Color Gradient',
+    opts['color-gradient'],
+    summaryData && opts['color-gradient'] ? summaryData.colorGradients.get(opts['color-gradient']) : null,
+    'color-gradient'
+  );
+  const customColorGradientNote = typeof opts.customColorGradientNote === 'string' ? opts.customColorGradientNote.trim() : '';
+  if (customColorGradientNote) tabletopItems.push({ label: 'Custom Color Gradient Note', value: customColorGradientNote, type: 'note' });
   addOptionItem(tabletopItems, 'Finish Coating', opts['finish-coating'], summaryData && opts['finish-coating'] ? summaryData.finishCoatings.get(opts['finish-coating']) : null, 'finish-coating');
   addOptionItem(tabletopItems, 'Finish Sheen', opts['finish-sheen'], summaryData && opts['finish-sheen'] ? summaryData.finishSheens.get(opts['finish-sheen']) : null, 'finish-sheen');
   addOptionItem(tabletopItems, 'Finish Tint', opts['finish-tint'], summaryData && opts['finish-tint'] ? summaryData.finishTints.get(opts['finish-tint']) : null, 'finish-tint');
   if (tabletopItems.length) groups.push({ title: 'Tabletop', items: tabletopItems });
 
-  const dimensionValue = formatDimensionsDetail(selections.dimensionsDetail);
+  const dimensionValue = formatDimensionsDetail(selections.dimensionsDetail, selections);
   if (opts.dimensions || dimensionValue) {
     const dimensionEntry = summaryData && opts.dimensions ? summaryData.dimensions.get(opts.dimensions) : null;
     const fallbackDimension = opts.dimensions === 'dimensions-custom' ? 'Custom dimensions' : opts.dimensions;
@@ -1045,28 +1077,29 @@ async function writeClipboardText(text) {
   if (!ok) throw new Error('Clipboard copy failed');
 }
 
-function setCopyStatus(message, isError = false) {
-  const statusEl = document.getElementById('config-copy-status');
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.classList.toggle('is-error', isError);
-  statusEl.hidden = !message;
+function setButtonFeedback(btn, successText) {
+  const originalText = btn.textContent.trim();
+  btn.textContent = successText;
+  btn.classList.add('btn-success');
+  setTimeout(() => {
+    btn.classList.remove('btn-success');
+    setTimeout(() => { btn.textContent = originalText; }, 300);
+  }, 2000);
 }
 
 async function copyConfigMarkdown() {
-  setCopyStatus('');
+  const btn = document.getElementById('copy-config');
   try {
     const markdown = await buildExportMarkdown(state, loadData);
     await writeClipboardText(markdown);
-    setCopyStatus('Configuration copied as markdown.');
+    if (btn) setButtonFeedback(btn, 'Copied ✓');
   } catch (e) {
     log.warn('Copy configuration failed', e);
-    setCopyStatus('Unable to copy configuration. Please try again.', true);
   }
 }
 
 async function loadLogoDataUrl() {
-  const logoPath = 'assets/icons/WoodLab_logo_-_official.png';
+  const logoPath = 'assets/brand/icons/WoodLab_logo_-_official.png';
   try {
     const response = await fetch(logoPath);
     if (!response.ok) throw new Error(`Logo fetch failed: ${response.status}`);
@@ -1524,6 +1557,10 @@ async function exportPdf() {
   const colorEntry = summaryData && summaryData.colors ? summaryData.colors.get(opts.color) : null;
   const colorTitle = getEntryTitle(colorEntry, opts.color);
   const colorSpecs = getColorSpecs(colorTitle);
+  const colorGradientEntry = summaryData && summaryData.colorGradients ? summaryData.colorGradients.get(opts['color-gradient']) : null;
+  const colorGradientTitle = getEntryTitle(colorGradientEntry, opts['color-gradient']);
+  const colorLayoutLabel = getColorLayoutSpec(colorTitle, colorGradientTitle);
+  const customColorGradientNote = typeof opts.customColorGradientNote === 'string' ? opts.customColorGradientNote.trim() : '';
 
   const legEntry = summaryData && summaryData.legs ? summaryData.legs.get(opts.legs) : null;
   const tubeEntry = summaryData && summaryData.tubeSizes ? summaryData.tubeSizes.get(opts['tube-size']) : null;
@@ -1620,6 +1657,7 @@ async function exportPdf() {
   addTechRow('Estimated Tabletop Weight', formatWeight(estimatedTabletopWeight));
   addTechRow('Estimated Total Weight', formatWeight(estimatedTotalWeight));
   addTechRow('Tabletop Thickness', tabletopThicknessLabel);
+  addTechRow('Edge Roundness', '<1/16" (1.5mm)');
   if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
   if (addons.includes('addon-angled-corners')) addTechRow('Angled Corners', 'TBD');
   if (waterfallCount > 0) {
@@ -1643,7 +1681,9 @@ async function exportPdf() {
   addTechRow('Base Epoxy Layer', 'Seal coat <0.25 in');
   addTechRow('Main Epoxy Layer', 'River 2-2.5 in');
   addTechRow('Pigment Composition', (colorSpecs && colorSpecs.pigment) || (colorTitle ? 'Custom' : 'TBD'));
-  addTechRow('Color Layout', (colorSpecs && colorSpecs.layout) || (colorTitle ? 'Custom' : 'TBD'));
+  addTechRow('Color Layout', colorLayoutLabel);
+  addTechRow('Color Gradient', colorGradientTitle || 'None');
+  if (customColorGradientNote) addTechRow('Color Gradient Notes', customColorGradientNote);
 
   addTechSubheading('Hardware');
   addTechRow('Leg Style', legStyleLabel);
@@ -1813,6 +1853,8 @@ async function exportPdf() {
     now.getHours().toString().padStart(2, '0') +
     now.getMinutes().toString().padStart(2, '0');
   doc.save(`woodlab-summary-${timestamp}.pdf`);
+  const expBtn = document.getElementById('export-pdf');
+  if (expBtn) setButtonFeedback(expBtn, 'Download Complete ✓');
   pdfLog.info('Export finished');
   console.log('[PDF Export] Export complete');
 }

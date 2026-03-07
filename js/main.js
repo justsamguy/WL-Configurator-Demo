@@ -13,6 +13,279 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
+const THEME_STORAGE_KEY = 'wl-theme-mode';
+const THEME_MODES = ['system', 'light', 'dark'];
+let systemThemeMediaQuery = null;
+let systemThemeListenerBound = false;
+
+function normalizeThemeMode(mode) {
+  return THEME_MODES.includes(mode) ? mode : 'system';
+}
+
+function getStoredThemeMode() {
+  try {
+    return normalizeThemeMode(localStorage.getItem(THEME_STORAGE_KEY));
+  } catch (e) {
+    return 'system';
+  }
+}
+
+function saveThemeMode(mode) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch (e) {
+    // ignore storage failures in private browsing / strict privacy modes
+  }
+}
+
+function resolveThemeMode(mode) {
+  const normalizedMode = normalizeThemeMode(mode);
+  if (normalizedMode !== 'system') return normalizedMode;
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'light';
+}
+
+function getNextThemeMode(mode) {
+  const normalizedMode = normalizeThemeMode(mode);
+  const currentIndex = THEME_MODES.indexOf(normalizedMode);
+  const nextIndex = (currentIndex + 1) % THEME_MODES.length;
+  return THEME_MODES[nextIndex];
+}
+
+function formatThemeModeLabel(mode) {
+  if (mode === 'system') return 'System';
+  if (mode === 'light') return 'Light';
+  if (mode === 'dark') return 'Dark';
+  return 'System';
+}
+
+function getThemeIconClass(mode) {
+  if (mode === 'light') return 'fa-solid fa-sun';
+  if (mode === 'dark') return 'fa-regular fa-moon';
+  return 'fa-solid fa-computer';
+}
+
+function updateThemeToggleUI(mode, resolvedTheme) {
+  const button = document.getElementById('theme-cycle-toggle');
+  const label = document.getElementById('theme-cycle-label');
+  const icon = document.getElementById('theme-cycle-icon');
+  if (!button) return;
+  const nextMode = getNextThemeMode(mode);
+  const modeLabel = formatThemeModeLabel(mode);
+  const nextModeLabel = formatThemeModeLabel(nextMode);
+
+  button.dataset.themeMode = mode;
+  button.dataset.resolvedTheme = resolvedTheme;
+  button.setAttribute('aria-label', `Theme mode: ${modeLabel}. Activate to switch to ${nextModeLabel}.`);
+  button.setAttribute('title', `Theme: ${modeLabel} (next: ${nextModeLabel})`);
+
+  if (icon) {
+    icon.className = `${getThemeIconClass(mode)} theme-cycle-icon-glyph`;
+  }
+
+  if (label) {
+    label.textContent = mode === 'system'
+      ? `${modeLabel} (${formatThemeModeLabel(resolvedTheme)})`
+      : modeLabel;
+  }
+}
+
+function announceThemeStatus(mode, resolvedTheme) {
+  const status = document.getElementById('theme-toggle-status');
+  if (!status) return;
+  const modeLabel = formatThemeModeLabel(mode);
+  if (mode === 'system') {
+    status.textContent = `Theme set to System. Using ${formatThemeModeLabel(resolvedTheme)} appearance.`;
+    return;
+  }
+  status.textContent = `Theme set to ${modeLabel}.`;
+}
+
+function applyThemeMode(mode, { persist = false, announce = false } = {}) {
+  const normalizedMode = normalizeThemeMode(mode);
+  const resolvedTheme = resolveThemeMode(normalizedMode);
+
+  document.documentElement.setAttribute('data-theme-mode', normalizedMode);
+  document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+  if (document.body) {
+    document.body.setAttribute('data-theme-mode', normalizedMode);
+    document.body.setAttribute('data-resolved-theme', resolvedTheme);
+  }
+
+  updateThemeToggleUI(normalizedMode, resolvedTheme);
+  if (persist) saveThemeMode(normalizedMode);
+  if (announce) announceThemeStatus(normalizedMode, resolvedTheme);
+}
+
+function initThemeToggle() {
+  const initialMode = getStoredThemeMode();
+  applyThemeMode(initialMode);
+
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    if (!systemThemeMediaQuery) {
+      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    }
+    if (!systemThemeListenerBound) {
+      const handleSystemThemeChange = () => {
+        const currentMode = normalizeThemeMode(document.documentElement.getAttribute('data-theme-mode'));
+        if (currentMode === 'system') applyThemeMode('system');
+      };
+      if (typeof systemThemeMediaQuery.addEventListener === 'function') {
+        systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
+      } else if (typeof systemThemeMediaQuery.addListener === 'function') {
+        systemThemeMediaQuery.addListener(handleSystemThemeChange);
+      }
+      systemThemeListenerBound = true;
+    }
+  }
+
+  const button = document.getElementById('theme-cycle-toggle');
+  if (!button || button.dataset.listenerBound === 'true') return;
+
+  button.addEventListener('click', () => {
+    const currentMode = normalizeThemeMode(document.documentElement.getAttribute('data-theme-mode'));
+    const nextMode = getNextThemeMode(currentMode);
+    applyThemeMode(nextMode, { persist: true, announce: true });
+  });
+  button.dataset.listenerBound = 'true';
+}
+
+function parseRgbColor(value) {
+  if (!value || typeof value !== 'string') return null;
+  const channels = value.match(/[\d.]+/g);
+  if (!channels || channels.length < 3) return null;
+  return channels.slice(0, 3).map((channel) => Math.max(0, Math.min(255, Math.round(Number(channel)))));
+}
+
+function mixRgbColor(a, b, weight = 0.5) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return null;
+  const mix = Math.max(0, Math.min(1, Number(weight)));
+  return [
+    Math.round((a[0] * (1 - mix)) + (b[0] * mix)),
+    Math.round((a[1] * (1 - mix)) + (b[1] * mix)),
+    Math.round((a[2] * (1 - mix)) + (b[2] * mix))
+  ];
+}
+
+function initFooterLiquidGlass() {
+  const footerBar = document.querySelector('.footer-bar');
+  if (!footerBar || footerBar.dataset.glassBound === 'true') return;
+  footerBar.dataset.glassBound = 'true';
+
+  const setGlassVar = (name, value) => footerBar.style.setProperty(name, value);
+  const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const resetPointerState = () => {
+    setGlassVar('--footer-glass-x', '50%');
+    setGlassVar('--footer-glass-y', '45%');
+    setGlassVar('--footer-glass-shift', '0px');
+  };
+
+  const updatePointerState = (clientX, clientY) => {
+    if (reducedMotion) return;
+    const rect = footerBar.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const xRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const yRatio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const shift = ((xRatio - 0.5) + (0.5 - yRatio)) * 3.4;
+    setGlassVar('--footer-glass-x', `${(xRatio * 100).toFixed(1)}%`);
+    setGlassVar('--footer-glass-y', `${(yRatio * 100).toFixed(1)}%`);
+    setGlassVar('--footer-glass-shift', `${shift.toFixed(2)}px`);
+  };
+
+  const updateAmbientTint = () => {
+    const bodyColor = parseRgbColor(window.getComputedStyle(document.body).backgroundColor) || [235, 241, 248];
+    const mainEl = document.getElementById('app-main');
+    const mainColor = mainEl ? parseRgbColor(window.getComputedStyle(mainEl).backgroundColor) || bodyColor : bodyColor;
+    const resolvedTheme = document.body.getAttribute('data-resolved-theme') || 'light';
+    const tintBase = mixRgbColor(bodyColor, mainColor, 0.5) || bodyColor;
+    const tint = mixRgbColor(tintBase, resolvedTheme === 'dark' ? [116, 148, 199] : [255, 255, 255], resolvedTheme === 'dark' ? 0.28 : 0.42) || tintBase;
+    const edge = mixRgbColor(tint, [255, 255, 255], resolvedTheme === 'dark' ? 0.2 : 0.62) || tint;
+    const shadow = mixRgbColor(bodyColor, [6, 10, 21], resolvedTheme === 'dark' ? 0.85 : 0.56) || [15, 23, 42];
+    setGlassVar('--footer-glass-tint-rgb', `${tint.join(', ')}`);
+    setGlassVar('--footer-glass-edge-rgb', `${edge.join(', ')}`);
+    setGlassVar('--footer-glass-shadow-rgb', `${shadow.join(', ')}`);
+    setGlassVar('--footer-glass-ambient-alpha', resolvedTheme === 'dark' ? '0.33' : '0.22');
+  };
+
+  const scrollSources = new Set();
+  const bindScrollSource = (element, handler) => {
+    if (!element || element.dataset.glassScrollBound === 'true') return;
+    element.addEventListener('scroll', handler, { passive: true });
+    element.dataset.glassScrollBound = 'true';
+  };
+  const syncScrollSources = () => {
+    scrollSources.clear();
+    const appMain = document.getElementById('app-main');
+    const appSidebar = document.getElementById('app-sidebar');
+    if (appMain) scrollSources.add(appMain);
+    if (appSidebar) scrollSources.add(appSidebar);
+    document.querySelectorAll('.stage-panel, body > #stage-panel-0').forEach((element) => scrollSources.add(element));
+  };
+
+  const getScrollSignal = () => {
+    let signal = window.scrollY || window.pageYOffset || 0;
+    scrollSources.forEach((element) => {
+      if (!element || !element.isConnected) return;
+      const maxScrollable = element.scrollHeight - element.clientHeight;
+      if (maxScrollable <= 1) return;
+      signal += element.scrollTop || 0;
+    });
+    return signal;
+  };
+
+  const updateViewportSheen = () => {
+    const viewportHeight = Math.max(1, window.innerHeight || 1);
+    const ratio = ((getScrollSignal() % viewportHeight) / viewportHeight);
+    const sheenPosition = 45 + (ratio * 24);
+    setGlassVar('--footer-glass-sheen', `${sheenPosition.toFixed(1)}%`);
+  };
+
+  const refreshGlassContext = () => {
+    syncScrollSources();
+    updateAmbientTint();
+    updateViewportSheen();
+    scrollSources.forEach((element) => bindScrollSource(element, updateViewportSheen));
+  };
+  let refreshScheduled = false;
+  const scheduleGlassContextRefresh = () => {
+    if (refreshScheduled) return;
+    refreshScheduled = true;
+    const run = () => {
+      refreshScheduled = false;
+      refreshGlassContext();
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+    else setTimeout(run, 0);
+  };
+
+  syncScrollSources();
+
+  footerBar.addEventListener('pointermove', (event) => updatePointerState(event.clientX, event.clientY));
+  footerBar.addEventListener('pointerdown', (event) => updatePointerState(event.clientX, event.clientY));
+  footerBar.addEventListener('pointerleave', resetPointerState);
+  window.addEventListener('resize', () => {
+    refreshGlassContext();
+  }, { passive: true });
+  window.addEventListener('scroll', updateViewportSheen, { passive: true });
+  scrollSources.forEach((element) => bindScrollSource(element, updateViewportSheen));
+
+  if (typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(() => scheduleGlassContextRefresh());
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-resolved-theme', 'class'] });
+    const appMain = document.getElementById('app-main');
+    const appSidebar = document.getElementById('app-sidebar');
+    if (appMain) observer.observe(appMain, { childList: true, subtree: true });
+    if (appSidebar) observer.observe(appSidebar, { childList: true, subtree: true });
+  }
+
+  refreshGlassContext();
+}
+
+if (typeof document !== 'undefined') {
+  applyThemeMode(getStoredThemeMode());
+}
 
 if (typeof window !== 'undefined') {
   window.exportConfig = async () => {
@@ -27,6 +300,93 @@ if (typeof window !== 'undefined') {
       return null;
     }
   };
+}
+
+function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
+  if (!dropdown) return;
+  const { animate = true } = opts;
+  const header = dropdown.querySelector('.stage-subsection-header');
+  const content = dropdown.querySelector('.stage-subsection-content');
+  if (!header || !content) return;
+
+  const isExpanded = dropdown.classList.contains('expanded');
+  if (isExpanded === shouldExpand) return;
+
+  header.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
+
+  if (shouldExpand) {
+    dropdown.classList.add('expanded');
+    content.hidden = false;
+    if (!animate) {
+      content.style.maxHeight = 'none';
+      return;
+    }
+
+    content.style.maxHeight = '0px';
+    const targetHeight = content.scrollHeight;
+    const expandFrame = () => {
+      content.style.maxHeight = `${targetHeight}px`;
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(expandFrame);
+    else expandFrame();
+
+    const onExpandTransitionEnd = (ev) => {
+      if (ev.propertyName !== 'max-height') return;
+      if (dropdown.classList.contains('expanded')) {
+        content.style.maxHeight = 'none';
+      }
+      content.removeEventListener('transitionend', onExpandTransitionEnd);
+    };
+    content.addEventListener('transitionend', onExpandTransitionEnd);
+    return;
+  }
+
+  if (!animate) {
+    dropdown.classList.remove('expanded');
+    content.style.maxHeight = '0px';
+    content.hidden = true;
+    return;
+  }
+
+  content.style.maxHeight = `${content.scrollHeight}px`;
+  const collapseFrame = () => {
+    dropdown.classList.remove('expanded');
+    content.style.maxHeight = '0px';
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(collapseFrame);
+  else collapseFrame();
+
+  const onCollapseTransitionEnd = (ev) => {
+    if (ev.propertyName !== 'max-height') return;
+    if (!dropdown.classList.contains('expanded')) {
+      content.hidden = true;
+    }
+    content.removeEventListener('transitionend', onCollapseTransitionEnd);
+  };
+  content.addEventListener('transitionend', onCollapseTransitionEnd);
+}
+
+function initStageSubsectionDropdowns(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  const dropdowns = root.querySelectorAll('.stage-subsection-dropdown');
+  dropdowns.forEach((dropdown, index) => {
+    if (dropdown.dataset.dropdownBound === 'true') return;
+    const header = dropdown.querySelector('.stage-subsection-header');
+    const content = dropdown.querySelector('.stage-subsection-content');
+    if (!header || !content) return;
+
+    if (!content.id) content.id = `stage-subsection-content-${index + 1}`;
+    header.setAttribute('aria-controls', content.id);
+    dropdown.dataset.dropdownBound = 'true';
+
+    const startExpanded = dropdown.dataset.defaultExpanded === 'true';
+    setStageSubsectionExpanded(dropdown, startExpanded, { animate: false });
+
+    header.addEventListener('click', () => {
+      const shouldExpand = !dropdown.classList.contains('expanded');
+      setStageSubsectionExpanded(dropdown, shouldExpand, { animate: true });
+    });
+  });
 }
 
 /**
@@ -211,6 +571,7 @@ async function applyDesignPreset(presetId, selectedDesignId = null) {
         updateEdgeProfileAddonAvailability(state);
         updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
       }
       try {
         const addonsStage = await import('./stages/addons.js');
@@ -434,6 +795,10 @@ function updateEdgeAddonCompatibility(appState = state) {
 }
 
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
+const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
+const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
+const LOWER_SHELF_DISABLED_TOOLTIP = 'Select Squared legs to enable';
 const EDGE_CORNER_ADDONS = [
   'addon-live-edge',
   'addon-waterfall-single',
@@ -443,6 +808,69 @@ const EDGE_CORNER_ADDONS = [
   'addon-rounded-corners',
   'addon-angled-corners'
 ];
+
+function isLowerShelfAddonContextValid(appState) {
+  const modelId = appState && appState.selections && appState.selections.model;
+  const legId = appState && appState.selections && appState.selections.options && appState.selections.options.legs;
+  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID && legId === LOWER_SHELF_COMPATIBLE_LEG_ID;
+}
+
+function stripInvalidLowerShelfAddon(appState) {
+  const addons = appState && appState.selections && appState.selections.options && Array.isArray(appState.selections.options.addon)
+    ? appState.selections.options.addon
+    : [];
+  if (!addons.includes(LOWER_SHELF_ADDON_ID)) return false;
+  if (isLowerShelfAddonContextValid(appState)) return false;
+  const nextAddons = addons.filter(id => id !== LOWER_SHELF_ADDON_ID);
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        addon: nextAddons
+      }
+    }
+  });
+  return true;
+}
+
+function updateLowerShelfAddonAvailability(appState) {
+  const root = document.getElementById('addons-options');
+  if (!root) return;
+  const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${LOWER_SHELF_ADDON_ID}"]`);
+  const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${LOWER_SHELF_ADDON_ID}"]`);
+  if (!checkbox || !option) return;
+  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+  const shouldDisable = !isLowerShelfAddonContextValid(appState);
+
+  if (shouldDisable) {
+    checkbox.disabled = true;
+    checkbox.checked = false;
+    checkbox.setAttribute('data-disabled-by', 'lower-shelf');
+    checkbox.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    option.classList.add('disabled');
+    option.classList.remove('selected');
+    option.setAttribute('aria-disabled', 'true');
+    option.setAttribute('data-disabled-by', 'lower-shelf');
+    option.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+  } else if (disabledBy === 'lower-shelf') {
+    checkbox.disabled = false;
+    checkbox.removeAttribute('data-disabled-by');
+    if (checkbox.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+      checkbox.removeAttribute('data-tooltip');
+    }
+    option.classList.remove('disabled');
+    option.removeAttribute('aria-disabled');
+    if (option.getAttribute('data-disabled-by') === 'lower-shelf') {
+      option.removeAttribute('data-disabled-by');
+    }
+    if (option.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+      option.removeAttribute('data-tooltip');
+    }
+  }
+
+  updateAllIndicators();
+}
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
@@ -615,6 +1043,21 @@ document.addEventListener('option-selected', async (ev) => {
       log.warn('Failed to update legs options', e);
     }
 
+    try {
+      const addonsRoot = document.getElementById('addons-options');
+      if (addonsRoot) {
+        const { loadData } = await import('./dataLoader.js');
+        const { renderAddonsDropdown } = await import('./stageRenderer.js');
+        const addons = await loadData('data/addons.json');
+        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+        updateEdgeAddonCompatibility(state);
+        updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
+      }
+    } catch (e) {
+      log.warn('Failed to update addons after model change', e);
+    }
+
     // Re-render design layouts and presets filtered by the selected model
     await renderDesignOptionsForModel(id);
 
@@ -689,9 +1132,10 @@ document.addEventListener('option-selected', async (ev) => {
         const { loadData } = await import('./dataLoader.js');
         const { renderAddonsDropdown } = await import('./stageRenderer.js');
         const addons = await loadData('data/addons.json');
-        if (addons) renderAddonsDropdown(addonsRoot, addons, state);
+      if (addons) renderAddonsDropdown(addonsRoot, addons, state);
         updateEdgeAddonCompatibility(state);
         updateWaterfallAddonAvailability(state);
+        updateLowerShelfAddonAvailability(state);
       }
     } catch (e) {
       log.warn('Failed to update addon compatibility after design change', e);
@@ -735,6 +1179,10 @@ document.addEventListener('option-selected', async (ev) => {
     const newOptions = { ...state.selections.options, [category]: id };
     // update selections first and then recompute price via computePrice
     setState({ selections: { ...state.selections, options: newOptions } });
+    if (category === 'legs') {
+      stripInvalidLowerShelfAddon(state);
+      updateLowerShelfAddonAvailability(state);
+    }
     const p = await computePrice(state);
     const from = state.pricing.total || state.pricing.base;
     animatePrice(from, p.total, 300, (val) => updatePriceUI(val));
@@ -750,6 +1198,19 @@ document.addEventListener('custom-color-note-updated', (ev) => {
       options: {
         ...state.selections.options,
         customColorNote: value
+      }
+    }
+  });
+});
+
+document.addEventListener('custom-color-gradient-note-updated', (ev) => {
+  const value = ev.detail && typeof ev.detail.value === 'string' ? ev.detail.value : '';
+  setState({
+    selections: {
+      ...state.selections,
+      options: {
+        ...state.selections.options,
+        customColorGradientNote: value
       }
     }
   });
@@ -926,6 +1387,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ModelSelection is loaded lazily into the main stage-panel by the stage manager when
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
+  initThemeToggle();
+  initFooterLiquidGlass();
+  initStageSubsectionDropdowns(document);
 
   // Initialize viewer and controls after MainContent is loaded
   await initViewer();
@@ -977,7 +1441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards, renderAddonsDropdown } = await import('./stageRenderer.js');
+    const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoFlips } = await import('./stageRenderer.js');
+    initOptionCardInfoFlips(document.body);
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
@@ -1005,6 +1470,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (colorOptionsRoot) {
       const colors = await loadData('data/colors.json');
       if (colors) renderOptionCards(colorOptionsRoot, colors, { category: 'color' });
+    }
+
+    const colorGradientOptionsRoot = document.getElementById('color-gradient-options');
+    if (colorGradientOptionsRoot) {
+      const colorGradients = await loadData('data/color-gradients.json');
+      if (colorGradients) renderOptionCards(colorGradientOptionsRoot, colorGradients, { category: 'color-gradient' });
     }
 
     // Render designs stage with presets + layouts filtered by selected model
@@ -1067,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (addons) renderAddonsDropdown(addonsRoot, addons, state);
       updateEdgeAddonCompatibility(state);
       updateWaterfallAddonAvailability(state);
+      updateLowerShelfAddonAvailability(state);
     }
   } catch (e) {
     log.warn('Failed to render stage data from JSON files', e);
@@ -1100,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('summary-panel')) initSummaryActions();
   } catch (e) { /* ignore */ }
 
-  // Initialize placeholder interactions (click handlers, price animation, skeleton)
+  // Initialize placeholder interactions (generic click handlers and compatibility helpers)
   try { initPlaceholderInteractions(); } catch (e) { log.warn('Failed to init placeholder interactions', e); }
 
   const loadingScreen = document.getElementById('app-loading');
@@ -1128,6 +1600,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.0');
-console.log('Edit ver: 530');
+console.log('Edit ver: 575');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

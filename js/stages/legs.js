@@ -4,6 +4,7 @@
 import { getVisibleLegs, getAvailableTubeSizes, getTubeIncompatibilityReasons, isTubeCompatibleWithLeg, isTubeCompatibleWithModel } from './legCompatibility.js';
 import { state } from '../state.js';
 import { createLogger } from '../logger.js';
+import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Legs');
 
@@ -23,14 +24,18 @@ export function init() {
   log.debug('Module-level state at init time', { ...state });
   log.debug('Adding click listener to document');
   document.addEventListener('click', (ev) => {
+    if (isSelectionClickHandled(ev)) return;
     const legCard = ev.target.closest && ev.target.closest('.option-card[data-category="legs"]');
     const tubeSizeCard = ev.target.closest && ev.target.closest('.option-card[data-category="tube-size"]');
     const legFinishCard = ev.target.closest && ev.target.closest('.option-card[data-category="leg-finish"]');
+    if (!legCard && !tubeSizeCard && !legFinishCard) return;
+    markSelectionClickHandled(ev);
 
     if (legCard && !legCard.hasAttribute('disabled')) {
       log.debug('Leg card clicked', { id: legCard.getAttribute('data-id') });
-      document.querySelectorAll('.option-card[data-category="legs"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-      legCard.setAttribute('aria-pressed', 'true');
+      document.querySelectorAll('.option-card[data-category="legs"]').forEach((c) => {
+        c.setAttribute('aria-pressed', c === legCard ? 'true' : 'false');
+      });
       const id = legCard.getAttribute('data-id');
       const price = Number(legCard.getAttribute('data-price')) || 0;
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'legs' } }));
@@ -62,14 +67,16 @@ export function init() {
       }
 
       // Otherwise, select it (normal behavior)
-      document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-      tubeSizeCard.setAttribute('aria-pressed', 'true');
+      document.querySelectorAll('.option-card[data-category="tube-size"]').forEach((c) => {
+        c.setAttribute('aria-pressed', c === tubeSizeCard ? 'true' : 'false');
+      });
       const id = tubeSizeCard.getAttribute('data-id');
       const price = Number(tubeSizeCard.getAttribute('data-price')) || 0;
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'tube-size' } }));
     } else if (legFinishCard && !legFinishCard.hasAttribute('disabled')) {
-      document.querySelectorAll('.option-card[data-category="leg-finish"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
-      legFinishCard.setAttribute('aria-pressed', 'true');
+      document.querySelectorAll('.option-card[data-category="leg-finish"]').forEach((c) => {
+        c.setAttribute('aria-pressed', c === legFinishCard ? 'true' : 'false');
+      });
       const id = legFinishCard.getAttribute('data-id');
       const price = Number(legFinishCard.getAttribute('data-price')) || 0;
       document.dispatchEvent(new CustomEvent('option-selected', { detail: { id, price, category: 'leg-finish' } }));
@@ -241,20 +248,18 @@ export function restoreFromState(appState) {
  * If "leg-none" is selected, hide both sections; otherwise show them
  */
 export function updateLegsUIVisibility(legId) {
+  const tubeSizeSubsection = document.getElementById('legs-subsection-tube-size');
+  const legFinishSubsection = document.getElementById('legs-subsection-leg-finish');
   const tubeSizeOptions = document.querySelector('#tube-size-options');
   const legFinishOptions = document.querySelector('#leg-finish-options');
-  
-  // Find the h4 headings before these containers
-  const tubeSizeHeading = tubeSizeOptions?.previousElementSibling;
-  const legFinishHeading = legFinishOptions?.previousElementSibling;
   const isSignatureDesign = state.selections && state.selections.design === 'des-signature';
   
   if (legId === 'leg-none') {
-    // Hide tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) tubeSizeHeading.style.display = 'none';
-    if (tubeSizeOptions) tubeSizeOptions.style.display = 'none';
-    if (legFinishHeading) legFinishHeading.style.display = 'none';
-    if (legFinishOptions) legFinishOptions.style.display = 'none';
+    // Hide tube size and leg finish sections when no leg style is selected.
+    if (tubeSizeSubsection) tubeSizeSubsection.style.display = 'none';
+    if (legFinishSubsection) legFinishSubsection.style.display = 'none';
+    if (!tubeSizeSubsection && tubeSizeOptions) tubeSizeOptions.style.display = 'none';
+    if (!legFinishSubsection && legFinishOptions) legFinishOptions.style.display = 'none';
     // Clear any existing selections when "none" is chosen
     document.querySelectorAll('.option-card[data-category="tube-size"]').forEach(c => {
       c.setAttribute('aria-pressed', 'false');
@@ -263,11 +268,11 @@ export function updateLegsUIVisibility(legId) {
       c.setAttribute('aria-pressed', 'false');
     });
   } else {
-    // Show tube size and leg finish sections (both heading and container)
-    if (tubeSizeHeading) tubeSizeHeading.style.display = isSignatureDesign ? 'none' : '';
-    if (tubeSizeOptions) tubeSizeOptions.style.display = isSignatureDesign ? 'none' : '';
-    if (legFinishHeading) legFinishHeading.style.display = '';
-    if (legFinishOptions) legFinishOptions.style.display = '';
+    // Show tube size and leg finish sections for compatible leg choices.
+    if (tubeSizeSubsection) tubeSizeSubsection.style.display = isSignatureDesign ? 'none' : '';
+    if (legFinishSubsection) legFinishSubsection.style.display = '';
+    if (!tubeSizeSubsection && tubeSizeOptions) tubeSizeOptions.style.display = isSignatureDesign ? 'none' : '';
+    if (!legFinishSubsection && legFinishOptions) legFinishOptions.style.display = '';
   }
 }
 

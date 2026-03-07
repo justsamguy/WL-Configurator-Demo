@@ -4,10 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WoodLab Configurator Mockup</title>
+  <script>
+    (function () {
+      const storageKey = 'wl-theme-mode';
+      const storedMode = (() => {
+        try {
+          return localStorage.getItem(storageKey);
+        } catch (e) {
+          return null;
+        }
+      })();
+      const mode = storedMode === 'light' || storedMode === 'dark' || storedMode === 'system'
+        ? storedMode
+        : 'system';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const resolvedTheme = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
+      document.documentElement.setAttribute('data-theme-mode', mode);
+      document.documentElement.setAttribute('data-resolved-theme', resolvedTheme);
+    })();
+  </script>
   <!-- Tailwind CSS via CDN for rapid prototyping -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet" onerror="this.onerror=null;this.href='https://unpkg.com/tailwindcss@3.4.1/dist/tailwind.min.css';">
   <!-- Google Fonts: Assistant for modern look -->
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome (used by theme cycle icon button) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
   <!-- Custom styles -->
   <link rel="stylesheet" href="./css/configurator.css" />
   <!-- Import map to resolve bare module specifiers like 'three' used by JSM example modules -->
@@ -44,7 +65,7 @@
 
   <!-- Sidebar becomes the summary card (sticky on wide screens) -->
   <aside id="app-sidebar" class="col-span-1 row-span-1 bg-white border-l flex flex-col overflow-y-auto shadow-lg summary-card lg:col-span-1 lg:row-span-1"></aside>
-  <footer id="app-footer" class="col-span-full row-span-1 w-full bg-white border-t shadow flex items-center justify-between px-12 py-4 max-h-20 lg:col-span-full lg:row-span-1"></footer>
+  <footer id="app-footer" class="col-span-full row-span-1 w-full lg:col-span-full lg:row-span-1"></footer>
 
   <!-- Banners -->
   <div id="banner-container" class="fixed top-0 left-0 w-full flex flex-col items-center space-y-2 z-50"></div>

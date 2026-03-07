@@ -14,6 +14,170 @@ function formatPriceLabel(value, opts = {}) {
   }
   return `+$${safeNumber.toLocaleString()}`;
 }
+
+let optionCardInfoObserver = null;
+
+function isAddonTile(card) {
+  if (!card) return false;
+  if (card.getAttribute('data-category') === 'addon') return true;
+  return !!card.closest('#addons-options, #stage-panel-6, .addons-dropdown-list, .addons-dropdown-tile, .addons-tiles-container');
+}
+
+function isExcludedStageTile(card) {
+  if (!card) return false;
+  return !!card.closest('#stage-panel-0, #stage-panel-1, #stage-panel-4, #models-stage-section, #designs-stage-section, #dimensions-stage-panel');
+}
+
+function isCustomInputTile(card) {
+  if (!card) return false;
+  if (card.hasAttribute('data-custom-note')) return true;
+  if (card.getAttribute('data-preset-id') === 'custom') return true;
+  if (card.getAttribute('data-height-id') === 'custom') return true;
+  return !!card.querySelector('input, textarea, select');
+}
+
+function consumeEvent(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
+}
+
+function isActivationEvent(ev) {
+  return ev.type === 'click' || (ev.type === 'keydown' && (ev.key === 'Enter' || ev.key === ' '));
+}
+
+function applyOptionCardInfoFlip(card) {
+  if (!card || card.dataset.infoEnhanced === 'true') return;
+  if (isAddonTile(card) || isExcludedStageTile(card) || isCustomInputTile(card)) return;
+
+  const titleEl = card.querySelector('.title');
+  const descriptionEl = card.querySelector('.description');
+  const descriptionText = descriptionEl ? String(descriptionEl.textContent || '').trim() : '';
+  if (!titleEl || !descriptionText) return;
+
+  const infoTrigger = document.createElement('span');
+  infoTrigger.className = 'option-card-info-trigger';
+  infoTrigger.setAttribute('role', 'button');
+  infoTrigger.setAttribute('tabindex', '0');
+  infoTrigger.setAttribute('aria-label', 'Show details');
+  infoTrigger.setAttribute('aria-expanded', 'false');
+  infoTrigger.textContent = 'ⓘ';
+
+  const closeTrigger = document.createElement('span');
+  closeTrigger.className = 'option-card-info-close';
+  closeTrigger.setAttribute('role', 'button');
+  closeTrigger.setAttribute('tabindex', '-1');
+  closeTrigger.setAttribute('aria-label', 'Close details');
+  closeTrigger.textContent = 'X';
+
+  const frontFace = document.createElement('div');
+  frontFace.className = 'option-card-face option-card-face-front';
+
+  const backFace = document.createElement('div');
+  backFace.className = 'option-card-face option-card-face-back';
+  backFace.setAttribute('aria-hidden', 'true');
+
+  const backDescription = document.createElement('div');
+  backDescription.className = 'option-card-info-description';
+  backDescription.textContent = descriptionText;
+  backFace.appendChild(closeTrigger);
+  backFace.appendChild(backDescription);
+
+  const flipInner = document.createElement('div');
+  flipInner.className = 'option-card-flip-inner';
+
+  const currentChildren = Array.from(card.childNodes);
+  currentChildren.forEach((child) => frontFace.appendChild(child));
+  const frontDescription = frontFace.querySelector('.description');
+  if (frontDescription) frontDescription.remove();
+  frontFace.appendChild(infoTrigger);
+
+  flipInner.appendChild(frontFace);
+  flipInner.appendChild(backFace);
+  card.innerHTML = '';
+  card.appendChild(flipInner);
+  card.classList.add('option-card-info-enabled');
+  card.setAttribute('data-info-open', 'false');
+  card.dataset.infoEnhanced = 'true';
+
+  const openInfo = (focusClose = true) => {
+    if (card.getAttribute('data-info-open') === 'true') return;
+    card.classList.add('option-card-info-open');
+    card.setAttribute('data-info-open', 'true');
+    infoTrigger.setAttribute('aria-expanded', 'true');
+    closeTrigger.setAttribute('tabindex', '0');
+    backFace.setAttribute('aria-hidden', 'false');
+    if (focusClose) closeTrigger.focus();
+  };
+
+  const closeInfo = (focusInfo = true) => {
+    if (card.getAttribute('data-info-open') !== 'true') return;
+    card.classList.remove('option-card-info-open');
+    card.setAttribute('data-info-open', 'false');
+    infoTrigger.setAttribute('aria-expanded', 'false');
+    closeTrigger.setAttribute('tabindex', '-1');
+    backFace.setAttribute('aria-hidden', 'true');
+    if (focusInfo) infoTrigger.focus();
+  };
+
+  infoTrigger.addEventListener('click', (ev) => {
+    if (!isActivationEvent(ev)) return;
+    consumeEvent(ev);
+    openInfo();
+  });
+  infoTrigger.addEventListener('keydown', (ev) => {
+    if (!isActivationEvent(ev)) return;
+    consumeEvent(ev);
+    openInfo();
+  });
+
+  closeTrigger.addEventListener('click', (ev) => {
+    if (!isActivationEvent(ev)) return;
+    consumeEvent(ev);
+    closeInfo();
+  });
+  closeTrigger.addEventListener('keydown', (ev) => {
+    if (!isActivationEvent(ev)) return;
+    consumeEvent(ev);
+    closeInfo();
+  });
+
+  backFace.addEventListener('click', (ev) => {
+    consumeEvent(ev);
+  });
+
+  card.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape' || card.getAttribute('data-info-open') !== 'true') return;
+    consumeEvent(ev);
+    closeInfo();
+  });
+}
+
+export function enhanceOptionCardsWithInfo(root = document) {
+  if (!root) return;
+  if (root.matches && root.matches('.option-card')) {
+    applyOptionCardInfoFlip(root);
+  }
+  const cards = root.querySelectorAll ? root.querySelectorAll('.option-card') : [];
+  cards.forEach((card) => applyOptionCardInfoFlip(card));
+}
+
+export function initOptionCardInfoFlips(root = document.body) {
+  if (!root) return;
+  enhanceOptionCardsWithInfo(root);
+  if (optionCardInfoObserver || typeof MutationObserver === 'undefined') return;
+
+  optionCardInfoObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (!(node instanceof Element)) return;
+        enhanceOptionCardsWithInfo(node);
+      });
+    });
+  });
+
+  optionCardInfoObserver.observe(root, { childList: true, subtree: true });
+}
+
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -73,9 +237,51 @@ export function renderOptionCards(container, data = [], opts = {}) {
 
     container.appendChild(btn);
   });
+  enhanceOptionCardsWithInfo(container);
 }
 
 const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
+const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
+const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
+const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
+const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
+const HIDDEN_ADDON_GROUP_TITLES = new Set(['installation']);
+
+function reorderAddonGroupsForModel(groups = [], modelId = '') {
+  const visibleGroups = groups.filter(group => {
+    const title = (group && group.title ? String(group.title) : '').trim().toLowerCase();
+    return !HIDDEN_ADDON_GROUP_TITLES.has(title);
+  });
+
+  if (!modelId) return visibleGroups;
+
+  const ordered = [...visibleGroups];
+  const moveAfter = (titleToMove, afterTitle) => {
+    const fromIndex = ordered.findIndex(group => group && group.title === titleToMove);
+    const afterIndex = ordered.findIndex(group => group && group.title === afterTitle);
+    if (fromIndex === -1 || afterIndex === -1 || fromIndex === afterIndex + 1) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    const targetAfterIndex = ordered.findIndex(group => group && group.title === afterTitle);
+    ordered.splice(targetAfterIndex + 1, 0, moved);
+  };
+
+  const moveToIndex = (titleToMove, targetIndex) => {
+    const fromIndex = ordered.findIndex(group => group && group.title === titleToMove);
+    if (fromIndex === -1 || fromIndex === targetIndex) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    const clampedIndex = Math.max(0, Math.min(targetIndex, ordered.length));
+    ordered.splice(clampedIndex, 0, moved);
+  };
+
+  if (modelId === 'mdl-conference') {
+    moveAfter('Glass Top', 'Tech');
+    moveAfter('Waterfall Edge', 'Glass Top');
+  } else if (modelId === 'mdl-dining') {
+    moveToIndex('Custom River Design', 1); // Keep expedited at the top.
+  }
+
+  return ordered;
+}
 
 function buildAddonIntro(group = {}) {
   const introWrapper = document.createElement('div');
@@ -103,6 +309,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
   if (!container) return;
   container.innerHTML = '';
   const currentDesign = currentState.selections && currentState.selections.design;
+  const currentModel = currentState.selections && currentState.selections.model;
+  const currentLeg = currentState.selections && currentState.selections.options && currentState.selections.options.legs;
   const edgeAddonIds = [
     'addon-live-edge',
     'addon-waterfall-single',
@@ -121,7 +329,13 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     });
   }
 
-  data.forEach(group => {
+  const orderedGroups = reorderAddonGroupsForModel(Array.isArray(data) ? data : [], currentModel);
+
+  orderedGroups.forEach(group => {
+    const hasLowerShelfOption = Array.isArray(group.options) && group.options.some(option => option && option.id === LOWER_SHELF_ADDON_ID);
+    if (hasLowerShelfOption && currentModel !== LOWER_SHELF_COMPATIBLE_MODEL_ID) {
+      return;
+    }
     if (group.options && group.options.length && group.options.every(option => hiddenAddonIds.has(option.id))) {
       return;
     }
@@ -347,7 +561,10 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
           const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
-          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle;
+          const isLowerShelfLegIncompatible = option.id === LOWER_SHELF_ADDON_ID &&
+            currentModel === LOWER_SHELF_COMPATIBLE_MODEL_ID &&
+            currentLeg !== LOWER_SHELF_COMPATIBLE_LEG_ID;
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle || isLowerShelfLegIncompatible;
           const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
 
           if (isDisabled) {
@@ -371,6 +588,10 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge';
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
+            } else if (isLowerShelfLegIncompatible) {
+              incompatibilityTooltip = LOWER_SHELF_TOOLTIP;
+              checkbox.setAttribute('data-disabled-by', 'lower-shelf');
+              optionDiv.setAttribute('data-disabled-by', 'lower-shelf');
             } else if (isLiveEdgeRequired) {
               incompatibilityTooltip = 'Included with Slab design';
             }
@@ -485,6 +706,7 @@ export function renderSheenSlider(container, data = []) {
   });
 
   container.appendChild(tilesContainer);
+  enhanceOptionCardsWithInfo(tilesContainer);
 
   let lastSelectedIndex = -1;
 
@@ -532,4 +754,10 @@ export function renderSheenSlider(container, data = []) {
   };
 }
 
-export default { renderOptionCards, renderAddonsDropdown, renderSheenSlider };
+export default {
+  renderOptionCards,
+  renderAddonsDropdown,
+  renderSheenSlider,
+  enhanceOptionCardsWithInfo,
+  initOptionCardInfoFlips
+};

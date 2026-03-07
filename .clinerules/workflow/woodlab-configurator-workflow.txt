@@ -14,6 +14,7 @@ alwaysApply: true
   - Use only the locked tech stack: Vanilla JS, Tailwind CSS 3.4.1 (CDN), Three.js 0.160.0 (CDN), jsPDF 2.5.1, html2canvas 1.5.1, Heroicons. **No other frameworks**.
   - All logic must run in the browser; no server code. No external APIs for business data/services unless explicitly approved.
   - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") in format `YYYY-MM-DD HH:MM` using the current local time from the system clock, then increment the `Edit ver:` line immediately after it by 1.
+  - Track placeholder-backed image fields in root `placeholder_image_fields.txt`: add entries when a new image field uses a placeholder image, and remove entries when a placeholder is replaced with a final image.
   - Strictly follow the canonical file/folder layout:
     - `index.html`: Minimal entry point; contains root `div` elements for dynamic content injection. All links must be relative.
     - `css/configurator.css`: Custom styles for the app (Tailwind is loaded via CDN).
@@ -52,6 +53,7 @@ alwaysApply: true
 - **Export & Summary**
   - On summary stage, call `captureSnapshot()` and populate summary.
   - PDF export uses jsPDF + html2canvas, includes snapshot, selections, and price.
+  - When adding new features/options, update the exported PDF’s **Technical** section to reflect the change; if new specs are needed, complete the rest of the task first and then ask for the missing technical specs at the end.
   - After export, fire `Event('exported')`.
 
 - **Accessibility & Responsiveness**
@@ -64,6 +66,7 @@ alwaysApply: true
   - Use local repo data/assets by default (e.g., `data/*.json`, `components/*.html`, `assets/**`).
   - Do not introduce external APIs for business data/services unless explicitly approved.
   - Mark placeholder images with `alt="placeholder"`.
+  - Keep `placeholder_image_fields.txt` in sync with any placeholder-backed image fields added/removed during edits.
 
 - **Definition of Done**
   - All checklist items in the guidelines are complete.

@@ -56,7 +56,9 @@ function buildConfigFromGroups(groups) {
     materials: {
       material: getItemValue(tabletopGroup && tabletopGroup.items, 'Material'),
       color: getItemValue(tabletopGroup && tabletopGroup.items, 'Color'),
-      customColorNote: getItemValue(tabletopGroup && tabletopGroup.items, 'Custom Color Note')
+      customColorNote: getItemValue(tabletopGroup && tabletopGroup.items, 'Custom Color Note'),
+      colorGradient: getItemValue(tabletopGroup && tabletopGroup.items, 'Color Gradient'),
+      customColorGradientNote: getItemValue(tabletopGroup && tabletopGroup.items, 'Custom Color Gradient Note')
     },
     finish: {
       coating: getItemValue(tabletopGroup && tabletopGroup.items, 'Finish Coating'),
@@ -184,6 +186,8 @@ export async function buildExportMarkdown(appState, dataLoader) {
     `- Material: ${formatLiteral(materials.material)}`,
     `- Color: ${formatLiteral(materials.color)}`,
     `- Custom color note: ${formatLiteral(materials.customColorNote)}`,
+    `- Color gradient: ${formatLiteral(materials.colorGradient)}`,
+    `- Custom color gradient note: ${formatLiteral(materials.customColorGradientNote)}`,
     '',
     '### Finish',
     `- Coating: ${formatLiteral(finish.coating)}`,
