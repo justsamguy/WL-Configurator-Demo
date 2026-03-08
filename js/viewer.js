@@ -38,6 +38,7 @@ let pendingRequestToken = 0;
 let isLoading = false;
 let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
+let hasLoggedManifestSummary = false;
 
 const dom = {
   surface: null,
@@ -51,6 +52,8 @@ const dom = {
   liveRegion: null,
   retryButton: null
 };
+
+let lastObservedModelId = null;
 
 function getModelTitle(modelId, config = {}) {
   if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
@@ -210,11 +213,37 @@ function frameModel(root, config = {}) {
     const floorScale = Math.max(maxDim * 3, 6);
     floorMesh.scale.setScalar(floorScale);
   }
+
+  return {
+    size: {
+      x: Number(size.x.toFixed(3)),
+      y: Number(size.y.toFixed(3)),
+      z: Number(size.z.toFixed(3))
+    },
+    maxDim: Number(maxDim.toFixed(3)),
+    target: {
+      x: Number(target.x.toFixed(3)),
+      y: Number(target.y.toFixed(3)),
+      z: Number(target.z.toFixed(3))
+    }
+  };
 }
 
 async function loadManifest() {
-  if (!manifestPromise) manifestPromise = loadData(VIEWER_MANIFEST_PATH);
+  if (!manifestPromise) {
+    log.info('Requesting viewer manifest', { path: VIEWER_MANIFEST_PATH });
+    manifestPromise = loadData(VIEWER_MANIFEST_PATH);
+  }
   const manifest = await manifestPromise;
+  if (manifest && !hasLoggedManifestSummary) {
+    hasLoggedManifestSummary = true;
+    log.info('Viewer manifest loaded', {
+      path: VIEWER_MANIFEST_PATH,
+      modelIds: Object.keys(manifest.models || {})
+    });
+  } else if (!manifest) {
+    log.warn('Viewer manifest failed to load', { path: VIEWER_MANIFEST_PATH });
+  }
   return manifest && typeof manifest === 'object' ? manifest : null;
 }
 
@@ -278,12 +307,14 @@ function showEmptyState() {
   isLoading = false;
   requestedModelId = null;
   clearCurrentRenderRoot();
+  log.info('Showing viewer empty state');
   setViewerState('empty', { badge: EMPTY_BADGE, supportingCopy: EMPTY_COPY });
   setLiveStatus('3D preview ready. Choose a model to begin.');
 }
 
 function showErrorState(title, errorCopy = ERROR_COPY) {
   isLoading = false;
+  log.warn('Showing viewer error state', { title, errorCopy });
   setViewerState('error', {
     badge: ERROR_BADGE,
     supportingCopy: `3D preview unavailable for ${title}.`,
@@ -296,6 +327,7 @@ function showReadyState(modelId, config = {}) {
   const title = getModelTitle(modelId, config);
   const statusLabel = config.statusLabel || `${title} Preview`;
   const limitationCopy = config.supportCopy ? `${INTERACTION_COPY} ${config.supportCopy}` : INTERACTION_COPY;
+  log.info('Showing viewer ready state', { modelId, title, statusLabel });
   setViewerState('ready', {
     badge: statusLabel,
     supportingCopy: limitationCopy
@@ -313,6 +345,7 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   if (!force && isLoading && requestedModelId === modelId) return;
 
+  log.info('Viewer update requested', { modelId, force });
   const manifest = await loadManifest();
   if (!manifest) {
     showErrorState(getModelTitle(modelId), 'The local viewer manifest could not be loaded.');
@@ -327,16 +360,24 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   const title = getModelTitle(modelId, config);
   requestedModelId = modelId;
+  log.info('Viewer config resolved', {
+    modelId,
+    title,
+    assetPath: config.assetPath,
+    camera: getCameraSettings(config)
+  });
 
   if (!force && currentRenderRoot && displayedModelId === modelId && displayedAssetPath === config.assetPath) {
-    frameModel(currentRenderRoot, config);
+    const framing = frameModel(currentRenderRoot, config);
+    log.info('Reused existing viewer asset for same model', { modelId, framing });
     showReadyState(modelId, config);
     return;
   }
 
   if (!force && currentRenderRoot && displayedAssetPath === config.assetPath) {
     displayedModelId = modelId;
-    frameModel(currentRenderRoot, config);
+    const framing = frameModel(currentRenderRoot, config);
+    log.info('Reused existing viewer asset across model mapping', { modelId, framing });
     showReadyState(modelId, config);
     return;
   }
@@ -347,6 +388,7 @@ export async function updateModel(modelId, { force = false } = {}) {
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
+    log.info('Starting GLB load', { modelId, assetPath: config.assetPath });
     const nextRoot = await buildRenderRoot(config);
     if (requestToken !== pendingRequestToken) {
       disposeObject3D(nextRoot);
@@ -356,7 +398,12 @@ export async function updateModel(modelId, { force = false } = {}) {
     replaceCurrentRenderRoot(nextRoot);
     displayedModelId = modelId;
     displayedAssetPath = config.assetPath;
-    frameModel(nextRoot, config);
+    const framing = frameModel(nextRoot, config);
+    log.info('GLB load succeeded', {
+      modelId,
+      assetPath: config.assetPath,
+      framing
+    });
     showReadyState(modelId, config);
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
@@ -454,7 +501,15 @@ export async function initViewer() {
     return;
   }
 
+  log.info('Initializing viewer shell', {
+    hasSurface: !!dom.surface,
+    hasCanvas: !!dom.canvas,
+    hasEmptyState: !!dom.empty,
+    hasControls: !!document.getElementById('viewer-controls')
+  });
+
   if (initialized) {
+    log.info('Viewer already initialized, refreshing size and state');
     resizeViewer();
     initViewerControls();
     await updateModel(state && state.selections ? state.selections.model : null);
@@ -476,6 +531,10 @@ export async function initViewer() {
   renderer.domElement.className = 'viewer-webgl';
   renderer.domElement.setAttribute('aria-hidden', 'true');
   dom.canvas.appendChild(renderer.domElement);
+  log.info('Viewer renderer mounted', {
+    canvasWidth: dom.canvas.clientWidth,
+    canvasHeight: dom.canvas.clientHeight
+  });
 
   const ambientLight = new THREE.HemisphereLight(0xffffff, 0xcfd8e3, 1.15);
   scene.add(ambientLight);
@@ -552,5 +611,13 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('statechange', () => {
   if (!initialized) return;
-  void updateModel(state && state.selections ? state.selections.model : null);
+  const nextModelId = state && state.selections ? state.selections.model : null;
+  if (nextModelId !== lastObservedModelId) {
+    log.info('Viewer observed model selection change', {
+      previousModelId: lastObservedModelId,
+      nextModelId
+    });
+    lastObservedModelId = nextModelId;
+  }
+  void updateModel(nextModelId);
 });

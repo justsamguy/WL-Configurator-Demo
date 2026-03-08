@@ -300,99 +300,72 @@ async function setStage(index, options = {}) {
   scheduleSummaryStageButtonLabelUpdate();
   updateNextButton();
 
-  // Special handling for Models (0) and Designs (1) stages: move panel for full-width display
-  // Do this BEFORE setting display styles so the panel is in the correct location
+  // Models and Designs now render alongside the persistent viewer, so keep their
+  // stage panels mounted in the sidebar instead of replacing #app-main.
   const sidebar = document.getElementById('app-sidebar');
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
-    log.debug(`[setStage] Entering stage ${managerState.current} - moving panel to mainContent`);
-    // hide sidebar and viewer chrome; CSS will make the stage panel span full width
-    if (sidebar) sidebar.style.display = 'none';
-    if (viewer) viewer.style.display = 'none';
-    if (viewerControls) viewerControls.style.display = 'none';
-    // Move the Models/Designs panel out of the sidebar and into the main content area
-    // so it can span the full viewport. We restore it to its original container
-    // when leaving these stages.
+    log.info('Entering stage with persistent viewer', { stage: managerState.current });
+    if (sidebar) sidebar.style.display = '';
+    if (viewer) viewer.style.display = '';
+    if (viewerControls) viewerControls.style.display = '';
+
     try {
       const panelId = `stage-panel-${managerState.current}`;
       let panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
       const mainContent = document.getElementById('app-main');
-      
-      log.debug(`[setStage] Looking for panel: ${panelId}`);
-      log.debug('[setStage] Panel found', { exists: !!panel, parentId: panel?.parentElement?.id });
-      
-      // Always restore any displaced stage panels before moving the target panel.
-      if (root && mainContent) {
-        const displacePanel = mainContent.querySelector('[id^="stage-panel-"]');
-        if (displacePanel && displacePanel.id !== panelId) {
-          log.debug(`[setStage] Found displaced panel: ${displacePanel.id}, restoring to root`);
-          root.appendChild(displacePanel);
-        }
+
+      if (!panel && mainContent) {
+        panel = mainContent.querySelector(`#${panelId}`);
       }
 
-      // If panel is not found, it might still be in mainContent from a previous stage
-      // Try to find the target panel again after cleanup.
-      if (!panel && root && mainContent) {
-        log.debug('[setStage] Panel not found by ID, searching in mainContent');
-        panel = mainContent.querySelector(`#${panelId}`);
-        log.debug('[setStage] Panel found after cleanup', { exists: !!panel });
+      if (panel && root && panel.parentElement !== root) {
+        log.info('Restoring displaced stage panel to sidebar root', {
+          panelId,
+          from: panel.parentElement?.id || null
+        });
+        root.appendChild(panel);
       }
-      
-      // If panel doesn't exist (e.g., StagePanels.html hasn't loaded yet or sidebar is hidden),
-      // create it dynamically in mainContent for stages 0 and 1
-      if (!panel && mainContent) {
-        log.debug(`[setStage] Panel ${panelId} not found, creating it dynamically in mainContent`);
-        panel = document.createElement('section');
-        panel.id = panelId;
-        panel.className = 'stage-panel';
-        panel.innerHTML = `<div id="stage-${managerState.current}-placeholder"></div>`;
-        mainContent.innerHTML = '';
-        mainContent.appendChild(panel);
-        log.debug(`[setStage] Created panel ${panelId} in mainContent`);
-      } else if (panel && mainContent) {
-        log.debug(`[setStage] Appending panel ${panelId} to mainContent`);
-        // remember that we moved it
-        if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
-        // Clear any previous inline display style
-        panel.style.display = '';
-        // Move the panel into the main content area for full-width display
-        // IMPORTANT: Do not clear mainContent.innerHTML if the panel is already there
-        if (panel.parentElement !== mainContent) {
-          mainContent.innerHTML = '';
-          mainContent.appendChild(panel);
-        }
-        log.debug('[setStage] Panel appended. Parent now', { parentId: panel.parentElement?.id });
-      } else {
-        log.warn('[setStage] Could not append panel', { hasPanel: !!panel, hasRoot: !!root, hasMainContent: !!mainContent });
+
+      if (!panel) {
+        log.warn('Stage panel missing while entering models/designs stage', {
+          stage: managerState.current,
+          panelId
+        });
       }
-      
-      const componentPath = managerState.current === 0 ? 'components/ModelSelection.html' : 'components/ModelSelection.html'; // Both use same component, filtered by data
-      // Use requestAnimationFrame to ensure DOM has updated before loading component
+
+      const componentPath = 'components/ModelSelection.html';
       await new Promise(resolve => requestAnimationFrame(resolve));
-      log.debug(`[setStage] Loading component for stage ${managerState.current}`);
-      
-      // Ensure the placeholder exists before loading component
+
       const placeholderId = `stage-${managerState.current}-placeholder`;
       let placeholder = document.getElementById(placeholderId);
       if (!placeholder && panel) {
-        log.debug(`[setStage] Placeholder ${placeholderId} not found in DOM, creating it inside panel`);
+        log.info('Creating missing stage placeholder inside sidebar panel', { placeholderId });
         panel.innerHTML = `<div id="${placeholderId}"></div>`;
         placeholder = document.getElementById(placeholderId);
       }
-      
-      // Ensure the placeholder has the expected component structure (e.g. .model-row-grid)
+
       const hasGrid = placeholder && placeholder.querySelector('.model-row-grid');
       if (placeholder && !hasGrid) {
-        log.debug(`[setStage] Placeholder ${placeholderId} missing grid structure, loading component`);
+        log.info('Loading selection component into sidebar stage panel', {
+          stage: managerState.current,
+          placeholderId
+        });
         await loadComponent(placeholderId, componentPath);
       } else if (placeholder) {
-        log.debug(`[setStage] Placeholder ${placeholderId} already has component structure, skipping loadComponent`);
+        log.info('Selection component already present for stage', {
+          stage: managerState.current,
+          placeholderId
+        });
       } else {
-        log.warn(`[setStage] Could not find or create placeholder ${placeholderId}`);
+        log.warn('Could not find or create stage placeholder', {
+          stage: managerState.current,
+          placeholderId
+        });
       }
-      // Restore visual selections when entering model/design selection stage
+
       setTimeout(async () => {
         try {
           if (managerState.current === 0) {
@@ -413,7 +386,7 @@ async function setStage(index, options = {}) {
         }
       }, 100); // Small delay to ensure DOM is ready
     } catch (e) {
-      // ignore load errors
+      log.warn('Failed to prepare stage 0/1 with persistent viewer', e);
     }
   } else {
     log.debug(`[setStage] Exiting stages 0/1, restoring sidebar (now at stage ${managerState.current})`);
@@ -507,7 +480,7 @@ async function setStage(index, options = {}) {
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Models stage (now index 0), model tiles are hidden by default.
   try {
-    document.body.classList.toggle('show-model-tiles', managerState.current === 0 || managerState.current === 1);
+    document.body.classList.toggle('show-model-tiles', false);
     // Add stage-specific classes for CSS visibility control
     for (let i = 0; i < STAGES.length; i++) {
       document.body.classList.toggle(`stage-${i}`, managerState.current === i);
