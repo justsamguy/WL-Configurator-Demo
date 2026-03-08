@@ -11,13 +11,10 @@ const log = createLogger('Viewer');
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
-const EMPTY_BADGE = '3D Preview';
 const EMPTY_COPY = 'Choose a model on the right to load the first placeholder preview.';
-const LOADING_BADGE = 'Loading Preview';
 const LOADING_COPY = 'Preparing the selected model in the viewer.';
-const ERROR_BADGE = 'Preview Unavailable';
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
-const INTERACTION_COPY = 'Drag to rotate. Scroll to zoom. Right-drag or Shift-drag to pan.';
+const INTERACTION_COPY = 'Drag to rotate. Scroll to zoom.';
 
 let renderer = null;
 let scene = null;
@@ -47,7 +44,6 @@ const dom = {
   loading: null,
   error: null,
   errorCopy: null,
-  statusBadge: null,
   supportingCopy: null,
   liveRegion: null,
   retryButton: null
@@ -125,16 +121,11 @@ function setSupportingCopy(message) {
   if (dom.supportingCopy) dom.supportingCopy.textContent = message;
 }
 
-function setStatusBadge(message) {
-  if (dom.statusBadge) dom.statusBadge.textContent = message;
-}
-
-function setViewerState(mode, { badge, supportingCopy, errorCopy } = {}) {
+function setViewerState(mode, { supportingCopy, errorCopy } = {}) {
   if (dom.surface) dom.surface.dataset.viewerState = mode;
   if (dom.empty) dom.empty.hidden = mode !== 'empty';
   if (dom.loading) dom.loading.hidden = mode !== 'loading';
   if (dom.error) dom.error.hidden = mode !== 'error';
-  if (typeof badge === 'string') setStatusBadge(badge);
   if (typeof supportingCopy === 'string') setSupportingCopy(supportingCopy);
   if (typeof errorCopy === 'string' && dom.errorCopy) dom.errorCopy.textContent = errorCopy;
 }
@@ -185,6 +176,7 @@ function frameModel(root, config = {}) {
   if (bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
 
   const size = bounds.getSize(new THREE.Vector3());
+  const target = bounds.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z, 1);
   const cameraSettings = getCameraSettings(config);
   const offset = new THREE.Vector3(
@@ -192,8 +184,7 @@ function frameModel(root, config = {}) {
     Number(cameraSettings.offset[1]) || FALLBACK_CAMERA_OFFSET[1],
     Number(cameraSettings.offset[2]) || FALLBACK_CAMERA_OFFSET[2]
   );
-  const target = new THREE.Vector3(0, size.y * cameraSettings.targetHeightRatio, 0);
-  const cameraPosition = offset.multiplyScalar(maxDim);
+  const cameraPosition = target.clone().add(offset.multiplyScalar(maxDim));
 
   camera.position.copy(cameraPosition);
   camera.near = Math.max(0.1, maxDim / 100);
@@ -308,7 +299,7 @@ function showEmptyState() {
   requestedModelId = null;
   clearCurrentRenderRoot();
   log.info('Showing viewer empty state');
-  setViewerState('empty', { badge: EMPTY_BADGE, supportingCopy: EMPTY_COPY });
+  setViewerState('empty', { supportingCopy: EMPTY_COPY });
   setLiveStatus('3D preview ready. Choose a model to begin.');
 }
 
@@ -316,7 +307,6 @@ function showErrorState(title, errorCopy = ERROR_COPY) {
   isLoading = false;
   log.warn('Showing viewer error state', { title, errorCopy });
   setViewerState('error', {
-    badge: ERROR_BADGE,
     supportingCopy: `3D preview unavailable for ${title}.`,
     errorCopy
   });
@@ -325,11 +315,9 @@ function showErrorState(title, errorCopy = ERROR_COPY) {
 
 function showReadyState(modelId, config = {}) {
   const title = getModelTitle(modelId, config);
-  const statusLabel = config.statusLabel || `${title} Preview`;
   const limitationCopy = config.supportCopy ? `${INTERACTION_COPY} ${config.supportCopy}` : INTERACTION_COPY;
-  log.info('Showing viewer ready state', { modelId, title, statusLabel });
+  log.info('Showing viewer ready state', { modelId, title });
   setViewerState('ready', {
-    badge: statusLabel,
     supportingCopy: limitationCopy
   });
   setLiveStatus(`${title} 3D preview loaded.`);
@@ -384,7 +372,7 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   const requestToken = ++pendingRequestToken;
   isLoading = true;
-  setViewerState('loading', { badge: LOADING_BADGE, supportingCopy: LOADING_COPY });
+  setViewerState('loading', { supportingCopy: LOADING_COPY });
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
@@ -491,7 +479,6 @@ export async function initViewer() {
   dom.loading = document.getElementById('viewer-loading-state');
   dom.error = document.getElementById('viewer-error-state');
   dom.errorCopy = document.getElementById('viewer-error-copy');
-  dom.statusBadge = document.getElementById('viewer-status-badge');
   dom.supportingCopy = document.getElementById('viewer-supporting-copy');
   dom.liveRegion = document.getElementById('viewer-status');
   dom.retryButton = document.getElementById('viewer-retry');
@@ -574,7 +561,9 @@ export async function initViewer() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.enablePan = true;
+  controls.enablePan = false;
+  controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+  controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
   controls.minPolarAngle = 0.2;
   controls.maxPolarAngle = Math.PI / 2.02;
   controls.target.copy(defaultCameraTarget);
