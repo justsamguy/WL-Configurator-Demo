@@ -2,6 +2,7 @@
 
 ## v1.1
 - Add 3D model viewer
+- hide backend code?
 
 ## v1.2
 - Mobile website (new branch)

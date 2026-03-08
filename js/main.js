@@ -17,6 +17,7 @@ const THEME_STORAGE_KEY = 'wl-theme-mode';
 const THEME_MODES = ['system', 'light', 'dark'];
 let systemThemeMediaQuery = null;
 let systemThemeListenerBound = false;
+let footerMetricsObserver = null;
 
 function normalizeThemeMode(mode) {
   return THEME_MODES.includes(mode) ? mode : 'system';
@@ -167,6 +168,39 @@ function mixRgbColor(a, b, weight = 0.5) {
     Math.round((a[1] * (1 - mix)) + (b[1] * mix)),
     Math.round((a[2] * (1 - mix)) + (b[2] * mix))
   ];
+}
+
+function syncFooterLayoutVars() {
+  const footer = document.getElementById('app-footer');
+  const footerBar = footer && footer.querySelector('.footer-bar');
+  if (!footer || !footerBar || typeof window === 'undefined') return;
+
+  const footerHeight = Math.ceil(footerBar.getBoundingClientRect().height || footerBar.offsetHeight || 0);
+  const footerStyles = window.getComputedStyle(footer);
+  const floatingGap = parseFloat(footerStyles.bottom || '0') || 0;
+
+  if (footerHeight > 0) {
+    document.documentElement.style.setProperty('--footer-height', `${footerHeight}px`);
+  }
+  document.documentElement.style.setProperty('--footer-floating-gap', `${floatingGap}px`);
+}
+
+function initFooterLayoutVars() {
+  syncFooterLayoutVars();
+
+  const footer = document.getElementById('app-footer');
+  const footerBar = footer && footer.querySelector('.footer-bar');
+  if (!footer || !footerBar) return;
+
+  if (footerMetricsObserver && typeof footerMetricsObserver.disconnect === 'function') {
+    footerMetricsObserver.disconnect();
+  }
+
+  if (typeof ResizeObserver === 'function') {
+    footerMetricsObserver = new ResizeObserver(() => syncFooterLayoutVars());
+    footerMetricsObserver.observe(footer);
+    footerMetricsObserver.observe(footerBar);
+  }
 }
 
 function initFooterLiquidGlass() {
@@ -1387,6 +1421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ModelSelection is loaded lazily into the main stage-panel by the stage manager when
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
+  initFooterLayoutVars();
   initThemeToggle();
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
@@ -1420,6 +1455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   setHeaderVars();
   window.addEventListener('resize', setHeaderVars);
+  window.addEventListener('resize', syncFooterLayoutVars, { passive: true });
 
   // Load icons after all components are in the DOM
   const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
@@ -1599,7 +1635,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
-console.log('App ver: 1.0.0');
-console.log('Edit ver: 583');
+console.log('App ver: 1.0.3');
+console.log('Edit ver: 584');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
