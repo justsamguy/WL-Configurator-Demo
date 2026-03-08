@@ -2208,6 +2208,18 @@ body.stage-7 {
   scroll-padding-bottom: var(--footer-scroll-padding, 0px);
 }
 
+/* Let the live viewer use the full main column instead of the generic centered panel chrome. */
+#app-main.viewer-container,
+#app-main.viewer-panel {
+  max-width: none;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0.5rem;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
 /* Models/Designs use an in-flow header layout, so large top offsets waste viewport space. */
 body.stage-0 #app-main,
 body.stage-1 #app-main {
