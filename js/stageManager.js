@@ -300,33 +300,49 @@ async function setStage(index, options = {}) {
   scheduleSummaryStageButtonLabelUpdate();
   updateNextButton();
 
-  // Models and Designs keep their stage panels in the sidebar. The viewer stays
-  // mounted in #app-main, but it is hidden on those first two stages.
+  // Models and Designs use a dedicated host inside #app-main so the viewer shell
+  // stays mounted even when those first two stages take over the main area.
   const sidebar = document.getElementById('app-sidebar');
+  const viewerFrame = document.getElementById('viewer-frame');
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
+  const mainStageHost = document.getElementById('main-stage-host');
   if (managerState.current === 0 || managerState.current === 1) {
-    log.info('Entering stage with viewer hidden but still mounted', { stage: managerState.current });
-    if (sidebar) sidebar.style.display = '';
+    log.info('Entering stage with dedicated main-stage host', { stage: managerState.current });
+    if (sidebar) sidebar.style.display = 'none';
+    if (viewerFrame) viewerFrame.style.display = 'none';
     if (viewer) viewer.style.display = 'none';
     if (viewerControls) viewerControls.style.display = 'none';
+    if (mainStageHost) mainStageHost.hidden = false;
 
     try {
       const panelId = `stage-panel-${managerState.current}`;
       let panel = document.getElementById(panelId);
       const root = document.getElementById('stage-panels-root');
-      const mainContent = document.getElementById('app-main');
+      const host = document.getElementById('main-stage-host');
 
-      if (!panel && mainContent) {
-        panel = mainContent.querySelector(`#${panelId}`);
+      if (!panel && host) {
+        panel = host.querySelector(`#${panelId}`);
       }
 
-      if (panel && root && panel.parentElement !== root) {
-        log.info('Restoring displaced stage panel to sidebar root', {
+      if (root && host) {
+        const displacedPanel = host.querySelector('[id^="stage-panel-"]');
+        if (displacedPanel && displacedPanel.id !== panelId) {
+          log.info('Restoring displaced stage panel before showing current stage', {
+            panelId: displacedPanel.id
+          });
+          root.appendChild(displacedPanel);
+        }
+      }
+
+      if (panel && host && panel.parentElement !== host) {
+        log.info('Moving stage panel into main-stage host', {
           panelId,
           from: panel.parentElement?.id || null
         });
-        root.appendChild(panel);
+        if (!panel.dataset.wlOrigParent) panel.dataset.wlOrigParent = 'stage-panels-root';
+        host.innerHTML = '';
+        host.appendChild(panel);
       }
 
       if (!panel) {
@@ -392,8 +408,10 @@ async function setStage(index, options = {}) {
     log.debug(`[setStage] Exiting stages 0/1, restoring sidebar (now at stage ${managerState.current})`);
     // restore sidebar and viewer/chrome visibility
     if (sidebar) sidebar.style.display = '';
+    if (viewerFrame) viewerFrame.style.display = '';
     if (viewer) viewer.style.display = '';
     if (viewerControls) viewerControls.style.display = '';
+    if (mainStageHost) mainStageHost.hidden = true;
     // Clean up the stage placeholders to avoid duplicates and restore panels
     try {
       for (let i = 0; i <= 1; i++) {
@@ -408,14 +426,14 @@ async function setStage(index, options = {}) {
         // If we previously moved stage panel out of the sidebar, put it back
         let panel = document.getElementById(panelId);
         const root = document.getElementById('stage-panels-root');
-        const mainContent = document.getElementById('app-main');
+        const host = document.getElementById('main-stage-host');
         
         log.debug(`[setStage restore] Checking panel ${panelId}`, { found: !!panel, parentId: panel?.parentElement?.id });
         
         // Check both locations for the panel
-        if (!panel && mainContent) {
-          panel = mainContent.querySelector(`#${panelId}`);
-          log.debug(`[setStage restore] Found ${panelId} in mainContent`, { found: !!panel });
+        if (!panel && host) {
+          panel = host.querySelector(`#${panelId}`);
+          log.debug(`[setStage restore] Found ${panelId} in main-stage host`, { found: !!panel });
         }
         
         // Restore panel to root if it's not there already
@@ -480,7 +498,7 @@ async function setStage(index, options = {}) {
   // Add a body-level class so CSS can easily show/hide model tiles across the app.
   // When not on the Models stage (now index 0), model tiles are hidden by default.
   try {
-    document.body.classList.toggle('show-model-tiles', false);
+    document.body.classList.toggle('show-model-tiles', managerState.current === 0 || managerState.current === 1);
     // Add stage-specific classes for CSS visibility control
     for (let i = 0; i < STAGES.length; i++) {
       document.body.classList.toggle(`stage-${i}`, managerState.current === i);

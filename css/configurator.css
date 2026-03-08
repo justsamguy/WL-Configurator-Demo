@@ -2672,6 +2672,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
 }
 
@@ -2679,6 +2680,20 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   position: relative;
   width: 100%;
   flex: 1 1 auto;
+}
+
+.main-stage-host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.main-stage-host > .stage-panel {
+  width: 100%;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 
 #viewer {
