@@ -300,16 +300,16 @@ async function setStage(index, options = {}) {
   scheduleSummaryStageButtonLabelUpdate();
   updateNextButton();
 
-  // Models and Designs now render alongside the persistent viewer, so keep their
-  // stage panels mounted in the sidebar instead of replacing #app-main.
+  // Models and Designs keep their stage panels in the sidebar. The viewer stays
+  // mounted in #app-main, but it is hidden on those first two stages.
   const sidebar = document.getElementById('app-sidebar');
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
   if (managerState.current === 0 || managerState.current === 1) {
-    log.info('Entering stage with persistent viewer', { stage: managerState.current });
+    log.info('Entering stage with viewer hidden but still mounted', { stage: managerState.current });
     if (sidebar) sidebar.style.display = '';
-    if (viewer) viewer.style.display = '';
-    if (viewerControls) viewerControls.style.display = '';
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
 
     try {
       const panelId = `stage-panel-${managerState.current}`;
