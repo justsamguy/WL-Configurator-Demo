@@ -2707,6 +2707,10 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   min-height: 0;
 }
 
+.main-stage-host[hidden] {
+  display: none;
+}
+
 .main-stage-host > .stage-panel {
   width: 100%;
   flex: 1 1 auto;
