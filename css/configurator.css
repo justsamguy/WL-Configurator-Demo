@@ -4692,6 +4692,7 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .option-card-info-enabled .option-card-face {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4708,10 +4709,14 @@ body.stage-1 #stage-panel-1 > .flex {
 .option-card-info-enabled .option-card-face-back {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transform: rotateY(180deg);
   padding: 0.875rem;
+  box-sizing: border-box;
   pointer-events: none;
   overflow: hidden;
 }
@@ -4782,10 +4787,8 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 .option-card-info-description {
-  position: absolute;
-  inset: 0;
-  margin: auto;
   width: 100%;
+  min-width: 0;
   max-width: 100%;
   display: flex;
   align-items: center;
@@ -4795,7 +4798,11 @@ body.stage-1 #stage-panel-1 > .flex {
   color: #4b5563;
   line-height: 1.35;
   padding: 0.75rem;
+  box-sizing: border-box;
+  white-space: normal;
+  word-break: break-word;
   overflow-wrap: anywhere;
+  hyphens: auto;
   pointer-events: none;
 }
 
