@@ -1,32 +1,47 @@
 <!-- Controls Bar -->
 <div id="viewer-controls" class="viewer-controls" aria-label="3D viewer controls">
-  <button id="viewer-orbit-left" type="button" class="tooltip control-btn" data-tip="Orbit Left" aria-label="Orbit camera left">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M15 6l-6 6 6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <div class="viewer-control-group" aria-label="Orbit controls">
+    <span class="viewer-control-label">Orbit</span>
+    <div class="viewer-control-buttons">
+      <button id="viewer-orbit-left" type="button" class="control-btn" aria-label="Orbit camera left">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M15 6l-6 6 6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
-  <button id="viewer-orbit-right" type="button" class="tooltip control-btn" data-tip="Orbit Right" aria-label="Orbit camera right">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+      <button id="viewer-orbit-right" type="button" class="control-btn" aria-label="Orbit camera right">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-  <button id="viewer-zoom-in" type="button" class="tooltip control-btn" data-tip="Zoom In" aria-label="Zoom in">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </button>
+  <div class="viewer-control-group" aria-label="Zoom controls">
+    <span class="viewer-control-label">Zoom</span>
+    <div class="viewer-control-buttons">
+      <button id="viewer-zoom-in" type="button" class="control-btn" aria-label="Zoom in">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
 
-  <button id="viewer-zoom-out" type="button" class="tooltip control-btn" data-tip="Zoom Out" aria-label="Zoom out">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M5 12h14" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </button>
+      <button id="viewer-zoom-out" type="button" class="control-btn" aria-label="Zoom out">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M5 12h14" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-  <button id="reset-view" type="button" class="tooltip control-btn" data-tip="Reset View" aria-label="Reset camera view">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M4 4v5h.582M21 21v-5h-.581M5 19A9 9 0 1 1 19 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <div class="viewer-control-group" aria-label="Reset controls">
+    <span class="viewer-control-label">Reset</span>
+    <div class="viewer-control-buttons">
+      <button id="reset-view" type="button" class="control-btn" aria-label="Reset camera view">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M4 4v5h.582M21 21v-5h-.581M5 19A9 9 0 1 1 19 5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 </div>

@@ -2816,21 +2816,12 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   to { transform: rotate(360deg); }
 }
 
-.viewer-supporting-copy {
-  margin: 0;
-  flex: 1 1 18rem;
-  max-width: 36rem;
-  color: #475569;
-  font-size: 0.95rem;
-  line-height: 1.45;
-}
-
 .viewer-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.72);
@@ -2839,9 +2830,9 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 }
 
 #viewer-controls-container {
-  flex: 0 0 auto;
-  width: auto;
-  margin-left: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 #viewer-controls {
@@ -2849,9 +2840,32 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.7rem;
+  gap: clamp(1.75rem, 4vw, 4rem);
   padding: 0;
   background: transparent;
+}
+
+.viewer-control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: clamp(7rem, 12vw, 9rem);
+}
+
+.viewer-control-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.viewer-control-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
 }
 
 #viewer-controls button,
@@ -2868,21 +2882,15 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
 @media (max-width: 1023px) {
   .viewer-footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .viewer-supporting-copy {
-    max-width: none;
+    padding: 1.1rem 1.25rem;
   }
 
   #viewer-controls-container {
-    width: auto;
-    margin-left: 0;
+    width: 100%;
   }
 
   #viewer-controls {
-    justify-content: space-between;
+    gap: 1.5rem 2rem;
   }
 }
 
@@ -2896,11 +2904,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   }
 
   .viewer-footer {
-    padding: 0.8rem;
-  }
-
-  .viewer-supporting-copy {
-    font-size: 0.9rem;
+    padding: 1rem;
   }
 
   #viewer-controls-container {
@@ -2908,7 +2912,15 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   }
 
   #viewer-controls {
-    justify-content: space-between;
+    gap: 1.25rem;
+  }
+
+  .viewer-control-group {
+    min-width: 6.25rem;
+  }
+
+  .viewer-control-label {
+    font-size: 0.76rem;
   }
 }
 
@@ -5191,7 +5203,7 @@ body[data-resolved-theme="dark"] .viewer-overlay-title {
 
 body[data-resolved-theme="dark"] .viewer-overlay-copy,
 body[data-resolved-theme="dark"] .viewer-overlay-eyebrow,
-body[data-resolved-theme="dark"] .viewer-supporting-copy {
+body[data-resolved-theme="dark"] .viewer-control-label {
   color: #94a3b8;
 }
 

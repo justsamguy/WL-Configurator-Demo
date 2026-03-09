@@ -11,10 +11,7 @@ const log = createLogger('Viewer');
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
-const EMPTY_COPY = 'Choose a model on the right to load the first placeholder preview.';
-const LOADING_COPY = 'Preparing the selected model in the viewer.';
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
-const INTERACTION_COPY = 'Drag to rotate. Scroll to zoom.';
 
 let renderer = null;
 let scene = null;
@@ -44,7 +41,6 @@ const dom = {
   loading: null,
   error: null,
   errorCopy: null,
-  supportingCopy: null,
   liveRegion: null,
   retryButton: null
 };
@@ -117,16 +113,11 @@ function setLiveStatus(message) {
   if (dom.liveRegion) dom.liveRegion.textContent = message;
 }
 
-function setSupportingCopy(message) {
-  if (dom.supportingCopy) dom.supportingCopy.textContent = message;
-}
-
-function setViewerState(mode, { supportingCopy, errorCopy } = {}) {
+function setViewerState(mode, { errorCopy } = {}) {
   if (dom.surface) dom.surface.dataset.viewerState = mode;
   if (dom.empty) dom.empty.hidden = mode !== 'empty';
   if (dom.loading) dom.loading.hidden = mode !== 'loading';
   if (dom.error) dom.error.hidden = mode !== 'error';
-  if (typeof supportingCopy === 'string') setSupportingCopy(supportingCopy);
   if (typeof errorCopy === 'string' && dom.errorCopy) dom.errorCopy.textContent = errorCopy;
 }
 
@@ -141,12 +132,25 @@ function applyViewerTheme() {
   floorMesh.material.color.setHex(isDark ? 0x1b2538 : 0xe7eef6);
 }
 
-function enableShadowCasters(root) {
+function configureModelMeshes(root, config = {}) {
+  const receiveModelShadows = config && config.receiveModelShadows === true;
   root.traverse((child) => {
     if (!child.isMesh) return;
+
+    if (child.geometry && !child.geometry.getAttribute('normal') && typeof child.geometry.computeVertexNormals === 'function') {
+      child.geometry.computeVertexNormals();
+    }
+
     child.castShadow = true;
-    child.receiveShadow = true;
+    child.receiveShadow = receiveModelShadows;
     child.frustumCulled = false;
+
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (!material) return;
+      if ('shadowSide' in material) material.shadowSide = THREE.FrontSide;
+      material.needsUpdate = true;
+    });
   });
 }
 
@@ -276,7 +280,7 @@ async function buildRenderRoot(config) {
     );
   }
 
-  enableShadowCasters(renderRoot);
+  configureModelMeshes(renderRoot, config);
 
   const initialBounds = new THREE.Box3().setFromObject(renderRoot);
   if (initialBounds.isEmpty()) throw new Error('Loaded model has no mesh bounds.');
@@ -299,27 +303,21 @@ function showEmptyState() {
   requestedModelId = null;
   clearCurrentRenderRoot();
   log.info('Showing viewer empty state');
-  setViewerState('empty', { supportingCopy: EMPTY_COPY });
+  setViewerState('empty');
   setLiveStatus('3D preview ready. Choose a model to begin.');
 }
 
 function showErrorState(title, errorCopy = ERROR_COPY) {
   isLoading = false;
   log.warn('Showing viewer error state', { title, errorCopy });
-  setViewerState('error', {
-    supportingCopy: `3D preview unavailable for ${title}.`,
-    errorCopy
-  });
+  setViewerState('error', { errorCopy });
   setLiveStatus(`3D preview unavailable for ${title}.`);
 }
 
 function showReadyState(modelId, config = {}) {
   const title = getModelTitle(modelId, config);
-  const limitationCopy = config.supportCopy ? `${INTERACTION_COPY} ${config.supportCopy}` : INTERACTION_COPY;
   log.info('Showing viewer ready state', { modelId, title });
-  setViewerState('ready', {
-    supportingCopy: limitationCopy
-  });
+  setViewerState('ready');
   setLiveStatus(`${title} 3D preview loaded.`);
 }
 
@@ -372,7 +370,7 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   const requestToken = ++pendingRequestToken;
   isLoading = true;
-  setViewerState('loading', { supportingCopy: LOADING_COPY });
+  setViewerState('loading');
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
@@ -479,7 +477,6 @@ export async function initViewer() {
   dom.loading = document.getElementById('viewer-loading-state');
   dom.error = document.getElementById('viewer-error-state');
   dom.errorCopy = document.getElementById('viewer-error-copy');
-  dom.supportingCopy = document.getElementById('viewer-supporting-copy');
   dom.liveRegion = document.getElementById('viewer-status');
   dom.retryButton = document.getElementById('viewer-retry');
 
@@ -534,7 +531,8 @@ export async function initViewer() {
   keyLight.shadow.camera.right = 80;
   keyLight.shadow.camera.top = 80;
   keyLight.shadow.camera.bottom = -80;
-  keyLight.shadow.bias = -0.00015;
+  keyLight.shadow.bias = -0.00005;
+  keyLight.shadow.normalBias = 0.02;
   scene.add(keyLight);
 
   const fillLight = new THREE.DirectionalLight(0xdfe9f7, 0.8);
