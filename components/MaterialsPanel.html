@@ -15,9 +15,12 @@
           <div class="stage-subsection-help-row">
             <button
               type="button"
-              class="tooltip materials-help-link"
-              data-tip='We select wood to match the size of your project and budget. We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" option.'
+              id="materials-help-trigger"
+              class="materials-help-link"
+              data-popover-content='We select wood to match the size of your project and budget. We will inform you of progress as we work on your project, including photos of wood, layout, and color. If you would like to choose which specific slabs are used for your project, select the "Custom" option.'
               aria-describedby="wood-species-tooltip-desc"
+              aria-controls="materials-help-popover"
+              aria-expanded="false"
             >
               How your wood is chosen
             </button>

@@ -1474,6 +1474,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     log.warn('Failed to initialize summary tooltip', e);
   }
 
+  try {
+    const { initMaterialsHelpPopover } = await import('./ui/materialsHelpPopover.js');
+    const materialsHelpTrigger = document.getElementById('materials-help-trigger');
+    if (materialsHelpTrigger) initMaterialsHelpPopover(materialsHelpTrigger);
+  } catch (e) {
+    log.warn('Failed to initialize materials help popover', e);
+  }
+
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
@@ -1636,6 +1644,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 590');
+console.log('Edit ver: 591');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

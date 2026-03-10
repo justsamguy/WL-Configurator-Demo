@@ -1386,33 +1386,6 @@ header .site-logo {
   transform: translateX(-50%) rotate(180deg);
 }
 
-.materials-help-link.tooltip:hover::after,
-.materials-help-link.tooltip:focus-visible::after {
-  top: 100%;
-  bottom: auto;
-  left: auto;
-  right: 0;
-  transform: none;
-  margin-top: 6px;
-  margin-bottom: 0;
-  width: min(560px, calc(100vw - 24px));
-  max-width: min(560px, calc(100vw - 24px));
-  white-space: normal;
-  text-align: left;
-}
-
-.materials-help-link.tooltip:hover::before,
-.materials-help-link.tooltip:focus-visible::before {
-  top: 100%;
-  bottom: auto;
-  left: auto;
-  right: 12px;
-  margin-top: 1px;
-  margin-bottom: 0;
-  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
-  transform: none;
-}
-
 /* The summary button uses a JS-driven dialog tooltip. Prevent the simple CSS pseudo-tooltip
    from appearing for that specific control to avoid duplicate/overlapping tooltips. */
 #summary-btn.tooltip:hover::after,
@@ -1790,7 +1763,7 @@ body.show-model-tiles #stage-panel-0 #model-options,
   color: #374151;
   text-decoration: underline;
   text-underline-offset: 2px;
-  cursor: help;
+  cursor: pointer;
   line-height: 1.2;
   appearance: none;
   -webkit-appearance: none;
@@ -1805,6 +1778,50 @@ body.show-model-tiles #stage-panel-0 #model-options,
   outline: 2px solid #d1d5db;
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.materials-help-popover {
+  --materials-help-fade-duration: 180ms;
+  position: fixed;
+  z-index: 85;
+  width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(17, 24, 39, 0.9);
+  color: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.24);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--materials-help-fade-duration) ease,
+    transform var(--materials-help-fade-duration) ease,
+    visibility 0s linear var(--materials-help-fade-duration);
+}
+
+.materials-help-popover.is-visible,
+.materials-help-popover.is-closing {
+  visibility: visible;
+}
+
+.materials-help-popover.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    opacity var(--materials-help-fade-duration) ease,
+    transform var(--materials-help-fade-duration) ease;
+}
+
+.materials-help-popover.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
 }
 
 .stage-options-grid {
