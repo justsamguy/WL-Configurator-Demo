@@ -27,7 +27,7 @@ let resizeTimeout = null;
 let currentRenderRoot = null;
 let requestedModelId = null;
 let displayedModelId = null;
-let displayedAssetPath = null;
+let displayedRenderSignature = null;
 let pendingRequestToken = 0;
 let isLoading = false;
 let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
@@ -89,6 +89,46 @@ function getScaleVector(scaleValue) {
     return new THREE.Vector3(uniform, uniform, uniform);
   }
   return new THREE.Vector3(1, 1, 1);
+}
+
+function getVectorTriplet(value, fallback = 0) {
+  if (Array.isArray(value) && value.length === 3) {
+    return value.map((entry) => Number(entry) || 0);
+  }
+  return [fallback, fallback, fallback];
+}
+
+function normalizeRenderablePart(partConfig = {}, index = 0) {
+  return {
+    name: typeof partConfig.name === 'string' && partConfig.name.trim()
+      ? partConfig.name.trim()
+      : `part-${index + 1}`,
+    assetPath: typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '',
+    scale: Array.isArray(partConfig.scale) && partConfig.scale.length === 3
+      ? partConfig.scale.map((entry) => Number(entry) || 1)
+      : (Number.isFinite(Number(partConfig.scale)) ? Number(partConfig.scale) || 1 : 1),
+    rotation: getVectorTriplet(partConfig.rotation),
+    positionOffset: getVectorTriplet(partConfig.positionOffset),
+    receiveModelShadows: partConfig.receiveModelShadows === true
+  };
+}
+
+function getRenderableParts(config = {}) {
+  const candidateParts = Array.isArray(config.parts) && config.parts.length
+    ? config.parts
+    : [config];
+
+  return candidateParts
+    .filter((partConfig) => partConfig && typeof partConfig.assetPath === 'string' && partConfig.assetPath.trim())
+    .map((partConfig, index) => normalizeRenderablePart(partConfig, index));
+}
+
+function getRenderSignature(config = {}) {
+  return JSON.stringify(getRenderableParts(config));
+}
+
+function getRenderAssetPaths(config = {}) {
+  return getRenderableParts(config).map((partConfig) => partConfig.assetPath);
 }
 
 function disposeMaterial(material) {
@@ -170,7 +210,7 @@ function clearCurrentRenderRoot() {
   }
   currentRenderRoot = null;
   displayedModelId = null;
-  displayedAssetPath = null;
+  displayedRenderSignature = null;
 }
 
 function frameModel(root, config = {}) {
@@ -258,41 +298,48 @@ function resolveViewerConfig(manifest, modelId) {
   };
 }
 
-async function buildRenderRoot(config) {
+async function buildRenderAsset(partConfig, index = 0) {
   if (!loader) loader = new GLTFLoader();
-  const assetPath = config && typeof config.assetPath === 'string' ? config.assetPath : '';
+  const assetPath = partConfig && typeof partConfig.assetPath === 'string' ? partConfig.assetPath : '';
   if (!assetPath) throw new Error('No asset path configured for viewer model.');
 
   const gltf = await loader.loadAsync(assetPath);
   const sourceRoot = gltf.scene || (Array.isArray(gltf.scenes) ? gltf.scenes[0] : null);
   if (!sourceRoot) throw new Error('GLB did not contain a scene.');
 
-  const renderRoot = new THREE.Group();
-  renderRoot.name = `viewer-model-${requestedModelId || 'selection'}`;
-  renderRoot.add(sourceRoot);
-  renderRoot.scale.copy(getScaleVector(config.scale));
+  const assetRoot = new THREE.Group();
+  assetRoot.name = partConfig.name || `viewer-part-${index + 1}`;
+  assetRoot.add(sourceRoot);
+  assetRoot.scale.copy(getScaleVector(partConfig.scale));
+  assetRoot.rotation.set(
+    Number(partConfig.rotation[0]) || 0,
+    Number(partConfig.rotation[1]) || 0,
+    Number(partConfig.rotation[2]) || 0
+  );
 
-  if (Array.isArray(config.rotation) && config.rotation.length === 3) {
-    renderRoot.rotation.set(
-      Number(config.rotation[0]) || 0,
-      Number(config.rotation[1]) || 0,
-      Number(config.rotation[2]) || 0
-    );
-  }
+  configureModelMeshes(assetRoot, partConfig);
 
-  configureModelMeshes(renderRoot, config);
-
-  const initialBounds = new THREE.Box3().setFromObject(renderRoot);
+  const initialBounds = new THREE.Box3().setFromObject(assetRoot);
   if (initialBounds.isEmpty()) throw new Error('Loaded model has no mesh bounds.');
 
   const center = initialBounds.getCenter(new THREE.Vector3());
-  renderRoot.position.set(-center.x, -initialBounds.min.y, -center.z);
+  assetRoot.position.set(-center.x, -initialBounds.min.y, -center.z);
+  assetRoot.position.x += Number(partConfig.positionOffset[0]) || 0;
+  assetRoot.position.y += Number(partConfig.positionOffset[1]) || 0;
+  assetRoot.position.z += Number(partConfig.positionOffset[2]) || 0;
 
-  if (Array.isArray(config.positionOffset) && config.positionOffset.length === 3) {
-    renderRoot.position.x += Number(config.positionOffset[0]) || 0;
-    renderRoot.position.y += Number(config.positionOffset[1]) || 0;
-    renderRoot.position.z += Number(config.positionOffset[2]) || 0;
-  }
+  return assetRoot;
+}
+
+async function buildRenderRoot(config) {
+  const renderableParts = getRenderableParts(config);
+  if (!renderableParts.length) throw new Error('No asset path configured for viewer model.');
+
+  const renderRoot = new THREE.Group();
+  renderRoot.name = `viewer-model-${requestedModelId || 'selection'}`;
+
+  const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
+  parts.forEach((partRoot) => renderRoot.add(partRoot));
 
   return renderRoot;
 }
@@ -339,28 +386,31 @@ export async function updateModel(modelId, { force = false } = {}) {
   }
 
   const config = resolveViewerConfig(manifest, modelId);
-  if (!config || !config.assetPath) {
+  const renderableParts = getRenderableParts(config || {});
+  if (!config || !renderableParts.length) {
     showErrorState(getModelTitle(modelId), 'No local 3D asset is mapped for the selected model yet.');
     return;
   }
+  const renderSignature = getRenderSignature(config);
 
   const title = getModelTitle(modelId, config);
   requestedModelId = modelId;
   log.info('Viewer config resolved', {
     modelId,
     title,
-    assetPath: config.assetPath,
+    assetPaths: getRenderAssetPaths(config),
+    renderSignature,
     camera: getCameraSettings(config)
   });
 
-  if (!force && currentRenderRoot && displayedModelId === modelId && displayedAssetPath === config.assetPath) {
+  if (!force && currentRenderRoot && displayedModelId === modelId && displayedRenderSignature === renderSignature) {
     const framing = frameModel(currentRenderRoot, config);
     log.info('Reused existing viewer asset for same model', { modelId, framing });
     showReadyState(modelId, config);
     return;
   }
 
-  if (!force && currentRenderRoot && displayedAssetPath === config.assetPath) {
+  if (!force && currentRenderRoot && displayedRenderSignature === renderSignature) {
     displayedModelId = modelId;
     const framing = frameModel(currentRenderRoot, config);
     log.info('Reused existing viewer asset across model mapping', { modelId, framing });
@@ -374,7 +424,7 @@ export async function updateModel(modelId, { force = false } = {}) {
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
-    log.info('Starting GLB load', { modelId, assetPath: config.assetPath });
+    log.info('Starting GLB load', { modelId, assetPaths: getRenderAssetPaths(config) });
     const nextRoot = await buildRenderRoot(config);
     if (requestToken !== pendingRequestToken) {
       disposeObject3D(nextRoot);
@@ -383,18 +433,18 @@ export async function updateModel(modelId, { force = false } = {}) {
 
     replaceCurrentRenderRoot(nextRoot);
     displayedModelId = modelId;
-    displayedAssetPath = config.assetPath;
+    displayedRenderSignature = renderSignature;
     const framing = frameModel(nextRoot, config);
     log.info('GLB load succeeded', {
       modelId,
-      assetPath: config.assetPath,
+      assetPaths: getRenderAssetPaths(config),
       framing
     });
     showReadyState(modelId, config);
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
     if (requestToken !== pendingRequestToken) return;
-    showErrorState(title, 'The local placeholder model could not be loaded. Try again.');
+    showErrorState(title, 'The local table assembly could not be loaded. Try again.');
   } finally {
     if (requestToken === pendingRequestToken) isLoading = false;
   }

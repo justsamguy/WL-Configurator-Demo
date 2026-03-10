@@ -1,6 +1,22 @@
 {
   "defaults": {
-    "assetPath": "assets/models/3D%20Cube%20Placeholder.glb",
+    "parts": [
+      {
+        "name": "tabletop",
+        "assetPath": "assets/models/Walnut%20tabletop.glb",
+        "positionOffset": [0, 0.707625, 0]
+      },
+      {
+        "name": "leg-front",
+        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
+        "positionOffset": [0, 0, 0.8128]
+      },
+      {
+        "name": "leg-back",
+        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
+        "positionOffset": [0, 0, -0.8128]
+      }
+    ],
     "camera": {
       "offset": [1.65, 0.94, 1.95],
       "targetHeightRatio": 0.34,
@@ -8,23 +24,23 @@
       "maxDistanceMultiplier": 5.8
     },
     "scale": 1,
-    "supportCopy": "Placeholder 3D asset while production WoodLab table meshes are prepared."
+    "supportCopy": "Static tabletop and dual-hourglass-leg assembly used to validate the 3D viewer."
   },
   "models": {
     "mdl-coffee": {
       "title": "Coffee Table",
-      "statusLabel": "Coffee Table Placeholder",
-      "supportCopy": "Placeholder 3D asset while production coffee-table meshes are prepared."
+      "statusLabel": "Coffee Table Static Preview",
+      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation."
     },
     "mdl-dining": {
       "title": "Dining Table",
-      "statusLabel": "Dining Table Placeholder",
-      "supportCopy": "Placeholder 3D asset while production dining-table meshes are prepared."
+      "statusLabel": "Dining Table Static Preview",
+      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation."
     },
     "mdl-conference": {
       "title": "Conference Table",
-      "statusLabel": "Conference Table Placeholder",
-      "supportCopy": "Placeholder 3D asset while production conference-table meshes are prepared."
+      "statusLabel": "Conference Table Static Preview",
+      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation."
     }
   }
 }
