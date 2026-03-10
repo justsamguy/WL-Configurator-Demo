@@ -4689,60 +4689,14 @@ body.stage-1 #stage-panel-1 > .flex {
   border-color: #e5e7eb;
 }
 
-/* Flip-card info interaction for non-addon option tiles with descriptions. */
+/* Option-card info trigger keeps the tile compact and moves long copy into a dialog. */
 .option-card.option-card-info-enabled {
-  perspective: 1200px;
-  overflow: hidden;
-}
-
-.option-card-info-enabled .option-card-flip-inner {
   position: relative;
-  width: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.45s ease;
-}
-
-.option-card.option-card-info-open .option-card-flip-inner {
-  transform: rotateY(180deg);
-}
-
-.option-card-info-enabled .option-card-face {
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.option-card-info-enabled .option-card-face-front {
-  position: relative;
-}
-
-.option-card-info-enabled .option-card-face-back {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotateY(180deg);
-  padding: 0.875rem;
-  box-sizing: border-box;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.option-card.option-card-info-open .option-card-face-back {
-  pointer-events: auto;
 }
 
 .option-card-info-enabled .title,
-.option-card-info-enabled .title-price-row {
+.option-card-info-enabled .title-price-row,
+.option-card-info-enabled .price-delta {
   width: 100%;
   padding-left: 1.75rem;
   padding-right: 1.75rem;
@@ -4755,8 +4709,7 @@ body.stage-1 #stage-panel-1 > .flex {
   gap: 0.35rem;
 }
 
-.option-card-info-trigger,
-.option-card-info-close {
+.option-card-info-trigger {
   width: auto;
   height: auto;
   border-radius: 0;
@@ -4771,23 +4724,12 @@ body.stage-1 #stage-panel-1 > .flex {
   cursor: pointer;
   user-select: none;
   padding: 0;
-}
-
-.option-card-info-trigger {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
 }
 
-.option-card-info-close {
-  position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  font-weight: 600;
-}
-
-.option-card-info-trigger:hover,
-.option-card-info-close:hover {
+.option-card-info-trigger:hover {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 999px;
@@ -4796,36 +4738,106 @@ body.stage-1 #stage-panel-1 > .flex {
   color: #4b5563;
 }
 
-.option-card-info-trigger:focus-visible,
-.option-card-info-close:focus-visible {
+.option-card-info-trigger:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
-}
-
-.option-card-info-description {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: calc(12px + 2pt);
-  color: #4b5563;
-  line-height: 1.35;
-  padding: 0.75rem;
-  box-sizing: border-box;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  pointer-events: none;
 }
 
 .option-card.option-card-info-enabled.selected::after,
 .stage-options-grid .option-card.option-card-info-enabled.selected::after,
 .model-row .option-card.option-card-info-enabled.selected::after {
   right: 2rem;
+}
+
+.option-card-info-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.54);
+}
+
+.option-card-info-dialog-panel {
+  width: min(34rem, calc(100vw - 2.5rem));
+  max-height: min(80vh, 42rem);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.24);
+  overflow: hidden;
+}
+
+.option-card-info-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0.9rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.option-card-info-dialog-title {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.option-card-info-dialog-close {
+  flex: 0 0 auto;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.option-card-info-dialog-close:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.option-card-info-dialog-close:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.option-card-info-dialog-body {
+  overflow: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  color: #4b5563;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.option-card-info-dialog-paragraph {
+  margin: 0;
+}
+
+.option-card-info-dialog-paragraph + .option-card-info-dialog-paragraph {
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .option-card-info-dialog-backdrop {
+    align-items: flex-end;
+    padding: 0.75rem;
+  }
+
+  .option-card-info-dialog-panel {
+    width: min(100%, 32rem);
+    max-height: 78vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }
 
 /* Shared confirmation dialog styling. */
@@ -4964,7 +4976,7 @@ body[data-resolved-theme="dark"] .stage-options-grid .option-card .description,
 body[data-resolved-theme="dark"] .stage-options-grid .option-card .price-delta,
 body[data-resolved-theme="dark"] .model-row .description,
 body[data-resolved-theme="dark"] .model-row .price-delta,
-body[data-resolved-theme="dark"] .option-card-info-description,
+body[data-resolved-theme="dark"] .option-card-info-dialog-body,
 body[data-resolved-theme="dark"] .summary-shipping-field,
 body[data-resolved-theme="dark"] .summary-shipping-switch,
 body[data-resolved-theme="dark"] .summary-shipping-switch-description,
@@ -5097,9 +5109,33 @@ body[data-resolved-theme="dark"] .stage-subsection-chevron {
   color: #94a3b8;
 }
 
-body[data-resolved-theme="dark"] .option-card-info-trigger,
-body[data-resolved-theme="dark"] .option-card-info-close {
+body[data-resolved-theme="dark"] .option-card-info-trigger {
   color: #f8fafc;
+}
+
+body[data-resolved-theme="dark"] .option-card-info-dialog-panel {
+  background: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.55);
+}
+
+body[data-resolved-theme="dark"] .option-card-info-dialog-header {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+body[data-resolved-theme="dark"] .option-card-info-dialog-title {
+  color: #f8fafc;
+}
+
+body[data-resolved-theme="dark"] .option-card-info-dialog-close {
+  background: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+body[data-resolved-theme="dark"] .option-card-info-dialog-close:hover {
+  background: #334155;
+  border-color: #64748b;
 }
 
 body[data-resolved-theme="dark"] .addons-dropdown-option.selected,

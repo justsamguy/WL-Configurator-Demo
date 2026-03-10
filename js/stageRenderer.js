@@ -1,3 +1,5 @@
+import { showOptionCardInfoDialog } from './ui/optionCardInfoDialog.js';
+
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
 // opts.showPrice: set false to hide price text for the rendered tiles
@@ -45,78 +47,37 @@ function isActivationEvent(ev) {
   return ev.type === 'click' || (ev.type === 'keydown' && (ev.key === 'Enter' || ev.key === ' '));
 }
 
-function applyOptionCardInfoFlip(card) {
+function applyOptionCardInfoDialogTrigger(card) {
   if (!card || card.dataset.infoEnhanced === 'true') return;
   if (isAddonTile(card) || isExcludedStageTile(card) || isCustomInputTile(card)) return;
 
   const titleEl = card.querySelector('.title');
   const descriptionEl = card.querySelector('.description');
+  const titleText = titleEl ? String(titleEl.textContent || '').trim() : '';
   const descriptionText = descriptionEl ? String(descriptionEl.textContent || '').trim() : '';
-  if (!titleEl || !descriptionText) return;
+  if (!titleText || !descriptionText) return;
 
   const infoTrigger = document.createElement('span');
   infoTrigger.className = 'option-card-info-trigger';
   infoTrigger.setAttribute('role', 'button');
   infoTrigger.setAttribute('tabindex', '0');
-  infoTrigger.setAttribute('aria-label', 'Show details');
+  infoTrigger.setAttribute('aria-label', `Show details for ${titleText}`);
   infoTrigger.setAttribute('aria-expanded', 'false');
+  infoTrigger.setAttribute('aria-haspopup', 'dialog');
   infoTrigger.textContent = 'ⓘ';
-
-  const closeTrigger = document.createElement('span');
-  closeTrigger.className = 'option-card-info-close';
-  closeTrigger.setAttribute('role', 'button');
-  closeTrigger.setAttribute('tabindex', '-1');
-  closeTrigger.setAttribute('aria-label', 'Close details');
-  closeTrigger.textContent = 'X';
-
-  const frontFace = document.createElement('div');
-  frontFace.className = 'option-card-face option-card-face-front';
-
-  const backFace = document.createElement('div');
-  backFace.className = 'option-card-face option-card-face-back';
-  backFace.setAttribute('aria-hidden', 'true');
-
-  const backDescription = document.createElement('div');
-  backDescription.className = 'option-card-info-description';
-  backDescription.textContent = descriptionText;
-  backFace.appendChild(closeTrigger);
-  backFace.appendChild(backDescription);
-
-  const flipInner = document.createElement('div');
-  flipInner.className = 'option-card-flip-inner';
-
-  const currentChildren = Array.from(card.childNodes);
-  currentChildren.forEach((child) => frontFace.appendChild(child));
-  const frontDescription = frontFace.querySelector('.description');
-  if (frontDescription) frontDescription.remove();
-  frontFace.appendChild(infoTrigger);
-
-  flipInner.appendChild(frontFace);
-  flipInner.appendChild(backFace);
-  card.innerHTML = '';
-  card.appendChild(flipInner);
+  card.dataset.infoTitle = titleText;
+  card.dataset.infoDescription = descriptionText;
+  descriptionEl.remove();
+  card.appendChild(infoTrigger);
   card.classList.add('option-card-info-enabled');
-  card.setAttribute('data-info-open', 'false');
   card.dataset.infoEnhanced = 'true';
 
-  const openInfo = (focusClose = true) => {
-    if (card.getAttribute('data-info-open') === 'true') return;
-    card.classList.add('option-card-info-open');
-    card.setAttribute('data-info-open', 'true');
-    infoTrigger.setAttribute('aria-expanded', 'true');
-    closeTrigger.setAttribute('tabindex', '0');
-    backFace.setAttribute('aria-hidden', 'false');
-    if (focusClose) closeTrigger.focus();
-  };
-
-  const closeInfo = (focusInfo = true) => {
-    if (card.getAttribute('data-info-open') !== 'true') return;
-    card.classList.remove('option-card-info-open');
-    card.setAttribute('data-info-open', 'false');
-    infoTrigger.setAttribute('aria-expanded', 'false');
-    closeTrigger.setAttribute('tabindex', '-1');
-    backFace.setAttribute('aria-hidden', 'true');
-    if (focusInfo) infoTrigger.focus();
+  const openInfo = () => {
+    showOptionCardInfoDialog({
+      title: titleText,
+      description: descriptionText,
+      triggerEl: infoTrigger
+    });
   };
 
   infoTrigger.addEventListener('click', (ev) => {
@@ -129,39 +90,18 @@ function applyOptionCardInfoFlip(card) {
     consumeEvent(ev);
     openInfo();
   });
-
-  closeTrigger.addEventListener('click', (ev) => {
-    if (!isActivationEvent(ev)) return;
-    consumeEvent(ev);
-    closeInfo();
-  });
-  closeTrigger.addEventListener('keydown', (ev) => {
-    if (!isActivationEvent(ev)) return;
-    consumeEvent(ev);
-    closeInfo();
-  });
-
-  backFace.addEventListener('click', (ev) => {
-    consumeEvent(ev);
-  });
-
-  card.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Escape' || card.getAttribute('data-info-open') !== 'true') return;
-    consumeEvent(ev);
-    closeInfo();
-  });
 }
 
 export function enhanceOptionCardsWithInfo(root = document) {
   if (!root) return;
   if (root.matches && root.matches('.option-card')) {
-    applyOptionCardInfoFlip(root);
+    applyOptionCardInfoDialogTrigger(root);
   }
   const cards = root.querySelectorAll ? root.querySelectorAll('.option-card') : [];
-  cards.forEach((card) => applyOptionCardInfoFlip(card));
+  cards.forEach((card) => applyOptionCardInfoDialogTrigger(card));
 }
 
-export function initOptionCardInfoFlips(root = document.body) {
+export function initOptionCardInfoDialogs(root = document.body) {
   if (!root) return;
   enhanceOptionCardsWithInfo(root);
   if (optionCardInfoObserver || typeof MutationObserver === 'undefined') return;
@@ -759,5 +699,5 @@ export default {
   renderAddonsDropdown,
   renderSheenSlider,
   enhanceOptionCardsWithInfo,
-  initOptionCardInfoFlips
+  initOptionCardInfoDialogs
 };
