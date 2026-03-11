@@ -51,7 +51,7 @@ export function showOptionCardInfoDialog({ title = '', description = '', trigger
   closeButton.type = 'button';
   closeButton.className = 'option-card-info-dialog-close';
   closeButton.setAttribute('aria-label', `Close details for ${dialogTitle}`);
-  closeButton.textContent = 'Close';
+  closeButton.textContent = 'X';
 
   header.appendChild(heading);
   header.appendChild(closeButton);

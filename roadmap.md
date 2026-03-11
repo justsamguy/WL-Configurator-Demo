@@ -2,6 +2,9 @@
 
 ## v1.1
 - Add 3D model viewer
+create & add materials
+test material assigning
+produce additional models
 - hide backend code?
 
 ## v1.2

@@ -2671,8 +2671,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
 /* End high-impact rules */
 
-#viewer-controls button, 
-#viewer-controls span {
+#viewer-controls button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2685,8 +2684,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   transition: all 0.2s;
 }
 
-#viewer-controls button:hover,
-#viewer-controls span:hover {
+#viewer-controls button:hover {
   background-color: #f3f4f6;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
 }
@@ -2837,8 +2835,8 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  padding: 1.25rem 1.5rem;
+  gap: 1rem;
+  padding: 0.6rem 1.1rem;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.72);
@@ -2857,7 +2855,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: clamp(1.75rem, 4vw, 4rem);
+  gap: clamp(1.25rem, 3vw, 3rem);
   padding: 0;
   background: transparent;
 }
@@ -2866,22 +2864,25 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.28rem;
   min-width: clamp(7rem, 12vw, 9rem);
 }
 
 .viewer-control-label {
+  display: block;
   font-size: 0.84rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #6b7280;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  line-height: 1;
 }
 
 .viewer-control-buttons {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 0.65rem;
 }
 
 #viewer-controls button,
@@ -2898,7 +2899,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
 @media (max-width: 1023px) {
   .viewer-footer {
-    padding: 1.1rem 1.25rem;
+    padding: 0.65rem 0.95rem;
   }
 
   #viewer-controls-container {
@@ -2906,7 +2907,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   }
 
   #viewer-controls {
-    gap: 1.5rem 2rem;
+    gap: 1rem 1.5rem;
   }
 }
 
@@ -2920,7 +2921,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   }
 
   .viewer-footer {
-    padding: 1rem;
+    padding: 0.6rem 0.85rem;
   }
 
   #viewer-controls-container {
@@ -2928,7 +2929,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   }
 
   #viewer-controls {
-    gap: 1.25rem;
+    gap: 0.85rem 1.15rem;
   }
 
   .viewer-control-group {
@@ -4710,15 +4711,16 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 .option-card-info-trigger {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  border: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
   background: transparent;
   color: #4b5563;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   font-size: 0.78rem;
   line-height: 1;
   cursor: pointer;
@@ -4727,15 +4729,13 @@ body.stage-1 #stage-panel-1 > .flex {
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .option-card-info-trigger:hover {
-  width: 1.4rem;
-  height: 1.4rem;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
+  border-color: #d1d5db;
   background: #ffffff;
-  color: #4b5563;
+  color: #1f2937;
 }
 
 .option-card-info-trigger:focus-visible {
@@ -4790,19 +4790,27 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .option-card-info-dialog-close {
   flex: 0 0 auto;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
   color: #374151;
   border-radius: 999px;
-  padding: 0.45rem 0.8rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .option-card-info-dialog-close:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: #f3f4f6;
+  border-color: transparent;
+  color: #111827;
 }
 
 .option-card-info-dialog-close:focus-visible {
@@ -5110,6 +5118,12 @@ body[data-resolved-theme="dark"] .stage-subsection-chevron {
 }
 
 body[data-resolved-theme="dark"] .option-card-info-trigger {
+  color: #cbd5e1;
+}
+
+body[data-resolved-theme="dark"] .option-card-info-trigger:hover {
+  background: #1f2937;
+  border-color: #475569;
   color: #f8fafc;
 }
 
@@ -5128,14 +5142,15 @@ body[data-resolved-theme="dark"] .option-card-info-dialog-title {
 }
 
 body[data-resolved-theme="dark"] .option-card-info-dialog-close {
-  background: #1e293b;
-  border-color: #475569;
-  color: #e2e8f0;
+  background: transparent;
+  border-color: transparent;
+  color: #cbd5e1;
 }
 
 body[data-resolved-theme="dark"] .option-card-info-dialog-close:hover {
-  background: #334155;
-  border-color: #64748b;
+  background: #1e293b;
+  border-color: transparent;
+  color: #f8fafc;
 }
 
 body[data-resolved-theme="dark"] .addons-dropdown-option.selected,
@@ -5222,7 +5237,6 @@ body[data-resolved-theme="dark"] .option-card[disabled] {
 }
 
 body[data-resolved-theme="dark"] #viewer-controls button,
-body[data-resolved-theme="dark"] #viewer-controls span,
 body[data-resolved-theme="dark"] .control-btn,
 body[data-resolved-theme="dark"] .btn-icon.footer-summary-btn {
   background-color: #1f2937;
@@ -5231,7 +5245,6 @@ body[data-resolved-theme="dark"] .btn-icon.footer-summary-btn {
 }
 
 body[data-resolved-theme="dark"] #viewer-controls button:hover,
-body[data-resolved-theme="dark"] #viewer-controls span:hover,
 body[data-resolved-theme="dark"] .control-btn:hover,
 body[data-resolved-theme="dark"] .btn-icon.footer-summary-btn:hover {
   background-color: #334155;
