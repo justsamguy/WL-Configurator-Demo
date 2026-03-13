@@ -4072,6 +4072,36 @@ body.stage-1 #stage-panel-1 > .flex {
   justify-content: flex-end;
 }
 
+.stage-required-message {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #b91c1c;
+}
+
+.stage-required-message[hidden] {
+  display: none !important;
+}
+
+.stage-subsection-dropdown.has-validation-error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.stage-subsection-dropdown.has-validation-error:hover {
+  border-color: #dc2626;
+}
+
+.stage-subsection-dropdown.has-validation-error .stage-subsection-title,
+.designs-stage-group.has-validation-error .designs-stage-heading,
+.presets-row.has-validation-error h4,
+#models-stage-section.has-validation-error .title,
+.axis-control-row.has-validation-error .control-label label,
+#custom-height-container.has-validation-error .control-label label {
+  color: #b91c1c;
+}
+
 #materials-root .stage-subsection-body .stage-options-grid {
   margin-top: 0;
 }
@@ -5261,6 +5291,24 @@ body[data-resolved-theme="dark"] #viewer {
   background: radial-gradient(circle at top, #132033 0%, #0f172a 58%, #0b1220 100%);
   border-color: #334155;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 48px rgba(2, 6, 23, 0.45);
+}
+
+body[data-resolved-theme="dark"] .stage-required-message {
+  color: #fca5a5;
+}
+
+body[data-resolved-theme="dark"] .stage-subsection-dropdown.has-validation-error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.2);
+}
+
+body[data-resolved-theme="dark"] .stage-subsection-dropdown.has-validation-error .stage-subsection-title,
+body[data-resolved-theme="dark"] .designs-stage-group.has-validation-error .designs-stage-heading,
+body[data-resolved-theme="dark"] .presets-row.has-validation-error h4,
+body[data-resolved-theme="dark"] #models-stage-section.has-validation-error .title,
+body[data-resolved-theme="dark"] .axis-control-row.has-validation-error .control-label label,
+body[data-resolved-theme="dark"] #custom-height-container.has-validation-error .control-label label {
+  color: #fca5a5;
 }
 
 body[data-resolved-theme="dark"] .viewer-overlay-card,

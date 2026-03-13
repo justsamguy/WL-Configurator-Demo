@@ -60,8 +60,11 @@ const LEGS_STAGE_INDEX = 5;
 const SUMMARY_STAGE_INDEX = 7;
 const SUMMARY_FULL_LABEL = 'Summary & Export';
 const SUMMARY_SHORT_LABEL = 'Summary';
+const VALIDATION_ERROR_CLASS = 'has-validation-error';
+const VALIDATION_MESSAGE_CLASS = 'stage-required-message';
 let summaryLabelObserver = null;
 let summaryLabelHandlersBound = false;
+let activeValidationPrompt = null;
 
 function $(sel) {
   return document.querySelector(sel);
@@ -133,14 +136,407 @@ function hasSelectedDimensions(appState) {
   return Number.isFinite(detail && detail.length) && Number.isFinite(detail && detail.width);
 }
 
+function getSelectedOptions(source = appState) {
+  return source && source.selections && source.selections.options ? source.selections.options : {};
+}
+
+function isMaterialsStageComplete(source = appState) {
+  const options = getSelectedOptions(source);
+  return !!(options.material && options.color && options['color-gradient']);
+}
+
+function isFinishStageComplete(source = appState) {
+  const options = getSelectedOptions(source);
+  return !!(options['finish-coating'] && options['finish-sheen'] && options['finish-tint']);
+}
+
+function getLegSelectionState(source = appState) {
+  const options = getSelectedOptions(source);
+  const legId = options.legs || null;
+  const designId = source && source.selections ? source.selections.design : null;
+  const isNoneLeg = legId === 'leg-none';
+  const isCustomLeg = legId === 'leg-sample-07';
+  const isSignatureLeg = legId === 'leg-signature';
+  const isSignatureDesign = designId === 'des-signature';
+  const tubeSizeRequired = !!legId && !isNoneLeg && !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
+
+  return {
+    legId,
+    isNoneLeg,
+    tubeSizeRequired,
+    hasLegs: !!legId,
+    hasTubeSize: !!options['tube-size'],
+    hasLegFinish: !!options['leg-finish']
+  };
+}
+
+function isLegStageComplete(source = appState) {
+  const legState = getLegSelectionState(source);
+  if (!legState.hasLegs) return false;
+  if (legState.isNoneLeg) return true;
+  return (!legState.tubeSizeRequired || legState.hasTubeSize) && legState.hasLegFinish;
+}
+
+function getDirectHeadingChild(container) {
+  if (!container || !container.children) return null;
+  return Array.from(container.children).find((child) => /^H[1-6]$/i.test(child.tagName)) || null;
+}
+
+function ensureValidationMessage(anchorEl, key) {
+  if (!anchorEl) return null;
+
+  let messageEl = anchorEl.querySelector(`.${VALIDATION_MESSAGE_CLASS}[data-validation-key="${key}"]`);
+  if (!messageEl) {
+    messageEl = document.createElement('div');
+    messageEl.className = VALIDATION_MESSAGE_CLASS;
+    messageEl.dataset.validationKey = key;
+    messageEl.setAttribute('aria-live', 'polite');
+    messageEl.setAttribute('aria-atomic', 'true');
+    messageEl.hidden = true;
+
+    const headingChild = getDirectHeadingChild(anchorEl);
+    if (headingChild) headingChild.insertAdjacentElement('afterend', messageEl);
+    else anchorEl.prepend(messageEl);
+  }
+
+  return messageEl;
+}
+
+function clearActiveValidationPrompt() {
+  if (!activeValidationPrompt) return;
+
+  const { messageEl, messageText, useExistingMessageEl, highlightEl } = activeValidationPrompt;
+  if (highlightEl) highlightEl.classList.remove(VALIDATION_ERROR_CLASS);
+
+  if (messageEl) {
+    if (useExistingMessageEl) {
+      if ((messageEl.textContent || '').trim() === (messageText || '').trim()) messageEl.textContent = '';
+    } else {
+      messageEl.textContent = '';
+      messageEl.hidden = true;
+    }
+  }
+
+  activeValidationPrompt = null;
+}
+
+function refreshActiveValidationPrompt() {
+  if (!activeValidationPrompt) return;
+
+  const { stageIndex, isResolved, messageEl } = activeValidationPrompt;
+  if (stageIndex !== managerState.current || (messageEl && !document.contains(messageEl))) {
+    clearActiveValidationPrompt();
+    return;
+  }
+
+  if (typeof isResolved === 'function' && isResolved()) clearActiveValidationPrompt();
+}
+
+function setDropdownExpanded(dropdown, shouldExpand) {
+  if (!dropdown) return;
+  const header = dropdown.querySelector('.stage-subsection-header');
+  const content = dropdown.querySelector('.stage-subsection-content');
+  dropdown.classList.toggle('expanded', shouldExpand);
+  if (header) header.setAttribute('aria-expanded', shouldExpand ? 'true' : 'false');
+  if (content) {
+    content.hidden = !shouldExpand;
+    content.style.maxHeight = shouldExpand ? 'none' : '0px';
+  }
+}
+
+function expandExclusiveDropdown(dropdown) {
+  if (!dropdown) return;
+  const list = dropdown.closest('.stage-subsection-list');
+  if (!list) {
+    setDropdownExpanded(dropdown, true);
+    return;
+  }
+
+  list.querySelectorAll('.stage-subsection-dropdown').forEach((item) => {
+    setDropdownExpanded(item, item === dropdown);
+  });
+}
+
+function focusValidationTarget(target) {
+  if (!target || typeof target.focus !== 'function') return;
+  requestAnimationFrame(() => {
+    try {
+      target.focus({ preventScroll: true });
+    } catch (e) {
+      target.focus();
+    }
+  });
+}
+
+function showValidationPrompt(requirement) {
+  if (!requirement || !requirement.anchorEl) return false;
+
+  clearActiveValidationPrompt();
+
+  if (requirement.dropdownEl) expandExclusiveDropdown(requirement.dropdownEl);
+
+  const messageEl = requirement.useExistingMessageEl
+    ? requirement.anchorEl
+    : ensureValidationMessage(requirement.anchorEl, requirement.key);
+  if (!messageEl) return false;
+
+  messageEl.textContent = requirement.message;
+  if (!requirement.useExistingMessageEl) messageEl.hidden = false;
+
+  const highlightEl = requirement.highlightEl || requirement.anchorEl;
+  if (highlightEl) highlightEl.classList.add(VALIDATION_ERROR_CLASS);
+
+  const scrollTarget = requirement.scrollEl || requirement.dropdownEl || requirement.highlightEl || requirement.anchorEl;
+  if (scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
+    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  focusValidationTarget(requirement.focusEl || scrollTarget);
+
+  activeValidationPrompt = {
+    stageIndex: managerState.current,
+    messageEl,
+    messageText: requirement.message,
+    useExistingMessageEl: !!requirement.useExistingMessageEl,
+    highlightEl,
+    isResolved: requirement.isResolved
+  };
+
+  return true;
+}
+
+function buildDropdownRequirement({ key, dropdownSelector, message, isResolved }) {
+  if (isResolved()) return null;
+
+  const dropdown = document.querySelector(dropdownSelector);
+  const anchorEl = dropdown && dropdown.querySelector('.stage-subsection-body');
+  const header = dropdown && dropdown.querySelector('.stage-subsection-header');
+  return {
+    key,
+    message,
+    anchorEl: anchorEl || dropdown,
+    dropdownEl: dropdown,
+    highlightEl: dropdown,
+    focusEl: header || dropdown,
+    scrollEl: dropdown,
+    isResolved
+  };
+}
+
+function getNumericInputValue(input) {
+  if (!input) return null;
+  if (input.value === '' || input.value == null) return null;
+  const parsed = Number(input.value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isValidInputValue(input) {
+  const value = getNumericInputValue(input);
+  if (value === null) return false;
+  if (!input || !input.validity) return true;
+  return !(input.validity.rangeUnderflow || input.validity.rangeOverflow || input.validity.badInput);
+}
+
+function getDimensionsRequirement() {
+  const presetRow = document.querySelector('#dimensions-stage-panel .presets-row');
+  const selectedPreset = document.querySelector('#dimensions-presets .option-card[aria-pressed="true"], #dimensions-presets .option-card.selected');
+  const selectedPresetId = selectedPreset ? selectedPreset.getAttribute('data-preset-id') : null;
+
+  if (!selectedPresetId && !hasSelectedDimensions(appState)) {
+    return {
+      key: 'dimensions-preset',
+      message: 'Select a popular option or choose Custom to continue.',
+      anchorEl: presetRow || document.getElementById('dimensions-stage-panel'),
+      highlightEl: presetRow,
+      focusEl: selectedPreset || document.querySelector('#dimensions-presets .option-card'),
+      scrollEl: presetRow,
+      isResolved: () => {
+        const currentSelectedPreset = document.querySelector('#dimensions-presets .option-card[aria-pressed="true"], #dimensions-presets .option-card.selected');
+        return !!currentSelectedPreset || hasSelectedDimensions(appState);
+      }
+    };
+  }
+
+  if (selectedPresetId !== 'custom') return null;
+
+  const lengthInput = document.getElementById('dim-length-input');
+  const widthInput = document.getElementById('dim-width-input');
+  const customHeightInput = document.getElementById('dim-height-custom-input');
+  const customHeightContainer = document.getElementById('custom-height-container');
+  const selectedHeight = document.querySelector('#height-options .option-card.selected,[data-height-id].selected');
+  const selectedHeightId = selectedHeight ? selectedHeight.getAttribute('data-height-id') : null;
+
+  if (!isValidInputValue(lengthInput)) {
+    const validationEl = document.getElementById('dim-length-validation');
+    return {
+      key: 'dimensions-length',
+      message: (validationEl && validationEl.textContent.trim()) || 'Enter a valid length to continue.',
+      anchorEl: validationEl,
+      useExistingMessageEl: true,
+      highlightEl: document.getElementById('length-control-row'),
+      focusEl: lengthInput,
+      scrollEl: document.getElementById('length-control-row'),
+      isResolved: () => isValidInputValue(document.getElementById('dim-length-input'))
+    };
+  }
+
+  if (!isValidInputValue(widthInput)) {
+    const validationEl = document.getElementById('dim-width-validation');
+    return {
+      key: 'dimensions-width',
+      message: (validationEl && validationEl.textContent.trim()) || 'Enter a valid width to continue.',
+      anchorEl: validationEl,
+      useExistingMessageEl: true,
+      highlightEl: document.getElementById('width-control-row'),
+      focusEl: widthInput,
+      scrollEl: document.getElementById('width-control-row'),
+      isResolved: () => isValidInputValue(document.getElementById('dim-width-input'))
+    };
+  }
+
+  if (selectedHeightId === 'custom' && !isValidInputValue(customHeightInput)) {
+    const validationEl = document.getElementById('dim-height-custom-validation');
+    return {
+      key: 'dimensions-height-custom',
+      message: (validationEl && validationEl.textContent.trim()) || 'Enter a valid custom height to continue.',
+      anchorEl: validationEl,
+      useExistingMessageEl: true,
+      highlightEl: customHeightContainer,
+      focusEl: customHeightInput,
+      scrollEl: customHeightContainer,
+      isResolved: () => isValidInputValue(document.getElementById('dim-height-custom-input'))
+    };
+  }
+
+  return null;
+}
+
+function getFirstMissingRequirement() {
+  if (managerState.current === 0 && !appState.selections.model) {
+    const section = document.getElementById('models-stage-section') || document.getElementById('stage-panel-0');
+    return {
+      key: 'model',
+      message: 'Select a model to continue.',
+      anchorEl: section,
+      highlightEl: section,
+      focusEl: document.querySelector('.option-card[data-id^="mdl-"]'),
+      scrollEl: section,
+      isResolved: () => !!appState.selections.model
+    };
+  }
+
+  if (managerState.current === 1 && !appState.selections.design) {
+    const groups = Array.from(document.querySelectorAll('#designs-stage-section .designs-stage-group'));
+    const group = groups.find((item) => item.querySelector('.option-card')) || groups[0] || document.getElementById('designs-stage-section');
+    return {
+      key: 'design',
+      message: 'Select a design to continue.',
+      anchorEl: group,
+      highlightEl: group,
+      focusEl: group && group.querySelector('.option-card'),
+      scrollEl: group,
+      isResolved: () => !!appState.selections.design
+    };
+  }
+
+  if (managerState.current === 2) {
+    return buildDropdownRequirement({
+      key: 'material',
+      dropdownSelector: '#tabletop-subsection-wood',
+      message: 'Select a wood option to continue.',
+      isResolved: () => !!getSelectedOptions(appState).material
+    }) || buildDropdownRequirement({
+      key: 'color',
+      dropdownSelector: '#tabletop-subsection-color',
+      message: 'Select a color option to continue.',
+      isResolved: () => !!getSelectedOptions(appState).color
+    }) || buildDropdownRequirement({
+      key: 'color-gradient',
+      dropdownSelector: '#tabletop-subsection-color-gradient',
+      message: 'Select a color gradient to continue.',
+      isResolved: () => !!getSelectedOptions(appState)['color-gradient']
+    });
+  }
+
+  if (managerState.current === 3) {
+    return buildDropdownRequirement({
+      key: 'finish-coating',
+      dropdownSelector: '#finish-subsection-coating',
+      message: 'Select a coating to continue.',
+      isResolved: () => !!getSelectedOptions(appState)['finish-coating']
+    }) || buildDropdownRequirement({
+      key: 'finish-sheen',
+      dropdownSelector: '#finish-subsection-sheen',
+      message: 'Select a sheen to continue.',
+      isResolved: () => !!getSelectedOptions(appState)['finish-sheen']
+    }) || buildDropdownRequirement({
+      key: 'finish-tint',
+      dropdownSelector: '#finish-subsection-tint',
+      message: 'Select a tint to continue.',
+      isResolved: () => !!getSelectedOptions(appState)['finish-tint']
+    });
+  }
+
+  if (managerState.current === DIMENSIONS_STAGE_INDEX) return getDimensionsRequirement();
+
+  if (managerState.current === LEGS_STAGE_INDEX) {
+    const legState = getLegSelectionState(appState);
+    return buildDropdownRequirement({
+      key: 'legs',
+      dropdownSelector: '#legs-subsection-style',
+      message: 'Select a leg style to continue.',
+      isResolved: () => getLegSelectionState(appState).hasLegs
+    }) || (legState.tubeSizeRequired ? buildDropdownRequirement({
+      key: 'tube-size',
+      dropdownSelector: '#legs-subsection-tube-size',
+      message: 'Select a tube size to continue.',
+      isResolved: () => getLegSelectionState(appState).hasTubeSize
+    }) : null) || buildDropdownRequirement({
+      key: 'leg-finish',
+      dropdownSelector: '#legs-subsection-leg-finish',
+      message: 'Select a leg finish to continue.',
+      isResolved: () => getLegSelectionState(appState).hasLegFinish
+    });
+  }
+
+  return null;
+}
+
+function revealFirstMissingRequiredSelection() {
+  return showValidationPrompt(getFirstMissingRequirement());
+}
+
 function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
   const isLastStage = managerState.current >= STAGES.length - 1;
-  const isCurrentComplete = isStageCompleteForNav(managerState.current);
-  const shouldDisable = isLastStage || !isCurrentComplete;
-  nextBtn.disabled = shouldDisable;
-  nextBtn.setAttribute('aria-disabled', shouldDisable ? 'true' : 'false');
+  nextBtn.disabled = isLastStage;
+  nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
+}
+
+function updateStageButtons() {
+  const currentCompleted = isStageCompleteForNav(managerState.current);
+
+  $all('#stage-bar .stage-btn').forEach(btn => {
+    const idx = Number(btn.getAttribute('data-stage-index'));
+    let shouldDisable = false;
+
+    if (idx === managerState.current) {
+      btn.setAttribute('aria-current', 'step');
+    } else {
+      btn.removeAttribute('aria-current');
+      if (idx < managerState.current) {
+        shouldDisable = false;
+      } else {
+        const canOpenFirstTime = idx === managerState.current + 1;
+        shouldDisable = !(managerState.opened[idx] || canOpenFirstTime);
+      }
+    }
+
+    btn.disabled = shouldDisable;
+    btn.setAttribute('aria-disabled', shouldDisable ? 'true' : 'false');
+  });
+
+  if (currentCompleted) refreshActiveValidationPrompt();
 }
 
 async function updateLivePrice() {
@@ -198,11 +594,13 @@ async function setStage(index, options = {}) {
   if (index > managerState.current && !options.allowSkip && !isAlreadyOpened) {
     // require model selected to advance beyond stage 0 (Models)
     if (managerState.current <= 0 && !appState.selections.model) {
+      revealFirstMissingRequiredSelection();
       return;
     }
     // require design selected to advance beyond stage 1 (Designs)
     // But only gate if we're trying to advance PAST the Designs stage (stage 1)
     if (managerState.current === 1 && index > 1 && !appState.selections.design) {
+      revealFirstMissingRequiredSelection();
       return;
     }
     // If attempting to move to the Materials stage (index 2), validate as before
@@ -210,7 +608,9 @@ async function setStage(index, options = {}) {
       if (index >= 3) {
         const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
         const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        if (!hasMaterial || !hasColor) {
+        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
+        if (!hasMaterial || !hasColor || !hasColorGradient) {
+          revealFirstMissingRequiredSelection();
           return;
         }
         // Ensure Finish stage has sensible defaults: select 2K Poly coating and Satin sheen if
@@ -237,6 +637,7 @@ async function setStage(index, options = {}) {
       }
       // Require dimensions selection before accessing Legs.
       if (index >= LEGS_STAGE_INDEX && !hasSelectedDimensions(appState)) {
+        revealFirstMissingRequiredSelection();
         return;
       }
       // If attempting to move past Legs or beyond (index > 5), require legs, tube-size, and leg-finish
@@ -252,6 +653,7 @@ async function setStage(index, options = {}) {
         const isSignatureDesign = designId === 'des-signature';
 
         if (!hasLegs) {
+          revealFirstMissingRequiredSelection();
           return;
         }
 
@@ -261,6 +663,7 @@ async function setStage(index, options = {}) {
           const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
           const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
           if ((tubeSizeRequired && !hasTubeSize) || !hasLegFinish) {
+            revealFirstMissingRequiredSelection();
             return;
           }
         }
@@ -270,33 +673,14 @@ async function setStage(index, options = {}) {
       // No additional gating is needed for indices 6 and 7.
     } catch (e) {
       // if anything goes wrong reading appState, be conservative and block advance
+      revealFirstMissingRequiredSelection();
       return;
     }
   }
+  if (index !== managerState.current) clearActiveValidationPrompt();
   managerState.current = index;
   managerState.opened[index] = true;
-  // treat optional stages as implicitly completed for gating decisions
-  const currentCompleted = isStageCompleteForNav(managerState.current);
-  
-  // update buttons
-  $all('#stage-bar .stage-btn').forEach(btn => {
-    const idx = Number(btn.getAttribute('data-stage-index'));
-    if (idx === managerState.current) {
-      btn.setAttribute('aria-current', 'step');
-      btn.disabled = false;
-    } else {
-      btn.removeAttribute('aria-current');
-      // allow revisiting previous stages
-      if (idx < managerState.current) {
-        btn.disabled = false;
-      } else {
-        // Sequential unlock: only immediate next stage can be opened first.
-        // After a stage has been opened once, it remains available from any view.
-        const canOpenFirstTime = idx === managerState.current + 1 && currentCompleted;
-        btn.disabled = !(managerState.opened[idx] || canOpenFirstTime);
-      }
-    }
-  });
+  updateStageButtons();
   scheduleSummaryStageButtonLabelUpdate();
   updateNextButton();
 
@@ -534,43 +918,15 @@ async function setStage(index, options = {}) {
     try {
       if (managerState.current === 2) {
         // Materials stage: check if material, color, and color gradient are selected
-        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
-        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
-        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
+        markCompleted(2, isMaterialsStageComplete(appState));
       } else if (managerState.current === 3) {
         // Finish stage: check if coating, sheen, and tint are all selected
-        const hasCoating = !!(appState.selections && appState.selections.options && appState.selections.options['finish-coating']);
-        const hasSheen = !!(appState.selections && appState.selections.options && appState.selections.options['finish-sheen']);
-        const hasTint = !!(appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
-        markCompleted(3, !!(hasCoating && hasSheen && hasTint));
+        markCompleted(3, isFinishStageComplete(appState));
       } else if (managerState.current === 4) {
         // Dimensions stage: check if dimensions are selected
-        const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
-        markCompleted(4, !!dimOption);
+        markCompleted(4, hasSelectedDimensions(appState));
       } else if (managerState.current === 5) {
-        // Legs stage (index 5): require legs selected, and tube-size & leg-finish unless "none" leg is selected
-        // (or custom leg is selected, which makes tube-size optional)
-        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
-        const designId = appState.selections && appState.selections.design;
-        const isNoneLeg = legId === 'leg-none';
-        const isCustomLeg = legId === 'leg-sample-07';
-        const isSignatureLeg = legId === 'leg-signature';
-        const isSignatureDesign = designId === 'des-signature';
-
-        let isLegStageComplete = false;
-        if (hasLegs) {
-          if (isNoneLeg) {
-            isLegStageComplete = true;
-          } else {
-            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
-            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
-          }
-        }
-        markCompleted(5, isLegStageComplete);
+        markCompleted(5, isLegStageComplete(appState));
       }
       // Update button states after checking completion (buttons are updated via markCompleted)
     } catch (e) {
@@ -581,7 +937,8 @@ async function setStage(index, options = {}) {
 
 function nextStage() {
   // If current stage isn't completed (and isn't optional), block advancing
-  if (!managerState.completed[managerState.current] && !OPTIONAL_STAGES.includes(managerState.current)) {
+  if (!isStageCompleteForNav(managerState.current)) {
+    revealFirstMissingRequiredSelection();
     return;
   }
   setStage(Math.min(managerState.current + 1, STAGES.length - 1));
@@ -598,10 +955,7 @@ function getCurrentStage() {
 function markCompleted(index, completed = true) {
   if (index < 0 || index >= STAGES.length) return;
   managerState.completed[index] = completed;
-  // enable next stage if current completed
-  const nextIdx = index + 1;
-  const nextBtn = document.querySelector(`#stage-bar .stage-btn[data-stage-index='${nextIdx}']`);
-  if (nextBtn) nextBtn.disabled = !completed;
+  updateStageButtons();
   updateNextButton();
 }
 
@@ -669,65 +1023,21 @@ export function initStageManager() {
       // For all other stages, validate completion based on current stage and update accordingly
       if (managerState.current === 2) {
         // Materials stage (index 2): require material, color, and color gradient
-        const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
-        const hasColor = !!(appState.selections && appState.selections.options && appState.selections.options.color);
-        const hasColorGradient = !!(appState.selections && appState.selections.options && appState.selections.options['color-gradient']);
-        markCompleted(2, !!(hasMaterial && hasColor && hasColorGradient));
+        markCompleted(2, isMaterialsStageComplete(appState));
       } else if (managerState.current === 3) {
         // Finish stage (index 3): require coating, sheen, and tint
-        const hasCoating = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-coating'] || appState.selections.options.coating));
-        const hasSheen = !!(appState.selections && appState.selections.options && (appState.selections.options['finish-sheen'] || appState.selections.options.sheen));
-        const hasTint = !!(appState.selections && appState.selections.options && appState.selections.options['finish-tint']);
-        markCompleted(3, !!(hasCoating && hasSheen && hasTint));
+        markCompleted(3, isFinishStageComplete(appState));
       } else if (managerState.current === 4) {
         // Dimensions stage (index 4): require a preset or custom dimensions selection
         // Check if a preset tile is selected or custom dimensions are provided
-        const dimOption = appState.selections && appState.selections.options && appState.selections.options.dimensions;
-        // dimOption is set when any dimension selection is made (preset or custom)
-        markCompleted(4, !!dimOption);
+        markCompleted(4, hasSelectedDimensions(appState));
       } else if (managerState.current === 5) {
-        // Legs stage (index 5): require legs selected, and tube-size & leg-finish unless "none" leg is selected
-        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
-        const isNoneLeg = legId === 'leg-none';
-        
-        let isLegStageComplete = false;
-        if (hasLegs) {
-          if (isNoneLeg) {
-            // "none" leg requires no additional selections
-            isLegStageComplete = true;
-          } else {
-            // Other legs require tube-size and leg-finish
-            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            isLegStageComplete = !!(hasTubeSize && hasLegFinish);
-          }
-        }
-        markCompleted(5, isLegStageComplete);
+        markCompleted(5, isLegStageComplete(appState));
       }
       
       // Also check legs stage completion if any legs-related category is selected (for button enable/disable on transitions)
       if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
-        const hasLegs = !!(appState.selections && appState.selections.options && appState.selections.options.legs);
-        const legId = appState.selections && appState.selections.options && appState.selections.options.legs;
-        const designId = appState.selections && appState.selections.design;
-        const isNoneLeg = legId === 'leg-none';
-        const isCustomLeg = legId === 'leg-sample-07';
-        const isSignatureLeg = legId === 'leg-signature';
-        const isSignatureDesign = designId === 'des-signature';
-
-        let isLegStageComplete = false;
-        if (hasLegs) {
-          if (isNoneLeg) {
-            isLegStageComplete = true;
-          } else {
-            const hasTubeSize = !!(appState.selections && appState.selections.options && appState.selections.options['tube-size']);
-            const hasLegFinish = !!(appState.selections && appState.selections.options && appState.selections.options['leg-finish']);
-            const tubeSizeRequired = !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
-            isLegStageComplete = (tubeSizeRequired ? hasTubeSize : true) && hasLegFinish;
-          }
-        }
-        markCompleted(5, isLegStageComplete);
+        markCompleted(5, isLegStageComplete(appState));
       }
       // Stage 6 (Add-ons) is optional, so it's never marked as requiring completion
       // Stage 7 (Summary) is terminal; completion not tracked here
@@ -737,6 +1047,8 @@ export function initStageManager() {
     } catch (e) {
       log.warn('Error in option-selected handler', e);
     }
+
+    refreshActiveValidationPrompt();
   });
 
   // Handle addon-toggled events (addons are optional, so this just updates UI)
@@ -746,6 +1058,10 @@ export function initStageManager() {
       setStage(managerState.current);
     }
   });
+  document.addEventListener('statechange', refreshActiveValidationPrompt);
+  document.addEventListener('input', refreshActiveValidationPrompt);
+  document.addEventListener('change', refreshActiveValidationPrompt);
+  document.addEventListener('click', refreshActiveValidationPrompt);
 
   updateLivePrice();
   setStage(0);
