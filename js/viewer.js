@@ -1235,7 +1235,8 @@ export async function updateModel(modelId, { force = false } = {}) {
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
-    const preserveView = !!force && currentRenderRoot && displayedModelId === modelId && !!controls;
+    // Keep the user's camera when the preview is rebuilt for same-model option changes.
+    const preserveView = !!currentRenderRoot && displayedModelId === modelId && !!controls;
     const previousMetrics = preserveView ? getModelFramingMetrics(currentRenderRoot) : null;
     const previousTarget = previousMetrics ? previousMetrics.target.clone() : null;
     log.info('Starting GLB load', { modelId, assetPaths: getRenderAssetPaths(config) });

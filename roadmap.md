@@ -2,7 +2,7 @@
 
 ## v1.1
 - Add 3D model viewer
-create & add materials, test material assigning
+create & add models & textures
 ensure reference images are accurate and produce additional models
 
 - make presets and from-scratch builds visibly separate (maybe hide lower section behind a "customize" tile or something)
