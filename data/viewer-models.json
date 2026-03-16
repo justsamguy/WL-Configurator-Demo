@@ -15,6 +15,11 @@
         "name": "leg-back",
         "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
         "positionOffset": [0, 0, -0.8128]
+      },
+      {
+        "name": "leg-middle",
+        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
+        "positionOffset": [0, 0, 0]
       }
     ],
     "camera": {
@@ -47,7 +52,8 @@
         },
         "leg-front": {
           "scaleAxes": {
-            "height": "y"
+            "height": "y",
+            "support-width": "x"
           },
           "positionAxes": {
             "length": "z"
@@ -55,10 +61,21 @@
         },
         "leg-back": {
           "scaleAxes": {
-            "height": "y"
+            "height": "y",
+            "support-width": "x"
           },
           "positionAxes": {
             "length": "z"
+          }
+        },
+        "leg-middle": {
+          "scaleAxes": {
+            "height": "y",
+            "support-width": "x"
+          },
+          "visibility": {
+            "dimension": "length",
+            "min": 130.01
           }
         }
       }

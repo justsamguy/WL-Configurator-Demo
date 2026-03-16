@@ -192,7 +192,32 @@ function getScaleFactorForDimension(scaleMap, dimensionKey) {
   if (dimensionKey === 'length') return scaleMap.length;
   if (dimensionKey === 'width') return scaleMap.width;
   if (dimensionKey === 'height') return scaleMap.height;
+  if (dimensionKey === 'support-width') {
+    const widthScale = Number.isFinite(scaleMap.width) ? scaleMap.width : 1;
+    const selectedDimensions = scaleMap.selectedDimensions || {};
+    const width = Number(selectedDimensions.width);
+    const length = Number(selectedDimensions.length);
+    const requiresHeavySupport = (Number.isFinite(width) && width > 48) || (Number.isFinite(length) && length > 120);
+    let supportWidthScale = widthScale >= 1
+      ? 1 + ((widthScale - 1) * 0.72)
+      : 1 - ((1 - widthScale) * 0.25);
+    if (requiresHeavySupport) supportWidthScale = Math.max(supportWidthScale, 1.16);
+    return THREE.MathUtils.clamp(supportWidthScale, 0.85, 1.95);
+  }
   return 1;
+}
+
+function isVisibilityRuleSatisfied(scaleMap, visibilityRule) {
+  if (!visibilityRule || typeof visibilityRule !== 'object') return true;
+  const dimensionKey = typeof visibilityRule.dimension === 'string' ? visibilityRule.dimension : '';
+  const selectedDimensions = scaleMap && scaleMap.selectedDimensions ? scaleMap.selectedDimensions : {};
+  const value = Number(selectedDimensions[dimensionKey]);
+  const min = Number(visibilityRule.min);
+  const max = Number(visibilityRule.max);
+
+  if (Number.isFinite(min) && (!Number.isFinite(value) || value < min)) return false;
+  if (Number.isFinite(max) && (!Number.isFinite(value) || value > max)) return false;
+  return true;
 }
 
 function captureRenderRootBaseState(renderRoot) {
@@ -223,9 +248,15 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
 
     partRoot.position.copy(baseState.position);
     partRoot.scale.copy(baseState.scale);
+    partRoot.visible = true;
 
     const behavior = partBehaviors[partName];
     if (!behavior || typeof behavior !== 'object') return;
+
+    const visibilityRule = behavior.visibility && typeof behavior.visibility === 'object'
+      ? behavior.visibility
+      : null;
+    partRoot.visible = isVisibilityRuleSatisfied(scaleMap, visibilityRule);
 
     const scaleAxes = behavior.scaleAxes && typeof behavior.scaleAxes === 'object'
       ? behavior.scaleAxes
@@ -431,7 +462,7 @@ async function applySelectedLegFinish(renderRoot) {
     const finishMaterial = selectedFinish && selectedFinish.viewerMaterial;
     if (!finishMaterial || typeof finishMaterial !== 'object') return;
 
-    ['leg-front', 'leg-back'].forEach((partName) => {
+    ['leg-front', 'leg-back', 'leg-middle'].forEach((partName) => {
       const legRoot = renderRoot.getObjectByName(partName);
       if (!legRoot) return;
 

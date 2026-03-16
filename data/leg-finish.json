@@ -28,8 +28,8 @@
     "viewerMaterial": {
       "baseColor": "#2a2b2d",
       "metalness": 0.88,
-      "roughness": 0.62,
-      "envIntensity": 0.82,
+      "roughness": 0.5,
+      "envIntensity": 0.88,
       "textureSet": null
     },
     "calibrationNote": "Kept adjacent to Matte Black in hue while lowering roughness so the satin finish separates under studio highlights.",
@@ -44,13 +44,13 @@
     "description": "A dark earthen tone, close to black but less stark.",
     "productNumber": "B060244",
     "viewerMaterial": {
-      "baseColor": "#5f4027",
+      "baseColor": "#413127",
       "metalness": 0.86,
-      "roughness": 0.74,
-      "envIntensity": 0.78,
+      "roughness": 0.72,
+      "envIntensity": 0.76,
       "textureSet": null
     },
-    "calibrationNote": "Biased toward a deep brown-bronze read so it stays clearly warmer than the black finishes without drifting into bright brass.",
+    "calibrationNote": "Biased toward a near-black brown-bronze read so it stays only slightly lighter than the black finishes without drifting into bright brass.",
     "calibrationImageAssessment": "Sample includes warm reflected light; match the bronze family and overall depth, not the brightest edges."
   },
   {
@@ -80,13 +80,13 @@
     "description": "A medium grey that blends without disappearing.",
     "productNumber": "353091",
     "viewerMaterial": {
-      "baseColor": "#46484c",
-      "metalness": 0.9,
-      "roughness": 0.66,
-      "envIntensity": 0.86,
+      "baseColor": "#c4c6ca",
+      "metalness": 0.88,
+      "roughness": 0.78,
+      "envIntensity": 0.82,
       "textureSet": null
     },
-    "calibrationNote": "Shifted slightly cool to keep the gunmetal finish distinct from the black pair and from the brighter raw metal and silver finishes.",
+    "calibrationNote": "Lifted to the prior titanium-silver lightness target while keeping a matte, cool gunmetal surface response.",
     "calibrationImageAssessment": "Sample provides a solid mid-dark neutral target with moderate lighting bias."
   },
   {
@@ -98,13 +98,13 @@
     "description": "A bright silver finish that resembles fine hardware.",
     "productNumber": "245220",
     "viewerMaterial": {
-      "baseColor": "#c7c9cc",
-      "metalness": 0.94,
-      "roughness": 0.36,
-      "envIntensity": 1,
+      "baseColor": "#e8eaee",
+      "metalness": 0.98,
+      "roughness": 0.18,
+      "envIntensity": 1.08,
       "textureSet": null
     },
-    "calibrationNote": "Set to the brightest and cleanest metallic option while keeping enough roughness to avoid a chrome-like read in the current viewer lighting.",
+    "calibrationNote": "Set close to polished silverware with the highest sheen in the set while preserving enough roughness to avoid a mirror-like chrome read.",
     "calibrationImageAssessment": "Sample is highly reflective and lighting-biased; use it for relative brightness only, not highlight intensity."
   },
   {
@@ -116,13 +116,13 @@
     "description": "A clear-coat that preserves the industrious look of steel.",
     "productNumber": "Clear Satin 285092",
     "viewerMaterial": {
-      "baseColor": "#a9adb0",
-      "metalness": 0.95,
-      "roughness": 0.48,
-      "envIntensity": 0.92,
+      "baseColor": "#d5d8dc",
+      "metalness": 0.96,
+      "roughness": 0.34,
+      "envIntensity": 0.98,
       "textureSet": null
     },
-    "calibrationNote": "Kept cooler and slightly darker than Titanium Silver so raw metal reads industrial and less polished, with room for future imperfection mapping.",
+    "calibrationNote": "Brightened substantially while staying dimmer and less polished than Titanium Silver so raw metal still reads industrial.",
     "calibrationImageAssessment": "Sample likely exaggerates contrast from surface reflections; use it as a family reference and candidate for a flatter swatch later."
   },
   {
