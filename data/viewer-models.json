@@ -7,6 +7,12 @@
         "positionOffset": [0, 0.707625, 0]
       },
       {
+        "name": "tabletop-epoxy",
+        "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+        "positionOffset": [0, 0.706625, 0],
+        "scale": [0.999, 1, 0.999]
+      },
+      {
         "name": "leg-front",
         "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
         "positionOffset": [0, 0, 0.8128]
@@ -32,7 +38,7 @@
       "unitsPerInch": 0.0254,
       "roundScaleMode": "uniform-length",
       "baseDimensions": {
-        "length": 84,
+        "length": 96,
         "width": 42,
         "height": 30
       },
@@ -42,6 +48,15 @@
       },
       "partBehaviors": {
         "tabletop": {
+          "scaleAxes": {
+            "width": "x",
+            "length": "z"
+          },
+          "positionAxes": {
+            "height": "y"
+          }
+        },
+        "tabletop-epoxy": {
           "scaleAxes": {
             "width": "x",
             "length": "z"
@@ -90,9 +105,9 @@
       "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
       "dimensionRules": {
         "baseDimensions": {
-          "length": 48,
-          "width": 24,
-          "height": 18
+          "length": 96,
+          "width": 42,
+          "height": 30
         },
         "heightOptions": {
           "standard": 18,
@@ -106,7 +121,7 @@
       "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
       "dimensionRules": {
         "baseDimensions": {
-          "length": 84,
+          "length": 96,
           "width": 42,
           "height": 30
         },
@@ -122,8 +137,8 @@
       "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
       "dimensionRules": {
         "baseDimensions": {
-          "length": 120,
-          "width": 48,
+          "length": 96,
+          "width": 42,
           "height": 30
         },
         "heightOptions": {

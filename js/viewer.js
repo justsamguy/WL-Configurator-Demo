@@ -570,36 +570,56 @@ function clearCurrentRenderRoot() {
   displayedRenderSignature = null;
 }
 
-function frameModel(root, config = {}) {
-  if (!root || !camera || !controls) return;
-
+function getModelFramingMetrics(root) {
+  if (!root) return null;
   const bounds = new THREE.Box3().setFromObject(root);
   if (bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
 
   const size = bounds.getSize(new THREE.Vector3());
   const target = bounds.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z, 1);
-  const cameraSettings = getCameraSettings(config);
-  const offset = new THREE.Vector3(
-    Number(cameraSettings.offset[0]) || FALLBACK_CAMERA_OFFSET[0],
-    Number(cameraSettings.offset[1]) || FALLBACK_CAMERA_OFFSET[1],
-    Number(cameraSettings.offset[2]) || FALLBACK_CAMERA_OFFSET[2]
-  );
-  const cameraPosition = target.clone().add(offset.multiplyScalar(maxDim));
+  return { bounds, size, target, maxDim };
+}
 
-  camera.position.copy(cameraPosition);
+function applyFramingMetrics(metrics, config = {}, { preserveView = false, previousTarget = null } = {}) {
+  if (!metrics || !camera || !controls) return null;
+  const { size, target, maxDim } = metrics;
+  const cameraSettings = getCameraSettings(config);
   camera.near = Math.max(0.1, maxDim / 100);
   camera.far = Math.max(120, maxDim * 20);
   camera.updateProjectionMatrix();
-
-  controls.target.copy(target);
   controls.minDistance = Math.max(0.5, maxDim * cameraSettings.minDistanceMultiplier);
   controls.maxDistance = Math.max(controls.minDistance + 1, maxDim * cameraSettings.maxDistanceMultiplier);
-  controls.update();
-  controls.saveState();
 
-  defaultCameraPosition = camera.position.clone();
-  defaultCameraTarget = controls.target.clone();
+  if (preserveView) {
+    const anchorTarget = previousTarget instanceof THREE.Vector3
+      ? previousTarget
+      : controls.target.clone();
+    const delta = target.clone().sub(anchorTarget);
+    camera.position.add(delta);
+    controls.target.add(delta);
+    controls.update();
+  } else {
+    const offset = new THREE.Vector3(
+      Number(cameraSettings.offset[0]) || FALLBACK_CAMERA_OFFSET[0],
+      Number(cameraSettings.offset[1]) || FALLBACK_CAMERA_OFFSET[1],
+      Number(cameraSettings.offset[2]) || FALLBACK_CAMERA_OFFSET[2]
+    );
+    const cameraPosition = target.clone().add(offset.multiplyScalar(maxDim));
+    camera.position.copy(cameraPosition);
+    controls.target.copy(target);
+    controls.update();
+    controls.saveState();
+    defaultCameraPosition = camera.position.clone();
+    defaultCameraTarget = controls.target.clone();
+  }
+
+  if (preserveView) {
+    if (controls.minDistance > controls.maxDistance) {
+      controls.maxDistance = controls.minDistance + 1;
+    }
+  }
+  controls.update();
 
   if (floorMesh) {
     const floorScale = Math.max(maxDim * 3, 6);
@@ -619,6 +639,12 @@ function frameModel(root, config = {}) {
       z: Number(target.z.toFixed(3))
     }
   };
+}
+
+function frameModel(root, config = {}, options = {}) {
+  if (!root || !camera || !controls) return null;
+  const metrics = getModelFramingMetrics(root);
+  return applyFramingMetrics(metrics, config, options);
 }
 
 async function loadManifest() {
@@ -748,8 +774,10 @@ async function refreshCurrentRenderState(modelId) {
   const config = resolveViewerConfig(manifest, modelId);
   if (!config) return;
 
+  const previousMetrics = getModelFramingMetrics(currentRenderRoot);
+  const previousTarget = previousMetrics ? previousMetrics.target.clone() : controls.target.clone();
   const scaleMap = applyConfiguredPartTransforms(currentRenderRoot, config);
-  const framing = frameModel(currentRenderRoot, config);
+  const framing = frameModel(currentRenderRoot, config, { preserveView: true, previousTarget });
   log.info('Applied viewer state transforms', {
     modelId,
     scales: scaleMap
@@ -825,8 +853,10 @@ export async function updateModel(modelId, { force = false } = {}) {
   });
 
   if (!force && currentRenderRoot && displayedModelId === modelId && displayedRenderSignature === renderSignature) {
+    const previousMetrics = getModelFramingMetrics(currentRenderRoot);
+    const previousTarget = previousMetrics ? previousMetrics.target.clone() : controls.target.clone();
     applyConfiguredPartTransforms(currentRenderRoot, config);
-    const framing = frameModel(currentRenderRoot, config);
+    const framing = frameModel(currentRenderRoot, config, { preserveView: true, previousTarget });
     log.info('Reused existing viewer asset for same model', { modelId, framing });
     showReadyState(modelId, config);
     return;
@@ -834,8 +864,10 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   if (!force && currentRenderRoot && displayedRenderSignature === renderSignature) {
     displayedModelId = modelId;
+    const previousMetrics = getModelFramingMetrics(currentRenderRoot);
+    const previousTarget = previousMetrics ? previousMetrics.target.clone() : controls.target.clone();
     applyConfiguredPartTransforms(currentRenderRoot, config);
-    const framing = frameModel(currentRenderRoot, config);
+    const framing = frameModel(currentRenderRoot, config, { preserveView: true, previousTarget });
     log.info('Reused existing viewer asset across model mapping', { modelId, framing });
     showReadyState(modelId, config);
     return;
@@ -847,6 +879,9 @@ export async function updateModel(modelId, { force = false } = {}) {
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
+    const preserveView = !!force && currentRenderRoot && displayedModelId === modelId && !!controls;
+    const previousMetrics = preserveView ? getModelFramingMetrics(currentRenderRoot) : null;
+    const previousTarget = previousMetrics ? previousMetrics.target.clone() : null;
     log.info('Starting GLB load', { modelId, assetPaths: getRenderAssetPaths(config) });
     const nextRoot = await buildRenderRoot(config);
     if (requestToken !== pendingRequestToken) {
@@ -857,7 +892,7 @@ export async function updateModel(modelId, { force = false } = {}) {
     replaceCurrentRenderRoot(nextRoot);
     displayedModelId = modelId;
     displayedRenderSignature = renderSignature;
-    const framing = frameModel(nextRoot, config);
+    const framing = frameModel(nextRoot, config, preserveView ? { preserveView: true, previousTarget } : {});
     log.info('GLB load succeeded', {
       modelId,
       assetPaths: getRenderAssetPaths(config),
