@@ -10,6 +10,7 @@ import { createLogger } from './logger.js';
 const log = createLogger('Viewer');
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
+const LEG_FINISH_DATA_PATH = 'data/leg-finish.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
@@ -36,6 +37,7 @@ let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
 let tabletopTexturePromise = null;
+let legFinishDataPromise = null;
 
 const dom = {
   surface: null,
@@ -50,6 +52,7 @@ const dom = {
 
 let lastObservedModelId = null;
 let lastObservedMaterialId = null;
+let lastObservedLegFinishId = null;
 
 function getModelTitle(modelId, config = {}) {
   if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
@@ -154,6 +157,20 @@ async function loadTabletopTexture() {
   return tabletopTexturePromise;
 }
 
+async function loadLegFinishDefinitions() {
+  if (!legFinishDataPromise) {
+    legFinishDataPromise = loadData(LEG_FINISH_DATA_PATH).then((entries) => {
+      if (!Array.isArray(entries)) throw new Error('Leg finish catalog must be an array.');
+      return entries;
+    }).catch((error) => {
+      legFinishDataPromise = null;
+      throw error;
+    });
+  }
+
+  return legFinishDataPromise;
+}
+
 function cloneMaterialWithTexture(material, texture) {
   if (!material || typeof material.clone !== 'function') return material;
   const clonedMaterial = material.clone();
@@ -161,6 +178,39 @@ function cloneMaterialWithTexture(material, texture) {
     clonedMaterial.color.setHex(0xffffff);
   }
   if ('map' in clonedMaterial) clonedMaterial.map = texture;
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
+function cloneMaterialWithFinish(material, finishMaterial = {}) {
+  if (!material || typeof material.clone !== 'function') return material;
+
+  const clonedMaterial = material.clone();
+  const {
+    baseColor,
+    metalness,
+    roughness,
+    envIntensity
+  } = finishMaterial;
+
+  if (
+    typeof baseColor === 'string'
+    && 'color' in clonedMaterial
+    && clonedMaterial.color
+    && typeof clonedMaterial.color.set === 'function'
+  ) {
+    clonedMaterial.color.set(baseColor);
+  }
+  if (Number.isFinite(Number(metalness)) && 'metalness' in clonedMaterial) {
+    clonedMaterial.metalness = Number(metalness);
+  }
+  if (Number.isFinite(Number(roughness)) && 'roughness' in clonedMaterial) {
+    clonedMaterial.roughness = Number(roughness);
+  }
+  if (Number.isFinite(Number(envIntensity)) && 'envMapIntensity' in clonedMaterial) {
+    clonedMaterial.envMapIntensity = Number(envIntensity);
+  }
+
   clonedMaterial.needsUpdate = true;
   return clonedMaterial;
 }
@@ -194,6 +244,46 @@ async function applySelectedTabletopMaterial(renderRoot) {
     log.warn('Failed to apply spalted maple tabletop texture', {
       materialId: selectedMaterialId,
       texturePath: SPALTED_MAPLE_TEXTURE_PATH,
+      error
+    });
+  }
+}
+
+async function applySelectedLegFinish(renderRoot) {
+  if (!renderRoot) return;
+
+  const selectedLegFinishId = state && state.selections && state.selections.options
+    ? state.selections.options['leg-finish'] || null
+    : null;
+  if (!selectedLegFinishId) return;
+
+  try {
+    const legFinishDefinitions = await loadLegFinishDefinitions();
+    const selectedFinish = legFinishDefinitions.find((entry) => entry && entry.id === selectedLegFinishId);
+    const finishMaterial = selectedFinish && selectedFinish.viewerMaterial;
+    if (!finishMaterial || typeof finishMaterial !== 'object') return;
+
+    ['leg-front', 'leg-back'].forEach((partName) => {
+      const legRoot = renderRoot.getObjectByName(partName);
+      if (!legRoot) return;
+
+      legRoot.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+        if (Array.isArray(child.material)) {
+          child.material = child.material.map((material) => cloneMaterialWithFinish(material, finishMaterial));
+        } else {
+          child.material = cloneMaterialWithFinish(child.material, finishMaterial);
+        }
+      });
+    });
+
+    log.info('Applied leg finish material override', {
+      legFinishId: selectedLegFinishId,
+      finishMaterial
+    });
+  } catch (error) {
+    log.warn('Failed to apply leg finish material override', {
+      legFinishId: selectedLegFinishId,
       error
     });
   }
@@ -409,6 +499,7 @@ async function buildRenderRoot(config) {
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
   await applySelectedTabletopMaterial(renderRoot);
+  await applySelectedLegFinish(renderRoot);
 
   return renderRoot;
 }
@@ -721,8 +812,12 @@ document.addEventListener('statechange', () => {
   const nextMaterialId = state && state.selections && state.selections.options
     ? state.selections.options.material || null
     : null;
+  const nextLegFinishId = state && state.selections && state.selections.options
+    ? state.selections.options['leg-finish'] || null
+    : null;
   const modelChanged = nextModelId !== lastObservedModelId;
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
+  const legFinishChanged = nextLegFinishId !== lastObservedLegFinishId;
 
   if (nextModelId !== lastObservedModelId) {
     log.info('Viewer observed model selection change', {
@@ -736,16 +831,23 @@ document.addEventListener('statechange', () => {
       nextMaterialId
     });
   }
+  if (legFinishChanged) {
+    log.info('Viewer observed leg finish selection change', {
+      previousLegFinishId: lastObservedLegFinishId,
+      nextLegFinishId
+    });
+  }
 
   lastObservedModelId = nextModelId;
   lastObservedMaterialId = nextMaterialId;
+  lastObservedLegFinishId = nextLegFinishId;
 
   if (modelChanged) {
     void updateModel(nextModelId);
     return;
   }
 
-  if (materialChanged && nextModelId) {
+  if ((materialChanged || legFinishChanged) && nextModelId) {
     void updateModel(nextModelId, { force: true });
   }
 });
