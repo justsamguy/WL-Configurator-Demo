@@ -3,31 +3,107 @@
     "parts": [
       {
         "name": "tabletop",
+        "role": "tabletop",
         "assetPath": "assets/models/Walnut%20tabletop.glb",
         "positionOffset": [0, 0.707625, 0]
       },
       {
         "name": "tabletop-epoxy",
+        "role": "tabletop",
         "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
         "positionOffset": [0, 0.706625, 0],
-        "scale": [0.999, 1, 0.999]
-      },
-      {
-        "name": "leg-front",
-        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
-        "positionOffset": [0, 0, 0.8128]
-      },
-      {
-        "name": "leg-back",
-        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
-        "positionOffset": [0, 0, -0.8128]
-      },
-      {
-        "name": "leg-middle",
-        "assetPath": "assets/models/2x4_%20Hourglass%2028x28.glb",
-        "positionOffset": [0, 0, 0]
+        "scale": 1,
+        "surfaceInsetScale": [0.9985, 0.9995, 0.9985],
+        "surfaceInsetOffset": [0, -0.0005, 0],
+        "designNote": "Intentional by design: the epoxy overlay is inset slightly so it stays inside the wood slab, avoids viewer z-fighting, and only shows through the open resin channels."
       }
     ],
+    "legAssets": {
+      "leg-sample-02": {
+        "layout": "single-center",
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-cube-base-custom-14Hx22W.glb",
+            "modelIds": ["mdl-coffee"],
+            "tubeIds": ["tube-1x0.5", "tube-1x1"]
+          }
+        ]
+      },
+      "leg-sample-03": {
+        "layout": "paired-supports",
+        "allowThirdLeg": true,
+        "tubeScaleFallback": true,
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-hourglass-1x3-28Hx28W.glb",
+            "tubeIds": ["tube-1x3"]
+          },
+          {
+            "assetPath": "assets/models/table-leg-hourglass-2x4-28Hx28W.glb",
+            "tubeIds": ["tube-2x4"]
+          }
+        ]
+      },
+      "leg-sample-04": {
+        "layout": "paired-supports",
+        "allowThirdLeg": true,
+        "tubeScaleFallback": true,
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-squared-coffee-3x1-16Hx18W.glb",
+            "modelIds": ["mdl-coffee"],
+            "tubeIds": ["tube-1x3"]
+          },
+          {
+            "assetPath": "assets/models/table-leg-squared-dining-3x1-28Hx28W.glb",
+            "modelIds": ["mdl-dining", "mdl-conference"],
+            "tubeIds": ["tube-1x3"]
+          }
+        ]
+      },
+      "leg-sample-05": {
+        "layout": "paired-supports",
+        "allowThirdLeg": true,
+        "tubeScaleFallback": true,
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-tapered-coffee-3x1-16Hx20W.glb",
+            "modelIds": ["mdl-coffee"],
+            "tubeIds": ["tube-1x3"]
+          },
+          {
+            "assetPath": "assets/models/table-leg-tapered-dining-3x1-28Hx28W.glb",
+            "modelIds": ["mdl-dining", "mdl-conference"],
+            "tubeIds": ["tube-1x3"]
+          }
+        ]
+      },
+      "leg-sample-06": {
+        "layout": "paired-supports",
+        "allowThirdLeg": true,
+        "tubeScaleFallback": true,
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-x-style-3x1-28Hx28W.glb",
+            "tubeIds": ["tube-1x3"]
+          },
+          {
+            "assetPath": "assets/models/table-leg-x-style-2x4-28Hx28W.glb",
+            "tubeIds": ["tube-2x4"]
+          }
+        ]
+      },
+      "leg-sample-08": {
+        "layout": "single-center",
+        "tubeScaleFallback": true,
+        "variants": [
+          {
+            "assetPath": "assets/models/table-leg-tripod-dining-3x1-28Hx38W.glb",
+            "tubeIds": ["tube-1x3"]
+          }
+        ]
+      }
+    },
     "camera": {
       "offset": [1.65, 0.94, 1.95],
       "targetHeightRatio": 0.34,
@@ -45,64 +121,16 @@
       "heightOptions": {
         "standard": 30,
         "bar": 42
-      },
-      "partBehaviors": {
-        "tabletop": {
-          "scaleAxes": {
-            "width": "x",
-            "length": "z"
-          },
-          "positionAxes": {
-            "height": "y"
-          }
-        },
-        "tabletop-epoxy": {
-          "scaleAxes": {
-            "width": "x",
-            "length": "z"
-          },
-          "positionAxes": {
-            "height": "y"
-          }
-        },
-        "leg-front": {
-          "scaleAxes": {
-            "height": "y",
-            "support-width": "x"
-          },
-          "positionAxes": {
-            "length": "z"
-          }
-        },
-        "leg-back": {
-          "scaleAxes": {
-            "height": "y",
-            "support-width": "x"
-          },
-          "positionAxes": {
-            "length": "z"
-          }
-        },
-        "leg-middle": {
-          "scaleAxes": {
-            "height": "y",
-            "support-width": "x"
-          },
-          "visibility": {
-            "dimension": "length",
-            "min": 130.01
-          }
-        }
       }
     },
     "scale": 1,
-    "supportCopy": "Static tabletop and dual-hourglass-leg assembly used to validate the 3D viewer."
+    "supportCopy": "Interactive tabletop and leg preview driven by the current configurator selections."
   },
   "models": {
     "mdl-coffee": {
       "title": "Coffee Table",
-      "statusLabel": "Coffee Table Static Preview",
-      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
+      "statusLabel": "Coffee Table Preview",
+      "supportCopy": "Interactive tabletop and leg preview for coffee table selections.",
       "dimensionRules": {
         "baseDimensions": {
           "length": 96,
@@ -117,8 +145,8 @@
     },
     "mdl-dining": {
       "title": "Dining Table",
-      "statusLabel": "Dining Table Static Preview",
-      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
+      "statusLabel": "Dining Table Preview",
+      "supportCopy": "Interactive tabletop and leg preview for dining table selections.",
       "dimensionRules": {
         "baseDimensions": {
           "length": 96,
@@ -133,8 +161,8 @@
     },
     "mdl-conference": {
       "title": "Conference Table",
-      "statusLabel": "Conference Table Static Preview",
-      "supportCopy": "Static tabletop and hourglass leg assembly for viewer validation.",
+      "statusLabel": "Conference Table Preview",
+      "supportCopy": "Interactive tabletop and leg preview for conference table selections.",
       "dimensionRules": {
         "baseDimensions": {
           "length": 96,

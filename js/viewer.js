@@ -4,6 +4,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { loadData } from './dataLoader.js';
+import { getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
 
@@ -16,6 +17,18 @@ const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
 const AXIS_COMPONENTS = ['x', 'y', 'z'];
+const LEG_NONE_ID = 'leg-none';
+const LEG_CUSTOM_ID = 'leg-sample-07';
+const LEG_SIGNATURE_ID = 'leg-signature';
+const LEG_CUBE_ID = 'leg-sample-02';
+const LEG_TRIPOD_ID = 'leg-sample-08';
+const LEG_PAIR_COUNT_THRESHOLD = 130;
+const COFFEE_PAIR_END_SETBACK_IN = 6;
+const DEFAULT_PAIR_END_SETBACK_IN = 13;
+const LONG_PAIR_END_SETBACK_IN = 19;
+const TRIPOD_EDGE_SETBACK_IN = 13;
+const CUBE_EDGE_SETBACK_IN = 0.25;
+const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
 
 let renderer = null;
 let scene = null;
@@ -56,6 +69,177 @@ let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
 let lastObservedLegFinishId = null;
 let lastObservedDimensionsSignature = '';
+let lastObservedLegId = null;
+let lastObservedTubeId = null;
+let lastObservedAddonsSignature = '';
+
+function getSelections() {
+  return state && state.selections && typeof state.selections === 'object'
+    ? state.selections
+    : {};
+}
+
+function getSelectedOption(optionId) {
+  const selections = getSelections();
+  const options = selections && selections.options && typeof selections.options === 'object'
+    ? selections.options
+    : {};
+  return options[optionId] || null;
+}
+
+function getCurrentViewerSelectionContext(modelId) {
+  const selections = getSelections();
+  const detail = selections && selections.dimensionsDetail && typeof selections.dimensionsDetail === 'object'
+    ? selections.dimensionsDetail
+    : {};
+
+  return {
+    modelId,
+    designId: selections.design || null,
+    legId: getSelectedOption('legs'),
+    tubeId: getSelectedOption('tube-size'),
+    waterfallCount: getWaterfallEdgeCount(state),
+    length: Number.isFinite(Number(detail.length)) ? Number(detail.length) : null,
+    width: Number.isFinite(Number(detail.width)) ? Number(detail.width) : null
+  };
+}
+
+function isLegPreviewSuppressed(selectionContext = {}) {
+  const { legId, waterfallCount } = selectionContext;
+  if (!legId) return true;
+  if (legId === LEG_NONE_ID || legId === LEG_CUSTOM_ID || legId === LEG_SIGNATURE_ID) return true;
+  return waterfallCount >= 2;
+}
+
+function getLegCount(length) {
+  if (!Number.isFinite(length)) return 2;
+  return length > LEG_PAIR_COUNT_THRESHOLD ? 3 : 2;
+}
+
+function getLegWidthForTable(width) {
+  if (!Number.isFinite(width)) return null;
+  if (width <= 36) return 26;
+  if (width <= 42) return 28;
+  if (width <= 48) return 32;
+  return Math.max(0, width - 10);
+}
+
+function getPairLegEndSetbackInches(modelId, length) {
+  if (modelId === 'mdl-coffee') return COFFEE_PAIR_END_SETBACK_IN;
+  if (Number.isFinite(length) && length >= 120) return LONG_PAIR_END_SETBACK_IN;
+  return DEFAULT_PAIR_END_SETBACK_IN;
+}
+
+function parseTubeProfile(tubeId) {
+  if (!tubeId || typeof tubeId !== 'string') return [];
+  const match = tubeId.match(/(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/);
+  if (!match) return [];
+  return [Number(match[1]), Number(match[2])].filter(Number.isFinite);
+}
+
+function getTubeFallbackScale(baseTubeId, selectedTubeId) {
+  if (!baseTubeId || !selectedTubeId || baseTubeId === selectedTubeId) return 1;
+  const baseProfile = parseTubeProfile(baseTubeId);
+  const selectedProfile = parseTubeProfile(selectedTubeId);
+  if (!baseProfile.length || !selectedProfile.length) return 1;
+  const baseMax = Math.max(...baseProfile);
+  const selectedMax = Math.max(...selectedProfile);
+  if (!Number.isFinite(baseMax) || !Number.isFinite(selectedMax) || baseMax <= 0 || selectedMax <= 0) return 1;
+  return THREE.MathUtils.clamp(selectedMax / baseMax, 0.78, 1.5);
+}
+
+function matchesVariantScope(scopeIds, selectedId) {
+  if (!Array.isArray(scopeIds) || !scopeIds.length) return true;
+  return !!selectedId && scopeIds.includes(selectedId);
+}
+
+function resolveLegVariant(definition = {}, selectionContext = {}) {
+  const variants = Array.isArray(definition.variants) ? definition.variants : [];
+  let bestMatch = null;
+  let bestScore = -Infinity;
+
+  variants.forEach((variant) => {
+    if (!variant || typeof variant.assetPath !== 'string' || !variant.assetPath.trim()) return;
+    if (!matchesVariantScope(variant.modelIds, selectionContext.modelId)) return;
+    if (!matchesVariantScope(variant.designIds, selectionContext.designId)) return;
+
+    let score = 0;
+    if (Array.isArray(variant.modelIds) && variant.modelIds.length) score += 4;
+    if (Array.isArray(variant.designIds) && variant.designIds.length) score += 2;
+
+    const tubeIds = Array.isArray(variant.tubeIds) ? variant.tubeIds : [];
+    if (tubeIds.length) {
+      if (selectionContext.tubeId && tubeIds.includes(selectionContext.tubeId)) {
+        score += 8;
+      } else if (selectionContext.tubeId && definition.tubeScaleFallback === false) {
+        return;
+      } else {
+        score += 1;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = variant;
+    }
+  });
+
+  return bestMatch;
+}
+
+function buildLegRenderableParts(legCatalog = {}, selectionContext = {}) {
+  if (isLegPreviewSuppressed(selectionContext)) return [];
+
+  const definition = legCatalog && selectionContext.legId ? legCatalog[selectionContext.legId] : null;
+  if (!definition || typeof definition !== 'object') return [];
+
+  const variant = resolveLegVariant(definition, selectionContext);
+  if (!variant) return [];
+
+  const tubeIds = Array.isArray(variant.tubeIds) ? variant.tubeIds : [];
+  const baseTubeId = variant.baseTubeId || tubeIds[0] || null;
+  const tubeFallbackScale = definition.tubeScaleFallback
+    ? getTubeFallbackScale(baseTubeId, selectionContext.tubeId)
+    : 1;
+
+  if (definition.layout === 'single-center') {
+    return [{
+      name: 'leg-center',
+      role: 'leg',
+      placement: 'center',
+      layout: 'single-center',
+      legId: selectionContext.legId,
+      assetPath: variant.assetPath,
+      tubeFallbackScale
+    }];
+  }
+
+  const placements = ['front', 'back'];
+  if (definition.allowThirdLeg !== false && getLegCount(selectionContext.length) > 2) {
+    placements.push('middle');
+  }
+
+  return placements.map((placement) => ({
+    name: `leg-${placement}`,
+    role: 'leg',
+    placement,
+    layout: 'paired-supports',
+    legId: selectionContext.legId,
+    assetPath: variant.assetPath,
+    tubeFallbackScale
+  }));
+}
+
+function getConfiguredLegParts(manifest = {}, modelId) {
+  const defaults = manifest && manifest.defaults && typeof manifest.defaults === 'object'
+    ? manifest.defaults
+    : {};
+  const selectionContext = getCurrentViewerSelectionContext(modelId);
+  const legCatalog = defaults.legAssets && typeof defaults.legAssets === 'object'
+    ? defaults.legAssets
+    : {};
+  return buildLegRenderableParts(legCatalog, selectionContext);
+}
 
 function getModelTitle(modelId, config = {}) {
   if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
@@ -247,13 +431,120 @@ function captureRenderRootBaseState(renderRoot) {
   renderRoot.userData.basePartStates = partStates;
 }
 
+function getPartConfig(partRoot) {
+  return partRoot && partRoot.userData && partRoot.userData.partConfig && typeof partRoot.userData.partConfig === 'object'
+    ? partRoot.userData.partConfig
+    : {};
+}
+
+function getPartSpan(metrics, axis) {
+  if (!metrics || !metrics.min || !metrics.max || !AXIS_COMPONENTS.includes(axis)) return null;
+  return metrics.max[axis] - metrics.min[axis];
+}
+
+function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY) {
+  if (!partRoot || !baseState || !baseState.metrics) return;
+
+  partRoot.scale.x = baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
+  partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
+
+  const metrics = getObjectMetrics(partRoot);
+  if (!metrics) return;
+
+  partRoot.position.x += baseState.metrics.center.x - metrics.center.x;
+  partRoot.position.z += baseState.metrics.center.z - metrics.center.z;
+
+  const desiredUnderside = Number.isFinite(selectedUndersideY)
+    ? selectedUndersideY
+    : baseState.metrics.min.y;
+  partRoot.position.y += desiredUnderside - metrics.min.y;
+}
+
+function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId = '') {
+  const length = Number(selectedDimensions.length);
+  const width = Number(selectedDimensions.width);
+
+  if (legId === LEG_CUBE_ID) {
+    return {
+      spanX: Number.isFinite(width) ? Math.max(width - (CUBE_EDGE_SETBACK_IN * 2), 8) : null,
+      spanZ: Number.isFinite(length) ? Math.max(length - (CUBE_EDGE_SETBACK_IN * 2), 8) : null,
+      endSetback: 0
+    };
+  }
+
+  if (legId === LEG_TRIPOD_ID) {
+    return {
+      spanX: Number.isFinite(width) ? Math.max(width - (TRIPOD_EDGE_SETBACK_IN * 2), width * 0.45) : null,
+      spanZ: Number.isFinite(length) ? Math.max(length - (TRIPOD_EDGE_SETBACK_IN * 2), length * 0.45) : null,
+      endSetback: 0
+    };
+  }
+
+  return {
+    spanX: getLegWidthForTable(width),
+    spanZ: null,
+    endSetback: getPairLegEndSetbackInches(selectedDimensions.modelId, length)
+  };
+}
+
+function computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, selectedUndersideY) {
+  if (!partRoot || !baseState || !baseState.metrics) return;
+
+  const partConfig = getPartConfig(partRoot);
+  const selectedDimensions = scaleMap && scaleMap.selectedDimensions
+    ? { ...scaleMap.selectedDimensions, modelId: (state && state.selections && state.selections.model) || null }
+    : {};
+  const targets = getLegTransformTargets(partConfig, selectedDimensions, partConfig.legId);
+
+  const baseSpanX = getPartSpan(baseState.metrics, 'x');
+  const baseSpanY = getPartSpan(baseState.metrics, 'y');
+  const baseSpanZ = getPartSpan(baseState.metrics, 'z');
+  const desiredLegHeight = Number.isFinite(selectedUndersideY) ? selectedUndersideY : baseSpanY;
+  const scaleY = Number.isFinite(baseSpanY) && baseSpanY > 0 && Number.isFinite(desiredLegHeight)
+    ? desiredLegHeight / baseSpanY
+    : 1;
+  const scaleX = Number.isFinite(baseSpanX) && baseSpanX > 0 && Number.isFinite(targets.spanX)
+    ? targets.spanX * unitsPerInch / baseSpanX
+    : 1;
+  const scaleZ = Number.isFinite(baseSpanZ) && baseSpanZ > 0 && Number.isFinite(targets.spanZ)
+    ? targets.spanZ * unitsPerInch / baseSpanZ
+    : (Number.isFinite(partConfig.tubeFallbackScale) ? partConfig.tubeFallbackScale : 1);
+
+  partRoot.scale.x = baseState.scale.x * scaleX;
+  partRoot.scale.y = baseState.scale.y * scaleY;
+  partRoot.scale.z = baseState.scale.z * scaleZ;
+
+  const metrics = getObjectMetrics(partRoot);
+  if (!metrics) return;
+
+  const centerX = 0;
+  let centerZ = 0;
+  if (partConfig.layout === 'paired-supports') {
+    const totalLength = Number.isFinite(selectedDimensions.length)
+      ? selectedDimensions.length * unitsPerInch
+      : null;
+    const endSetback = Number.isFinite(targets.endSetback)
+      ? targets.endSetback * unitsPerInch
+      : 0;
+    const maxOffset = Number.isFinite(totalLength)
+      ? Math.max(0, (totalLength / 2) - endSetback - ((metrics.max.z - metrics.min.z) / 2))
+      : Math.abs(baseState.position.z);
+
+    if (partConfig.placement === 'front') centerZ = maxOffset;
+    else if (partConfig.placement === 'back') centerZ = -maxOffset;
+  }
+
+  partRoot.position.x += centerX - metrics.center.x;
+  partRoot.position.y += 0 - metrics.min.y;
+  partRoot.position.z += centerZ - metrics.center.z;
+}
+
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
 
   const basePartStates = renderRoot.userData.basePartStates || {};
   const rules = getDimensionRules(config);
-  const partBehaviors = rules.partBehaviors || {};
   const scaleMap = getDimensionScaleMap(config);
   const selectedHeight = scaleMap && scaleMap.selectedDimensions
     ? Number(scaleMap.selectedDimensions.height)
@@ -278,85 +569,23 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     partRoot.scale.copy(baseState.scale);
     partRoot.visible = true;
 
-    const behavior = partBehaviors[partName];
-    if (!behavior || typeof behavior !== 'object') return;
+    const partConfig = getPartConfig(partRoot);
+    const role = partConfig.role || '';
 
-    const visibilityRule = behavior.visibility && typeof behavior.visibility === 'object'
-      ? behavior.visibility
-      : null;
-    partRoot.visible = isVisibilityRuleSatisfied(scaleMap, visibilityRule);
-
-    const scaleAxes = behavior.scaleAxes && typeof behavior.scaleAxes === 'object'
-      ? behavior.scaleAxes
-      : {};
-    Object.entries(scaleAxes).forEach(([dimensionKey, axis]) => {
-      if (!AXIS_COMPONENTS.includes(axis)) return;
-      let factor = getScaleFactorForDimension(scaleMap, dimensionKey);
-      if (
-        partName.startsWith('leg-')
-        && (dimensionKey === 'height' || dimensionKey === 'support-height')
-        && baseState.metrics
-        && Number.isFinite(selectedUndersideY)
-      ) {
-        const baseSpan = baseState.metrics.max.y - baseState.metrics.min.y;
-        const desiredSpan = selectedUndersideY - baseState.metrics.min.y;
-        factor = (Number.isFinite(baseSpan) && baseSpan > 0 && Number.isFinite(desiredSpan))
-          ? desiredSpan / baseSpan
-          : factor;
-      }
-      if (!Number.isFinite(factor) || factor <= 0) return;
-      partRoot.scale[axis] = baseState.scale[axis] * factor;
-    });
-
-    const currentMetricsAfterScale = getObjectMetrics(partRoot);
-    if (!currentMetricsAfterScale || !baseState.metrics) return;
-
-    const positionAxes = behavior.positionAxes && typeof behavior.positionAxes === 'object'
-      ? behavior.positionAxes
-      : {};
-    const positionDeltas = {};
-    Object.entries(positionAxes).forEach(([dimensionKey, axis]) => {
-      if (!AXIS_COMPONENTS.includes(axis)) return;
-      const factor = getScaleFactorForDimension(scaleMap, dimensionKey);
-      if (!Number.isFinite(factor)) return;
-      const desiredCenter = baseState.metrics.center[axis] * factor;
-      positionDeltas[axis] = desiredCenter - currentMetricsAfterScale.center[axis];
-    });
-
-    AXIS_COMPONENTS.forEach((axis) => {
-      if (Number.isFinite(positionDeltas[axis])) {
-        partRoot.position[axis] += positionDeltas[axis];
-      }
-    });
-
-    const alignedMetrics = getObjectMetrics(partRoot);
-    if (!alignedMetrics || !baseState.metrics) return;
-
-    if (partName.startsWith('tabletop')) {
-      const centerXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
-      const centerZDelta = baseState.metrics.center.z - alignedMetrics.center.z;
-      const desiredUnderside = Number.isFinite(selectedUndersideY)
-        ? selectedUndersideY
-        : (baseState.metrics.min.y + heightDeltaUnits);
-      const undersideDelta = desiredUnderside - alignedMetrics.min.y;
-      partRoot.position.x += centerXDelta;
-      partRoot.position.y += undersideDelta;
-      partRoot.position.z += centerZDelta;
+    if (role === 'tabletop' || partName.startsWith('tabletop')) {
+      computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY);
       return;
     }
 
-    if (partName.startsWith('leg-')) {
-      const centerXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
-      const floorDelta = baseState.metrics.min.y - alignedMetrics.min.y;
-      partRoot.position.x += centerXDelta;
-      partRoot.position.y += floorDelta;
+    if (role === 'leg' || partName.startsWith('leg-')) {
+      computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, selectedUndersideY);
       return;
     }
 
-    const fallbackCenterXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
-    const fallbackCenterZDelta = baseState.metrics.center.z - alignedMetrics.center.z;
-    partRoot.position.x += fallbackCenterXDelta;
-    partRoot.position.z += fallbackCenterZDelta;
+    const metrics = getObjectMetrics(partRoot);
+    if (!metrics || !baseState.metrics) return;
+    partRoot.position.x += baseState.metrics.center.x - metrics.center.x;
+    partRoot.position.z += baseState.metrics.center.z - metrics.center.z;
   });
 
   return scaleMap;
@@ -389,14 +618,42 @@ function normalizeRenderablePart(partConfig = {}, index = 0) {
     name: typeof partConfig.name === 'string' && partConfig.name.trim()
       ? partConfig.name.trim()
       : `part-${index + 1}`,
+    role: typeof partConfig.role === 'string' && partConfig.role.trim()
+      ? partConfig.role.trim()
+      : '',
+    placement: typeof partConfig.placement === 'string' && partConfig.placement.trim()
+      ? partConfig.placement.trim()
+      : '',
+    layout: typeof partConfig.layout === 'string' && partConfig.layout.trim()
+      ? partConfig.layout.trim()
+      : '',
+    legId: typeof partConfig.legId === 'string' && partConfig.legId.trim()
+      ? partConfig.legId.trim()
+      : '',
+    tubeFallbackScale: Number.isFinite(Number(partConfig.tubeFallbackScale))
+      ? Number(partConfig.tubeFallbackScale)
+      : 1,
     assetPath: typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '',
     scale: Array.isArray(partConfig.scale) && partConfig.scale.length === 3
       ? partConfig.scale.map((entry) => Number(entry) || 1)
       : (Number.isFinite(Number(partConfig.scale)) ? Number(partConfig.scale) || 1 : 1),
+    surfaceInsetScale: Array.isArray(partConfig.surfaceInsetScale) && partConfig.surfaceInsetScale.length === 3
+      ? partConfig.surfaceInsetScale.map((entry) => Number(entry) || 1)
+      : null,
+    surfaceInsetOffset: Array.isArray(partConfig.surfaceInsetOffset) && partConfig.surfaceInsetOffset.length === 3
+      ? partConfig.surfaceInsetOffset.map((entry) => Number(entry) || 0)
+      : DEFAULT_SURFACE_INSET_OFFSET,
     rotation: getVectorTriplet(partConfig.rotation),
     positionOffset: getVectorTriplet(partConfig.positionOffset),
     receiveModelShadows: partConfig.receiveModelShadows === true
   };
+}
+
+function applySurfaceInsetTransform(assetRoot, partConfig = {}) {
+  if (!assetRoot || !partConfig.surfaceInsetScale) return;
+
+  // Keep epoxy marginally inside the wood shell by design so the viewer avoids z-fighting.
+  assetRoot.scale.multiply(getScaleVector(partConfig.surfaceInsetScale));
 }
 
 function getRenderableParts(config = {}) {
@@ -542,11 +799,13 @@ async function applySelectedLegFinish(renderRoot) {
     const finishMaterial = selectedFinish && selectedFinish.viewerMaterial;
     if (!finishMaterial || typeof finishMaterial !== 'object') return;
 
-    ['leg-front', 'leg-back', 'leg-middle'].forEach((partName) => {
-      const legRoot = renderRoot.getObjectByName(partName);
-      if (!legRoot) return;
+    renderRoot.children.forEach((partRoot) => {
+      const role = partRoot && partRoot.userData && partRoot.userData.partConfig
+        ? partRoot.userData.partConfig.role
+        : '';
+      if (role !== 'leg' && !partRoot.name.startsWith('leg-')) return;
 
-      legRoot.traverse((child) => {
+      partRoot.traverse((child) => {
         if (!child.isMesh || !child.material) return;
         if (Array.isArray(child.material)) {
           child.material = child.material.map((material) => cloneMaterialWithFinish(material, finishMaterial));
@@ -760,6 +1019,10 @@ function resolveViewerConfig(manifest, modelId) {
   return {
     ...defaults,
     ...modelEntry,
+    parts: [
+      ...getRenderableParts({ parts: defaults.parts || [] }),
+      ...getConfiguredLegParts(manifest, modelId)
+    ],
     camera: {
       ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
       ...(modelEntry.camera && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
@@ -806,8 +1069,18 @@ async function buildRenderAsset(partConfig, index = 0) {
 
   const assetRoot = new THREE.Group();
   assetRoot.name = partConfig.name || `viewer-part-${index + 1}`;
+  assetRoot.userData.partConfig = {
+    role: partConfig.role || '',
+    placement: partConfig.placement || '',
+    layout: partConfig.layout || '',
+    legId: partConfig.legId || '',
+    tubeFallbackScale: Number.isFinite(Number(partConfig.tubeFallbackScale))
+      ? Number(partConfig.tubeFallbackScale)
+      : 1
+  };
   assetRoot.add(sourceRoot);
   assetRoot.scale.copy(getScaleVector(partConfig.scale));
+  applySurfaceInsetTransform(assetRoot, partConfig);
   assetRoot.rotation.set(
     Number(partConfig.rotation[0]) || 0,
     Number(partConfig.rotation[1]) || 0,
@@ -824,6 +1097,9 @@ async function buildRenderAsset(partConfig, index = 0) {
   assetRoot.position.x += Number(partConfig.positionOffset[0]) || 0;
   assetRoot.position.y += Number(partConfig.positionOffset[1]) || 0;
   assetRoot.position.z += Number(partConfig.positionOffset[2]) || 0;
+  assetRoot.position.x += Number(partConfig.surfaceInsetOffset[0]) || 0;
+  assetRoot.position.y += Number(partConfig.surfaceInsetOffset[1]) || 0;
+  assetRoot.position.z += Number(partConfig.surfaceInsetOffset[2]) || 0;
 
   return assetRoot;
 }
@@ -982,7 +1258,7 @@ export async function updateModel(modelId, { force = false } = {}) {
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
     if (requestToken !== pendingRequestToken) return;
-    showErrorState(title, 'The local table assembly could not be loaded. Try again.');
+    showErrorState(title, 'The selected tabletop and leg preview could not be loaded. Try again.');
   } finally {
     if (requestToken === pendingRequestToken) isLoading = false;
   }
@@ -1191,16 +1467,30 @@ document.addEventListener('statechange', () => {
   const nextMaterialId = state && state.selections && state.selections.options
     ? state.selections.options.material || null
     : null;
+  const nextLegId = state && state.selections && state.selections.options
+    ? state.selections.options.legs || null
+    : null;
+  const nextTubeId = state && state.selections && state.selections.options
+    ? state.selections.options['tube-size'] || null
+    : null;
   const nextLegFinishId = state && state.selections && state.selections.options
     ? state.selections.options['leg-finish'] || null
     : null;
+  const nextAddonsSignature = JSON.stringify(
+    state && state.selections && state.selections.options
+      ? (state.selections.options.addon || null)
+      : null
+  );
   const nextDimensionsSignature = JSON.stringify(
     state && state.selections ? (state.selections.dimensionsDetail || null) : null
   );
   const modelChanged = nextModelId !== lastObservedModelId;
   const designChanged = nextDesignId !== lastObservedDesignId;
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
+  const legChanged = nextLegId !== lastObservedLegId;
+  const tubeChanged = nextTubeId !== lastObservedTubeId;
   const legFinishChanged = nextLegFinishId !== lastObservedLegFinishId;
+  const addonsChanged = nextAddonsSignature !== lastObservedAddonsSignature;
   const dimensionsChanged = nextDimensionsSignature !== lastObservedDimensionsSignature;
 
   if (nextModelId !== lastObservedModelId) {
@@ -1221,10 +1511,28 @@ document.addEventListener('statechange', () => {
       nextMaterialId
     });
   }
+  if (legChanged) {
+    log.info('Viewer observed leg selection change', {
+      previousLegId: lastObservedLegId,
+      nextLegId
+    });
+  }
+  if (tubeChanged) {
+    log.info('Viewer observed tube selection change', {
+      previousTubeId: lastObservedTubeId,
+      nextTubeId
+    });
+  }
   if (legFinishChanged) {
     log.info('Viewer observed leg finish selection change', {
       previousLegFinishId: lastObservedLegFinishId,
       nextLegFinishId
+    });
+  }
+  if (addonsChanged) {
+    log.info('Viewer observed addon selection change', {
+      previousAddonsSignature: lastObservedAddonsSignature,
+      nextAddonsSignature
     });
   }
   if (dimensionsChanged) {
@@ -1237,7 +1545,10 @@ document.addEventListener('statechange', () => {
   lastObservedModelId = nextModelId;
   lastObservedDesignId = nextDesignId;
   lastObservedMaterialId = nextMaterialId;
+  lastObservedLegId = nextLegId;
+  lastObservedTubeId = nextTubeId;
   lastObservedLegFinishId = nextLegFinishId;
+  lastObservedAddonsSignature = nextAddonsSignature;
   lastObservedDimensionsSignature = nextDimensionsSignature;
 
   if (modelChanged) {
@@ -1250,7 +1561,12 @@ document.addEventListener('statechange', () => {
     return;
   }
 
-  if ((designChanged || dimensionsChanged) && nextModelId && currentRenderRoot) {
-    void refreshCurrentRenderState(nextModelId);
+  if ((legChanged || tubeChanged || addonsChanged) && nextModelId) {
+    void updateModel(nextModelId);
+    return;
+  }
+
+  if ((designChanged || dimensionsChanged) && nextModelId) {
+    void updateModel(nextModelId);
   }
 });
