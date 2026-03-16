@@ -15,6 +15,7 @@ const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
+const AXIS_COMPONENTS = ['x', 'y', 'z'];
 
 let renderer = null;
 let scene = null;
@@ -51,8 +52,10 @@ const dom = {
 };
 
 let lastObservedModelId = null;
+let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
 let lastObservedLegFinishId = null;
+let lastObservedDimensionsSignature = '';
 
 function getModelTitle(modelId, config = {}) {
   if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
@@ -81,6 +84,171 @@ function getCameraSettings(config = {}) {
       ? Number(cameraConfig.maxDistanceMultiplier)
       : 5.8
   };
+}
+
+function getDimensionRules(config = {}) {
+  const ruleConfig = config.dimensionRules && typeof config.dimensionRules === 'object'
+    ? config.dimensionRules
+    : {};
+  const baseDimensions = ruleConfig.baseDimensions && typeof ruleConfig.baseDimensions === 'object'
+    ? ruleConfig.baseDimensions
+    : {};
+  const heightOptions = ruleConfig.heightOptions && typeof ruleConfig.heightOptions === 'object'
+    ? ruleConfig.heightOptions
+    : {};
+
+  return {
+    unitsPerInch: Number.isFinite(Number(ruleConfig.unitsPerInch))
+      ? Number(ruleConfig.unitsPerInch)
+      : 0.0254,
+    roundScaleMode: typeof ruleConfig.roundScaleMode === 'string' && ruleConfig.roundScaleMode.trim()
+      ? ruleConfig.roundScaleMode.trim()
+      : 'uniform-length',
+    baseDimensions: {
+      length: Number.isFinite(Number(baseDimensions.length)) ? Number(baseDimensions.length) : null,
+      width: Number.isFinite(Number(baseDimensions.width)) ? Number(baseDimensions.width) : null,
+      height: Number.isFinite(Number(baseDimensions.height)) ? Number(baseDimensions.height) : null
+    },
+    heightOptions: {
+      standard: Number.isFinite(Number(heightOptions.standard)) ? Number(heightOptions.standard) : null,
+      bar: Number.isFinite(Number(heightOptions.bar)) ? Number(heightOptions.bar) : null
+    },
+    partBehaviors: ruleConfig.partBehaviors && typeof ruleConfig.partBehaviors === 'object'
+      ? ruleConfig.partBehaviors
+      : {}
+  };
+}
+
+function getSelectedDimensions(config = {}) {
+  const rules = getDimensionRules(config);
+  const detail = state && state.selections ? state.selections.dimensionsDetail : null;
+  const baseDimensions = rules.baseDimensions || {};
+  const heightOptions = rules.heightOptions || {};
+  const rawLength = detail ? Number(detail.length) : NaN;
+  const rawWidth = detail ? Number(detail.width) : NaN;
+  const rawCustomHeight = detail ? Number(detail.heightCustom) : NaN;
+  const heightSelection = detail && typeof detail.height === 'string'
+    ? detail.height
+    : 'standard';
+
+  let heightInches = Number(baseDimensions.height) || Number(heightOptions.standard) || null;
+  if (heightSelection === 'bar') {
+    heightInches = Number(heightOptions.bar) || heightInches;
+  } else if (heightSelection === 'custom' && Number.isFinite(rawCustomHeight)) {
+    heightInches = rawCustomHeight;
+  } else if (heightSelection === 'standard') {
+    heightInches = Number(heightOptions.standard) || heightInches;
+  }
+
+  return {
+    length: Number.isFinite(rawLength) ? rawLength : (Number(baseDimensions.length) || null),
+    width: Number.isFinite(rawWidth) ? rawWidth : (Number(baseDimensions.width) || null),
+    height: Number.isFinite(heightInches) ? heightInches : (Number(baseDimensions.height) || null),
+    heightSelection,
+    isRound: state && state.selections ? state.selections.design === 'des-round' : false
+  };
+}
+
+function getRoundPlanarScale(lengthScale, widthScale, roundScaleMode = 'uniform-length') {
+  if (roundScaleMode === 'uniform-width') return widthScale;
+  if (roundScaleMode === 'uniform-average') return (lengthScale + widthScale) / 2;
+  return lengthScale;
+}
+
+function getDimensionScaleMap(config = {}) {
+  const rules = getDimensionRules(config);
+  const selectedDimensions = getSelectedDimensions(config);
+  const baseDimensions = rules.baseDimensions || {};
+  const rawLengthScale = Number.isFinite(selectedDimensions.length) && Number.isFinite(Number(baseDimensions.length)) && Number(baseDimensions.length) > 0
+    ? selectedDimensions.length / Number(baseDimensions.length)
+    : 1;
+  const rawWidthScale = Number.isFinite(selectedDimensions.width) && Number.isFinite(Number(baseDimensions.width)) && Number(baseDimensions.width) > 0
+    ? selectedDimensions.width / Number(baseDimensions.width)
+    : 1;
+  const heightScale = Number.isFinite(selectedDimensions.height) && Number.isFinite(Number(baseDimensions.height)) && Number(baseDimensions.height) > 0
+    ? selectedDimensions.height / Number(baseDimensions.height)
+    : 1;
+
+  if (selectedDimensions.isRound) {
+    const planarScale = getRoundPlanarScale(rawLengthScale, rawWidthScale, rules.roundScaleMode);
+    return {
+      length: planarScale,
+      width: planarScale,
+      height: heightScale,
+      selectedDimensions
+    };
+  }
+
+  return {
+    length: rawLengthScale,
+    width: rawWidthScale,
+    height: heightScale,
+    selectedDimensions
+  };
+}
+
+function getScaleFactorForDimension(scaleMap, dimensionKey) {
+  if (!scaleMap || !dimensionKey) return 1;
+  if (dimensionKey === 'length') return scaleMap.length;
+  if (dimensionKey === 'width') return scaleMap.width;
+  if (dimensionKey === 'height') return scaleMap.height;
+  return 1;
+}
+
+function captureRenderRootBaseState(renderRoot) {
+  if (!renderRoot) return;
+
+  const partStates = {};
+  renderRoot.children.forEach((child) => {
+    partStates[child.name] = {
+      position: child.position.clone(),
+      scale: child.scale.clone()
+    };
+  });
+  renderRoot.userData.basePartStates = partStates;
+}
+
+function applyConfiguredPartTransforms(renderRoot, config = {}) {
+  if (!renderRoot) return null;
+  if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
+
+  const basePartStates = renderRoot.userData.basePartStates || {};
+  const rules = getDimensionRules(config);
+  const partBehaviors = rules.partBehaviors || {};
+  const scaleMap = getDimensionScaleMap(config);
+
+  Object.entries(basePartStates).forEach(([partName, baseState]) => {
+    const partRoot = renderRoot.getObjectByName(partName);
+    if (!partRoot || !baseState) return;
+
+    partRoot.position.copy(baseState.position);
+    partRoot.scale.copy(baseState.scale);
+
+    const behavior = partBehaviors[partName];
+    if (!behavior || typeof behavior !== 'object') return;
+
+    const scaleAxes = behavior.scaleAxes && typeof behavior.scaleAxes === 'object'
+      ? behavior.scaleAxes
+      : {};
+    Object.entries(scaleAxes).forEach(([dimensionKey, axis]) => {
+      if (!AXIS_COMPONENTS.includes(axis)) return;
+      const factor = getScaleFactorForDimension(scaleMap, dimensionKey);
+      if (!Number.isFinite(factor) || factor <= 0) return;
+      partRoot.scale[axis] = baseState.scale[axis] * factor;
+    });
+
+    const positionAxes = behavior.positionAxes && typeof behavior.positionAxes === 'object'
+      ? behavior.positionAxes
+      : {};
+    Object.entries(positionAxes).forEach(([dimensionKey, axis]) => {
+      if (!AXIS_COMPONENTS.includes(axis)) return;
+      const factor = getScaleFactorForDimension(scaleMap, dimensionKey);
+      if (!Number.isFinite(factor)) return;
+      partRoot.position[axis] = baseState.position[axis] * factor;
+    });
+  });
+
+  return scaleMap;
 }
 
 function getScaleVector(scaleValue) {
@@ -445,6 +613,12 @@ function resolveViewerConfig(manifest, modelId) {
   const defaults = manifest.defaults && typeof manifest.defaults === 'object' ? manifest.defaults : {};
   const modelEntry = manifest.models && typeof manifest.models === 'object' ? manifest.models[modelId] : null;
   if (!modelEntry || typeof modelEntry !== 'object') return null;
+  const defaultDimensionRules = defaults.dimensionRules && typeof defaults.dimensionRules === 'object'
+    ? defaults.dimensionRules
+    : {};
+  const modelDimensionRules = modelEntry.dimensionRules && typeof modelEntry.dimensionRules === 'object'
+    ? modelEntry.dimensionRules
+    : null;
 
   return {
     ...defaults,
@@ -452,6 +626,34 @@ function resolveViewerConfig(manifest, modelId) {
     camera: {
       ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
       ...(modelEntry.camera && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
+    },
+    dimensionRules: {
+      ...defaultDimensionRules,
+      ...(modelDimensionRules || {}),
+      baseDimensions: {
+        ...(defaultDimensionRules.baseDimensions && typeof defaultDimensionRules.baseDimensions === 'object'
+          ? defaultDimensionRules.baseDimensions
+          : {}),
+        ...(modelDimensionRules && modelDimensionRules.baseDimensions && typeof modelDimensionRules.baseDimensions === 'object'
+          ? modelDimensionRules.baseDimensions
+          : {})
+      },
+      heightOptions: {
+        ...(defaultDimensionRules.heightOptions && typeof defaultDimensionRules.heightOptions === 'object'
+          ? defaultDimensionRules.heightOptions
+          : {}),
+        ...(modelDimensionRules && modelDimensionRules.heightOptions && typeof modelDimensionRules.heightOptions === 'object'
+          ? modelDimensionRules.heightOptions
+          : {})
+      },
+      partBehaviors: {
+        ...(defaultDimensionRules.partBehaviors && typeof defaultDimensionRules.partBehaviors === 'object'
+          ? defaultDimensionRules.partBehaviors
+          : {}),
+        ...(modelDimensionRules && modelDimensionRules.partBehaviors && typeof modelDimensionRules.partBehaviors === 'object'
+          ? modelDimensionRules.partBehaviors
+          : {})
+      }
     }
   };
 }
@@ -500,8 +702,36 @@ async function buildRenderRoot(config) {
   parts.forEach((partRoot) => renderRoot.add(partRoot));
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedLegFinish(renderRoot);
+  captureRenderRootBaseState(renderRoot);
+  applyConfiguredPartTransforms(renderRoot, config);
 
   return renderRoot;
+}
+
+async function refreshCurrentRenderState(modelId) {
+  if (!initialized || !currentRenderRoot || !modelId) return;
+
+  const manifest = await loadManifest();
+  if (!manifest) return;
+
+  const config = resolveViewerConfig(manifest, modelId);
+  if (!config) return;
+
+  const scaleMap = applyConfiguredPartTransforms(currentRenderRoot, config);
+  const framing = frameModel(currentRenderRoot, config);
+  log.info('Applied viewer state transforms', {
+    modelId,
+    scales: scaleMap
+      ? {
+        length: Number(scaleMap.length.toFixed(3)),
+        width: Number(scaleMap.width.toFixed(3)),
+        height: Number(scaleMap.height.toFixed(3))
+      }
+      : null,
+    selection: scaleMap ? scaleMap.selectedDimensions : null,
+    framing
+  });
+  showReadyState(modelId, config);
 }
 
 function showEmptyState() {
@@ -564,6 +794,7 @@ export async function updateModel(modelId, { force = false } = {}) {
   });
 
   if (!force && currentRenderRoot && displayedModelId === modelId && displayedRenderSignature === renderSignature) {
+    applyConfiguredPartTransforms(currentRenderRoot, config);
     const framing = frameModel(currentRenderRoot, config);
     log.info('Reused existing viewer asset for same model', { modelId, framing });
     showReadyState(modelId, config);
@@ -572,6 +803,7 @@ export async function updateModel(modelId, { force = false } = {}) {
 
   if (!force && currentRenderRoot && displayedRenderSignature === renderSignature) {
     displayedModelId = modelId;
+    applyConfiguredPartTransforms(currentRenderRoot, config);
     const framing = frameModel(currentRenderRoot, config);
     log.info('Reused existing viewer asset across model mapping', { modelId, framing });
     showReadyState(modelId, config);
@@ -809,20 +1041,32 @@ window.addEventListener('resize', () => {
 document.addEventListener('statechange', () => {
   if (!initialized) return;
   const nextModelId = state && state.selections ? state.selections.model : null;
+  const nextDesignId = state && state.selections ? state.selections.design || null : null;
   const nextMaterialId = state && state.selections && state.selections.options
     ? state.selections.options.material || null
     : null;
   const nextLegFinishId = state && state.selections && state.selections.options
     ? state.selections.options['leg-finish'] || null
     : null;
+  const nextDimensionsSignature = JSON.stringify(
+    state && state.selections ? (state.selections.dimensionsDetail || null) : null
+  );
   const modelChanged = nextModelId !== lastObservedModelId;
+  const designChanged = nextDesignId !== lastObservedDesignId;
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
   const legFinishChanged = nextLegFinishId !== lastObservedLegFinishId;
+  const dimensionsChanged = nextDimensionsSignature !== lastObservedDimensionsSignature;
 
   if (nextModelId !== lastObservedModelId) {
     log.info('Viewer observed model selection change', {
       previousModelId: lastObservedModelId,
       nextModelId
+    });
+  }
+  if (designChanged) {
+    log.info('Viewer observed design selection change', {
+      previousDesignId: lastObservedDesignId,
+      nextDesignId
     });
   }
   if (materialChanged) {
@@ -837,10 +1081,18 @@ document.addEventListener('statechange', () => {
       nextLegFinishId
     });
   }
+  if (dimensionsChanged) {
+    log.info('Viewer observed dimensions change', {
+      previousDimensionsSignature: lastObservedDimensionsSignature,
+      nextDimensionsSignature
+    });
+  }
 
   lastObservedModelId = nextModelId;
+  lastObservedDesignId = nextDesignId;
   lastObservedMaterialId = nextMaterialId;
   lastObservedLegFinishId = nextLegFinishId;
+  lastObservedDimensionsSignature = nextDimensionsSignature;
 
   if (modelChanged) {
     void updateModel(nextModelId);
@@ -849,5 +1101,10 @@ document.addEventListener('statechange', () => {
 
   if ((materialChanged || legFinishChanged) && nextModelId) {
     void updateModel(nextModelId, { force: true });
+    return;
+  }
+
+  if ((designChanged || dimensionsChanged) && nextModelId && currentRenderRoot) {
+    void refreshCurrentRenderState(nextModelId);
   }
 });
