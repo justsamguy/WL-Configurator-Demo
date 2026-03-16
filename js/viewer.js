@@ -12,6 +12,8 @@ const log = createLogger('Viewer');
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
+const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
+const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
 
 let renderer = null;
 let scene = null;
@@ -33,6 +35,7 @@ let isLoading = false;
 let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
+let tabletopTexturePromise = null;
 
 const dom = {
   surface: null,
@@ -46,6 +49,7 @@ const dom = {
 };
 
 let lastObservedModelId = null;
+let lastObservedMaterialId = null;
 
 function getModelTitle(modelId, config = {}) {
   if (config && typeof config.title === 'string' && config.title.trim()) return config.title.trim();
@@ -129,6 +133,70 @@ function getRenderSignature(config = {}) {
 
 function getRenderAssetPaths(config = {}) {
   return getRenderableParts(config).map((partConfig) => partConfig.assetPath);
+}
+
+async function loadTabletopTexture() {
+  if (!tabletopTexturePromise) {
+    const textureLoader = new THREE.TextureLoader();
+    tabletopTexturePromise = textureLoader.loadAsync(SPALTED_MAPLE_TEXTURE_PATH).then((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.flipY = false;
+      if (renderer && renderer.capabilities) {
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      }
+      return texture;
+    }).catch((error) => {
+      tabletopTexturePromise = null;
+      throw error;
+    });
+  }
+
+  return tabletopTexturePromise;
+}
+
+function cloneMaterialWithTexture(material, texture) {
+  if (!material || typeof material.clone !== 'function') return material;
+  const clonedMaterial = material.clone();
+  if ('color' in clonedMaterial && clonedMaterial.color && typeof clonedMaterial.color.setHex === 'function') {
+    clonedMaterial.color.setHex(0xffffff);
+  }
+  if ('map' in clonedMaterial) clonedMaterial.map = texture;
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
+async function applySelectedTabletopMaterial(renderRoot) {
+  if (!renderRoot) return;
+
+  const selectedMaterialId = state && state.selections && state.selections.options
+    ? state.selections.options.material
+    : null;
+  if (selectedMaterialId !== SPALTED_MAPLE_MATERIAL_ID) return;
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  if (!tabletopRoot) return;
+
+  try {
+    const texture = await loadTabletopTexture();
+    tabletopRoot.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map((material) => cloneMaterialWithTexture(material, texture));
+      } else {
+        child.material = cloneMaterialWithTexture(child.material, texture);
+      }
+    });
+    log.info('Applied spalted maple tabletop material override', {
+      materialId: selectedMaterialId,
+      texturePath: SPALTED_MAPLE_TEXTURE_PATH
+    });
+  } catch (error) {
+    log.warn('Failed to apply spalted maple tabletop texture', {
+      materialId: selectedMaterialId,
+      texturePath: SPALTED_MAPLE_TEXTURE_PATH,
+      error
+    });
+  }
 }
 
 function disposeMaterial(material) {
@@ -340,6 +408,7 @@ async function buildRenderRoot(config) {
 
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
+  await applySelectedTabletopMaterial(renderRoot);
 
   return renderRoot;
 }
@@ -649,12 +718,34 @@ window.addEventListener('resize', () => {
 document.addEventListener('statechange', () => {
   if (!initialized) return;
   const nextModelId = state && state.selections ? state.selections.model : null;
+  const nextMaterialId = state && state.selections && state.selections.options
+    ? state.selections.options.material || null
+    : null;
+  const modelChanged = nextModelId !== lastObservedModelId;
+  const materialChanged = nextMaterialId !== lastObservedMaterialId;
+
   if (nextModelId !== lastObservedModelId) {
     log.info('Viewer observed model selection change', {
       previousModelId: lastObservedModelId,
       nextModelId
     });
-    lastObservedModelId = nextModelId;
   }
-  void updateModel(nextModelId);
+  if (materialChanged) {
+    log.info('Viewer observed material selection change', {
+      previousMaterialId: lastObservedMaterialId,
+      nextMaterialId
+    });
+  }
+
+  lastObservedModelId = nextModelId;
+  lastObservedMaterialId = nextMaterialId;
+
+  if (modelChanged) {
+    void updateModel(nextModelId);
+    return;
+  }
+
+  if (materialChanged && nextModelId) {
+    void updateModel(nextModelId, { force: true });
+  }
 });

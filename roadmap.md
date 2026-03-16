@@ -2,9 +2,8 @@
 
 ## v1.1
 - Add 3D model viewer
-create & add materials
-test material assigning
-produce additional models
+create & add materials, test material assigning
+ensure reference images are accurate and produce additional models
 - hide backend code?
 
 ## v1.2
