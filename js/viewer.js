@@ -220,14 +220,28 @@ function isVisibilityRuleSatisfied(scaleMap, visibilityRule) {
   return true;
 }
 
+function getObjectMetrics(root) {
+  if (!root) return null;
+  const bounds = new THREE.Box3().setFromObject(root);
+  if (bounds.isEmpty()) return null;
+  return {
+    bounds,
+    min: bounds.min.clone(),
+    max: bounds.max.clone(),
+    center: bounds.getCenter(new THREE.Vector3())
+  };
+}
+
 function captureRenderRootBaseState(renderRoot) {
   if (!renderRoot) return;
 
   const partStates = {};
   renderRoot.children.forEach((child) => {
+    const metrics = getObjectMetrics(child);
     partStates[child.name] = {
       position: child.position.clone(),
-      scale: child.scale.clone()
+      scale: child.scale.clone(),
+      metrics
     };
   });
   renderRoot.userData.basePartStates = partStates;
@@ -241,6 +255,20 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   const rules = getDimensionRules(config);
   const partBehaviors = rules.partBehaviors || {};
   const scaleMap = getDimensionScaleMap(config);
+  const selectedHeight = scaleMap && scaleMap.selectedDimensions
+    ? Number(scaleMap.selectedDimensions.height)
+    : NaN;
+  const baseHeight = rules && rules.baseDimensions ? Number(rules.baseDimensions.height) : NaN;
+  const unitsPerInch = Number.isFinite(Number(rules.unitsPerInch)) ? Number(rules.unitsPerInch) : 0.0254;
+  const heightDeltaUnits = Number.isFinite(selectedHeight) && Number.isFinite(baseHeight)
+    ? (selectedHeight - baseHeight) * unitsPerInch
+    : 0;
+  const tabletopBaseState = basePartStates.tabletop && basePartStates.tabletop.metrics
+    ? basePartStates.tabletop
+    : null;
+  const selectedUndersideY = tabletopBaseState
+    ? tabletopBaseState.metrics.min.y + heightDeltaUnits
+    : null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -263,20 +291,72 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
       : {};
     Object.entries(scaleAxes).forEach(([dimensionKey, axis]) => {
       if (!AXIS_COMPONENTS.includes(axis)) return;
-      const factor = getScaleFactorForDimension(scaleMap, dimensionKey);
+      let factor = getScaleFactorForDimension(scaleMap, dimensionKey);
+      if (
+        partName.startsWith('leg-')
+        && (dimensionKey === 'height' || dimensionKey === 'support-height')
+        && baseState.metrics
+        && Number.isFinite(selectedUndersideY)
+      ) {
+        const baseSpan = baseState.metrics.max.y - baseState.metrics.min.y;
+        const desiredSpan = selectedUndersideY - baseState.metrics.min.y;
+        factor = (Number.isFinite(baseSpan) && baseSpan > 0 && Number.isFinite(desiredSpan))
+          ? desiredSpan / baseSpan
+          : factor;
+      }
       if (!Number.isFinite(factor) || factor <= 0) return;
       partRoot.scale[axis] = baseState.scale[axis] * factor;
     });
 
+    const currentMetricsAfterScale = getObjectMetrics(partRoot);
+    if (!currentMetricsAfterScale || !baseState.metrics) return;
+
     const positionAxes = behavior.positionAxes && typeof behavior.positionAxes === 'object'
       ? behavior.positionAxes
       : {};
+    const positionDeltas = {};
     Object.entries(positionAxes).forEach(([dimensionKey, axis]) => {
       if (!AXIS_COMPONENTS.includes(axis)) return;
       const factor = getScaleFactorForDimension(scaleMap, dimensionKey);
       if (!Number.isFinite(factor)) return;
-      partRoot.position[axis] = baseState.position[axis] * factor;
+      const desiredCenter = baseState.metrics.center[axis] * factor;
+      positionDeltas[axis] = desiredCenter - currentMetricsAfterScale.center[axis];
     });
+
+    AXIS_COMPONENTS.forEach((axis) => {
+      if (Number.isFinite(positionDeltas[axis])) {
+        partRoot.position[axis] += positionDeltas[axis];
+      }
+    });
+
+    const alignedMetrics = getObjectMetrics(partRoot);
+    if (!alignedMetrics || !baseState.metrics) return;
+
+    if (partName.startsWith('tabletop')) {
+      const centerXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
+      const centerZDelta = baseState.metrics.center.z - alignedMetrics.center.z;
+      const desiredUnderside = Number.isFinite(selectedUndersideY)
+        ? selectedUndersideY
+        : (baseState.metrics.min.y + heightDeltaUnits);
+      const undersideDelta = desiredUnderside - alignedMetrics.min.y;
+      partRoot.position.x += centerXDelta;
+      partRoot.position.y += undersideDelta;
+      partRoot.position.z += centerZDelta;
+      return;
+    }
+
+    if (partName.startsWith('leg-')) {
+      const centerXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
+      const floorDelta = baseState.metrics.min.y - alignedMetrics.min.y;
+      partRoot.position.x += centerXDelta;
+      partRoot.position.y += floorDelta;
+      return;
+    }
+
+    const fallbackCenterXDelta = baseState.metrics.center.x - alignedMetrics.center.x;
+    const fallbackCenterZDelta = baseState.metrics.center.z - alignedMetrics.center.z;
+    partRoot.position.x += fallbackCenterXDelta;
+    partRoot.position.z += fallbackCenterZDelta;
   });
 
   return scaleMap;
