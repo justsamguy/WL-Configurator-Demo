@@ -13,8 +13,8 @@
         "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
-        "surfaceInsetScale": [0.9985, 0.9995, 0.9985],
-        "surfaceInsetOffset": [0, -0.0005, 0],
+        "surfaceInsetScale": [0.9985, 0.9988, 0.9985],
+        "surfaceInsetOffset": [0, -0.001, 0],
         "designNote": "Intentional by design: the epoxy overlay is inset slightly so it stays inside the wood slab, avoids viewer z-fighting, and only shows through the open resin channels."
       }
     ],
