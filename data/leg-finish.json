@@ -44,10 +44,10 @@
     "description": "A dark earthen tone, close to black but less stark.",
     "productNumber": "B060244",
     "viewerMaterial": {
-      "baseColor": "#413127",
+      "baseColor": "#44382d",
       "metalness": 0.86,
-      "roughness": 0.72,
-      "envIntensity": 0.76,
+      "roughness": 0.84,
+      "envIntensity": 0.62,
       "textureSet": null
     },
     "calibrationNote": "Biased toward a near-black brown-bronze read so it stays only slightly lighter than the black finishes without drifting into bright brass.",
@@ -62,10 +62,10 @@
     "description": "A dulled gold finish for a sense of luxury.",
     "productNumber": "314560",
     "viewerMaterial": {
-      "baseColor": "#95724d",
+      "baseColor": "#a47d57",
       "metalness": 0.9,
-      "roughness": 0.52,
-      "envIntensity": 0.9,
+      "roughness": 0.6,
+      "envIntensity": 0.82,
       "textureSet": null
     },
     "calibrationNote": "Tuned lighter and more reflective than Oil Rubbed Bronze so the satin bronze option reads like a warmer premium metal finish.",
@@ -98,7 +98,7 @@
     "description": "A bright silver finish that resembles fine hardware.",
     "productNumber": "245220",
     "viewerMaterial": {
-      "baseColor": "#e8eaee",
+      "baseColor": "#c4c6ca",
       "metalness": 0.98,
       "roughness": 0.18,
       "envIntensity": 1.08,

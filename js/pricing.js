@@ -134,6 +134,7 @@ function calculateDimensionPrice(state, dimensionsData) {
 }
 
 const WATERFALL_EDGE_ADDONS = ['addon-waterfall-single', 'addon-waterfall-second'];
+const CENTER_LEG_LENGTH_THRESHOLD = 130;
 
 export function getWaterfallEdgeCount(appState) {
   const addons = appState && appState.selections && appState.selections.options
@@ -143,11 +144,15 @@ export function getWaterfallEdgeCount(appState) {
   return WATERFALL_EDGE_ADDONS.filter(id => addons.includes(id)).length;
 }
 
-export function getLegPriceMultiplier(appState) {
+export function requiresCenterLeg(appState) {
   const length = appState && appState.selections && appState.selections.dimensionsDetail
     ? appState.selections.dimensionsDetail.length
     : null;
-  const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
+  return typeof length === 'number' && length > CENTER_LEG_LENGTH_THRESHOLD;
+}
+
+export function getLegPriceMultiplier(appState) {
+  const lengthMultiplier = requiresCenterLeg(appState) ? 1.5 : 1;
   const waterfallCount = getWaterfallEdgeCount(appState);
   if (waterfallCount >= 2) return 0;
   if (waterfallCount === 1) return lengthMultiplier * 0.5;

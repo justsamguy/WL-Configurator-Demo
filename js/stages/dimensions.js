@@ -4,6 +4,7 @@
 
 import { state } from '../state.js';
 import { createLogger } from '../logger.js';
+import { requiresCenterLeg } from '../pricing.js';
 
 const log = createLogger('Dimensions');
 const OPTION_PLACEHOLDER_IMAGE = 'assets/images/model1_placeholder.png';
@@ -293,33 +294,50 @@ function updateValidationMessage(axis) {
 function updateOversizeBanners() {
   const bannersContainer = document.getElementById('dimensions-banners');
   if (!bannersContainer) return;
-  
+
   bannersContainer.innerHTML = '';
-  
-  if (currentDimensions.width === null) return;
-  const message = checkOversizeThreshold('width', currentDimensions.width);
-  if (!message) return;
 
-  const banner = document.createElement('div');
-  banner.className = 'summary-shipping-warning';
-  banner.setAttribute('aria-live', 'polite');
-  banner.setAttribute('aria-atomic', 'true');
+  const appendBanner = (titleText, subtitleText) => {
+    const banner = document.createElement('div');
+    banner.className = 'summary-shipping-warning';
+    banner.setAttribute('aria-live', 'polite');
+    banner.setAttribute('aria-atomic', 'true');
 
-  const textWrap = document.createElement('div');
-  textWrap.className = 'summary-shipping-warning-text';
+    const textWrap = document.createElement('div');
+    textWrap.className = 'summary-shipping-warning-text';
 
-  const title = document.createElement('span');
-  title.className = 'summary-shipping-warning-title';
-  title.textContent = 'Oversize width';
+    const title = document.createElement('span');
+    title.className = 'summary-shipping-warning-title';
+    title.textContent = titleText;
 
-  const subtitle = document.createElement('span');
-  subtitle.className = 'summary-shipping-warning-subtitle';
-  subtitle.textContent = message;
+    const subtitle = document.createElement('span');
+    subtitle.className = 'summary-shipping-warning-subtitle';
+    subtitle.textContent = subtitleText;
 
-  textWrap.appendChild(title);
-  textWrap.appendChild(subtitle);
-  banner.appendChild(textWrap);
-  bannersContainer.appendChild(banner);
+    textWrap.appendChild(title);
+    textWrap.appendChild(subtitle);
+    banner.appendChild(textWrap);
+    bannersContainer.appendChild(banner);
+  };
+
+  if (currentDimensions.width !== null) {
+    const oversizeWidthMessage = checkOversizeThreshold('width', currentDimensions.width);
+    if (oversizeWidthMessage) appendBanner('Oversize width', oversizeWidthMessage);
+  }
+
+  const dimensionsState = {
+    selections: {
+      dimensionsDetail: {
+        length: currentDimensions.length,
+        width: currentDimensions.width,
+        height: currentDimensions.height,
+        heightCustom: currentDimensions.heightCustom
+      }
+    }
+  };
+  if (requiresCenterLeg(dimensionsState)) {
+    appendBanner('Center leg required', 'Tables over 130" long require a center leg.');
+  }
 }
 
 // Show/hide custom dimension controls based on selection

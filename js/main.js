@@ -6,7 +6,7 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
+import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
 import { createLogger } from './logger.js';
@@ -682,6 +682,26 @@ function formatLegPriceLabel(value) {
   return `+$${safeNumber.toLocaleString()}`;
 }
 
+function normalizeLegSelection(modelId, designId, options = {}, allLegs = window._allLegsData) {
+  const nextOptions = { ...options };
+  if (!Array.isArray(allLegs) || !allLegs.length || !modelId) return nextOptions;
+
+  const visibleLegIds = new Set(
+    getVisibleLegs(modelId, allLegs, designId)
+      .map((leg) => leg && leg.id)
+      .filter(Boolean)
+  );
+  const currentLegId = nextOptions.legs || null;
+
+  if (currentLegId && visibleLegIds.has(currentLegId)) return nextOptions;
+  if (visibleLegIds.has(DEFAULT_LEG_ID)) {
+    nextOptions.legs = DEFAULT_LEG_ID;
+    return nextOptions;
+  }
+  nextOptions.legs = undefined;
+  return nextOptions;
+}
+
 function applyLegPriceMultiplier(legs, multiplier) {
   if (!Array.isArray(legs)) return [];
   if (multiplier === 1) return legs;
@@ -697,13 +717,9 @@ function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
   const multiplier = getLegPriceMultiplier(appState);
   const banner = document.getElementById('legs-price-banner');
   if (banner) {
-    const length = appState && appState.selections && appState.selections.dimensionsDetail
-      ? appState.selections.dimensionsDetail.length
-      : null;
-    const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
     const waterfallCount = getWaterfallEdgeCount(appState);
     const messages = [];
-    if (lengthMultiplier > 1) {
+    if (requiresCenterLeg(appState)) {
       messages.push('Leg prices updated automatically because we require 3 legs on tables over 130" long.');
     }
     if (waterfallCount === 1) {
@@ -833,6 +849,7 @@ const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
 const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
 const LOWER_SHELF_DISABLED_TOOLTIP = 'Select Squared legs to enable';
+const DEFAULT_LEG_ID = 'leg-sample-04';
 const EDGE_CORNER_ADDONS = [
   'addon-live-edge',
   'addon-waterfall-single',
@@ -1007,6 +1024,11 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   const legsRoot = document.getElementById('legs-options');
   if (legsRoot) {
     renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
+    const selectedLegId = state.selections && state.selections.options && state.selections.options.legs;
+    if (selectedLegId) {
+      const selectedLegCard = legsRoot.querySelector(`.option-card[data-id="${selectedLegId}"]`);
+      if (selectedLegCard) selectedLegCard.setAttribute('aria-pressed', 'true');
+    }
   }
 
   // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
@@ -1016,6 +1038,11 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   const tubeSizesRoot = document.getElementById('tube-size-options');
   if (tubeSizesRoot) {
     renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size', showPrice: false });
+    const selectedTubeId = state.selections && state.selections.options && state.selections.options['tube-size'];
+    if (selectedTubeId) {
+      const selectedTubeCard = tubeSizesRoot.querySelector(`.option-card[data-id="${selectedTubeId}"]`);
+      if (selectedTubeCard) selectedTubeCard.setAttribute('aria-pressed', 'true');
+    }
   }
 
   // Recompute tube size constraints based on current leg selection
@@ -1044,12 +1071,14 @@ document.addEventListener('option-selected', async (ev) => {
   if (category === 'model') {
     const stageManager = window.stageManager || null;
     const originStage = stageManager && stageManager.getCurrentStage ? stageManager.getCurrentStage() : null;
+    const allLegs = window._allLegsData || [];
+    const nextOptions = normalizeLegSelection(id, null, {}, allLegs);
     // When model changes, clear ALL selections (design and all options)
     setState({ 
       selections: { 
         model: id, 
         design: null, 
-        options: {},
+        options: nextOptions,
         dimensionsDetail: null
       }, 
       pricing: { base: 0, extras: 0, total: 0 } 
@@ -1068,7 +1097,6 @@ document.addEventListener('option-selected', async (ev) => {
 
     // Update legs and tube size options based on the selected model
     try {
-      const allLegs = window._allLegsData || [];
       const allTubeSizes = window._allTubeSizesData || [];
       if (allLegs.length > 0 && allTubeSizes.length > 0) {
         updateLegsOptionsForModel(id, allLegs, allTubeSizes);
@@ -1132,7 +1160,15 @@ document.addEventListener('option-selected', async (ev) => {
     const currentAddons = Array.from(nextAddonsSet);
     // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
 
-    const nextOptions = { ...state.selections.options, addon: currentAddons };
+    const nextOptions = normalizeLegSelection(
+      state.selections.model,
+      id,
+      { ...state.selections.options, addon: currentAddons },
+      window._allLegsData || []
+    );
+    if (state.selections.model !== LOWER_SHELF_COMPATIBLE_MODEL_ID || nextOptions.legs !== LOWER_SHELF_COMPATIBLE_LEG_ID) {
+      nextOptions.addon = currentAddons.filter((addonId) => addonId !== LOWER_SHELF_ADDON_ID);
+    }
     if (id === 'des-signature') {
       nextOptions['tube-size'] = undefined;
     }
@@ -1644,6 +1680,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 611');
+console.log('Edit ver: 612');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

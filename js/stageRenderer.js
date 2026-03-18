@@ -600,7 +600,7 @@ export function renderSheenSlider(container, data = []) {
   if (!Array.isArray(data) || data.length === 0) return;
 
   const tilesContainer = document.createElement('div');
-  tilesContainer.className = 'sheen-tiles-container';
+  tilesContainer.className = 'sheen-tiles-container stage-options-grid';
   tilesContainer.setAttribute('aria-live', 'polite');
   tilesContainer.setAttribute('aria-atomic', 'true');
 
@@ -622,17 +622,14 @@ export function renderSheenSlider(container, data = []) {
       tile.appendChild(img);
     }
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-price-row';
     const t = document.createElement('div');
     t.className = 'title';
     t.textContent = item.title || item.id;
     const p = document.createElement('div');
     p.className = 'price-delta';
     p.textContent = formatPriceLabel(item.price);
-    titleRow.appendChild(t);
-    titleRow.appendChild(p);
-    tile.appendChild(titleRow);
+    tile.appendChild(t);
+    tile.appendChild(p);
 
     if (item.description) {
       const d = document.createElement('div');
