@@ -516,12 +516,15 @@ function getExclusiveDesignModelId(design) {
 }
 
 function sortDesignsForModel(designs, modelId) {
-  return [...designs].sort((a, b) => {
-    const aExclusiveRank = getExclusiveDesignModelId(a) === modelId ? 0 : 1;
-    const bExclusiveRank = getExclusiveDesignModelId(b) === modelId ? 0 : 1;
-    if (aExclusiveRank !== bExclusiveRank) return aExclusiveRank - bExclusiveRank;
-    return String(a && a.title ? a.title : '').localeCompare(String(b && b.title ? b.title : ''));
-  });
+  return designs
+    .map((design, index) => ({ design, index }))
+    .sort((a, b) => {
+      const aExclusiveRank = getExclusiveDesignModelId(a.design) === modelId ? 0 : 1;
+      const bExclusiveRank = getExclusiveDesignModelId(b.design) === modelId ? 0 : 1;
+      if (aExclusiveRank !== bExclusiveRank) return aExclusiveRank - bExclusiveRank;
+      return a.index - b.index;
+    })
+    .map(({ design }) => design);
 }
 
 async function renderDesignOptionsForModel(modelId = (state.selections && state.selections.model)) {

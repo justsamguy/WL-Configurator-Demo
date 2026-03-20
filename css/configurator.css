@@ -4033,11 +4033,14 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .designs-stage-heading {
   margin: 0;
+}
+
+.designs-stage-heading-text {
+  display: inline-block;
   font-size: clamp(1.2rem, 1rem + 0.8vw, 1.55rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: rgb(var(--designs-text-rgb));
-  text-align: left;
 }
 
 .designs-stage-toggle {
@@ -4053,6 +4056,7 @@ body.stage-1 #stage-panel-1 > .flex {
   justify-content: space-between;
   gap: 1rem;
   text-align: left;
+  color: rgb(var(--designs-text-rgb));
   cursor: pointer;
   transition: transform 0.24s ease, box-shadow 0.24s ease, background-color 0.24s ease, color 0.24s ease;
   box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.45);
@@ -4331,7 +4335,8 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .descriptio
 }
 
 .stage-subsection-dropdown.has-validation-error .stage-subsection-title,
-.designs-stage-group.has-validation-error .designs-stage-heading,
+.designs-stage-group.has-validation-error .designs-stage-heading-text,
+.designs-stage-group.has-validation-error .designs-stage-toggle,
 .presets-row.has-validation-error h4,
 #models-stage-section.has-validation-error .title,
 .axis-control-row.has-validation-error .control-label label,
@@ -5529,7 +5534,8 @@ body[data-resolved-theme="dark"] .stage-subsection-dropdown.has-validation-error
 }
 
 body[data-resolved-theme="dark"] .stage-subsection-dropdown.has-validation-error .stage-subsection-title,
-body[data-resolved-theme="dark"] .designs-stage-group.has-validation-error .designs-stage-heading,
+body[data-resolved-theme="dark"] .designs-stage-group.has-validation-error .designs-stage-heading-text,
+body[data-resolved-theme="dark"] .designs-stage-group.has-validation-error .designs-stage-toggle,
 body[data-resolved-theme="dark"] .presets-row.has-validation-error h4,
 body[data-resolved-theme="dark"] #models-stage-section.has-validation-error .title,
 body[data-resolved-theme="dark"] .axis-control-row.has-validation-error .control-label label,
