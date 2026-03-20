@@ -7,15 +7,19 @@ import { loadData } from './dataLoader.js';
 import { getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
+import { getLegEndSetbackValue, getLegWidthForTable } from './legGeometry.js';
 
 const log = createLogger('Viewer');
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const LEG_FINISH_DATA_PATH = 'data/leg-finish.json';
+const COLOR_DATA_PATH = 'data/colors.json';
+const FINISH_DATA_PATH = 'data/finish.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
+const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
 const AXIS_COMPONENTS = ['x', 'y', 'z'];
 const LEG_NONE_ID = 'leg-none';
 const LEG_CUSTOM_ID = 'leg-sample-07';
@@ -23,12 +27,26 @@ const LEG_SIGNATURE_ID = 'leg-signature';
 const LEG_CUBE_ID = 'leg-sample-02';
 const LEG_TRIPOD_ID = 'leg-sample-08';
 const LEG_PAIR_COUNT_THRESHOLD = 130;
-const COFFEE_PAIR_END_SETBACK_IN = 6;
-const DEFAULT_PAIR_END_SETBACK_IN = 13;
-const LONG_PAIR_END_SETBACK_IN = 19;
 const TRIPOD_EDGE_SETBACK_IN = 13;
 const CUBE_EDGE_SETBACK_IN = 0.25;
 const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
+const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
+const GLASS_TOP_ADDON_ID = 'addon-glass-top';
+const GLASS_TOP_PART_NAME = 'tabletop-glass';
+const GLASS_TOP_THICKNESS_IN = 0.25;
+const GLASS_TOP_AXIS_REDUCTION_IN = 0.125;
+const GLASS_TOP_SURFACE_GAP = 0.0007;
+const GLASS_TOP_MATERIAL_THICKNESS = GLASS_TOP_THICKNESS_IN * 0.0254;
+const RESIN_VIEWER_TINTS = Object.freeze({
+  'color-01': '#1a1a1c',
+  'color-02': '#5f87c4',
+  'color-03': '#8c939e',
+  'color-04': '#9b6945',
+  'color-05': '#67836a',
+  'color-06': '#4a4c53',
+  'color-07': '#161618',
+  'color-08': '#101011'
+});
 
 let renderer = null;
 let scene = null;
@@ -52,6 +70,8 @@ let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
 let tabletopTexturePromise = null;
 let legFinishDataPromise = null;
+let colorDataPromise = null;
+let finishDataPromise = null;
 
 const dom = {
   surface: null,
@@ -67,6 +87,8 @@ const dom = {
 let lastObservedModelId = null;
 let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
+let lastObservedFinishSheenId = null;
+let lastObservedColorId = null;
 let lastObservedLegFinishId = null;
 let lastObservedDimensionsSignature = '';
 let lastObservedLegId = null;
@@ -85,6 +107,11 @@ function getSelectedOption(optionId) {
     ? selections.options
     : {};
   return options[optionId] || null;
+}
+
+function getSelectedAddons() {
+  const addons = getSelectedOption('addon');
+  return Array.isArray(addons) ? addons : [];
 }
 
 function getCurrentViewerSelectionContext(modelId) {
@@ -114,20 +141,6 @@ function isLegPreviewSuppressed(selectionContext = {}) {
 function getLegCount(length) {
   if (!Number.isFinite(length)) return 2;
   return length > LEG_PAIR_COUNT_THRESHOLD ? 3 : 2;
-}
-
-function getLegWidthForTable(width) {
-  if (!Number.isFinite(width)) return null;
-  if (width <= 36) return 26;
-  if (width <= 42) return 28;
-  if (width <= 48) return 32;
-  return Math.max(0, width - 10);
-}
-
-function getPairLegEndSetbackInches(modelId, length) {
-  if (modelId === 'mdl-coffee') return COFFEE_PAIR_END_SETBACK_IN;
-  if (Number.isFinite(length) && length >= 120) return LONG_PAIR_END_SETBACK_IN;
-  return DEFAULT_PAIR_END_SETBACK_IN;
 }
 
 function parseTubeProfile(tubeId) {
@@ -416,6 +429,13 @@ function getObjectMetrics(root) {
   };
 }
 
+function hasGlassTopAddon() {
+  const addons = state && state.selections && state.selections.options
+    ? state.selections.options.addon
+    : null;
+  return Array.isArray(addons) && addons.includes(GLASS_TOP_ADDON_ID);
+}
+
 function captureRenderRootBaseState(renderRoot) {
   if (!renderRoot) return;
 
@@ -483,7 +503,7 @@ function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId 
   return {
     spanX: getLegWidthForTable(width),
     spanZ: null,
-    endSetback: getPairLegEndSetbackInches(selectedDimensions.modelId, length)
+    endSetback: getLegEndSetbackValue({ modelId: selectedDimensions.modelId, length, hasLegs: true })
   };
 }
 
@@ -539,6 +559,51 @@ function computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, select
   partRoot.position.z += centerZ - metrics.center.z;
 }
 
+function computeGlassTopTransform(renderRoot, unitsPerInch) {
+  if (!renderRoot) return;
+
+  const glassRoot = renderRoot.getObjectByName(GLASS_TOP_PART_NAME);
+  if (!glassRoot) return;
+
+  if (!hasGlassTopAddon()) {
+    glassRoot.visible = false;
+    return;
+  }
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const tabletopMetrics = getObjectMetrics(tabletopRoot);
+  if (!tabletopRoot || !tabletopMetrics) {
+    glassRoot.visible = false;
+    return;
+  }
+
+  const glassMesh = glassRoot.getObjectByName(`${GLASS_TOP_PART_NAME}-mesh`);
+  if (!glassMesh) {
+    glassRoot.visible = false;
+    return;
+  }
+
+  const tabletopWidth = getPartSpan(tabletopMetrics, 'x');
+  const tabletopLength = getPartSpan(tabletopMetrics, 'z');
+  const shrinkAmount = GLASS_TOP_AXIS_REDUCTION_IN * unitsPerInch;
+  const thickness = GLASS_TOP_THICKNESS_IN * unitsPerInch;
+
+  const glassWidth = Number.isFinite(tabletopWidth) ? Math.max(tabletopWidth - shrinkAmount, thickness * 3) : null;
+  const glassLength = Number.isFinite(tabletopLength) ? Math.max(tabletopLength - shrinkAmount, thickness * 3) : null;
+  if (!Number.isFinite(glassWidth) || !Number.isFinite(glassLength) || !Number.isFinite(thickness)) {
+    glassRoot.visible = false;
+    return;
+  }
+
+  glassRoot.visible = true;
+  glassRoot.scale.set(glassWidth, thickness, glassLength);
+  glassRoot.position.set(
+    tabletopMetrics.center.x,
+    tabletopMetrics.max.y + (thickness / 2) + GLASS_TOP_SURFACE_GAP,
+    tabletopMetrics.center.z
+  );
+}
+
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
@@ -588,6 +653,8 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     partRoot.position.z += baseState.metrics.center.z - metrics.center.z;
   });
 
+  computeGlassTopTransform(renderRoot, unitsPerInch);
+
   return scaleMap;
 }
 
@@ -613,7 +680,27 @@ function getVectorTriplet(value, fallback = 0) {
   return [fallback, fallback, fallback];
 }
 
+function resolvePartAssetPath(partConfig = {}) {
+  const defaultAssetPath = typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '';
+  const addonAssetPaths = partConfig.addonAssetPaths && typeof partConfig.addonAssetPaths === 'object'
+    ? partConfig.addonAssetPaths
+    : null;
+  if (!addonAssetPaths) return defaultAssetPath;
+
+  const selectedAddons = getSelectedAddons();
+  const selectedAddonOverride = selectedAddons.find((addonId) => (
+    typeof addonId === 'string'
+    && typeof addonAssetPaths[addonId] === 'string'
+    && addonAssetPaths[addonId].trim()
+  ));
+
+  return selectedAddonOverride
+    ? addonAssetPaths[selectedAddonOverride].trim()
+    : defaultAssetPath;
+}
+
 function normalizeRenderablePart(partConfig = {}, index = 0) {
+  const assetPath = resolvePartAssetPath(partConfig);
   return {
     name: typeof partConfig.name === 'string' && partConfig.name.trim()
       ? partConfig.name.trim()
@@ -633,7 +720,7 @@ function normalizeRenderablePart(partConfig = {}, index = 0) {
     tubeFallbackScale: Number.isFinite(Number(partConfig.tubeFallbackScale))
       ? Number(partConfig.tubeFallbackScale)
       : 1,
-    assetPath: typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '',
+    assetPath,
     scale: Array.isArray(partConfig.scale) && partConfig.scale.length === 3
       ? partConfig.scale.map((entry) => Number(entry) || 1)
       : (Number.isFinite(Number(partConfig.scale)) ? Number(partConfig.scale) || 1 : 1),
@@ -649,6 +736,42 @@ function normalizeRenderablePart(partConfig = {}, index = 0) {
   };
 }
 
+function createGlassTopPart() {
+  const glassRoot = new THREE.Group();
+  glassRoot.name = GLASS_TOP_PART_NAME;
+  glassRoot.userData.partConfig = {
+    role: 'glass'
+  };
+
+  const glassGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xf3fbff,
+    metalness: 0,
+    roughness: 0.04,
+    transmission: 0.96,
+    thickness: GLASS_TOP_MATERIAL_THICKNESS,
+    ior: 1.52,
+    transparent: true,
+    opacity: 1,
+    envMapIntensity: 1.2,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    attenuationDistance: 0.4,
+    attenuationColor: new THREE.Color('#d9ecff'),
+    side: THREE.DoubleSide
+  });
+  glassMaterial.depthWrite = false;
+
+  const glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
+  glassMesh.name = `${GLASS_TOP_PART_NAME}-mesh`;
+  glassMesh.castShadow = false;
+  glassMesh.receiveShadow = false;
+  glassMesh.renderOrder = 12;
+  glassRoot.add(glassMesh);
+  glassRoot.visible = false;
+  return glassRoot;
+}
+
 function applySurfaceInsetTransform(assetRoot, partConfig = {}) {
   if (!assetRoot || !partConfig.surfaceInsetScale) return;
 
@@ -662,7 +785,7 @@ function getRenderableParts(config = {}) {
     : [config];
 
   return candidateParts
-    .filter((partConfig) => partConfig && typeof partConfig.assetPath === 'string' && partConfig.assetPath.trim())
+    .filter((partConfig) => partConfig && resolvePartAssetPath(partConfig))
     .map((partConfig, index) => normalizeRenderablePart(partConfig, index));
 }
 
@@ -707,6 +830,47 @@ async function loadLegFinishDefinitions() {
   return legFinishDataPromise;
 }
 
+async function loadColorDefinitions() {
+  if (!colorDataPromise) {
+    colorDataPromise = loadData(COLOR_DATA_PATH).then((entries) => {
+      if (!Array.isArray(entries)) throw new Error('Color catalog must be an array.');
+      return entries;
+    }).catch((error) => {
+      colorDataPromise = null;
+      throw error;
+    });
+  }
+
+  return colorDataPromise;
+}
+
+async function loadFinishDefinitions() {
+  if (!finishDataPromise) {
+    finishDataPromise = loadData(FINISH_DATA_PATH).then((entries) => {
+      if (!entries || typeof entries !== 'object') throw new Error('Finish catalog must be an object.');
+      return entries;
+    }).catch((error) => {
+      finishDataPromise = null;
+      throw error;
+    });
+  }
+
+  return finishDataPromise;
+}
+
+async function loadResinPreviewTexture(texturePath) {
+  const textureLoader = new THREE.TextureLoader();
+  const texture = await textureLoader.loadAsync(texturePath);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.flipY = false;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  if (renderer && renderer.capabilities) {
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  }
+  return texture;
+}
+
 function cloneMaterialWithTexture(material, texture) {
   if (!material || typeof material.clone !== 'function') return material;
   const clonedMaterial = material.clone();
@@ -718,6 +882,49 @@ function cloneMaterialWithTexture(material, texture) {
   return clonedMaterial;
 }
 
+function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RESIN_VIEWER_TINT) {
+  const sourceMaterial = material && typeof material === 'object' ? material : null;
+  const previewMaterial = sourceMaterial && sourceMaterial.isMeshPhysicalMaterial
+    ? sourceMaterial.clone()
+    : new THREE.MeshPhysicalMaterial();
+
+  if (sourceMaterial) {
+    if ('side' in sourceMaterial) previewMaterial.side = sourceMaterial.side;
+    if ('alphaMap' in sourceMaterial) previewMaterial.alphaMap = sourceMaterial.alphaMap || null;
+    if ('normalMap' in sourceMaterial) previewMaterial.normalMap = sourceMaterial.normalMap || null;
+    if ('normalScale' in sourceMaterial && sourceMaterial.normalScale) {
+      previewMaterial.normalScale = typeof sourceMaterial.normalScale.clone === 'function'
+        ? sourceMaterial.normalScale.clone()
+        : sourceMaterial.normalScale;
+    }
+    if ('aoMap' in sourceMaterial) previewMaterial.aoMap = sourceMaterial.aoMap || null;
+    if ('aoMapIntensity' in sourceMaterial && Number.isFinite(Number(sourceMaterial.aoMapIntensity))) {
+      previewMaterial.aoMapIntensity = Number(sourceMaterial.aoMapIntensity);
+    }
+  }
+
+  if (previewMaterial.color && typeof previewMaterial.color.setHex === 'function') {
+    previewMaterial.color.setHex(0xffffff);
+  }
+  previewMaterial.map = texture;
+  previewMaterial.transparent = true;
+  previewMaterial.opacity = sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
+    ? Number(sourceMaterial.opacity)
+    : 0.98;
+  if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
+  if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
+  if ('transmission' in previewMaterial) previewMaterial.transmission = 0.78;
+  if ('thickness' in previewMaterial) previewMaterial.thickness = 1.1;
+  if ('ior' in previewMaterial) previewMaterial.ior = 1.46;
+  if ('envMapIntensity' in previewMaterial) previewMaterial.envMapIntensity = 1.08;
+  if ('clearcoat' in previewMaterial) previewMaterial.clearcoat = 0.24;
+  if ('clearcoatRoughness' in previewMaterial) previewMaterial.clearcoatRoughness = 0.18;
+  if ('attenuationDistance' in previewMaterial) previewMaterial.attenuationDistance = 0.82;
+  if ('attenuationColor' in previewMaterial) previewMaterial.attenuationColor = new THREE.Color(resinTint);
+  previewMaterial.needsUpdate = true;
+  return previewMaterial;
+}
+
 function cloneMaterialWithFinish(material, finishMaterial = {}) {
   if (!material || typeof material.clone !== 'function') return material;
 
@@ -726,7 +933,9 @@ function cloneMaterialWithFinish(material, finishMaterial = {}) {
     baseColor,
     metalness,
     roughness,
-    envIntensity
+    envIntensity,
+    clearcoat,
+    clearcoatRoughness
   } = finishMaterial;
 
   if (
@@ -746,9 +955,56 @@ function cloneMaterialWithFinish(material, finishMaterial = {}) {
   if (Number.isFinite(Number(envIntensity)) && 'envMapIntensity' in clonedMaterial) {
     clonedMaterial.envMapIntensity = Number(envIntensity);
   }
+  if (Number.isFinite(Number(clearcoat)) && 'clearcoat' in clonedMaterial) {
+    clonedMaterial.clearcoat = Number(clearcoat);
+  }
+  if (Number.isFinite(Number(clearcoatRoughness)) && 'clearcoatRoughness' in clonedMaterial) {
+    clonedMaterial.clearcoatRoughness = Number(clearcoatRoughness);
+  }
 
   clonedMaterial.needsUpdate = true;
   return clonedMaterial;
+}
+
+async function applySelectedTabletopSheen(renderRoot) {
+  if (!renderRoot) return;
+
+  const selectedSheenId = state && state.selections && state.selections.options
+    ? state.selections.options['finish-sheen'] || null
+    : null;
+  if (!selectedSheenId) return;
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  if (!tabletopRoot) return;
+
+  try {
+    const finishDefinitions = await loadFinishDefinitions();
+    const sheens = Array.isArray(finishDefinitions && finishDefinitions.sheens)
+      ? finishDefinitions.sheens
+      : [];
+    const selectedSheen = sheens.find((entry) => entry && entry.id === selectedSheenId);
+    const finishMaterial = selectedSheen && selectedSheen.viewerMaterial;
+    if (!finishMaterial || typeof finishMaterial !== 'object') return;
+
+    tabletopRoot.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map((material) => cloneMaterialWithFinish(material, finishMaterial));
+      } else {
+        child.material = cloneMaterialWithFinish(child.material, finishMaterial);
+      }
+    });
+
+    log.info('Applied tabletop sheen material override', {
+      sheenId: selectedSheenId,
+      finishMaterial
+    });
+  } catch (error) {
+    log.warn('Failed to apply tabletop sheen material override', {
+      sheenId: selectedSheenId,
+      error
+    });
+  }
 }
 
 async function applySelectedTabletopMaterial(renderRoot) {
@@ -780,6 +1036,50 @@ async function applySelectedTabletopMaterial(renderRoot) {
     log.warn('Failed to apply spalted maple tabletop texture', {
       materialId: selectedMaterialId,
       texturePath: SPALTED_MAPLE_TEXTURE_PATH,
+      error
+    });
+  }
+}
+
+async function applySelectedResinPreview(renderRoot) {
+  if (!renderRoot) return;
+
+  const selectedColorId = state && state.selections && state.selections.options
+    ? state.selections.options.color || null
+    : null;
+  if (!selectedColorId) return;
+
+  const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
+  if (!epoxyRoot) return;
+
+  try {
+    const colorDefinitions = await loadColorDefinitions();
+    const selectedColor = colorDefinitions.find((entry) => entry && entry.id === selectedColorId);
+    const texturePath = selectedColor && typeof selectedColor.image === 'string'
+      ? selectedColor.image.trim()
+      : '';
+    if (!texturePath) return;
+
+    const texture = await loadResinPreviewTexture(texturePath);
+    const resinTint = RESIN_VIEWER_TINTS[selectedColorId] || DEFAULT_RESIN_VIEWER_TINT;
+
+    epoxyRoot.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map((material) => cloneMaterialForResinPreview(material, texture, resinTint));
+      } else {
+        child.material = cloneMaterialForResinPreview(child.material, texture, resinTint);
+      }
+    });
+
+    log.info('Applied resin preview test material override', {
+      colorId: selectedColorId,
+      texturePath,
+      epoxyPartName: EPOXY_PREVIEW_PART_NAME
+    });
+  } catch (error) {
+    log.warn('Failed to apply resin preview test material override', {
+      colorId: selectedColorId,
       error
     });
   }
@@ -1113,7 +1413,10 @@ async function buildRenderRoot(config) {
 
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
+  renderRoot.add(createGlassTopPart());
   await applySelectedTabletopMaterial(renderRoot);
+  await applySelectedTabletopSheen(renderRoot);
+  await applySelectedResinPreview(renderRoot);
   await applySelectedLegFinish(renderRoot);
   captureRenderRootBaseState(renderRoot);
   applyConfiguredPartTransforms(renderRoot, config);
@@ -1468,6 +1771,12 @@ document.addEventListener('statechange', () => {
   const nextMaterialId = state && state.selections && state.selections.options
     ? state.selections.options.material || null
     : null;
+  const nextFinishSheenId = state && state.selections && state.selections.options
+    ? state.selections.options['finish-sheen'] || null
+    : null;
+  const nextColorId = state && state.selections && state.selections.options
+    ? state.selections.options.color || null
+    : null;
   const nextLegId = state && state.selections && state.selections.options
     ? state.selections.options.legs || null
     : null;
@@ -1488,6 +1797,8 @@ document.addEventListener('statechange', () => {
   const modelChanged = nextModelId !== lastObservedModelId;
   const designChanged = nextDesignId !== lastObservedDesignId;
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
+  const finishSheenChanged = nextFinishSheenId !== lastObservedFinishSheenId;
+  const colorChanged = nextColorId !== lastObservedColorId;
   const legChanged = nextLegId !== lastObservedLegId;
   const tubeChanged = nextTubeId !== lastObservedTubeId;
   const legFinishChanged = nextLegFinishId !== lastObservedLegFinishId;
@@ -1510,6 +1821,18 @@ document.addEventListener('statechange', () => {
     log.info('Viewer observed material selection change', {
       previousMaterialId: lastObservedMaterialId,
       nextMaterialId
+    });
+  }
+  if (finishSheenChanged) {
+    log.info('Viewer observed finish sheen selection change', {
+      previousFinishSheenId: lastObservedFinishSheenId,
+      nextFinishSheenId
+    });
+  }
+  if (colorChanged) {
+    log.info('Viewer observed resin color selection change', {
+      previousColorId: lastObservedColorId,
+      nextColorId
     });
   }
   if (legChanged) {
@@ -1546,6 +1869,8 @@ document.addEventListener('statechange', () => {
   lastObservedModelId = nextModelId;
   lastObservedDesignId = nextDesignId;
   lastObservedMaterialId = nextMaterialId;
+  lastObservedFinishSheenId = nextFinishSheenId;
+  lastObservedColorId = nextColorId;
   lastObservedLegId = nextLegId;
   lastObservedTubeId = nextTubeId;
   lastObservedLegFinishId = nextLegFinishId;
@@ -1557,7 +1882,7 @@ document.addEventListener('statechange', () => {
     return;
   }
 
-  if ((materialChanged || legFinishChanged) && nextModelId) {
+  if ((materialChanged || finishSheenChanged || colorChanged || legFinishChanged) && nextModelId) {
     void updateModel(nextModelId, { force: true });
     return;
   }

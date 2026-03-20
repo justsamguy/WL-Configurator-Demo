@@ -4,9 +4,51 @@
     { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "A plant-based oil finish with a wide range of stain customization. Recommended for food-safe, sensitive, or user-maintenance applications.", "image": "assets/images/model1_placeholder.png" }
   ],
   "sheens": [
-    { "id": "fin-sheen-01", "title": "Matte", "price": 50, "description": "Low reflection finish best for high-glare spaces.", "image": "assets/images/Matte.webp", "alt": "Matte finish" },
-    { "id": "fin-sheen-02", "title": "Satin", "price": 0, "description": "Standard level for furniture. Maintains a \"natural\" look.", "image": "assets/images/Satin.webp", "alt": "Satin finish" },
-    { "id": "fin-sheen-03", "title": "Gloss", "price": 50, "description": "Highest finish clarity, but highest light reflection and scratch visibility.", "image": "assets/images/Gloss.webp", "alt": "Gloss finish" }
+    {
+      "id": "fin-sheen-01",
+      "title": "Matte",
+      "price": 50,
+      "description": "Low reflection finish best for high-glare spaces.",
+      "image": "assets/images/Matte.webp",
+      "alt": "Matte finish",
+      "viewerMaterial": {
+        "roughness": 0.72,
+        "metalness": 0.02,
+        "envIntensity": 0.62,
+        "clearcoat": 0.1,
+        "clearcoatRoughness": 0.62
+      }
+    },
+    {
+      "id": "fin-sheen-02",
+      "title": "Satin",
+      "price": 0,
+      "description": "Standard level for furniture. Maintains a \"natural\" look.",
+      "image": "assets/images/Satin.webp",
+      "alt": "Satin finish",
+      "viewerMaterial": {
+        "roughness": 0.44,
+        "metalness": 0.02,
+        "envIntensity": 0.82,
+        "clearcoat": 0.34,
+        "clearcoatRoughness": 0.34
+      }
+    },
+    {
+      "id": "fin-sheen-03",
+      "title": "Gloss",
+      "price": 50,
+      "description": "Highest finish clarity, but highest light reflection and scratch visibility.",
+      "image": "assets/images/Gloss.webp",
+      "alt": "Gloss finish",
+      "viewerMaterial": {
+        "roughness": 0.2,
+        "metalness": 0.03,
+        "envIntensity": 1.08,
+        "clearcoat": 0.72,
+        "clearcoatRoughness": 0.12
+      }
+    }
   ],
   "tints": [
     { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish", "image": "assets/images/model1_placeholder.png" },

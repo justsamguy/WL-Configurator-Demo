@@ -26,16 +26,40 @@
        model ID (e.g., "mdl-coffee", "mdl-dining", "mdl-conference"), it will be shown for that model.
        To add a new design: add it to data/designs.json with appropriate pricing for each compatible model. -->
   <div id="designs-stage-section">
-    <div class="designs-stage-group">
-      <h3 class="designs-stage-heading">Customize a design</h3>
-      <div id="design-presets-options" class="stage-options-grid">
-        <!-- Preset design cards will be dynamically rendered here based on selected model -->
+    <div class="designs-stage-group designs-stage-group-presets is-open" data-group-type="presets">
+      <button class="designs-stage-toggle" type="button" aria-expanded="true" aria-controls="design-presets-panel">
+        <span class="designs-stage-heading">Customize a design</span>
+        <span class="designs-stage-toggle-trailing" aria-hidden="true">
+          <span class="designs-stage-toggle-caption">Presets</span>
+          <svg class="designs-stage-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path>
+          </svg>
+        </span>
+      </button>
+      <div id="design-presets-panel" class="designs-stage-panel" aria-hidden="false">
+        <div class="designs-stage-panel-inner">
+          <div id="design-presets-options" class="stage-options-grid">
+            <!-- Preset design cards will be dynamically rendered here based on selected model -->
+          </div>
+        </div>
       </div>
     </div>
-    <div class="designs-stage-group">
-      <h3 class="designs-stage-heading">Build from a layout</h3>
-      <div id="design-layout-options" class="stage-options-grid">
-        <!-- Layout design cards will be dynamically rendered here based on selected model -->
+    <div class="designs-stage-group designs-stage-group-layouts" data-group-type="layouts">
+      <button class="designs-stage-toggle" type="button" aria-expanded="false" aria-controls="design-layout-panel">
+        <span class="designs-stage-heading">Build from a layout</span>
+        <span class="designs-stage-toggle-trailing" aria-hidden="true">
+          <span class="designs-stage-toggle-caption">Layouts</span>
+          <svg class="designs-stage-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path>
+          </svg>
+        </span>
+      </button>
+      <div id="design-layout-panel" class="designs-stage-panel" aria-hidden="true">
+        <div class="designs-stage-panel-inner">
+          <div id="design-layout-options" class="stage-options-grid">
+            <!-- Layout design cards will be dynamically rendered here based on selected model -->
+          </div>
+        </div>
       </div>
     </div>
   </div>

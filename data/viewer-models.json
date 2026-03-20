@@ -5,6 +5,9 @@
         "name": "tabletop",
         "role": "tabletop",
         "assetPath": "assets/models/Walnut%20tabletop.glb",
+        "addonAssetPaths": {
+          "addon-live-edge": "assets/models/live-edge-walnut-river-tabletop.glb"
+        },
         "positionOffset": [0, 0.707625, 0]
       },
       {

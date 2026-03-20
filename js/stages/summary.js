@@ -4,6 +4,13 @@ import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
 import { showConfirmDialog } from '../ui/confirmDialog.js';
 import { buildExportMarkdown } from '../export.js';
 import { createLogger } from '../logger.js';
+import {
+  getLegWidthForTable,
+  getLegEndSetbackLabel,
+  getLegSideSetbackLabel,
+  getPlateEndSetbackLabel,
+  parseSetbackValue
+} from '../legGeometry.js';
 
 const log = createLogger('Summary');
 const pdfLog = createLogger('PDF Export');
@@ -663,61 +670,6 @@ function parseTubeDimensions(title) {
   const matches = title.match(/[\d.]+/g);
   if (!matches) return [];
   return matches.map(val => Number(val)).filter(Number.isFinite);
-}
-
-function getLegWidthForTable(width) {
-  if (!Number.isFinite(width)) return null;
-  if (width <= 36) return 26;
-  if (width <= 42) return 28;
-  if (width <= 48) return 32;
-  return Math.max(0, width - 10);
-}
-
-function getLegSideSetbackLabel({ width, legWidth, plateLength, legId, designId }) {
-  const fallback = { leg: 'TBD', plate: 'TBD' };
-  if (!Number.isFinite(width)) return fallback;
-  if (legId === 'leg-sample-02') return { leg: '0.25 in', plate: '0.25 in' };
-  if (legId === 'leg-sample-08' && designId === 'des-round') return { leg: '12-14 in', plate: '12-14 in' };
-  if (legId === 'leg-sample-08' && designId === 'des-cookie') return { leg: '12+ in', plate: '12+ in' };
-  const formatSideSetback = (value) => formatInches(value, Number.isInteger(value) ? 0 : 1);
-  const legSetback = Number.isFinite(legWidth) ? Math.max(0, (width - legWidth) / 2) : null;
-  const plateSetback = Number.isFinite(plateLength) ? Math.max(0, (width - plateLength) / 2) : null;
-  return {
-    leg: Number.isFinite(legSetback) ? formatSideSetback(legSetback) : 'TBD',
-    plate: Number.isFinite(plateSetback) ? formatSideSetback(plateSetback) : 'TBD'
-  };
-}
-
-function getPlateEndSetbackLabel(legEndSetback) {
-  if (!legEndSetback || legEndSetback === 'TBD') return 'TBD';
-  const rangeMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*in$/);
-  if (rangeMatch) {
-    const min = Math.max(0, Number(rangeMatch[1]) - 2);
-    const max = Math.max(0, Number(rangeMatch[2]) - 2);
-    return `${formatNumber(min)}-${formatNumber(max)} in`;
-  }
-  const plusMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\+\s*in$/);
-  if (plusMatch) {
-    const value = Math.max(0, Number(plusMatch[1]) - 2);
-    return `${formatNumber(value)}+ in`;
-  }
-  const singleMatch = legEndSetback.match(/^(\d+(?:\.\d+)?)\s*in$/);
-  if (singleMatch) {
-    const value = Math.max(0, Number(singleMatch[1]) - 2);
-    return `${formatNumber(value)} in`;
-  }
-  return legEndSetback;
-}
-
-function parseSetbackValue(setbackLabel) {
-  if (!setbackLabel || setbackLabel === 'TBD') return null;
-  const rangeMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*in$/);
-  if (rangeMatch) return (Number(rangeMatch[1]) + Number(rangeMatch[2])) / 2;
-  const plusMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\+\s*in$/);
-  if (plusMatch) return Number(plusMatch[1]);
-  const singleMatch = setbackLabel.match(/^(\d+(?:\.\d+)?)\s*in$/);
-  if (singleMatch) return Number(singleMatch[1]);
-  return null;
 }
 
 function calculateEmptyCrateWeight(lengthIn, widthIn, heightIn) {
@@ -1577,14 +1529,8 @@ async function exportPdf() {
     ? Math.max(0, height - tabletopThickness)
     : null;
   const legCount = (hasLegs && Number.isFinite(length)) ? getLegCount(length) : null;
-  let legEndSetback = 'TBD';
-  let plateEndSetback = 'TBD';
-  if (hasLegs) {
-    if (selections.model === 'mdl-coffee') legEndSetback = '5-7 in';
-    else if (Number.isFinite(length) && length >= 120) legEndSetback = '18-20 in';
-    else legEndSetback = '12-14 in';
-    plateEndSetback = getPlateEndSetbackLabel(legEndSetback);
-  }
+  const legEndSetback = getLegEndSetbackLabel({ modelId: selections.model, length, hasLegs });
+  const plateEndSetback = getPlateEndSetbackLabel(legEndSetback);
   const tubeDims = parseTubeDimensions(tubeTitle);
   const tubeDepth = tubeDims.length ? Math.max(...tubeDims) : null;
   const legHeightWithoutPlate = Number.isFinite(legHeight)

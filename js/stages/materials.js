@@ -11,6 +11,10 @@ const CUSTOM_NOTE_ATTR = 'data-custom-note';
 const CUSTOM_NOTE_INPUT_ID = 'custom-color-note-input';
 const CUSTOM_GRADIENT_ID = 'color-gradient-03';
 const CUSTOM_GRADIENT_NOTE_INPUT_ID = 'custom-color-gradient-note-input';
+const SINGLE_COLOR_GRADIENT_ID = 'color-gradient-04';
+const SOLID_ONLY_COLOR_IDS = new Set(['color-06', 'color-07', 'color-08']);
+const SOLID_ONLY_COLOR_SOURCE = 'single-color-only';
+const SOLID_ONLY_TOOLTIP = 'Only Single Color is available for Dark Grey, Caviar Black, and Solid Black.';
 
 let customColorCard = null;
 let customColorNoteContainer = null;
@@ -137,6 +141,68 @@ function syncCustomGradientNoteValue(value = '') {
   customGradientNoteInput.value = value;
 }
 
+function getDisabledByList(el) {
+  const raw = el && el.getAttribute('data-disabled-by');
+  return raw ? raw.split('||').filter(Boolean) : [];
+}
+
+function addDisabledBy(el, sourceTitle, tooltipText) {
+  if (!el || !sourceTitle) return;
+  const list = getDisabledByList(el);
+  if (!list.includes(sourceTitle)) list.push(sourceTitle);
+  el.setAttribute('data-disabled-by', list.join('||'));
+  el.setAttribute('disabled', 'true');
+  if (tooltipText) el.setAttribute('data-tooltip', tooltipText);
+}
+
+function removeDisabledBy(el, sourceTitle) {
+  if (!el || !sourceTitle) return;
+  const list = getDisabledByList(el).filter((item) => item !== sourceTitle);
+  if (list.length) {
+    el.setAttribute('data-disabled-by', list.join('||'));
+    el.setAttribute('disabled', 'true');
+  } else {
+    el.removeAttribute('data-disabled-by');
+    el.removeAttribute('disabled');
+  }
+  if (list.length === 0 || el.getAttribute('data-tooltip') === SOLID_ONLY_TOOLTIP) {
+    el.removeAttribute('data-tooltip');
+  }
+}
+
+function recomputeColorGradientConstraints(appState) {
+  const opts = appState && appState.selections && appState.selections.options ? appState.selections.options : {};
+  const selectedColorId = opts.color || null;
+  const selectedGradientId = opts['color-gradient'] || null;
+  const solidOnly = SOLID_ONLY_COLOR_IDS.has(selectedColorId);
+  const gradientCards = document.querySelectorAll('.option-card[data-category="color-gradient"]');
+  if (!gradientCards.length) return;
+
+  gradientCards.forEach((card) => {
+    const gradientId = card.getAttribute('data-id');
+    const shouldDisable = solidOnly && gradientId !== SINGLE_COLOR_GRADIENT_ID;
+    if (shouldDisable) {
+      addDisabledBy(card, SOLID_ONLY_COLOR_SOURCE, SOLID_ONLY_TOOLTIP);
+      card.setAttribute('aria-pressed', 'false');
+      return;
+    }
+    removeDisabledBy(card, SOLID_ONLY_COLOR_SOURCE);
+  });
+
+  if (solidOnly && selectedGradientId !== SINGLE_COLOR_GRADIENT_ID) {
+    const singleColorCard = document.querySelector(`.option-card[data-id="${SINGLE_COLOR_GRADIENT_ID}"]`);
+    if (singleColorCard) {
+      document.dispatchEvent(new CustomEvent('option-selected', {
+        detail: {
+          id: SINGLE_COLOR_GRADIENT_ID,
+          price: Number(singleColorCard.getAttribute('data-price')) || 0,
+          category: 'color-gradient'
+        }
+      }));
+    }
+  }
+}
+
 export function isMaterialsComplete(appState) {
   try {
     const hasMaterial = !!(appState.selections && appState.selections.options && appState.selections.options.material);
@@ -155,6 +221,7 @@ export function init() {
   ensureCustomGradientNoteField();
   setCustomColorNoteVisibility(false);
   setCustomGradientNoteVisibility(false);
+  recomputeColorGradientConstraints();
 
   // Delegate click handling for material and color option-cards
   document.addEventListener('click', (ev) => {
@@ -182,6 +249,10 @@ export function init() {
     } else if (category === 'color-gradient') {
       setCustomGradientNoteVisibility(id === CUSTOM_GRADIENT_ID);
     }
+  });
+
+  document.addEventListener('statechange', (ev) => {
+    recomputeColorGradientConstraints(ev.detail && ev.detail.state);
   });
 }
 
@@ -220,6 +291,7 @@ export function restoreFromState(appState) {
     setCustomGradientNoteVisibility(selectedColorGradientId === CUSTOM_GRADIENT_ID);
     const storedGradientNote = opts.customColorGradientNote || '';
     syncCustomGradientNoteValue(storedGradientNote);
+    recomputeColorGradientConstraints(appState);
   } catch (e) { /* ignore */ }
 }
 

@@ -19,7 +19,8 @@ let currentDimensions = {
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
 let lastKnownDesign = null; // Track the design to detect round/non-round changes
-let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
+let axisSteps = { length: 12, width: 6, 'height-custom': 6 };
+let controlsWired = false;
 
 
 
@@ -874,11 +875,14 @@ export async function init() {
   
   // Wire up controls
   initPresets();
-  initAxisControls();
-  initNumericInputs();
   initHeightButtons();
-  initResetButton();
-  initApplyButton();
+  if (!controlsWired) {
+    initAxisControls();
+    initNumericInputs();
+    initResetButton();
+    initApplyButton();
+    controlsWired = true;
+  }
   
   // Initial UI update
   updateUIControls();

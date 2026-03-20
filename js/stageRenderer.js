@@ -147,6 +147,17 @@ export function renderOptionCards(container, data = [], opts = {}) {
       if (item.tooltip) btn.setAttribute('data-tooltip', item.tooltip);
     }
 
+    if (item.badge) {
+      const badgeData = typeof item.badge === 'string' ? { label: item.badge } : item.badge;
+      if (badgeData && badgeData.label) {
+        const badge = document.createElement('span');
+        badge.className = 'option-card-pill';
+        if (badgeData.tone) badge.classList.add(`option-card-pill-${badgeData.tone}`);
+        badge.textContent = badgeData.label;
+        btn.appendChild(badge);
+      }
+    }
+
     if (item.image) {
       const img = document.createElement('img');
       img.src = item.image;

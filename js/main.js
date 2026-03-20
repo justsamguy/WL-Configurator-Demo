@@ -499,6 +499,31 @@ function filterDesignPresetsByModel(presets, modelId) {
   return presets.filter((preset) => preset && preset.modelId === modelId);
 }
 
+function getModelDesignBadgeLabel(modelId) {
+  const modelLabels = {
+    'mdl-coffee': 'Coffee',
+    'mdl-dining': 'Dining',
+    'mdl-conference': 'Conference'
+  };
+  return modelLabels[modelId] || 'Model';
+}
+
+function getExclusiveDesignModelId(design) {
+  const modelIds = design && design.prices && typeof design.prices === 'object'
+    ? Object.keys(design.prices).filter(Boolean)
+    : [];
+  return modelIds.length === 1 ? modelIds[0] : null;
+}
+
+function sortDesignsForModel(designs, modelId) {
+  return [...designs].sort((a, b) => {
+    const aExclusiveRank = getExclusiveDesignModelId(a) === modelId ? 0 : 1;
+    const bExclusiveRank = getExclusiveDesignModelId(b) === modelId ? 0 : 1;
+    if (aExclusiveRank !== bExclusiveRank) return aExclusiveRank - bExclusiveRank;
+    return String(a && a.title ? a.title : '').localeCompare(String(b && b.title ? b.title : ''));
+  });
+}
+
 async function renderDesignOptionsForModel(modelId = (state.selections && state.selections.model)) {
   const designsSection = document.getElementById('designs-stage-section');
   if (!designsSection) return;
@@ -522,10 +547,17 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
         seenDesignIds.add(design.id);
         return true;
       });
-      const designsWithPrice = dedupedDesigns.map((design) => ({
-        ...design,
-        price: modelId && design.prices ? design.prices[modelId] : 0
-      }));
+      const orderedDesigns = sortDesignsForModel(dedupedDesigns, modelId);
+      const designsWithPrice = orderedDesigns.map((design) => {
+        const exclusiveModelId = getExclusiveDesignModelId(design);
+        return {
+          ...design,
+          price: modelId && design.prices ? design.prices[modelId] : 0,
+          badge: exclusiveModelId === modelId
+            ? { label: `${getModelDesignBadgeLabel(exclusiveModelId)} Exclusive`, tone: 'exclusive' }
+            : { label: 'Layout', tone: 'layout' }
+        };
+      });
       renderOptionCards(layoutGrid, designsWithPrice, { category: 'design', ignorePlaceholder: true });
     }
 
@@ -537,6 +569,7 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
         title: preset.title,
         image: preset.image,
         description: preset.description,
+        badge: { label: 'Preset', tone: 'preset' },
         attributes: {
           'data-preset-id': preset.id,
           'data-design-id': preset.designId
@@ -1680,6 +1713,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 612');
+console.log('Edit ver: 624');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
