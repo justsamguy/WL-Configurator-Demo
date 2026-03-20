@@ -98,13 +98,15 @@
     "description": "A bright silver finish that resembles fine hardware.",
     "productNumber": "245220",
     "viewerMaterial": {
-      "baseColor": "#c4c6ca",
-      "metalness": 0.98,
-      "roughness": 0.18,
-      "envIntensity": 1.08,
+      "baseColor": "#dde1e6",
+      "metalness": 0.72,
+      "roughness": 0.3,
+      "envIntensity": 1.14,
+      "clearcoat": 0.22,
+      "clearcoatRoughness": 0.24,
       "textureSet": null
     },
-    "calibrationNote": "Set close to polished silverware with the highest sheen in the set while preserving enough roughness to avoid a mirror-like chrome read.",
+    "calibrationNote": "Rebalanced toward a brighter silver body tone with a controlled metallic response so the finish stays silver off-axis instead of collapsing into dark mirror reflections.",
     "calibrationImageAssessment": "Sample is highly reflective and lighting-biased; use it for relative brightness only, not highlight intensity."
   },
   {

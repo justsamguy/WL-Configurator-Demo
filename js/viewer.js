@@ -2,6 +2,7 @@
 // Persistent Three.js viewer with empty, loading, ready, and error states.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { loadData } from './dataLoader.js';
 import { getWaterfallEdgeCount } from './pricing.js';
@@ -745,22 +746,20 @@ function createGlassTopPart() {
 
   const glassGeometry = new THREE.BoxGeometry(1, 1, 1);
   const glassMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xf3fbff,
+    color: 0xe7f5ff,
     metalness: 0,
-    roughness: 0.04,
-    transmission: 0.96,
-    thickness: GLASS_TOP_MATERIAL_THICKNESS,
-    ior: 1.52,
+    roughness: 0.08,
+    transmission: 0,
     transparent: true,
-    opacity: 1,
-    envMapIntensity: 1.2,
+    opacity: 0.2,
+    envMapIntensity: 0.96,
     clearcoat: 1,
-    clearcoatRoughness: 0.03,
-    attenuationDistance: 0.4,
-    attenuationColor: new THREE.Color('#d9ecff'),
-    side: THREE.DoubleSide
+    clearcoatRoughness: 0.05,
+    side: THREE.FrontSide
   });
+  // Use a thin-tint overlay so the glass reads clearly without swallowing the epoxy preview beneath it.
   glassMaterial.depthWrite = false;
+  glassMaterial.premultipliedAlpha = true;
 
   const glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
   glassMesh.name = `${GLASS_TOP_PART_NAME}-mesh`;
@@ -1687,6 +1686,12 @@ export async function initViewer() {
     canvasWidth: dom.canvas.clientWidth,
     canvasHeight: dom.canvas.clientHeight
   });
+
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  const roomEnvironment = new RoomEnvironment();
+  scene.environment = pmremGenerator.fromScene(roomEnvironment, 0.05).texture;
+  roomEnvironment.dispose();
+  pmremGenerator.dispose();
 
   const ambientLight = new THREE.HemisphereLight(0xffffff, 0xcfd8e3, 1.15);
   scene.add(ambientLight);
