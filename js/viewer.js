@@ -1323,17 +1323,36 @@ function clearCurrentRenderRoot() {
   displayedRenderSignature = null;
 }
 
+function getFramingBounds(root) {
+  if (!root) return null;
+
+  root.updateWorldMatrix(true, true);
+  const bounds = new THREE.Box3();
+  let hasVisibleBounds = false;
+
+  root.children.forEach((child) => {
+    if (!child || child.visible === false || child.name === GLASS_TOP_PART_NAME) return;
+
+    const childBounds = new THREE.Box3().setFromObject(child);
+    if (childBounds.isEmpty()) return;
+
+    if (!hasVisibleBounds) {
+      bounds.copy(childBounds);
+      hasVisibleBounds = true;
+      return;
+    }
+
+    bounds.union(childBounds);
+  });
+
+  return hasVisibleBounds ? bounds : null;
+}
+
 function getModelFramingMetrics(root) {
   if (!root) return null;
-  const glassRoot = root.getObjectByName(GLASS_TOP_PART_NAME);
-  const previousGlassVisibility = glassRoot ? glassRoot.visible : null;
+  const bounds = getFramingBounds(root);
 
-  if (glassRoot) glassRoot.visible = false;
-  root.updateWorldMatrix(true, true);
-  const bounds = new THREE.Box3().setFromObject(root);
-  if (glassRoot) glassRoot.visible = previousGlassVisibility;
-
-  if (bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
+  if (!bounds || bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
 
   const size = bounds.getSize(new THREE.Vector3());
   const target = bounds.getCenter(new THREE.Vector3());

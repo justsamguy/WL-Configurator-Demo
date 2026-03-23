@@ -75,18 +75,18 @@
     "id": "leg-finish-05",
     "title": "Gunmetal Grey",
     "price": 0,
-    "color": "#383838",
+    "color": "#323232",
     "image": "assets/images/Leg styles/Leg Colors/Gunmetal Grey.webp",
     "description": "A medium grey that blends without disappearing.",
     "productNumber": "353091",
     "viewerMaterial": {
-      "baseColor": "#b3b6bb",
-      "metalness": 0.88,
-      "roughness": 0.78,
-      "envIntensity": 0.82,
+      "baseColor": "#a7abb0",
+      "metalness": 0.84,
+      "roughness": 0.84,
+      "envIntensity": 0.72,
       "textureSet": null
     },
-    "calibrationNote": "Lifted to the prior titanium-silver lightness target while keeping a matte, cool gunmetal surface response.",
+    "calibrationNote": "Kept slightly darker than the prior target while softening highlights so the gunmetal reads cooler and less glossy.",
     "calibrationImageAssessment": "Sample provides a solid mid-dark neutral target with moderate lighting bias."
   },
   {
