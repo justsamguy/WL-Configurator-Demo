@@ -6,7 +6,11 @@
         "role": "tabletop",
         "assetPath": "assets/models/Walnut%20tabletop.glb",
         "addonAssetPaths": {
-          "addon-live-edge": "assets/models/live-edge-walnut-river-tabletop.glb"
+          "addon-live-edge": {
+            "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
+            "materialSourceAssetPath": "assets/models/Walnut%20tabletop.glb",
+            "scale": [0.918, 1, 1]
+          }
         },
         "positionOffset": [0, 0.707625, 0]
       },
@@ -16,8 +20,8 @@
         "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
-        "surfaceInsetScale": [0.9985, 0.9988, 0.9985],
-        "surfaceInsetOffset": [0, -0.001, 0],
+        "surfaceInsetScale": [0.9972, 0.998, 0.9972],
+        "surfaceInsetOffset": [0, -0.0015, 0],
         "designNote": "Intentional by design: the epoxy overlay is inset slightly so it stays inside the wood slab, avoids viewer z-fighting, and only shows through the open resin channels."
       }
     ],

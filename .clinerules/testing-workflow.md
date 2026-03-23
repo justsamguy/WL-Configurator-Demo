@@ -8,6 +8,7 @@ Related rule files (keep shared constraints in sync): `.github/copilot-instructi
 
 ## Testing Recommendations
 - Note: Testing must occur in a live server environment due to CDN dependencies.
+- Note: Opening `index.html` via `file://` is not a valid runtime check for this project; the current setup uses ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
 - Recommendation: Deploy changes to verify functionality.
 - Next steps: Ensure all features work as expected and address any issues.
 - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.

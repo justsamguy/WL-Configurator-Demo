@@ -4,6 +4,7 @@
 - Add 3D model viewer
 figure out resin color textures
 ensure reference images are accurate and produce additional models
+add U-channel models
 
 - invent & add model handling for each add-on:
     - 

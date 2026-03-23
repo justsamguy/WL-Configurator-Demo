@@ -4121,13 +4121,15 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid {
+  justify-items: center;
   padding: 0.35rem 0.1rem 0.25rem;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card {
+  width: min(100%, 22rem);
   min-height: 0;
-  align-items: stretch;
-  text-align: left;
+  align-items: center;
+  text-align: center;
   border-color: transparent;
   background: var(--designs-tile-surface);
   backdrop-filter: blur(10px);
@@ -4166,12 +4168,21 @@ body.stage-1 #designs-stage-section .stage-options-grid .viewer-placeholder-img 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card .title {
   font-size: 1.02rem;
   line-height: 1.25;
-  padding-right: 0.25rem;
+  padding-right: 0;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card .price-delta,
 body.stage-1 #designs-stage-section .stage-options-grid .option-card .description {
   color: rgb(var(--designs-muted-rgb));
+}
+
+body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-card-pill {
+  top: 0.75rem;
+  right: 0.75rem;
+  min-height: 1.55rem;
+  padding: 0.22rem 0.58rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
 }
 
 .option-card-pill {

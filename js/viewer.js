@@ -70,6 +70,7 @@ let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
 let tabletopTexturePromise = null;
+let materialSourcePromises = new Map();
 let legFinishDataPromise = null;
 let colorDataPromise = null;
 let finishDataPromise = null;
@@ -681,59 +682,93 @@ function getVectorTriplet(value, fallback = 0) {
   return [fallback, fallback, fallback];
 }
 
-function resolvePartAssetPath(partConfig = {}) {
+function resolvePartConfig(partConfig = {}) {
   const defaultAssetPath = typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '';
   const addonAssetPaths = partConfig.addonAssetPaths && typeof partConfig.addonAssetPaths === 'object'
     ? partConfig.addonAssetPaths
     : null;
-  if (!addonAssetPaths) return defaultAssetPath;
+  if (!addonAssetPaths) return { ...partConfig, assetPath: defaultAssetPath };
 
   const selectedAddons = getSelectedAddons();
   const selectedAddonOverride = selectedAddons.find((addonId) => (
     typeof addonId === 'string'
-    && typeof addonAssetPaths[addonId] === 'string'
-    && addonAssetPaths[addonId].trim()
+    && addonAssetPaths[addonId]
+    && (
+      (typeof addonAssetPaths[addonId] === 'string' && addonAssetPaths[addonId].trim())
+      || (
+        typeof addonAssetPaths[addonId] === 'object'
+        && typeof addonAssetPaths[addonId].assetPath === 'string'
+        && addonAssetPaths[addonId].assetPath.trim()
+      )
+    )
   ));
 
-  return selectedAddonOverride
-    ? addonAssetPaths[selectedAddonOverride].trim()
-    : defaultAssetPath;
+  if (!selectedAddonOverride) return { ...partConfig, assetPath: defaultAssetPath };
+
+  const selectedOverrideValue = addonAssetPaths[selectedAddonOverride];
+  if (typeof selectedOverrideValue === 'string') {
+    return {
+      ...partConfig,
+      assetPath: selectedOverrideValue.trim()
+    };
+  }
+
+  if (selectedOverrideValue && typeof selectedOverrideValue === 'object') {
+    const overrideAssetPath = typeof selectedOverrideValue.assetPath === 'string'
+      ? selectedOverrideValue.assetPath.trim()
+      : defaultAssetPath;
+    return {
+      ...partConfig,
+      ...selectedOverrideValue,
+      assetPath: overrideAssetPath
+    };
+  }
+
+  return { ...partConfig, assetPath: defaultAssetPath };
+}
+
+function resolvePartAssetPath(partConfig = {}) {
+  return resolvePartConfig(partConfig).assetPath || '';
 }
 
 function normalizeRenderablePart(partConfig = {}, index = 0) {
-  const assetPath = resolvePartAssetPath(partConfig);
+  const resolvedPartConfig = resolvePartConfig(partConfig);
+  const assetPath = resolvedPartConfig.assetPath || '';
   return {
-    name: typeof partConfig.name === 'string' && partConfig.name.trim()
-      ? partConfig.name.trim()
+    name: typeof resolvedPartConfig.name === 'string' && resolvedPartConfig.name.trim()
+      ? resolvedPartConfig.name.trim()
       : `part-${index + 1}`,
-    role: typeof partConfig.role === 'string' && partConfig.role.trim()
-      ? partConfig.role.trim()
+    role: typeof resolvedPartConfig.role === 'string' && resolvedPartConfig.role.trim()
+      ? resolvedPartConfig.role.trim()
       : '',
-    placement: typeof partConfig.placement === 'string' && partConfig.placement.trim()
-      ? partConfig.placement.trim()
+    placement: typeof resolvedPartConfig.placement === 'string' && resolvedPartConfig.placement.trim()
+      ? resolvedPartConfig.placement.trim()
       : '',
-    layout: typeof partConfig.layout === 'string' && partConfig.layout.trim()
-      ? partConfig.layout.trim()
+    layout: typeof resolvedPartConfig.layout === 'string' && resolvedPartConfig.layout.trim()
+      ? resolvedPartConfig.layout.trim()
       : '',
-    legId: typeof partConfig.legId === 'string' && partConfig.legId.trim()
-      ? partConfig.legId.trim()
+    legId: typeof resolvedPartConfig.legId === 'string' && resolvedPartConfig.legId.trim()
+      ? resolvedPartConfig.legId.trim()
       : '',
-    tubeFallbackScale: Number.isFinite(Number(partConfig.tubeFallbackScale))
-      ? Number(partConfig.tubeFallbackScale)
+    tubeFallbackScale: Number.isFinite(Number(resolvedPartConfig.tubeFallbackScale))
+      ? Number(resolvedPartConfig.tubeFallbackScale)
       : 1,
     assetPath,
-    scale: Array.isArray(partConfig.scale) && partConfig.scale.length === 3
-      ? partConfig.scale.map((entry) => Number(entry) || 1)
-      : (Number.isFinite(Number(partConfig.scale)) ? Number(partConfig.scale) || 1 : 1),
-    surfaceInsetScale: Array.isArray(partConfig.surfaceInsetScale) && partConfig.surfaceInsetScale.length === 3
-      ? partConfig.surfaceInsetScale.map((entry) => Number(entry) || 1)
+    materialSourceAssetPath: typeof resolvedPartConfig.materialSourceAssetPath === 'string'
+      ? resolvedPartConfig.materialSourceAssetPath.trim()
+      : '',
+    scale: Array.isArray(resolvedPartConfig.scale) && resolvedPartConfig.scale.length === 3
+      ? resolvedPartConfig.scale.map((entry) => Number(entry) || 1)
+      : (Number.isFinite(Number(resolvedPartConfig.scale)) ? Number(resolvedPartConfig.scale) || 1 : 1),
+    surfaceInsetScale: Array.isArray(resolvedPartConfig.surfaceInsetScale) && resolvedPartConfig.surfaceInsetScale.length === 3
+      ? resolvedPartConfig.surfaceInsetScale.map((entry) => Number(entry) || 1)
       : null,
-    surfaceInsetOffset: Array.isArray(partConfig.surfaceInsetOffset) && partConfig.surfaceInsetOffset.length === 3
-      ? partConfig.surfaceInsetOffset.map((entry) => Number(entry) || 0)
+    surfaceInsetOffset: Array.isArray(resolvedPartConfig.surfaceInsetOffset) && resolvedPartConfig.surfaceInsetOffset.length === 3
+      ? resolvedPartConfig.surfaceInsetOffset.map((entry) => Number(entry) || 0)
       : DEFAULT_SURFACE_INSET_OFFSET,
-    rotation: getVectorTriplet(partConfig.rotation),
-    positionOffset: getVectorTriplet(partConfig.positionOffset),
-    receiveModelShadows: partConfig.receiveModelShadows === true
+    rotation: getVectorTriplet(resolvedPartConfig.rotation),
+    positionOffset: getVectorTriplet(resolvedPartConfig.positionOffset),
+    receiveModelShadows: resolvedPartConfig.receiveModelShadows === true
   };
 }
 
@@ -813,6 +848,83 @@ async function loadTabletopTexture() {
   }
 
   return tabletopTexturePromise;
+}
+
+function cloneReusableMaterial(material) {
+  if (!material || typeof material.clone !== 'function') return material;
+
+  const clonedMaterial = material.clone();
+  Object.keys(clonedMaterial).forEach((key) => {
+    const value = clonedMaterial[key];
+    if (value && value.isTexture && typeof value.clone === 'function') {
+      clonedMaterial[key] = value.clone();
+      if (renderer && renderer.capabilities) {
+        clonedMaterial[key].anisotropy = renderer.capabilities.getMaxAnisotropy();
+      }
+    }
+  });
+
+  if ('normalScale' in material && material.normalScale && typeof material.normalScale.clone === 'function') {
+    clonedMaterial.normalScale = material.normalScale.clone();
+  }
+  if (
+    'clearcoatNormalScale' in material
+    && material.clearcoatNormalScale
+    && typeof material.clearcoatNormalScale.clone === 'function'
+  ) {
+    clonedMaterial.clearcoatNormalScale = material.clearcoatNormalScale.clone();
+  }
+
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
+async function loadMaterialSourceTemplates(assetPath) {
+  if (!assetPath) return [];
+  if (!materialSourcePromises.has(assetPath)) {
+    if (!loader) loader = new GLTFLoader();
+    materialSourcePromises.set(assetPath, loader.loadAsync(assetPath).then((gltf) => {
+      const sourceRoot = gltf.scene || (Array.isArray(gltf.scenes) ? gltf.scenes[0] : null);
+      if (!sourceRoot) throw new Error('Material donor GLB did not contain a scene.');
+
+      const templates = [];
+      sourceRoot.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        templates.push(materials.filter(Boolean));
+      });
+
+      if (!templates.length) throw new Error('Material donor GLB did not contain any mesh materials.');
+      return templates;
+    }).catch((error) => {
+      materialSourcePromises.delete(assetPath);
+      throw error;
+    }));
+  }
+
+  return materialSourcePromises.get(assetPath);
+}
+
+async function applyConfiguredMaterialSource(assetRoot, partConfig = {}) {
+  const materialSourceAssetPath = partConfig && typeof partConfig.materialSourceAssetPath === 'string'
+    ? partConfig.materialSourceAssetPath.trim()
+    : '';
+  if (!assetRoot || !materialSourceAssetPath) return;
+
+  const templates = await loadMaterialSourceTemplates(materialSourceAssetPath);
+  if (!Array.isArray(templates) || !templates.length) return;
+
+  let meshIndex = 0;
+  assetRoot.traverse((child) => {
+    if (!child.isMesh) return;
+    const templateSet = templates[Math.min(meshIndex, templates.length - 1)] || [];
+    meshIndex += 1;
+    if (!templateSet.length) return;
+
+    const clonedMaterials = templateSet.map((material) => cloneReusableMaterial(material)).filter(Boolean);
+    if (!clonedMaterials.length) return;
+    child.material = clonedMaterials.length === 1 ? clonedMaterials[0] : clonedMaterials;
+  });
 }
 
 async function loadLegFinishDefinitions() {
@@ -1210,7 +1322,14 @@ function clearCurrentRenderRoot() {
 
 function getModelFramingMetrics(root) {
   if (!root) return null;
+  const glassRoot = root.getObjectByName(GLASS_TOP_PART_NAME);
+  const previousGlassVisibility = glassRoot ? glassRoot.visible : null;
+
+  if (glassRoot) glassRoot.visible = false;
+  root.updateWorldMatrix(true, true);
   const bounds = new THREE.Box3().setFromObject(root);
+  if (glassRoot) glassRoot.visible = previousGlassVisibility;
+
   if (bounds.isEmpty()) throw new Error('Loaded model has no visible bounds.');
 
   const size = bounds.getSize(new THREE.Vector3());
@@ -1386,6 +1505,7 @@ async function buildRenderAsset(partConfig, index = 0) {
     Number(partConfig.rotation[2]) || 0
   );
 
+  await applyConfiguredMaterialSource(assetRoot, partConfig);
   configureModelMeshes(assetRoot, partConfig);
 
   const initialBounds = new THREE.Box3().setFromObject(assetRoot);

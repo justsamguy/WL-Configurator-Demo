@@ -34,6 +34,7 @@ alwaysApply: true
 
 - **Testing & Viewing Changes**
   - Note: Testing must occur in a live server environment due to CDN dependencies.
+  - Note: Opening `index.html` via `file://` is not a valid runtime check for this project; the current setup uses ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
   - Recommendation: Commit changes and deploy to verify functionality.
   - Next steps: Ensure accessibility, responsiveness, and debug issues as needed.
   - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
