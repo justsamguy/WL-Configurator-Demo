@@ -35,6 +35,7 @@ const TRIPOD_EDGE_SETBACK_IN = 13;
 const CUBE_EDGE_SETBACK_IN = 0.25;
 const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
 const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
+const EPOXY_VERTICAL_INSET = 0.0015;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const GLASS_TOP_THICKNESS_IN = 0.25;
@@ -485,6 +486,29 @@ function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersi
   partRoot.position.y += desiredUnderside - metrics.min.y;
 }
 
+function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics) {
+  if (!partRoot || !baseState || !baseState.metrics || !tabletopMetrics) return;
+
+  partRoot.scale.x = baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
+  partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
+
+  const tabletopThickness = getPartSpan(tabletopMetrics, 'y');
+  const epoxyBaseThickness = getPartSpan(baseState.metrics, 'y');
+  const targetEpoxyThickness = Number.isFinite(tabletopThickness)
+    ? Math.max(tabletopThickness - (EPOXY_VERTICAL_INSET * 2), tabletopThickness * 0.85)
+    : null;
+  if (Number.isFinite(targetEpoxyThickness) && Number.isFinite(epoxyBaseThickness) && epoxyBaseThickness > 0) {
+    partRoot.scale.y = baseState.scale.y * (targetEpoxyThickness / epoxyBaseThickness);
+  }
+
+  const metrics = getObjectMetrics(partRoot);
+  if (!metrics) return;
+
+  partRoot.position.x += tabletopMetrics.center.x - metrics.center.x;
+  partRoot.position.z += tabletopMetrics.center.z - metrics.center.z;
+  partRoot.position.y += (tabletopMetrics.min.y + EPOXY_VERTICAL_INSET) - metrics.min.y;
+}
+
 function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId = '') {
   const length = Number(selectedDimensions.length);
   const width = Number(selectedDimensions.width);
@@ -630,6 +654,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   const selectedUndersideY = tabletopBaseState
     ? tabletopBaseState.metrics.min.y + heightDeltaUnits
     : null;
+  let tabletopMetrics = null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -642,8 +667,14 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     const partConfig = getPartConfig(partRoot);
     const role = partConfig.role || '';
 
+    if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
+      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics);
+      return;
+    }
+
     if (role === 'tabletop' || partName.startsWith('tabletop')) {
       computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY);
+      if (partName === 'tabletop') tabletopMetrics = getObjectMetrics(partRoot);
       return;
     }
 
