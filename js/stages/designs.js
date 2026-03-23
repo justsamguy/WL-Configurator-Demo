@@ -17,6 +17,7 @@ function setGroupOpen(group, shouldOpen) {
   group.classList.toggle('is-open', shouldOpen);
   if (toggle) toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
   if (panel) {
+    panel.hidden = !shouldOpen;
     panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     if ('inert' in panel) panel.inert = !shouldOpen;
   }

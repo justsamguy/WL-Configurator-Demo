@@ -10,7 +10,10 @@ import { state } from './state.js';
 import { createLogger } from './logger.js';
 import { getLegEndSetbackValue, getLegWidthForTable } from './legGeometry.js';
 
-const log = createLogger('Viewer');
+const VIEWER_DEBUG_ENABLED = false;
+const log = VIEWER_DEBUG_ENABLED
+  ? createLogger('Viewer')
+  : { debug() {}, info() {}, warn() {}, error() {} };
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const LEG_FINISH_DATA_PATH = 'data/leg-finish.json';
