@@ -81,12 +81,12 @@
     "productNumber": "353091",
     "viewerMaterial": {
       "baseColor": "#a7abb0",
-      "metalness": 0.84,
-      "roughness": 0.84,
-      "envIntensity": 0.72,
+      "metalness": 0.78,
+      "roughness": 0.9,
+      "envIntensity": 0.62,
       "textureSet": null
     },
-    "calibrationNote": "Kept slightly darker than the prior target while softening highlights so the gunmetal reads cooler and less glossy.",
+    "calibrationNote": "Kept slightly darker than the prior target while further flattening reflections so the gunmetal reads cooler and less glossy.",
     "calibrationImageAssessment": "Sample provides a solid mid-dark neutral target with moderate lighting bias."
   },
   {
