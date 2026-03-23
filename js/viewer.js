@@ -24,6 +24,7 @@ const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
 const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
+const LIVE_EDGE_ADDON_ID = 'addon-live-edge';
 const AXIS_COMPONENTS = ['x', 'y', 'z'];
 const LEG_NONE_ID = 'leg-none';
 const LEG_CUSTOM_ID = 'leg-sample-07';
@@ -52,6 +53,11 @@ const RESIN_VIEWER_TINTS = Object.freeze({
   'color-07': '#161618',
   'color-08': '#101011'
 });
+const LIVE_EDGE_RESIN_SAMPLE_COUNT = 15;
+const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
+const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
+const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
+const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
 
 let renderer = null;
 let scene = null;
@@ -118,6 +124,10 @@ function getSelectedOption(optionId) {
 function getSelectedAddons() {
   const addons = getSelectedOption('addon');
   return Array.isArray(addons) ? addons : [];
+}
+
+function hasSelectedAddon(addonId) {
+  return typeof addonId === 'string' && getSelectedAddons().includes(addonId);
 }
 
 function getCurrentViewerSelectionContext(modelId) {
@@ -468,6 +478,184 @@ function getPartSpan(metrics, axis) {
   return metrics.max[axis] - metrics.min[axis];
 }
 
+function getLiveEdgeTopSurfaceTriangles(tabletopRoot, tabletopMetrics) {
+  if (!tabletopRoot || !tabletopMetrics) return [];
+
+  tabletopRoot.updateWorldMatrix(true, true);
+  const normalMatrix = new THREE.Matrix3();
+  const vertexA = new THREE.Vector3();
+  const vertexB = new THREE.Vector3();
+  const vertexC = new THREE.Vector3();
+  const normalA = new THREE.Vector3();
+  const normalB = new THREE.Vector3();
+  const normalC = new THREE.Vector3();
+  const faceNormal = new THREE.Vector3();
+  const topSurfaceBand = Math.max(getPartSpan(tabletopMetrics, 'y') * 0.08, 0.0015);
+  const topSurfaceMinY = tabletopMetrics.max.y - topSurfaceBand;
+  const triangles = [];
+
+  tabletopRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
+
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!positionAttribute) return;
+
+    const indexAttribute = child.geometry.index;
+    const normalAttribute = child.geometry.getAttribute('normal');
+    normalMatrix.getNormalMatrix(child.matrixWorld);
+
+    const triangleCount = indexAttribute ? indexAttribute.count : positionAttribute.count;
+    for (let index = 0; index < triangleCount; index += 3) {
+      const vertexIndexA = indexAttribute ? indexAttribute.getX(index) : index;
+      const vertexIndexB = indexAttribute ? indexAttribute.getX(index + 1) : index + 1;
+      const vertexIndexC = indexAttribute ? indexAttribute.getX(index + 2) : index + 2;
+
+      vertexA.fromBufferAttribute(positionAttribute, vertexIndexA).applyMatrix4(child.matrixWorld);
+      vertexB.fromBufferAttribute(positionAttribute, vertexIndexB).applyMatrix4(child.matrixWorld);
+      vertexC.fromBufferAttribute(positionAttribute, vertexIndexC).applyMatrix4(child.matrixWorld);
+
+      const maxY = Math.max(vertexA.y, vertexB.y, vertexC.y);
+      if (maxY < topSurfaceMinY) continue;
+
+      let averageNormalY = 0;
+      if (normalAttribute) {
+        normalA.fromBufferAttribute(normalAttribute, vertexIndexA).applyMatrix3(normalMatrix).normalize();
+        normalB.fromBufferAttribute(normalAttribute, vertexIndexB).applyMatrix3(normalMatrix).normalize();
+        normalC.fromBufferAttribute(normalAttribute, vertexIndexC).applyMatrix3(normalMatrix).normalize();
+        averageNormalY = (normalA.y + normalB.y + normalC.y) / 3;
+      } else {
+        faceNormal.copy(vertexB).sub(vertexA).cross(new THREE.Vector3().copy(vertexC).sub(vertexA)).normalize();
+        averageNormalY = faceNormal.y;
+      }
+
+      if (averageNormalY < LIVE_EDGE_RESIN_NORMAL_Y_MIN) continue;
+
+      triangles.push({
+        a: vertexA.clone(),
+        b: vertexB.clone(),
+        c: vertexC.clone(),
+        minZ: Math.min(vertexA.z, vertexB.z, vertexC.z),
+        maxZ: Math.max(vertexA.z, vertexB.z, vertexC.z),
+        topSurfaceMinY
+      });
+    }
+  });
+
+  return triangles;
+}
+
+function getLiveEdgeIntervalsAtZ(triangles, sampleZ) {
+  if (!Array.isArray(triangles) || !triangles.length) return [];
+
+  const rawIntervals = [];
+  const intersectionTolerance = 0.000001;
+
+  const addEdgeIntersection = (points, pointA, pointB, topSurfaceMinY) => {
+    const withinPlane = (
+      (pointA.z <= sampleZ && pointB.z >= sampleZ)
+      || (pointB.z <= sampleZ && pointA.z >= sampleZ)
+    );
+    if (!withinPlane) return;
+
+    const deltaZ = pointB.z - pointA.z;
+    if (Math.abs(deltaZ) <= intersectionTolerance) {
+      if (pointA.y >= topSurfaceMinY) points.push(pointA.x);
+      if (pointB.y >= topSurfaceMinY) points.push(pointB.x);
+      return;
+    }
+
+    const interpolation = (sampleZ - pointA.z) / deltaZ;
+    if (interpolation < -intersectionTolerance || interpolation > 1 + intersectionTolerance) return;
+
+    const intersectionY = pointA.y + ((pointB.y - pointA.y) * interpolation);
+    if (intersectionY < topSurfaceMinY) return;
+
+    points.push(pointA.x + ((pointB.x - pointA.x) * interpolation));
+  };
+
+  triangles.forEach((triangle) => {
+    if (!triangle || sampleZ < triangle.minZ || sampleZ > triangle.maxZ) return;
+
+    const points = [];
+    addEdgeIntersection(points, triangle.a, triangle.b, triangle.topSurfaceMinY);
+    addEdgeIntersection(points, triangle.b, triangle.c, triangle.topSurfaceMinY);
+    addEdgeIntersection(points, triangle.c, triangle.a, triangle.topSurfaceMinY);
+
+    const uniqueXs = [];
+    points.sort((left, right) => left - right).forEach((value) => {
+      if (!uniqueXs.length || Math.abs(value - uniqueXs[uniqueXs.length - 1]) > intersectionTolerance) {
+        uniqueXs.push(value);
+      }
+    });
+
+    if (uniqueXs.length < 2) return;
+    rawIntervals.push([uniqueXs[0], uniqueXs[uniqueXs.length - 1]]);
+  });
+
+  if (!rawIntervals.length) return [];
+
+  const mergedIntervals = [];
+  rawIntervals.sort((left, right) => left[0] - right[0]).forEach(([start, end]) => {
+    if (!mergedIntervals.length || start > mergedIntervals[mergedIntervals.length - 1][1] + intersectionTolerance) {
+      mergedIntervals.push([start, end]);
+      return;
+    }
+
+    mergedIntervals[mergedIntervals.length - 1][1] = Math.max(mergedIntervals[mergedIntervals.length - 1][1], end);
+  });
+
+  return mergedIntervals;
+}
+
+function getLiveEdgeResinFit(tabletopRoot, tabletopMetrics) {
+  if (!hasSelectedAddon(LIVE_EDGE_ADDON_ID) || !tabletopRoot || !tabletopMetrics) return null;
+
+  const tabletopLength = getPartSpan(tabletopMetrics, 'z');
+  if (!Number.isFinite(tabletopLength) || tabletopLength <= 0) return null;
+
+  const triangles = getLiveEdgeTopSurfaceTriangles(tabletopRoot, tabletopMetrics);
+  if (!triangles.length) return null;
+
+  const riverSamples = [];
+  const minZ = tabletopMetrics.min.z;
+  const lengthStep = tabletopLength / (LIVE_EDGE_RESIN_SAMPLE_COUNT + 1);
+  for (let sampleIndex = 1; sampleIndex <= LIVE_EDGE_RESIN_SAMPLE_COUNT; sampleIndex += 1) {
+    const sampleZ = minZ + (lengthStep * sampleIndex);
+    const intervals = getLiveEdgeIntervalsAtZ(triangles, sampleZ);
+    if (intervals.length < 2) continue;
+
+    const leftSpan = intervals[0];
+    const rightSpan = intervals[intervals.length - 1];
+    const gapWidth = rightSpan[0] - leftSpan[1];
+    if (!Number.isFinite(gapWidth) || gapWidth <= LIVE_EDGE_RESIN_MIN_GAP) continue;
+
+    riverSamples.push({
+      leftOuter: leftSpan[0],
+      leftInner: leftSpan[1],
+      rightInner: rightSpan[0],
+      rightOuter: rightSpan[1]
+    });
+  }
+
+  if (!riverSamples.length) return null;
+
+  const safeOuterLeft = Math.max(...riverSamples.map((sample) => sample.leftOuter));
+  const safeInnerLeft = Math.min(...riverSamples.map((sample) => sample.leftInner));
+  const safeInnerRight = Math.max(...riverSamples.map((sample) => sample.rightInner));
+  const safeOuterRight = Math.min(...riverSamples.map((sample) => sample.rightOuter));
+
+  const targetLeft = Math.max(safeOuterLeft + LIVE_EDGE_RESIN_OUTER_CLEARANCE, safeInnerLeft - LIVE_EDGE_RESIN_INNER_OVERDRAW);
+  const targetRight = Math.min(safeOuterRight - LIVE_EDGE_RESIN_OUTER_CLEARANCE, safeInnerRight + LIVE_EDGE_RESIN_INNER_OVERDRAW);
+  const targetWidth = targetRight - targetLeft;
+
+  if (!Number.isFinite(targetWidth) || targetWidth <= LIVE_EDGE_RESIN_MIN_GAP) return null;
+
+  return {
+    centerX: (targetLeft + targetRight) / 2,
+    width: targetWidth
+  };
+}
+
 function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY) {
   if (!partRoot || !baseState || !baseState.metrics) return;
 
@@ -486,10 +674,18 @@ function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersi
   partRoot.position.y += desiredUnderside - metrics.min.y;
 }
 
-function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics) {
+function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot) {
   if (!partRoot || !baseState || !baseState.metrics || !tabletopMetrics) return;
 
-  partRoot.scale.x = baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
+  const liveEdgeResinFit = getLiveEdgeResinFit(tabletopRoot, tabletopMetrics);
+  const epoxyBaseWidth = getPartSpan(baseState.metrics, 'x');
+  const targetEpoxyWidth = liveEdgeResinFit && Number.isFinite(liveEdgeResinFit.width)
+    ? liveEdgeResinFit.width
+    : null;
+
+  partRoot.scale.x = Number.isFinite(targetEpoxyWidth) && Number.isFinite(epoxyBaseWidth) && epoxyBaseWidth > 0
+    ? baseState.scale.x * (targetEpoxyWidth / epoxyBaseWidth)
+    : baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
   partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
 
   const tabletopThickness = getPartSpan(tabletopMetrics, 'y');
@@ -504,7 +700,9 @@ function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics) {
   const metrics = getObjectMetrics(partRoot);
   if (!metrics) return;
 
-  partRoot.position.x += tabletopMetrics.center.x - metrics.center.x;
+  partRoot.position.x += liveEdgeResinFit && Number.isFinite(liveEdgeResinFit.centerX)
+    ? liveEdgeResinFit.centerX - metrics.center.x
+    : tabletopMetrics.center.x - metrics.center.x;
   partRoot.position.z += tabletopMetrics.center.z - metrics.center.z;
   partRoot.position.y += (tabletopMetrics.min.y + EPOXY_VERTICAL_INSET) - metrics.min.y;
 }
@@ -655,6 +853,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     ? tabletopBaseState.metrics.min.y + heightDeltaUnits
     : null;
   let tabletopMetrics = null;
+  let tabletopRoot = null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -668,13 +867,16 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     const role = partConfig.role || '';
 
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
-      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics);
+      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
       return;
     }
 
     if (role === 'tabletop' || partName.startsWith('tabletop')) {
       computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY);
-      if (partName === 'tabletop') tabletopMetrics = getObjectMetrics(partRoot);
+      if (partName === 'tabletop') {
+        tabletopRoot = partRoot;
+        tabletopMetrics = getObjectMetrics(partRoot);
+      }
       return;
     }
 
