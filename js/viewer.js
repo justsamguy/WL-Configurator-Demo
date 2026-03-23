@@ -1032,6 +1032,10 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   const previewMaterial = sourceMaterial && sourceMaterial.isMeshPhysicalMaterial
     ? sourceMaterial.clone()
     : new THREE.MeshPhysicalMaterial();
+  const selectedColorId = state && state.selections && state.selections.options
+    ? state.selections.options.color || null
+    : null;
+  const isSolidBlack = selectedColorId === 'color-08';
 
   if (sourceMaterial) {
     if ('side' in sourceMaterial) previewMaterial.side = sourceMaterial.side;
@@ -1052,13 +1056,15 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
     previewMaterial.color.setHex(0xffffff);
   }
   previewMaterial.map = texture;
-  previewMaterial.transparent = true;
-  previewMaterial.opacity = sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
-    ? Number(sourceMaterial.opacity)
-    : 0.98;
+  previewMaterial.transparent = !isSolidBlack;
+  previewMaterial.opacity = isSolidBlack
+    ? 1
+    : (sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
+      ? Number(sourceMaterial.opacity)
+      : 0.98);
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
-  if ('transmission' in previewMaterial) previewMaterial.transmission = 0.78;
+  if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : 0.78;
   if ('thickness' in previewMaterial) previewMaterial.thickness = 1.1;
   if ('ior' in previewMaterial) previewMaterial.ior = 1.46;
   if ('envMapIntensity' in previewMaterial) previewMaterial.envMapIntensity = 1.08;
