@@ -43,6 +43,10 @@ const GLASS_TOP_THICKNESS_IN = 0.25;
 const GLASS_TOP_AXIS_REDUCTION_IN = 0.125;
 const GLASS_TOP_SURFACE_GAP = 0.0007;
 const GLASS_TOP_MATERIAL_THICKNESS = GLASS_TOP_THICKNESS_IN * 0.0254;
+const GLASS_TOP_LIVE_EDGE_SAMPLE_SPACING_IN = 2;
+const GLASS_TOP_LIVE_EDGE_MIN_SAMPLE_COUNT = 24;
+const GLASS_TOP_LIVE_EDGE_MAX_SAMPLE_COUNT = 72;
+const GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE = 0.0005;
 const RESIN_VIEWER_TINTS = Object.freeze({
   'color-01': '#1a1a1c',
   'color-02': '#5f87c4',
@@ -656,6 +660,98 @@ function getLiveEdgeResinFit(tabletopRoot, tabletopMetrics) {
   };
 }
 
+function addUniqueShapePoint(points, x, y, tolerance = GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE) {
+  if (!Array.isArray(points)) return;
+
+  const nextPoint = new THREE.Vector2(x, y);
+  const lastPoint = points[points.length - 1];
+  if (lastPoint && lastPoint.distanceToSquared(nextPoint) <= tolerance * tolerance) return;
+  points.push(nextPoint);
+}
+
+function replaceGlassMeshGeometry(glassMesh, nextGeometry, geometryMode) {
+  if (!glassMesh || !nextGeometry) return;
+
+  const currentGeometry = glassMesh.geometry;
+  if (currentGeometry && currentGeometry !== nextGeometry && typeof currentGeometry.dispose === 'function') {
+    currentGeometry.dispose();
+  }
+
+  glassMesh.geometry = nextGeometry;
+  glassMesh.userData.geometryMode = geometryMode;
+}
+
+function ensureGlassBoxGeometry(glassMesh) {
+  if (!glassMesh) return;
+  if (glassMesh.userData.geometryMode === 'box' && glassMesh.geometry) return;
+  replaceGlassMeshGeometry(glassMesh, new THREE.BoxGeometry(1, 1, 1), 'box');
+}
+
+function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, perimeterInset, unitsPerInch) {
+  if (!tabletopRoot || !tabletopMetrics || !Number.isFinite(thickness) || thickness <= 0) return null;
+
+  const tabletopLength = getPartSpan(tabletopMetrics, 'z');
+  if (!Number.isFinite(tabletopLength) || tabletopLength <= 0) return null;
+
+  const triangles = getLiveEdgeTopSurfaceTriangles(tabletopRoot, tabletopMetrics);
+  if (!triangles.length) return null;
+
+  const inset = Math.max(0, perimeterInset);
+  const minZ = tabletopMetrics.min.z + inset;
+  const maxZ = tabletopMetrics.max.z - inset;
+  if (maxZ <= minZ) return null;
+
+  const targetSampleSpacing = Math.max((Number(unitsPerInch) || 0.0254) * GLASS_TOP_LIVE_EDGE_SAMPLE_SPACING_IN, 0.0254);
+  const sampleCount = THREE.MathUtils.clamp(
+    Math.round((maxZ - minZ) / targetSampleSpacing),
+    GLASS_TOP_LIVE_EDGE_MIN_SAMPLE_COUNT,
+    GLASS_TOP_LIVE_EDGE_MAX_SAMPLE_COUNT
+  );
+  const centerX = tabletopMetrics.center.x;
+  const centerZ = tabletopMetrics.center.z;
+  const samples = [];
+
+  for (let sampleIndex = 0; sampleIndex <= sampleCount; sampleIndex += 1) {
+    const interpolation = sampleCount === 0 ? 0 : sampleIndex / sampleCount;
+    const sampleZ = THREE.MathUtils.lerp(minZ, maxZ, interpolation);
+    const intervals = getLiveEdgeIntervalsAtZ(triangles, sampleZ);
+    if (!intervals.length) continue;
+
+    const leftBoundary = intervals[0][0] + inset;
+    const rightBoundary = intervals[intervals.length - 1][1] - inset;
+    if (!Number.isFinite(leftBoundary) || !Number.isFinite(rightBoundary) || rightBoundary <= leftBoundary) continue;
+
+    samples.push({
+      leftX: leftBoundary - centerX,
+      rightX: rightBoundary - centerX,
+      z: sampleZ - centerZ
+    });
+  }
+
+  if (samples.length < 4) return null;
+
+  const outline = [];
+  samples.forEach((sample) => addUniqueShapePoint(outline, sample.leftX, -sample.z));
+  [...samples].reverse().forEach((sample) => addUniqueShapePoint(outline, sample.rightX, -sample.z));
+
+  if (outline.length < 3) return null;
+  if (THREE.ShapeUtils.isClockWise(outline)) outline.reverse();
+
+  const glassShape = new THREE.Shape(outline);
+  const glassGeometry = new THREE.ExtrudeGeometry(glassShape, {
+    depth: thickness,
+    bevelEnabled: false,
+    curveSegments: Math.max(12, Math.round(samples.length / 2)),
+    steps: 1
+  });
+
+  // Build the footprint in tabletop X/Z space, then rotate the extrusion into thickness on Y.
+  glassGeometry.rotateX(-Math.PI / 2);
+  glassGeometry.translate(0, -thickness / 2, 0);
+  glassGeometry.computeVertexNormals();
+  return glassGeometry;
+}
+
 function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY) {
   if (!partRoot || !baseState || !baseState.metrics) return;
 
@@ -814,6 +910,7 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
   const tabletopLength = getPartSpan(tabletopMetrics, 'z');
   const shrinkAmount = GLASS_TOP_AXIS_REDUCTION_IN * unitsPerInch;
   const thickness = GLASS_TOP_THICKNESS_IN * unitsPerInch;
+  const perimeterInset = shrinkAmount / 2;
 
   const glassWidth = Number.isFinite(tabletopWidth) ? Math.max(tabletopWidth - shrinkAmount, thickness * 3) : null;
   const glassLength = Number.isFinite(tabletopLength) ? Math.max(tabletopLength - shrinkAmount, thickness * 3) : null;
@@ -822,8 +919,22 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
     return;
   }
 
+  const liveEdgeGlassGeometry = hasSelectedAddon(LIVE_EDGE_ADDON_ID)
+    ? createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, perimeterInset, unitsPerInch)
+    : null;
+
   glassRoot.visible = true;
-  glassRoot.scale.set(glassWidth, thickness, glassLength);
+  glassRoot.scale.set(1, 1, 1);
+  glassMesh.scale.set(1, 1, 1);
+  glassMesh.position.set(0, 0, 0);
+
+  if (liveEdgeGlassGeometry) {
+    replaceGlassMeshGeometry(glassMesh, liveEdgeGlassGeometry, 'live-edge');
+  } else {
+    ensureGlassBoxGeometry(glassMesh);
+    glassRoot.scale.set(glassWidth, thickness, glassLength);
+  }
+
   glassRoot.position.set(
     tabletopMetrics.center.x,
     tabletopMetrics.max.y + (thickness / 2) + GLASS_TOP_SURFACE_GAP,
@@ -1034,6 +1145,7 @@ function createGlassTopPart() {
 
   const glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
   glassMesh.name = `${GLASS_TOP_PART_NAME}-mesh`;
+  glassMesh.userData.geometryMode = 'box';
   glassMesh.castShadow = false;
   glassMesh.receiveShadow = false;
   glassMesh.renderOrder = 12;

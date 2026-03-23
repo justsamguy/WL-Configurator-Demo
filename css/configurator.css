@@ -3952,6 +3952,9 @@ body.stage-1 #designs-stage-section {
   --designs-header-surface-hover: rgba(255, 255, 255, 0.9);
   --designs-tile-surface: rgba(255, 255, 255, 0.74);
   --designs-tile-surface-hover: rgba(255, 255, 255, 0.92);
+  --designs-tile-hover-ring: rgba(148, 163, 184, 0.1);
+  --designs-tile-hover-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 0 0 1px var(--designs-tile-hover-ring);
+  --designs-toggle-hover-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 0 0 1px var(--designs-group-border-hover);
   --designs-selection-ring: rgba(59, 130, 246, 0.38);
   --designs-selection-shadow: rgba(37, 99, 235, 0.24);
   --designs-section-gap: clamp(1.1rem, 2vw, 1.8rem);
@@ -4093,7 +4096,7 @@ body.stage-1 #stage-panel-1 > .flex {
   transform: translateY(-1px);
   border-color: var(--designs-group-border-hover);
   background: var(--designs-group-header-hover-bg);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 0 0 1px var(--designs-group-border-hover);
+  box-shadow: var(--designs-toggle-hover-shadow);
 }
 
 .designs-stage-toggle:focus-visible {
@@ -4182,15 +4185,18 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card {
   background: var(--designs-tile-surface);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
   padding: 2.95rem 1rem 1rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card:hover {
+  transform: translateY(-2px);
   border-color: transparent;
   background: var(--designs-tile-surface-hover);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(148, 163, 184, 0.1);
+  box-shadow: var(--designs-tile-hover-shadow);
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card:focus-visible {
+  transform: translateY(-2px);
   border-color: transparent;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22), 0 14px 28px rgba(15, 23, 42, 0.12);
 }
@@ -5624,10 +5630,13 @@ body[data-resolved-theme="dark"].stage-1 #designs-stage-section {
   --designs-pill-exclusive-bg: rgba(146, 64, 14, 0.42);
   --designs-pill-exclusive-text: #fde68a;
   --designs-pill-exclusive-shadow: 0 20px 36px rgba(217, 119, 6, 0.26), 0 0 0 1px rgba(251, 191, 36, 0.3);
-  --designs-header-surface: rgba(15, 23, 42, 0.68);
-  --designs-header-surface-hover: rgba(15, 23, 42, 0.84);
-  --designs-tile-surface: rgba(15, 23, 42, 0.74);
-  --designs-tile-surface-hover: rgba(15, 23, 42, 0.9);
+  --designs-header-surface: linear-gradient(135deg, rgba(15, 23, 42, 0.72) 0%, rgba(30, 41, 59, 0.64) 100%);
+  --designs-header-surface-hover: linear-gradient(135deg, rgba(30, 41, 59, 0.96) 0%, rgba(37, 99, 235, 0.34) 100%);
+  --designs-tile-surface: linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(30, 41, 59, 0.72) 100%);
+  --designs-tile-surface-hover: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(37, 99, 235, 0.18) 100%);
+  --designs-tile-hover-ring: rgba(147, 197, 253, 0.34);
+  --designs-tile-hover-shadow: 0 18px 34px rgba(2, 6, 23, 0.48), 0 0 0 1px var(--designs-tile-hover-ring), 0 0 0 4px rgba(59, 130, 246, 0.12);
+  --designs-toggle-hover-shadow: 0 18px 34px rgba(2, 6, 23, 0.48), 0 0 0 1px var(--designs-group-border-strong), 0 0 0 4px rgba(59, 130, 246, 0.1);
   --designs-selection-ring: rgba(191, 219, 254, 0.34);
   --designs-selection-shadow: rgba(2, 6, 23, 0.42);
   --designs-section-surface: linear-gradient(180deg, rgba(4, 10, 20, 0.98) 0%, rgba(10, 17, 30, 0.98) 100%);
@@ -5658,7 +5667,7 @@ body[data-resolved-theme="dark"] .designs-stage-toggle {
 
 body[data-resolved-theme="dark"] .designs-stage-toggle:hover,
 body[data-resolved-theme="dark"] .designs-stage-group.is-open .designs-stage-toggle {
-  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.42), 0 0 0 1px var(--designs-group-border-strong);
+  box-shadow: var(--designs-toggle-hover-shadow);
 }
 
 body[data-resolved-theme="dark"].stage-1 #designs-stage-section::before {
@@ -5672,7 +5681,7 @@ body[data-resolved-theme="dark"] #designs-stage-section .stage-options-grid .opt
 }
 
 body[data-resolved-theme="dark"] #designs-stage-section .stage-options-grid .option-card:hover {
-  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.4), 0 0 0 1px rgba(148, 163, 184, 0.12);
+  box-shadow: var(--designs-tile-hover-shadow);
 }
 
 body[data-resolved-theme="dark"] .viewer-overlay-card,

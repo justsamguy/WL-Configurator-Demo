@@ -162,6 +162,7 @@ export async function loadSummaryData(loadDataOverride) {
 }
 
 const BREAKDOWN_LABELS = {
+  model: 'Model',
   design: 'Design',
   material: 'Material',
   color: 'Color',
