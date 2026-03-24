@@ -4143,6 +4143,10 @@ body.stage-1 #stage-panel-1 > .flex {
 .designs-stage-panel {
   display: block;
   padding: 0 0.35rem 0.35rem;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease;
 }
 
 .designs-stage-panel[hidden] {
@@ -4153,22 +4157,6 @@ body.stage-1 #stage-panel-1 > .flex {
   overflow: visible;
   padding-top: 0.45rem;
   border-top: 1px solid var(--designs-group-divider);
-}
-
-.designs-stage-group.is-open .designs-stage-panel-inner {
-  animation: designs-stage-panel-reveal 0.18s ease;
-}
-
-@keyframes designs-stage-panel-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid {
@@ -4209,12 +4197,9 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card[aria-presse
 
 @media (prefers-reduced-motion: reduce) {
   .designs-stage-toggle,
-  .designs-stage-chevron {
+  .designs-stage-chevron,
+  .designs-stage-panel {
     transition: none;
-  }
-
-  .designs-stage-group.is-open .designs-stage-panel-inner {
-    animation: none;
   }
 }
 

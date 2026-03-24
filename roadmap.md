@@ -2,7 +2,6 @@
 
 ## v1.1
 - Add 3D model viewer
-ensure reference images are accurate 
 produce additional models:
 U-channels
 Chair for reference
