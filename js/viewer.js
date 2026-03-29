@@ -62,6 +62,12 @@ const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
 const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
 const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
+const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.78;
+const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
+const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
+const RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE = 0.5;
+const RESIN_PREVIEW_VIEW_BLEND_MIN = 0.18;
+const RESIN_PREVIEW_VIEW_BLEND_MAX = 0.78;
 
 let renderer = null;
 let scene = null;
@@ -110,6 +116,8 @@ let lastObservedDimensionsSignature = '';
 let lastObservedLegId = null;
 let lastObservedTubeId = null;
 let lastObservedAddonsSignature = '';
+let activeResinPreviewMaterials = [];
+const cameraViewDirection = new THREE.Vector3();
 
 function getSelections() {
   return state && state.selections && typeof state.selections === 'object'
@@ -1378,16 +1386,61 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
       : 0.98);
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
-  if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : 0.78;
+  if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : RESIN_PREVIEW_TOP_VIEW_TRANSMISSION;
   if ('thickness' in previewMaterial) previewMaterial.thickness = 1.1;
   if ('ior' in previewMaterial) previewMaterial.ior = 1.46;
   if ('envMapIntensity' in previewMaterial) previewMaterial.envMapIntensity = 1.08;
   if ('clearcoat' in previewMaterial) previewMaterial.clearcoat = 0.24;
   if ('clearcoatRoughness' in previewMaterial) previewMaterial.clearcoatRoughness = 0.18;
-  if ('attenuationDistance' in previewMaterial) previewMaterial.attenuationDistance = 0.82;
+  if ('attenuationDistance' in previewMaterial) previewMaterial.attenuationDistance = RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE;
   if ('attenuationColor' in previewMaterial) previewMaterial.attenuationColor = new THREE.Color(resinTint);
+  previewMaterial.userData = {
+    ...(previewMaterial.userData || {}),
+    resinPreviewMaterial: !isSolidBlack
+  };
   previewMaterial.needsUpdate = true;
   return previewMaterial;
+}
+
+function getResinPreviewViewBlend() {
+  if (!camera) return 1;
+  camera.getWorldDirection(cameraViewDirection);
+  const verticalViewAmount = THREE.MathUtils.clamp(Math.abs(cameraViewDirection.y), 0, 1);
+  return THREE.MathUtils.smoothstep(verticalViewAmount, RESIN_PREVIEW_VIEW_BLEND_MIN, RESIN_PREVIEW_VIEW_BLEND_MAX);
+}
+
+function updateResinPreviewMaterialsForView() {
+  if (!activeResinPreviewMaterials.length) return;
+  const viewBlend = getResinPreviewViewBlend();
+  const transmission = THREE.MathUtils.lerp(
+    RESIN_PREVIEW_END_VIEW_TRANSMISSION,
+    RESIN_PREVIEW_TOP_VIEW_TRANSMISSION,
+    viewBlend
+  );
+  const attenuationDistance = THREE.MathUtils.lerp(
+    RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE,
+    RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE,
+    viewBlend
+  );
+
+  activeResinPreviewMaterials.forEach((material) => {
+    if (!material || !material.userData?.resinPreviewMaterial) return;
+    if ('transmission' in material) material.transmission = transmission;
+    if ('attenuationDistance' in material) material.attenuationDistance = attenuationDistance;
+  });
+}
+
+function setActiveResinPreviewMaterialsFromRoot(renderRoot) {
+  activeResinPreviewMaterials = [];
+  if (!renderRoot) return;
+
+  renderRoot.traverse((child) => {
+    if (!child?.isMesh || !child.material) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (material?.userData?.resinPreviewMaterial) activeResinPreviewMaterials.push(material);
+    });
+  });
 }
 
 function cloneMaterialWithFinish(material, finishMaterial = {}) {
@@ -1508,6 +1561,7 @@ async function applySelectedTabletopMaterial(renderRoot) {
 
 async function applySelectedResinPreview(renderRoot) {
   if (!renderRoot) return;
+  activeResinPreviewMaterials = [];
 
   const selectedColorId = state && state.selections && state.selections.options
     ? state.selections.options.color || null
@@ -1536,6 +1590,8 @@ async function applySelectedResinPreview(renderRoot) {
         child.material = cloneMaterialForResinPreview(child.material, texture, resinTint);
       }
     });
+    setActiveResinPreviewMaterialsFromRoot(renderRoot);
+    updateResinPreviewMaterialsForView();
 
     log.info('Applied resin preview test material override', {
       colorId: selectedColorId,
@@ -1662,6 +1718,7 @@ function replaceCurrentRenderRoot(nextRoot) {
   }
   currentRenderRoot = nextRoot;
   if (scene && currentRenderRoot) scene.add(currentRenderRoot);
+  setActiveResinPreviewMaterialsFromRoot(currentRenderRoot);
 }
 
 function clearCurrentRenderRoot() {
@@ -1669,6 +1726,7 @@ function clearCurrentRenderRoot() {
     currentRenderRoot.parent.remove(currentRenderRoot);
     disposeObject3D(currentRenderRoot);
   }
+  activeResinPreviewMaterials = [];
   currentRenderRoot = null;
   displayedModelId = null;
   displayedRenderSignature = null;
@@ -2237,6 +2295,7 @@ export async function initViewer() {
   renderer.setAnimationLoop(() => {
     if (!renderer || !scene || !camera) return;
     if (controls) controls.update();
+    updateResinPreviewMaterialsForView();
     renderer.render(scene, camera);
   });
 
