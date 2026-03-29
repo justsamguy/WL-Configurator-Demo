@@ -63,8 +63,8 @@
     "productNumber": "314560",
     "viewerMaterial": {
       "baseColor": "#a47d57",
-      "metalness": 0.9,
-      "roughness": 0.6,
+      "metalness": 0.92,
+      "roughness": 0.54,
       "envIntensity": 0.82,
       "textureSet": null
     },

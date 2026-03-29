@@ -14,7 +14,7 @@ const CUSTOM_GRADIENT_NOTE_INPUT_ID = 'custom-color-gradient-note-input';
 const SINGLE_COLOR_GRADIENT_ID = 'color-gradient-04';
 const SOLID_ONLY_COLOR_IDS = new Set(['color-06', 'color-07', 'color-08']);
 const SOLID_ONLY_COLOR_SOURCE = 'single-color-only';
-const SOLID_ONLY_TOOLTIP = 'Only Single Color is available for Dark Grey, Caviar Black, and Solid Black.';
+const SOLID_ONLY_TOOLTIP = 'gradients are only available with multiple colors.';
 
 let customColorCard = null;
 let customColorNoteContainer = null;

@@ -514,6 +514,18 @@ function updateNextButton() {
   nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
 }
 
+function syncTrackedStageCompletion(source = appState) {
+  // Keep completion flags aligned with the canonical state after indirect mutations.
+  managerState.completed[0] = !!(source && source.selections && source.selections.model);
+  managerState.completed[1] = !!(source && source.selections && source.selections.design);
+  managerState.completed[2] = isMaterialsStageComplete(source);
+  managerState.completed[3] = isFinishStageComplete(source);
+  managerState.completed[4] = hasSelectedDimensions(source);
+  managerState.completed[5] = isLegStageComplete(source);
+  updateStageButtons();
+  updateNextButton();
+}
+
 function updateStageButtons() {
   const currentCompleted = isStageCompleteForNav(managerState.current);
 
@@ -591,8 +603,7 @@ async function setStage(index, options = {}) {
   
   // gating: normally prevent jumping forward past first incomplete required stage
   // but callers can pass { allowSkip: true } to bypass the gating (used by Next button)
-  const isAlreadyOpened = !!managerState.opened[index];
-  if (index > managerState.current && !options.allowSkip && !isAlreadyOpened) {
+  if (index > managerState.current && !options.allowSkip) {
     // require model selected to advance beyond stage 0 (Models)
     if (managerState.current <= 0 && !appState.selections.model) {
       revealFirstMissingRequiredSelection();
@@ -1059,7 +1070,10 @@ export function initStageManager() {
       setStage(managerState.current);
     }
   });
-  document.addEventListener('statechange', refreshActiveValidationPrompt);
+  document.addEventListener('statechange', () => {
+    syncTrackedStageCompletion(appState);
+    refreshActiveValidationPrompt();
+  });
   document.addEventListener('input', refreshActiveValidationPrompt);
   document.addEventListener('change', refreshActiveValidationPrompt);
   document.addEventListener('click', refreshActiveValidationPrompt);

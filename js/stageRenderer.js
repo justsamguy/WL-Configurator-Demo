@@ -305,6 +305,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     const headerMain = document.createElement('div');
     headerMain.className = 'addons-dropdown-header-main';
 
+    const chevron = document.createElement('svg');
+    chevron.className = 'addons-dropdown-chevron';
+    chevron.setAttribute('fill', 'none');
+    chevron.setAttribute('viewBox', '0 0 24 24');
+    chevron.setAttribute('stroke', 'currentColor');
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />';
+
     const title = document.createElement('div');
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
@@ -321,19 +329,11 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     headerMeta.appendChild(price);
     headerMeta.appendChild(indicator);
 
+    headerMain.appendChild(chevron);
     headerMain.appendChild(title);
     headerMain.appendChild(headerMeta);
 
-    // Chevron icon
-    const chevron = document.createElement('svg');
-    chevron.className = 'addons-dropdown-chevron';
-    chevron.setAttribute('fill', 'none');
-    chevron.setAttribute('viewBox', '0 0 24 24');
-    chevron.setAttribute('stroke', 'currentColor');
-    chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />';
-
     header.appendChild(headerMain);
-    header.appendChild(chevron);
 
     // Content (expandable)
     const content = document.createElement('div');
@@ -499,15 +499,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const hasLiveEdge = currentAddons.includes('addon-live-edge');
           const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-angled-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
           const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-rounded-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge') || currentAddons.includes('addon-angled-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge'));
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
-            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || hasLiveEdge || hasWaterfall);
+            (hasLiveEdge || hasWaterfall);
           const isLiveEdgeIncompatible = option.id === 'addon-live-edge' && hasSquoval;
           const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
           const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
@@ -528,15 +528,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               checkbox.setAttribute('data-disabled-by', 'waterfall');
               optionDiv.setAttribute('data-disabled-by', 'waterfall');
             } else if (isRoundedCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Angled Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isAngledCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Rounded Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
             } else if (isChamferedEdgesIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, Live Edge, or Angled Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
             } else if (isSquovalIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge';
+              incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
             } else if (isLowerShelfLegIncompatible) {

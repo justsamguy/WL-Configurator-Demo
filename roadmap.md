@@ -6,6 +6,12 @@ produce additional models:
 U-channels
 Chair for reference
 
+update gradient compatibility tooltip to say "gradients are only available with multiple colors".
+give satin bronze a little more sheen
+merge chamfered edges, squoval and cut corners into a single addon dropdown.
+(name it tabletop shape/trim if gpt's name isn't good enough)
+add a down/up chevron to the left of each addon title as a visual cue that they are dropdowns.
+
 
 - invent & add model handling for each add-on:
     - 
