@@ -881,6 +881,10 @@ function updateEdgeAddonCompatibility(appState = state) {
 }
 
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const EDGE_PROFILE_COMPATIBLE_PAIRS = new Set([
+  'addon-angled-corners:addon-chamfered-edges',
+  'addon-chamfered-edges:addon-angled-corners'
+]);
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
 const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
@@ -960,6 +964,11 @@ function updateLowerShelfAddonAvailability(appState) {
 }
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
+function areEdgeProfilesCompatible(firstAddonId, secondAddonId) {
+  if (!firstAddonId || !secondAddonId || firstAddonId === secondAddonId) return true;
+  return EDGE_PROFILE_COMPATIBLE_PAIRS.has(`${firstAddonId}:${secondAddonId}`);
+}
+
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
   if (addonId === 'addon-rounded-corners') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round';
@@ -989,7 +998,7 @@ function updateEdgeProfileAddonAvailability(appState = state) {
     : [];
   const currentAddons = Array.isArray(addons) ? addons : [];
   const currentDesign = appState && appState.selections ? appState.selections.design : null;
-  const selectedEdge = EDGE_PROFILE_ADDONS.find(id => currentAddons.includes(id)) || '';
+  const selectedEdges = EDGE_PROFILE_ADDONS.filter(id => currentAddons.includes(id));
 
   EDGE_PROFILE_ADDONS.forEach((addonId) => {
     const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
@@ -997,7 +1006,9 @@ function updateEdgeProfileAddonAvailability(appState = state) {
     if (!checkbox || !option) return;
 
     const base = getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons);
-    const disableBySelection = selectedEdge && addonId !== selectedEdge;
+    const disableBySelection = selectedEdges.some((selectedAddonId) => (
+      selectedAddonId !== addonId && !areEdgeProfilesCompatible(addonId, selectedAddonId)
+    ));
     const shouldDisable = base.incompatible || disableBySelection;
 
     if (shouldDisable) {
@@ -1373,7 +1384,7 @@ document.addEventListener('addon-toggled', async (ev) => {
   else selectedAddons.delete(id);
   if (checked && EDGE_PROFILE_ADDONS.includes(id)) {
     EDGE_PROFILE_ADDONS.forEach((addonId) => {
-      if (addonId !== id) selectedAddons.delete(addonId);
+      if (addonId !== id && !areEdgeProfilesCompatible(id, addonId)) selectedAddons.delete(addonId);
     });
   }
   if (checked && id === 'addon-squoval') {
@@ -1716,6 +1727,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 644');
+console.log('Edit ver: 645');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
