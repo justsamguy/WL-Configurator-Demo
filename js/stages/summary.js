@@ -1525,7 +1525,7 @@ async function exportPdf() {
   const legFinishLabel = legFinishBrand ? `${legFinishTitle} (${legFinishBrand})` : (legFinishTitle || 'TBD');
   const hasLegs = opts.legs && opts.legs !== 'leg-none' && waterfallCount < 2;
   const legStyleLabel = hasLegs ? (legTitle || 'TBD') : (waterfallCount >= 2 ? 'Replaced by waterfall' : (legTitle || 'None'));
-  const legWidth = getLegWidthForTable(width);
+  const legWidth = getLegWidthForTable(width, { modelId: selections.model });
   const legHeight = Number.isFinite(height) && Number.isFinite(tabletopThickness)
     ? Math.max(0, height - tabletopThickness)
     : null;

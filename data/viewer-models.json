@@ -140,9 +140,9 @@
       "supportCopy": "Interactive tabletop and leg preview for coffee table selections.",
       "dimensionRules": {
         "baseDimensions": {
-          "length": 96,
-          "width": 42,
-          "height": 30
+          "length": 48,
+          "width": 24,
+          "height": 18
         },
         "heightOptions": {
           "standard": 18,

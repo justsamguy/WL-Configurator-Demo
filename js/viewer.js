@@ -832,7 +832,7 @@ function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId 
   }
 
   return {
-    spanX: getLegWidthForTable(width),
+    spanX: getLegWidthForTable(width, { modelId: selectedDimensions.modelId }),
     spanZ: null,
     endSetback: getLegEndSetbackValue({ modelId: selectedDimensions.modelId, length, hasLegs: true })
   };

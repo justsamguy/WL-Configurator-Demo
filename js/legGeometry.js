@@ -18,8 +18,12 @@ function formatInches(value, decimals = 0) {
   return `${rounded.toFixed(decimals)} in`.replace(/\.0+\s/, ' ').replace(/(\.\d*[1-9])0+\s/, '$1 ');
 }
 
-export function getLegWidthForTable(width) {
+export function getLegWidthForTable(width, { modelId = null } = {}) {
   if (!Number.isFinite(width)) return null;
+  if (modelId === 'mdl-coffee') {
+    const genericWidth = getLegWidthForTable(width);
+    return Math.min(genericWidth, Math.max(width - 4, 8));
+  }
   if (width <= 36) return 26;
   if (width <= 42) return 28;
   if (width <= 48) return 32;
