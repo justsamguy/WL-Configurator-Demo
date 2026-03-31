@@ -785,6 +785,28 @@ function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, p
 
   if (samples.length < 4) return null;
 
+  const minSampleZ = minZ - centerZ;
+  const maxSampleZ = maxZ - centerZ;
+  const endpointTolerance = Math.max(targetSampleSpacing * 0.25, GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE);
+  const firstSample = samples[0];
+  if (firstSample && Math.abs(firstSample.z - minSampleZ) > endpointTolerance) {
+    // Keep the glass flush to the slab ends even when the first top-surface hit lands one sample inside the perimeter.
+    samples.unshift({
+      leftX: firstSample.leftX,
+      rightX: firstSample.rightX,
+      z: minSampleZ
+    });
+  }
+
+  const lastSample = samples[samples.length - 1];
+  if (lastSample && Math.abs(lastSample.z - maxSampleZ) > endpointTolerance) {
+    samples.push({
+      leftX: lastSample.leftX,
+      rightX: lastSample.rightX,
+      z: maxSampleZ
+    });
+  }
+
   const outline = [];
   samples.forEach((sample) => addUniqueShapePoint(outline, sample.leftX, -sample.z));
   [...samples].reverse().forEach((sample) => addUniqueShapePoint(outline, sample.rightX, -sample.z));
