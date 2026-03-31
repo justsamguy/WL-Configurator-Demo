@@ -15,7 +15,6 @@ Chair for reference
 - get a picture of caviar black
 - make some sort of rainbow-colored epoxy/pigment image for custom color
 - change all layout design images to be top-down (only presets get gallery-style photography) (use layout pictures to do this)
-- Rename "addons" to "customizations"
 - hide backend code?
 
 ## v1.2

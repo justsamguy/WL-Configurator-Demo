@@ -48,7 +48,7 @@ function buildConfigFromGroups(groups) {
   const tabletopGroup = getGroup(groups, 'Tabletop');
   const dimensionsGroup = getGroup(groups, 'Dimensions');
   const legsGroup = getGroup(groups, 'Legs');
-  const addonsGroup = getGroup(groups, 'Add-ons');
+  const addonsGroup = getGroup(groups, 'Customizations');
 
   return {
     model: getItemValue(modelGroup && modelGroup.items, 'Model'),
@@ -200,7 +200,7 @@ export async function buildExportMarkdown(appState, dataLoader) {
     `- Tube: ${formatLiteral(legs.tube)}`,
     `- Finish: ${formatLiteral(legs.finish)}`,
     '',
-    '### Add-ons',
+    '### Customizations',
     addonsText,
     '',
     '## Pricing',

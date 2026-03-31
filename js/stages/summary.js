@@ -796,7 +796,7 @@ export function buildOptionGroups(selections, summaryData) {
     const value = formatAddonValue(entry, addonId);
     if (value) addonItems.push({ label: value, id: addonId, type: 'addon' });
   });
-  if (addonItems.length) groups.push({ title: 'Add-ons', items: addonItems });
+  if (addonItems.length) groups.push({ title: 'Customizations', items: addonItems });
 
   return groups;
 }
@@ -1699,7 +1699,7 @@ async function exportPdf() {
     !!edgeDetailLabel;
 
   if (hasAddonSpecs) {
-    addTechSubheading('Add-ons');
+    addTechSubheading('Customizations');
     addTechRow('Edge Style', edgeDetailLabel);
     if (addons.includes('addon-glass-top')) {
       addTechRow('Glass thickness', '1/4 in');

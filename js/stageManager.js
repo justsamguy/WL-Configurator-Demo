@@ -12,7 +12,7 @@ const STAGES = [
   'Finish',
   'Dimensions',
   'Legs',
-  'Add-ons',
+  'Customizations',
   'Summary & Export'
 ];
 
@@ -54,7 +54,7 @@ const managerState = {
 };
 
 // Stages that are optional (no selection required to advance)
-const OPTIONAL_STAGES = [6]; // index 6 = 'Add-ons'
+const OPTIONAL_STAGES = [6]; // index 6 = 'Customizations'
 const DIMENSIONS_STAGE_INDEX = 4;
 const LEGS_STAGE_INDEX = 5;
 const SUMMARY_STAGE_INDEX = 7;
@@ -680,7 +680,7 @@ async function setStage(index, options = {}) {
           }
         }
       }
-      // Once all required selections through stage 5 (Legs) are complete, stages 6 (Add-ons) and 7 (Summary)
+      // Once all required selections through stage 5 (Legs) are complete, stages 6 (Customizations) and 7 (Summary)
       // are fully unlocked and can be freely navigated between and back to previous stages.
       // No additional gating is needed for indices 6 and 7.
     } catch (e) {
@@ -1051,7 +1051,7 @@ export function initStageManager() {
       if (category === 'legs' || category === 'tube-size' || category === 'leg-finish') {
         markCompleted(5, isLegStageComplete(appState));
       }
-      // Stage 6 (Add-ons) is optional, so it's never marked as requiring completion
+      // Stage 6 (Customizations) is optional, so it's never marked as requiring completion
       // Stage 7 (Summary) is terminal; completion not tracked here
       
       // run a UI update to refresh Next/Prev/button states
