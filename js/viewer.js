@@ -457,6 +457,28 @@ function getObjectMetrics(root) {
   };
 }
 
+function getNamedMeshMetrics(root, namePattern) {
+  if (!root || !(namePattern instanceof RegExp)) return null;
+
+  let bounds = null;
+  root.updateWorldMatrix(true, true);
+  root.traverse((child) => {
+    if (!child || !child.isMesh || !namePattern.test(child.name || '')) return;
+    const childBounds = new THREE.Box3().setFromObject(child);
+    if (childBounds.isEmpty()) return;
+    if (!bounds) bounds = childBounds.clone();
+    else bounds.union(childBounds);
+  });
+
+  if (!bounds || bounds.isEmpty()) return null;
+  return {
+    bounds,
+    min: bounds.min.clone(),
+    max: bounds.max.clone(),
+    center: bounds.getCenter(new THREE.Vector3())
+  };
+}
+
 function hasGlassTopAddon() {
   const addons = state && state.selections && state.selections.options
     ? state.selections.options.addon
@@ -850,9 +872,13 @@ function computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, select
   const baseSpanX = getPartSpan(baseState.metrics, 'x');
   const baseSpanY = getPartSpan(baseState.metrics, 'y');
   const baseSpanZ = getPartSpan(baseState.metrics, 'z');
+  const basePlateMetrics = getNamedMeshMetrics(partRoot, /plate/i);
+  const baseContactSpanY = basePlateMetrics
+    ? Math.max(0, basePlateMetrics.max.y - baseState.metrics.min.y)
+    : baseSpanY;
   const desiredLegHeight = Number.isFinite(selectedUndersideY) ? selectedUndersideY : baseSpanY;
-  const scaleY = Number.isFinite(baseSpanY) && baseSpanY > 0 && Number.isFinite(desiredLegHeight)
-    ? desiredLegHeight / baseSpanY
+  const scaleY = Number.isFinite(baseContactSpanY) && baseContactSpanY > 0 && Number.isFinite(desiredLegHeight)
+    ? desiredLegHeight / baseContactSpanY
     : 1;
   const scaleX = Number.isFinite(baseSpanX) && baseSpanX > 0 && Number.isFinite(targets.spanX)
     ? targets.spanX * unitsPerInch / baseSpanX

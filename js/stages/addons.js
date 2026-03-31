@@ -293,6 +293,7 @@ const getGroupSelectionStats = (tile) => {
   const stats = {
     selectedCount: 0,
     selectableCount: 0,
+    activeCount: 0,
     total: 0,
     disabledCount: 0,
     totalCount: 0
@@ -302,13 +303,20 @@ const getGroupSelectionStats = (tile) => {
   const checkboxes = tile.querySelectorAll('.addons-dropdown-option-checkbox');
   checkboxes.forEach(checkbox => {
     stats.totalCount += 1;
+    const isSelected = checkbox.checked;
     const isDisabled = checkbox.disabled;
     if (isDisabled) {
       stats.disabledCount += 1;
+      if (isSelected) {
+        stats.activeCount += 1;
+        stats.selectedCount += 1;
+        stats.total += parsePrice(checkbox.getAttribute('data-price'));
+      }
       return;
     }
     stats.selectableCount += 1;
-    if (checkbox.checked) {
+    stats.activeCount += 1;
+    if (isSelected) {
       stats.selectedCount += 1;
       stats.total += parsePrice(checkbox.getAttribute('data-price'));
     }
@@ -317,13 +325,20 @@ const getGroupSelectionStats = (tile) => {
   const tiles = tile.querySelectorAll('.addons-tile');
   tiles.forEach(button => {
     stats.totalCount += 1;
+    const isSelected = button.classList.contains('selected');
     const isDisabled = button.disabled || button.getAttribute('aria-disabled') === 'true';
     if (isDisabled) {
       stats.disabledCount += 1;
+      if (isSelected) {
+        stats.activeCount += 1;
+        stats.selectedCount += 1;
+        stats.total += parsePrice(button.getAttribute('data-price'));
+      }
       return;
     }
     stats.selectableCount += 1;
-    if (button.classList.contains('selected')) {
+    stats.activeCount += 1;
+    if (isSelected) {
       stats.selectedCount += 1;
       stats.total += parsePrice(button.getAttribute('data-price'));
     }
@@ -332,16 +347,22 @@ const getGroupSelectionStats = (tile) => {
   const selects = tile.querySelectorAll('.addons-dropdown-select');
   selects.forEach(select => {
     stats.totalCount += 1;
+    const selectedOption = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
+    const value = selectedOption ? (selectedOption.value || '') : '';
+    const hasSelection = !!selectedOption && !value.includes('none');
     const isDisabled = isSelectEffectivelyDisabled(select);
     if (isDisabled) {
       stats.disabledCount += 1;
+      if (hasSelection) {
+        stats.activeCount += 1;
+        stats.selectedCount += 1;
+        stats.total += parsePrice(selectedOption.getAttribute('data-price'));
+      }
       return;
     }
     stats.selectableCount += 1;
-    const selectedOption = select.selectedOptions ? select.selectedOptions[0] : select.options[select.selectedIndex];
-    if (!selectedOption) return;
-    const value = selectedOption.value || '';
-    if (value.includes('none')) return;
+    stats.activeCount += 1;
+    if (!hasSelection) return;
     stats.selectedCount += 1;
     stats.total += parsePrice(selectedOption.getAttribute('data-price'));
   });
@@ -360,13 +381,13 @@ function updateIndicator(tile, stats) {
   const resolvedStats = stats || getGroupSelectionStats(tile);
 
   indicator.className = 'addons-dropdown-indicator';
-  if (resolvedStats.totalCount > 0 && resolvedStats.selectableCount === 0) {
+  if (resolvedStats.totalCount > 0 && resolvedStats.activeCount === 0) {
     indicator.classList.add('unavailable');
-    indicator.setAttribute('data-tooltip', 'This customization is currently unvailable.');
+    indicator.setAttribute('data-tooltip', 'This customization is currently unavailable.');
   } else if (resolvedStats.selectedCount === 0) {
     indicator.classList.remove('partial', 'full');
     indicator.removeAttribute('data-tooltip');
-  } else if (resolvedStats.selectedCount === resolvedStats.selectableCount) {
+  } else if (resolvedStats.selectedCount === resolvedStats.activeCount) {
     indicator.classList.add('full');
     indicator.removeAttribute('data-tooltip');
   } else {
