@@ -793,40 +793,44 @@ function updateWaterfallAddonAvailability(appState = state) {
   const addons = appState && appState.selections && appState.selections.options
     ? appState.selections.options.addon
     : [];
-  if (Array.isArray(addons) && addons.includes('addon-squoval')) return;
   const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
-  const shouldDisableSecond = !hasSingle;
-  const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
-  const option = root.querySelector('.addons-dropdown-option[data-addon-id="addon-waterfall-second"]');
-  if (!checkbox) return;
+  const shouldDisableDependentWaterfalls = !hasSingle;
+  ['addon-waterfall-second', 'addon-waterfall-art'].forEach((addonId) => {
+    const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
+    const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${addonId}"]`);
+    if (!checkbox) return;
 
-  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
-  if (shouldDisableSecond) {
-    checkbox.disabled = true;
-    checkbox.checked = false;
-    checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
-    checkbox.setAttribute('data-disabled-by', 'waterfall');
-    if (option) {
-      option.classList.add('disabled');
-      option.classList.remove('selected');
-      option.setAttribute('aria-disabled', 'true');
-      option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
-    }
-  } else if (disabledBy === 'waterfall') {
-    checkbox.disabled = false;
-    checkbox.removeAttribute('data-tooltip');
-    checkbox.removeAttribute('data-disabled-by');
-    if (option) {
-      option.classList.remove('disabled');
-      option.removeAttribute('aria-disabled');
-      if (option.getAttribute('data-disabled-by') === 'waterfall') {
-        option.removeAttribute('data-disabled-by');
+    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+    if (shouldDisableDependentWaterfalls) {
+      checkbox.disabled = true;
+      checkbox.checked = false;
+      checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+      checkbox.setAttribute('data-disabled-by', 'waterfall');
+      if (option) {
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
+        option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
       }
-      if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
-        option.removeAttribute('data-tooltip');
+      return;
+    }
+
+    if (disabledBy === 'waterfall') {
+      checkbox.disabled = false;
+      checkbox.removeAttribute('data-tooltip');
+      checkbox.removeAttribute('data-disabled-by');
+      if (option) {
+        option.classList.remove('disabled');
+        option.removeAttribute('aria-disabled');
+        if (option.getAttribute('data-disabled-by') === 'waterfall') {
+          option.removeAttribute('data-disabled-by');
+        }
+        if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
+          option.removeAttribute('data-tooltip');
+        }
       }
     }
-  }
+  });
 
   updateAllIndicators();
 }
@@ -838,7 +842,7 @@ function updateEdgeAddonCompatibility(appState = state) {
     ? appState.selections.options.addon
     : [];
   const hasSquoval = Array.isArray(addons) && addons.includes('addon-squoval');
-  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second'];
+  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art'];
   ids.forEach(id => {
     const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${id}"]`);
     const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${id}"]`);
@@ -1391,12 +1395,14 @@ document.addEventListener('addon-toggled', async (ev) => {
     selectedAddons.delete('addon-live-edge');
     selectedAddons.delete('addon-waterfall-single');
     selectedAddons.delete('addon-waterfall-second');
+    selectedAddons.delete('addon-waterfall-art');
   }
   if (checked && (id === 'addon-live-edge' || id === 'addon-waterfall-single' || id === 'addon-waterfall-second')) {
     selectedAddons.delete('addon-squoval');
   }
   if (id === 'addon-waterfall-single' && !checked) {
     selectedAddons.delete('addon-waterfall-second');
+    selectedAddons.delete('addon-waterfall-art');
   }
   const addonsArray = Array.from(selectedAddons);
   // persist selections then compute price via pricing module
@@ -1727,6 +1733,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 651');
+console.log('Edit ver: 653');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

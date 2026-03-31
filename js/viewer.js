@@ -260,6 +260,22 @@ function buildLegRenderableParts(legCatalog = {}, selectionContext = {}) {
     placements.push('middle');
   }
 
+  if (selectionContext.waterfallCount === 1) {
+    // Single waterfall replaces the reset-view-side end leg, never the center support.
+    const defaultViewPlacement = selectionContext.defaultViewNearestPlacement === 'back' ? 'back' : 'front';
+    return placements
+      .filter((placement) => placement === 'middle' || placement !== defaultViewPlacement)
+      .map((placement) => ({
+        name: `leg-${placement}`,
+        role: 'leg',
+        placement,
+        layout: 'paired-supports',
+        legId: selectionContext.legId,
+        assetPath: variant.assetPath,
+        tubeFallbackScale
+      }));
+  }
+
   return placements.map((placement) => ({
     name: `leg-${placement}`,
     role: 'leg',
@@ -275,7 +291,16 @@ function getConfiguredLegParts(manifest = {}, modelId) {
   const defaults = manifest && manifest.defaults && typeof manifest.defaults === 'object'
     ? manifest.defaults
     : {};
+  const modelEntry = manifest && manifest.models && typeof manifest.models === 'object'
+    ? manifest.models[modelId]
+    : null;
+  const cameraConfig = {
+    ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
+    ...(modelEntry && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
+  };
   const selectionContext = getCurrentViewerSelectionContext(modelId);
+  const cameraSettings = getCameraSettings({ camera: cameraConfig });
+  selectionContext.defaultViewNearestPlacement = Number(cameraSettings.offset[2]) < 0 ? 'back' : 'front';
   const legCatalog = defaults.legAssets && typeof defaults.legAssets === 'object'
     ? defaults.legAssets
     : {};

@@ -509,8 +509,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
             (hasLiveEdge || hasWaterfall);
           const isLiveEdgeIncompatible = option.id === 'addon-live-edge' && hasSquoval;
-          const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
-          const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
+          const isWaterfallIncompatible = (
+            option.id === 'addon-waterfall-single'
+            || option.id === 'addon-waterfall-second'
+            || option.id === 'addon-waterfall-art'
+          ) && hasSquoval;
+          const requiresWaterfallSingle = (
+            option.id === 'addon-waterfall-second'
+            || option.id === 'addon-waterfall-art'
+          ) && !currentAddons.includes('addon-waterfall-single');
           const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
           const isLowerShelfLegIncompatible = option.id === LOWER_SHELF_ADDON_ID &&
             currentModel === LOWER_SHELF_COMPATIBLE_MODEL_ID &&
