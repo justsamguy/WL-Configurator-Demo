@@ -1,4 +1,5 @@
 import { showOptionCardInfoDialog } from './ui/optionCardInfoDialog.js';
+import { scrollElementToTop } from './ui/scrollAlignment.js';
 
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
@@ -603,6 +604,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
+      if (!isExpanded) {
+        requestAnimationFrame(() => scrollElementToTop(tile));
+      }
     });
 
     tile.appendChild(header);

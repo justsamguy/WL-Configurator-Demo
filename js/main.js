@@ -10,6 +10,7 @@ import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount, requiresCen
 import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
 import { createLogger } from './logger.js';
+import { scrollElementToTop } from './ui/scrollAlignment.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
@@ -351,6 +352,9 @@ function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
   if (shouldExpand) {
     dropdown.classList.add('expanded');
     content.hidden = false;
+    if (animate) {
+      requestAnimationFrame(() => scrollElementToTop(dropdown));
+    }
     if (!animate) {
       content.style.maxHeight = 'none';
       return;
@@ -1733,6 +1737,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 655');
+console.log('Edit ver: 656');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
