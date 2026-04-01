@@ -1,22 +1,26 @@
-<div class="flex flex-col gap-6 px-8 py-8">
+<div class="flex flex-col model-selection-shell">
   <!-- Models Stage Section -->
   <div id="models-stage-section">
-    <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-coffee" aria-pressed="false">
-        <img src="assets/images/Black Walnut Multi-Grey Round Coffee Table.webp" alt="Coffee Table placeholder" class="viewer-placeholder-img" />
-        <div class="title">Coffee Table</div>
-        <div class="description">Compact, intimate seating solution.</div>
-      </button>
-      <button class="option-card" data-id="mdl-dining" aria-pressed="false">
-        <img src="assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.webp" alt="Dining Table" class="viewer-placeholder-img" />
-        <div class="title">Dining Table</div>
-        <div class="description">Spacious, family-friendly.</div>
-      </button>
-      <button class="option-card" data-id="mdl-conference" aria-pressed="false">
-        <img src="assets/images/Black Walnut Blue River Conference Table with Islands.webp" alt="Conference Table" class="viewer-placeholder-img" />
-        <div class="title">Conference Table</div>
-        <div class="description">Professional, boardroom style.</div>
-      </button>
+    <div class="model-stage-shell">
+      <div class="model-row-grid">
+        <button class="option-card" type="button" data-id="mdl-coffee" aria-label="Coffee table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Multi-Grey Round Coffee Table.webp" alt="" class="viewer-placeholder-img" />
+          <div class="title">Coffee</div>
+        </button>
+        <button class="option-card" type="button" data-id="mdl-dining" aria-label="Dining table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.webp" alt="" class="viewer-placeholder-img" />
+          <div class="title">Dining</div>
+        </button>
+        <button class="option-card" type="button" data-id="mdl-conference" aria-label="Conference table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Blue River Conference Table with Islands.webp" alt="" class="viewer-placeholder-img" />
+          <div class="title">Conference</div>
+        </button>
+      </div>
+      <div class="model-stage-accent" aria-hidden="true">
+        <svg viewBox="0 0 600 40" preserveAspectRatio="none" focusable="false">
+          <path d="M0 24 Q150 18 300 12 Q450 18 600 24 Q450 28 300 22 Q150 28 0 24 Z"></path>
+        </svg>
+      </div>
     </div>
   </div>
 

@@ -3871,6 +3871,14 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 /* These selectors control visibility of content sections inside ModelSelection.html component */
 /* The stage-panel containers themselves are managed by stageManager.js */
 
+.model-selection-shell {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Hide both content sections by default */
 #models-stage-section,
 #designs-stage-section {
@@ -3896,29 +3904,70 @@ body.stage-0 #stage-panel-0 > .flex {
 }
 
 body.stage-0 #models-stage-section {
+  --model-stage-tile-width: clamp(250px, 20.5vw, 360px);
+  --model-stage-tile-gap: clamp(1.75rem, 3.25vw, 3.5rem);
+  --model-stage-row-width: calc(var(--model-stage-tile-width) * 3 + var(--model-stage-tile-gap) * 2);
+  --model-stage-label-color: #b2b8c0;
+  --model-stage-accent-color: rgba(156, 163, 175, 0.82);
   flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: clamp(0.5rem, 1.8vh, 1.25rem) 0;
+}
+
+body.stage-0 #models-stage-section > .model-stage-shell {
+  width: min(100%, calc(var(--model-stage-row-width) + clamp(2.5rem, 6vw, 5rem)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 1.8vh, 1.35rem);
 }
 
 body.stage-0 #models-stage-section .model-row-grid {
-  width: 100%;
+  width: min(100%, var(--model-stage-row-width));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
   align-content: center;
-  gap: clamp(1rem, 2vh, 1.5rem);
+  gap: var(--model-stage-tile-gap);
+  overflow: visible;
+  padding: 0;
 }
 
 body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] {
-  width: min(100%, clamp(220px, 24vh, 330px));
-  aspect-ratio: 1 / 1;
+  flex: 0 1 var(--model-stage-tile-width);
+  width: min(100%, var(--model-stage-tile-width));
+  max-width: var(--model-stage-tile-width);
   min-height: 0;
-  padding: clamp(1rem, 2vh, 1.5rem);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: clamp(0.6rem, 1.25vh, 0.9rem);
+  gap: clamp(0.9rem, 1.6vh, 1.2rem);
   box-sizing: border-box;
+  box-shadow: none;
+  transition: transform 0.22s ease;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"]:hover,
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"][aria-pressed="true"] {
+  transform: translateY(-6px);
+  border: 0;
+  box-shadow: none;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"]:focus-visible {
+  outline: 2px solid rgba(148, 163, 184, 0.9);
+  outline-offset: 10px;
+  border: 0;
+  box-shadow: none;
 }
 
 body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .viewer-placeholder-img {
@@ -3926,12 +3975,68 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .viewer-placeho
   aspect-ratio: 1 / 1;
   height: auto;
   object-fit: cover;
-  margin-bottom: 0;
+  margin: 0;
+  border-radius: clamp(0.75rem, 1vw, 1rem);
+  box-shadow: 0 28px 52px -38px rgba(15, 23, 42, 0.54);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
-body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .title,
-body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"]:hover .viewer-placeholder-img,
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"][aria-pressed="true"] .viewer-placeholder-img {
+  transform: scale(1.0125);
+  box-shadow: 0 34px 60px -40px rgba(15, 23, 42, 0.62);
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .title {
   margin: 0;
+  font-size: clamp(0.76rem, 0.95vw, 0.92rem);
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--model-stage-label-color);
+  text-align: center;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"][aria-pressed="true"] .title {
+  color: #959ca5;
+}
+
+body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
+  display: none;
+}
+
+body.stage-0 #models-stage-section .model-stage-accent {
+  width: min(100%, calc(var(--model-stage-row-width) + clamp(1.75rem, 4vw, 3rem)));
+  color: var(--model-stage-accent-color);
+  pointer-events: none;
+}
+
+body.stage-0 #models-stage-section .model-stage-accent svg {
+  display: block;
+  width: 100%;
+  height: clamp(0.7rem, 1.6vh, 0.95rem);
+}
+
+body.stage-0 #models-stage-section .model-stage-accent path {
+  fill: currentColor;
+}
+
+@media (max-width: 1100px) {
+  body.stage-0 #models-stage-section {
+    --model-stage-tile-width: clamp(230px, 28vw, 320px);
+    --model-stage-tile-gap: clamp(1.25rem, 3vw, 2.5rem);
+  }
+}
+
+@media (max-width: 760px) {
+  body.stage-0 #models-stage-section {
+    --model-stage-tile-width: min(100%, 320px);
+    --model-stage-tile-gap: 1.25rem;
+  }
+
+  body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .title {
+    letter-spacing: 0.26em;
+  }
 }
 
 /* Show designs section ONLY on stage 1 */
