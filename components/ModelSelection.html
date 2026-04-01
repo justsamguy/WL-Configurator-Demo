@@ -26,44 +26,67 @@
        model ID (e.g., "mdl-coffee", "mdl-dining", "mdl-conference"), it will be shown for that model.
        To add a new design: add it to data/designs.json with appropriate pricing for each compatible model. -->
   <div id="designs-stage-section">
-    <div class="designs-stage-group designs-stage-group-presets is-open" data-group-type="presets">
-      <h3 class="designs-stage-heading">
-        <button class="designs-stage-toggle" type="button" aria-expanded="true" aria-controls="design-presets-panel">
-          <span class="designs-stage-heading-text">Customize a design</span>
-          <span class="designs-stage-toggle-trailing" aria-hidden="true">
-            <span class="designs-stage-toggle-caption">Presets</span>
-            <svg class="designs-stage-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path>
-            </svg>
-          </span>
-        </button>
-      </h3>
-      <div id="design-presets-panel" class="designs-stage-panel" aria-hidden="false">
-        <div class="designs-stage-panel-inner">
-          <div id="design-presets-options" class="stage-options-grid">
-            <!-- Preset design cards will be dynamically rendered here based on selected model -->
-          </div>
+    <div class="designs-stage-shell" data-active-group="presets">
+      <div class="designs-stage-header">
+        <div class="designs-stage-tablist" role="tablist" aria-label="Choose how to browse designs">
+          <button
+            id="design-tab-presets"
+            class="designs-stage-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="design-presets-panel"
+            tabindex="0"
+            data-group-type="presets"
+          >
+            <span class="designs-stage-heading-text">Customize a design</span>
+            <span class="designs-stage-tab-caption">Presets</span>
+          </button>
+          <button
+            id="design-tab-layouts"
+            class="designs-stage-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="design-layout-panel"
+            tabindex="-1"
+            data-group-type="layouts"
+          >
+            <span class="designs-stage-heading-text">Build from a layout</span>
+            <span class="designs-stage-tab-caption">Layouts</span>
+          </button>
         </div>
       </div>
-    </div>
-    <div class="designs-stage-group designs-stage-group-layouts" data-group-type="layouts">
-      <h3 class="designs-stage-heading">
-        <button class="designs-stage-toggle" type="button" aria-expanded="false" aria-controls="design-layout-panel">
-          <span class="designs-stage-heading-text">Build from a layout</span>
-          <span class="designs-stage-toggle-trailing" aria-hidden="true">
-            <span class="designs-stage-toggle-caption">Layouts</span>
-            <svg class="designs-stage-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path>
-            </svg>
-          </span>
-        </button>
-      </h3>
-      <div id="design-layout-panel" class="designs-stage-panel" aria-hidden="true">
-        <div class="designs-stage-panel-inner">
-          <div id="design-layout-options" class="stage-options-grid">
-            <!-- Layout design cards will be dynamically rendered here based on selected model -->
+      <div class="designs-stage-panels">
+        <section
+          id="design-presets-panel"
+          class="designs-stage-group designs-stage-group-presets is-open"
+          role="tabpanel"
+          aria-labelledby="design-tab-presets"
+          aria-hidden="false"
+          data-group-type="presets"
+        >
+          <div class="designs-stage-panel-inner">
+            <div id="design-presets-options" class="stage-options-grid">
+              <!-- Preset design cards will be dynamically rendered here based on selected model -->
+            </div>
           </div>
-        </div>
+        </section>
+        <section
+          id="design-layout-panel"
+          class="designs-stage-group designs-stage-group-layouts"
+          role="tabpanel"
+          aria-labelledby="design-tab-layouts"
+          aria-hidden="true"
+          data-group-type="layouts"
+          hidden
+        >
+          <div class="designs-stage-panel-inner">
+            <div id="design-layout-options" class="stage-options-grid">
+              <!-- Layout design cards will be dynamically rendered here based on selected model -->
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>

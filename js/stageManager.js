@@ -426,14 +426,15 @@ function getFirstMissingRequirement() {
 
   if (managerState.current === 1 && !appState.selections.design) {
     const groups = Array.from(document.querySelectorAll('#designs-stage-section .designs-stage-group'));
-    const group = groups.find((item) => item.querySelector('.option-card')) || groups[0] || document.getElementById('designs-stage-section');
-    const isGroupOpen = !!(group && group.classList && group.classList.contains('is-open'));
+    const group = groups.find((item) => !item.hidden) || groups.find((item) => item.querySelector('.option-card')) || groups[0] || document.getElementById('designs-stage-section');
+    const activeTab = document.querySelector('#designs-stage-section .designs-stage-tab[aria-selected="true"]');
+    const firstCard = group && group.querySelector('.option-card');
     return {
       key: 'design',
       message: 'Select a design to continue.',
       anchorEl: group,
       highlightEl: group,
-      focusEl: group && (isGroupOpen ? group.querySelector('.option-card') : group.querySelector('.designs-stage-toggle')),
+      focusEl: firstCard || activeTab || group,
       scrollEl: group,
       isResolved: () => !!appState.selections.design
     };

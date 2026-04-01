@@ -2,12 +2,27 @@ import { createLogger } from '../logger.js';
 import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Designs');
-const GROUP_SELECTOR = '#designs-stage-section .designs-stage-group';
-const TOGGLE_SELECTOR = '.designs-stage-toggle';
-const PANEL_SELECTOR = '.designs-stage-panel';
-const PANEL_TRANSITION_MS = 240;
+const ROOT_SELECTOR = '#designs-stage-section';
+const SHELL_SELECTOR = `${ROOT_SELECTOR} .designs-stage-shell`;
+const GROUP_SELECTOR = `${ROOT_SELECTOR} .designs-stage-group`;
+const TAB_SELECTOR = `${ROOT_SELECTOR} .designs-stage-tab`;
+const VIEWPORT_SELECTOR = `${ROOT_SELECTOR} .designs-stage-panels`;
+const TAB_ORDER = ['presets', 'layouts'];
+const PANEL_TRANSITION_MS = 320;
 
-function getAccordionGroups() {
+function getShell() {
+  return document.querySelector(SHELL_SELECTOR);
+}
+
+function getViewport() {
+  return document.querySelector(VIEWPORT_SELECTOR);
+}
+
+function getTabs() {
+  return Array.from(document.querySelectorAll(TAB_SELECTOR));
+}
+
+function getGroups() {
   return Array.from(document.querySelectorAll(GROUP_SELECTOR));
 }
 
@@ -17,130 +32,172 @@ function prefersReducedMotion() {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function clearPanelTransitionState(panel) {
-  if (!panel) return;
-  if (panel._wlAccordionTimeoutId) {
-    window.clearTimeout(panel._wlAccordionTimeoutId);
-    delete panel._wlAccordionTimeoutId;
-  }
-  if (panel._wlAccordionTransitionEnd) {
-    panel.removeEventListener('transitionend', panel._wlAccordionTransitionEnd);
-    delete panel._wlAccordionTransitionEnd;
-  }
+function getGroupType(element) {
+  return element && element.dataset ? element.dataset.groupType || null : null;
 }
 
-function finishOpenState(panel) {
-  if (!panel) return;
-  clearPanelTransitionState(panel);
-  panel.hidden = false;
-  panel.style.maxHeight = 'none';
-  panel.style.opacity = '1';
+function normalizeGroupType(groupType) {
+  return TAB_ORDER.includes(groupType) ? groupType : TAB_ORDER[0];
 }
 
-function finishClosedState(panel) {
-  if (!panel) return;
-  clearPanelTransitionState(panel);
-  panel.hidden = true;
-  panel.style.maxHeight = '0px';
-  panel.style.opacity = '0';
+function getGroupByType(groupType) {
+  return document.querySelector(`${GROUP_SELECTOR}[data-group-type="${normalizeGroupType(groupType)}"]`);
 }
 
-function animatePanelOpen(panel) {
-  if (!panel) return;
-  clearPanelTransitionState(panel);
-  panel.hidden = false;
-  panel.style.maxHeight = '0px';
-  panel.style.opacity = '0';
-  const targetHeight = panel.scrollHeight;
-  const expandFrame = () => {
-    panel.style.maxHeight = `${targetHeight}px`;
-    panel.style.opacity = '1';
-  };
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(expandFrame);
-  else expandFrame();
-
-  const onExpandTransitionEnd = (ev) => {
-    if (ev.target !== panel || ev.propertyName !== 'max-height') return;
-    finishOpenState(panel);
-  };
-  panel._wlAccordionTransitionEnd = onExpandTransitionEnd;
-  panel.addEventListener('transitionend', onExpandTransitionEnd);
-  panel._wlAccordionTimeoutId = window.setTimeout(() => finishOpenState(panel), PANEL_TRANSITION_MS + 80);
+function getActiveGroupType() {
+  const activeTab = getTabs().find((tab) => tab.getAttribute('aria-selected') === 'true');
+  if (activeTab) return normalizeGroupType(getGroupType(activeTab));
+  const openGroup = getGroups().find((group) => group.classList.contains('is-open') && !group.hidden);
+  if (openGroup) return normalizeGroupType(getGroupType(openGroup));
+  return TAB_ORDER[0];
 }
 
-function animatePanelClosed(panel) {
-  if (!panel) return;
-  clearPanelTransitionState(panel);
-  panel.hidden = false;
-  panel.style.maxHeight = `${panel.scrollHeight}px`;
-  panel.style.opacity = '1';
-  const collapseFrame = () => {
-    panel.style.maxHeight = '0px';
-    panel.style.opacity = '0';
-  };
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(collapseFrame);
-  else collapseFrame();
-
-  const onCollapseTransitionEnd = (ev) => {
-    if (ev.target !== panel || ev.propertyName !== 'max-height') return;
-    finishClosedState(panel);
-  };
-  panel._wlAccordionTransitionEnd = onCollapseTransitionEnd;
-  panel.addEventListener('transitionend', onCollapseTransitionEnd);
-  panel._wlAccordionTimeoutId = window.setTimeout(() => finishClosedState(panel), PANEL_TRANSITION_MS + 80);
+function setTabSelected(tab, shouldSelect) {
+  if (!tab) return;
+  tab.classList.toggle('is-active', shouldSelect);
+  tab.setAttribute('aria-selected', shouldSelect ? 'true' : 'false');
+  tab.setAttribute('tabindex', shouldSelect ? '0' : '-1');
 }
 
-function setGroupOpen(group, shouldOpen, options = {}) {
+function setGroupSelected(group, shouldSelect) {
   if (!group) return;
-  const { animate = !prefersReducedMotion() } = options;
-  const toggle = group.querySelector(TOGGLE_SELECTOR);
-  const panel = group.querySelector(PANEL_SELECTOR);
-  const isOpen = group.classList.contains('is-open');
-  if (isOpen === shouldOpen) {
-    if (!animate && panel) {
-      panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-      if ('inert' in panel) panel.inert = !shouldOpen;
-      if (shouldOpen) finishOpenState(panel);
-      else finishClosedState(panel);
-    }
-    if (toggle) toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  group.classList.toggle('is-open', shouldSelect);
+  group.hidden = !shouldSelect;
+  group.setAttribute('aria-hidden', shouldSelect ? 'false' : 'true');
+  if ('inert' in group) group.inert = !shouldSelect;
+}
+
+function clearViewportTransitionState(viewport) {
+  if (!viewport) return;
+  if (viewport._wlDesignsTimeoutId) {
+    window.clearTimeout(viewport._wlDesignsTimeoutId);
+    delete viewport._wlDesignsTimeoutId;
+  }
+  viewport.classList.remove('is-animating');
+  viewport.style.height = '';
+}
+
+function clearGroupTransitionState(group) {
+  if (!group) return;
+  group.classList.remove(
+    'is-entering-from-left',
+    'is-entering-from-right',
+    'is-leaving-to-left',
+    'is-leaving-to-right'
+  );
+}
+
+function syncTabsFromDom() {
+  const activeGroupType = getActiveGroupType();
+  const shell = getShell();
+  if (shell) shell.dataset.activeGroup = activeGroupType;
+
+  getTabs().forEach((tab) => setTabSelected(tab, getGroupType(tab) === activeGroupType));
+  getGroups().forEach((group) => {
+    clearGroupTransitionState(group);
+    setGroupSelected(group, getGroupType(group) === activeGroupType);
+  });
+}
+
+function getSwitchDirection(fromType, toType) {
+  return TAB_ORDER.indexOf(toType) > TAB_ORDER.indexOf(fromType) ? 'forward' : 'backward';
+}
+
+function animateGroupSwitch(currentGroup, nextGroup, direction) {
+  const viewport = getViewport();
+  if (!viewport || !currentGroup || !nextGroup) return false;
+
+  clearViewportTransitionState(viewport);
+  getGroups().forEach(clearGroupTransitionState);
+
+  const enterClass = direction === 'forward' ? 'is-entering-from-right' : 'is-entering-from-left';
+  const leaveClass = direction === 'forward' ? 'is-leaving-to-left' : 'is-leaving-to-right';
+  const startingHeight = currentGroup.offsetHeight;
+
+  nextGroup.hidden = false;
+  nextGroup.setAttribute('aria-hidden', 'false');
+  if ('inert' in nextGroup) nextGroup.inert = true;
+
+  viewport.classList.add('is-animating');
+  viewport.style.height = `${startingHeight}px`;
+
+  nextGroup.classList.add(enterClass);
+  currentGroup.classList.add(leaveClass);
+
+  const targetHeight = nextGroup.offsetHeight;
+  const animateHeight = () => {
+    viewport.style.height = `${targetHeight}px`;
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(animateHeight);
+  else animateHeight();
+
+  viewport._wlDesignsTimeoutId = window.setTimeout(() => {
+    clearViewportTransitionState(viewport);
+    clearGroupTransitionState(currentGroup);
+    clearGroupTransitionState(nextGroup);
+    setGroupSelected(currentGroup, false);
+    setGroupSelected(nextGroup, true);
+  }, PANEL_TRANSITION_MS + 60);
+
+  return true;
+}
+
+function activateGroup(groupType, options = {}) {
+  const nextGroupType = normalizeGroupType(groupType);
+  const currentGroupType = getActiveGroupType();
+  const shell = getShell();
+  const nextGroup = getGroupByType(nextGroupType);
+  const currentGroup = getGroupByType(currentGroupType);
+
+  if (!nextGroup) return;
+  if (shell) shell.dataset.activeGroup = nextGroupType;
+
+  getTabs().forEach((tab) => setTabSelected(tab, getGroupType(tab) === nextGroupType));
+
+  if (!currentGroup || currentGroup === nextGroup) {
+    getGroups().forEach((group) => setGroupSelected(group, group === nextGroup));
     return;
   }
-  group.classList.toggle('is-open', shouldOpen);
-  if (toggle) toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-  if (panel) {
-    panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    if ('inert' in panel) panel.inert = !shouldOpen;
-    if (!animate) {
-      if (shouldOpen) finishOpenState(panel);
-      else finishClosedState(panel);
-      return;
-    }
-    if (shouldOpen) animatePanelOpen(panel);
-    else animatePanelClosed(panel);
+
+  const shouldAnimate = options.animate !== false && !prefersReducedMotion();
+  if (!shouldAnimate || !animateGroupSwitch(currentGroup, nextGroup, getSwitchDirection(currentGroupType, nextGroupType))) {
+    getGroups().forEach((group) => {
+      clearGroupTransitionState(group);
+      setGroupSelected(group, group === nextGroup);
+    });
   }
 }
 
-function syncAccordionFromDom() {
-  getAccordionGroups().forEach((group) => {
-    const toggle = group.querySelector(TOGGLE_SELECTOR);
-    const shouldOpen = toggle ? toggle.getAttribute('aria-expanded') === 'true' : group.classList.contains('is-open');
-    setGroupOpen(group, shouldOpen, { animate: false });
-  });
+function focusTab(tab) {
+  if (!tab || typeof tab.focus !== 'function') return;
+  try {
+    tab.focus({ preventScroll: true });
+  } catch (e) {
+    tab.focus();
+  }
 }
 
-function toggleAccordionGroup(targetGroup) {
-  if (!targetGroup) return;
-  const isOpen = targetGroup.classList.contains('is-open');
-  getAccordionGroups().forEach((group) => {
-    setGroupOpen(group, group === targetGroup ? !isOpen : false, { animate: true });
-  });
+function focusAdjacentTab(currentTab, direction) {
+  const tabs = getTabs();
+  const currentIndex = tabs.indexOf(currentTab);
+  if (currentIndex < 0 || !tabs.length) return;
+
+  let nextIndex = currentIndex;
+  if (direction === 'first') nextIndex = 0;
+  else if (direction === 'last') nextIndex = tabs.length - 1;
+  else if (direction === 'next') nextIndex = (currentIndex + 1) % tabs.length;
+  else if (direction === 'prev') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+
+  const nextTab = tabs[nextIndex];
+  if (!nextTab) return;
+  activateGroup(getGroupType(nextTab), { animate: true });
+  focusTab(nextTab);
 }
 
 function openGroupForCard(card) {
   const group = card && card.closest ? card.closest('.designs-stage-group') : null;
   if (!group) return;
-  getAccordionGroups().forEach((item) => setGroupOpen(item, item === group, { animate: true }));
+  activateGroup(getGroupType(group), { animate: true });
 }
 
 // Designs stage module
@@ -151,12 +208,37 @@ function openGroupForCard(card) {
 // - restoreFromState(state): restores visual ARIA state for the selected design
 
 export function init() {
-  syncAccordionFromDom();
+  syncTabsFromDom();
 
   document.addEventListener('click', (ev) => {
-    const toggle = ev.target.closest && ev.target.closest(`#designs-stage-section ${TOGGLE_SELECTOR}`);
-    if (!toggle) return;
-    toggleAccordionGroup(toggle.closest('.designs-stage-group'));
+    const tab = ev.target.closest && ev.target.closest(TAB_SELECTOR);
+    if (!tab) return;
+    activateGroup(getGroupType(tab), { animate: true });
+  });
+
+  document.addEventListener('keydown', (ev) => {
+    const tab = ev.target.closest && ev.target.closest(TAB_SELECTOR);
+    if (!tab) return;
+
+    if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      focusAdjacentTab(tab, 'next');
+      return;
+    }
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      focusAdjacentTab(tab, 'prev');
+      return;
+    }
+    if (ev.key === 'Home') {
+      ev.preventDefault();
+      focusAdjacentTab(tab, 'first');
+      return;
+    }
+    if (ev.key === 'End') {
+      ev.preventDefault();
+      focusAdjacentTab(tab, 'last');
+    }
   });
 
   // Delegate clicks on design option-cards. Dispatch 'option-selected' event with category 'design'
@@ -184,15 +266,20 @@ export function init() {
 
 export function restoreFromState(state) {
   try {
-    syncAccordionFromDom();
+    syncTabsFromDom();
     const designId = state && state.selections && state.selections.design;
-    if (!designId) return;
+    if (!designId) {
+      activateGroup('presets', { animate: false });
+      return;
+    }
+
     const el = document.querySelector(`#design-layout-options .option-card[data-id="${designId}"]`) ||
       document.querySelector(`#designs-stage-section .option-card[data-id="${designId}"]:not([data-preset-id])`);
     if (el) {
-      document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      document.querySelectorAll('#designs-stage-section .option-card[data-category="design"], #designs-stage-section .option-card[data-id^="des-"]').forEach((c) => c.setAttribute('aria-pressed', 'false'));
       el.setAttribute('aria-pressed', 'true');
-      openGroupForCard(el);
+      const group = el.closest('.designs-stage-group');
+      activateGroup(getGroupType(group), { animate: false });
     }
   } catch (e) {
     // fail silently
