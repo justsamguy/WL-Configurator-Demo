@@ -3938,6 +3938,9 @@ body.stage-0 #models-stage-section {
   --model-stage-tile-width: clamp(250px, 20.5vw, 360px);
   --model-stage-tile-gap: clamp(1.75rem, 3.25vw, 3.5rem);
   --model-stage-row-width: calc(var(--model-stage-tile-width) * 3 + var(--model-stage-tile-gap) * 2);
+  --model-stage-accent-overhang: clamp(5rem, 10vw, 8.5rem);
+  --model-stage-accent-height: clamp(1.1rem, 2.2vh, 1.5rem);
+  --model-stage-accent-stroke-width: 4.5;
   --model-stage-label-color: #b2b8c0;
   --model-stage-accent-color: rgba(156, 163, 175, 0.82);
   flex: 1 1 auto;
@@ -3948,7 +3951,7 @@ body.stage-0 #models-stage-section {
 }
 
 body.stage-0 #models-stage-section > .model-stage-shell {
-  width: min(100%, calc(var(--model-stage-row-width) + clamp(2.5rem, 6vw, 5rem)));
+  width: min(100%, calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang)));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4037,7 +4040,7 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
 }
 
 body.stage-0 #models-stage-section .model-stage-accent {
-  width: min(100%, calc(var(--model-stage-row-width) + clamp(1.75rem, 4vw, 3rem)));
+  width: min(100%, calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang)));
   color: var(--model-stage-accent-color);
   pointer-events: none;
 }
@@ -4045,11 +4048,17 @@ body.stage-0 #models-stage-section .model-stage-accent {
 body.stage-0 #models-stage-section .model-stage-accent svg {
   display: block;
   width: 100%;
-  height: clamp(0.7rem, 1.6vh, 0.95rem);
+  height: var(--model-stage-accent-height);
+  overflow: visible;
 }
 
 body.stage-0 #models-stage-section .model-stage-accent path {
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--model-stage-accent-stroke-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 @media (max-width: 1100px) {
