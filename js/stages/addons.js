@@ -55,8 +55,10 @@ export function init() {
   root.addEventListener('click', (event) => {
     const optionRow = event.target.closest('.addons-dropdown-option');
     if (optionRow && root.contains(optionRow)) {
+      if (event.target.closest('.addons-dropdown-option-checkbox')) return;
       const checkbox = optionRow.querySelector('.addons-dropdown-option-checkbox');
       if (checkbox && !checkbox.disabled) {
+        // Preserve the native checkbox toggle when the box itself is clicked.
         checkbox.checked = !checkbox.checked;
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
       }
