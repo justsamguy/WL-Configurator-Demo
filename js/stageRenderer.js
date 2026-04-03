@@ -121,10 +121,11 @@ export function initOptionCardInfoDialogs(root = document.body) {
 
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
-  container.innerHTML = '';
+  const fragment = document.createDocumentFragment();
   data.forEach(item => {
     const btn = document.createElement('button');
     btn.className = 'option-card';
+    btn.type = 'button';
     btn.setAttribute('data-id', item.id);
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
@@ -164,6 +165,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
       img.src = item.image;
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
+      img.decoding = 'async';
       btn.appendChild(img);
     }
 
@@ -187,8 +189,9 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.appendChild(d);
     }
 
-    container.appendChild(btn);
+    fragment.appendChild(btn);
   });
+  container.replaceChildren(fragment);
   enhanceOptionCardsWithInfo(container);
 }
 

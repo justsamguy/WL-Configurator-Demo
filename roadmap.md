@@ -10,12 +10,11 @@ Chair for reference
 - invent & add model handling for each add-on:
     - 
 
-
+- fix/rescale all models and placement for proper coffee table handling
 - replace/update all placeholder images added
-- get a picture of caviar black
+- investigate laggy animations in design page
 - make some sort of rainbow-colored epoxy/pigment image for custom color
 - change all layout design images to be top-down (only presets get gallery-style photography) (use layout pictures to do this)
-- hide backend code?
 
 ## v1.2
 - Mobile website (new branch)

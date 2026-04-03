@@ -4271,6 +4271,8 @@ body.stage-1 #stage-panel-1 > .flex {
   border-radius: 1.35rem;
   background: var(--designs-group-bg);
   box-shadow: var(--designs-group-shadow);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .designs-stage-tab {
@@ -4290,6 +4292,9 @@ body.stage-1 #stage-panel-1 > .flex {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .designs-stage-tab::after {
@@ -4308,7 +4313,7 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 .designs-stage-tab:hover {
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
   border-color: var(--designs-group-border-hover);
   background: var(--designs-group-header-hover-bg);
   box-shadow: var(--designs-tab-hover-shadow);
@@ -4377,16 +4382,21 @@ body.stage-1 #stage-panel-1 > .flex {
 .designs-stage-panels {
   position: relative;
   transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  contain: layout;
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .designs-stage-panels.is-animating {
   overflow: hidden;
+  will-change: height;
 }
 
 .designs-stage-panels.is-animating .designs-stage-group {
   position: absolute;
   inset: 0;
   width: 100%;
+  pointer-events: none;
 }
 
 .designs-stage-panel-inner {
@@ -4401,21 +4411,25 @@ body.stage-1 #stage-panel-1 > .flex {
 .designs-stage-group.is-entering-from-right {
   z-index: 2;
   animation: designs-panel-enter-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 .designs-stage-group.is-entering-from-left {
   z-index: 2;
   animation: designs-panel-enter-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 .designs-stage-group.is-leaving-to-left {
   z-index: 1;
   animation: designs-panel-exit-left 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 .designs-stage-group.is-leaving-to-right {
   z-index: 1;
   animation: designs-panel-exit-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid {
@@ -4433,17 +4447,20 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card {
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
   padding: 2.95rem 1rem 1rem;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card:hover {
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   border-color: transparent;
   background: var(--designs-tile-surface-hover);
   box-shadow: var(--designs-tile-hover-shadow);
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card:focus-visible {
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   border-color: transparent;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22), 0 14px 28px rgba(15, 23, 42, 0.12);
 }
@@ -4457,7 +4474,8 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card[aria-presse
 @media (prefers-reduced-motion: reduce) {
   .designs-stage-tab,
   .designs-stage-tab::after,
-  .designs-stage-panels {
+  .designs-stage-panels,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card {
     transition: none;
   }
 
@@ -4466,6 +4484,18 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card[aria-presse
   .designs-stage-group.is-leaving-to-left,
   .designs-stage-group.is-leaving-to-right {
     animation: none;
+    will-change: auto;
+  }
+
+  .designs-stage-tab,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card {
+    will-change: auto;
+  }
+
+  .designs-stage-tab:hover,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card:hover,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card:focus-visible {
+    transform: none;
   }
 }
 
@@ -4477,6 +4507,7 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card[aria-presse
 body.stage-1 #designs-stage-section .stage-options-grid .viewer-placeholder-img {
   border-radius: 0.9rem;
   margin-bottom: 0.9rem;
+  display: block;
 }
 
 @keyframes designs-panel-enter-right {

@@ -26,6 +26,12 @@ function getGroups() {
   return Array.from(document.querySelectorAll(GROUP_SELECTOR));
 }
 
+function getVisibleGroup() {
+  return getGroups().find((group) => group.classList.contains('is-open') && !group.hidden)
+    || getGroups().find((group) => !group.hidden)
+    || null;
+}
+
 function prefersReducedMotion() {
   return typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -87,7 +93,29 @@ function clearGroupTransitionState(group) {
   );
 }
 
+function finalizeGroupSwitch(viewport, currentGroup, nextGroup) {
+  if (!viewport || !currentGroup || !nextGroup) return;
+  clearViewportTransitionState(viewport);
+  clearGroupTransitionState(currentGroup);
+  clearGroupTransitionState(nextGroup);
+  setGroupSelected(currentGroup, false);
+  setGroupSelected(nextGroup, true);
+  delete viewport._wlDesignsTransition;
+}
+
+function finishPendingGroupSwitch(viewport) {
+  if (!viewport) return;
+  const pendingTransition = viewport._wlDesignsTransition;
+  if (!pendingTransition) {
+    clearViewportTransitionState(viewport);
+    return;
+  }
+
+  finalizeGroupSwitch(viewport, pendingTransition.currentGroup, pendingTransition.nextGroup);
+}
+
 function syncTabsFromDom() {
+  finishPendingGroupSwitch(getViewport());
   const activeGroupType = getActiveGroupType();
   const shell = getShell();
   if (shell) shell.dataset.activeGroup = activeGroupType;
@@ -106,7 +134,12 @@ function getSwitchDirection(fromType, toType) {
 function animateGroupSwitch(currentGroup, nextGroup, direction) {
   const viewport = getViewport();
   if (!viewport || !currentGroup || !nextGroup) return false;
+  if (currentGroup === nextGroup) {
+    setGroupSelected(nextGroup, true);
+    return false;
+  }
 
+  finishPendingGroupSwitch(viewport);
   clearViewportTransitionState(viewport);
   getGroups().forEach(clearGroupTransitionState);
 
@@ -114,6 +147,7 @@ function animateGroupSwitch(currentGroup, nextGroup, direction) {
   const leaveClass = direction === 'forward' ? 'is-leaving-to-left' : 'is-leaving-to-right';
   const startingHeight = currentGroup.offsetHeight;
 
+  viewport._wlDesignsTransition = { currentGroup, nextGroup };
   nextGroup.hidden = false;
   nextGroup.setAttribute('aria-hidden', 'false');
   if ('inert' in nextGroup) nextGroup.inert = true;
@@ -132,11 +166,7 @@ function animateGroupSwitch(currentGroup, nextGroup, direction) {
   else animateHeight();
 
   viewport._wlDesignsTimeoutId = window.setTimeout(() => {
-    clearViewportTransitionState(viewport);
-    clearGroupTransitionState(currentGroup);
-    clearGroupTransitionState(nextGroup);
-    setGroupSelected(currentGroup, false);
-    setGroupSelected(nextGroup, true);
+    finalizeGroupSwitch(viewport, currentGroup, nextGroup);
   }, PANEL_TRANSITION_MS + 60);
 
   return true;
@@ -144,10 +174,11 @@ function animateGroupSwitch(currentGroup, nextGroup, direction) {
 
 function activateGroup(groupType, options = {}) {
   const nextGroupType = normalizeGroupType(groupType);
-  const currentGroupType = getActiveGroupType();
+  finishPendingGroupSwitch(getViewport());
+  const currentGroup = getVisibleGroup();
+  const currentGroupType = currentGroup ? normalizeGroupType(getGroupType(currentGroup)) : getActiveGroupType();
   const shell = getShell();
   const nextGroup = getGroupByType(nextGroupType);
-  const currentGroup = getGroupByType(currentGroupType);
 
   if (!nextGroup) return;
   if (shell) shell.dataset.activeGroup = nextGroupType;
