@@ -4029,6 +4029,7 @@ body.stage-0 #models-stage-section {
   --model-stage-label-color: #b2b8c0;
   --model-stage-accent-color: rgba(156, 163, 175, 0.82);
   flex: 1 1 auto;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4036,16 +4037,20 @@ body.stage-0 #models-stage-section {
 }
 
 body.stage-0 #models-stage-section > .model-stage-shell {
-  width: min(100%, calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang)));
+  width: 100%;
+  max-width: calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: clamp(0.75rem, 1.8vh, 1.35rem);
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 body.stage-0 #models-stage-section .model-row-grid {
-  width: min(100%, var(--model-stage-row-width));
+  width: 100%;
+  max-width: var(--model-stage-row-width);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -4054,6 +4059,8 @@ body.stage-0 #models-stage-section .model-row-grid {
   gap: var(--model-stage-tile-gap);
   overflow: visible;
   padding: 0;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] {
@@ -4125,9 +4132,11 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
 }
 
 body.stage-0 #models-stage-section .model-stage-accent {
-  width: min(100%, calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang)));
+  width: 100%;
+  max-width: calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang));
   color: var(--model-stage-accent-color);
   pointer-events: none;
+  margin: 0 auto;
 }
 
 body.stage-0 #models-stage-section .model-stage-accent svg {

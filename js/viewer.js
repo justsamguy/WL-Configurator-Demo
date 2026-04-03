@@ -50,6 +50,7 @@ const GLASS_TOP_THICKNESS_IN = 0.25;
 const GLASS_TOP_AXIS_REDUCTION_IN = 0.125;
 const GLASS_TOP_SURFACE_GAP = 0.0007;
 const GLASS_TOP_MATERIAL_THICKNESS = GLASS_TOP_THICKNESS_IN * 0.0254;
+const ROOM_ENVIRONMENT_BLUR = 0.04;
 const GLASS_TOP_LIVE_EDGE_SAMPLE_SPACING_IN = 2;
 const GLASS_TOP_LIVE_EDGE_MIN_SAMPLE_COUNT = 24;
 const GLASS_TOP_LIVE_EDGE_MAX_SAMPLE_COUNT = 72;
@@ -2611,7 +2612,8 @@ export async function initViewer() {
 
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   const roomEnvironment = new RoomEnvironment();
-  scene.environment = pmremGenerator.fromScene(roomEnvironment, 0.05).texture;
+  // Keep the PMREM blur below Three's sample cap so the environment map does not log clipping warnings.
+  scene.environment = pmremGenerator.fromScene(roomEnvironment, ROOM_ENVIRONMENT_BLUR).texture;
   roomEnvironment.dispose();
   pmremGenerator.dispose();
 
