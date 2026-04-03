@@ -130,6 +130,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
     if (item.customNote) btn.setAttribute('data-custom-note', 'true');
+    if (item.previewType) btn.setAttribute('data-preview-type', String(item.previewType));
     if (opts.ignorePlaceholder) btn.setAttribute('data-ignore-placeholder', 'true');
     if (item.attributes && typeof item.attributes === 'object') {
       Object.entries(item.attributes).forEach(([name, value]) => {

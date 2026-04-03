@@ -1,4 +1,5 @@
 import { createLogger } from '../logger.js';
+import { loadData } from '../dataLoader.js';
 import { isSelectionClickHandled, markSelectionClickHandled } from '../ui/selectionEventGuard.js';
 
 const log = createLogger('Materials');
@@ -15,6 +16,19 @@ const SINGLE_COLOR_GRADIENT_ID = 'color-gradient-04';
 const SOLID_ONLY_COLOR_IDS = new Set(['color-06', 'color-07', 'color-08']);
 const SOLID_ONLY_COLOR_SOURCE = 'single-color-only';
 const SOLID_ONLY_TOOLTIP = 'gradients are only available with multiple colors.';
+const COLOR_DATA_PATH = 'data/colors.json';
+const DEFAULT_GRADIENT_TEXTURE_PATH = 'assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png';
+const DEFAULT_GRADIENT_PREVIEW_PALETTE = Object.freeze({
+  dark: '#272a31',
+  light: '#d6dbe3',
+  solid: '#7a828d'
+});
+const COLOR_GRADIENT_PREVIEW_TYPES = Object.freeze({
+  'color-gradient-01': 'dark-to-light',
+  'color-gradient-02': 'light-center',
+  'color-gradient-03': 'custom',
+  'color-gradient-04': 'single-color'
+});
 
 let customColorCard = null;
 let customColorNoteContainer = null;
@@ -22,6 +36,171 @@ let customColorNoteInput = null;
 let customGradientCard = null;
 let customGradientNoteContainer = null;
 let customGradientNoteInput = null;
+let colorPreviewPaletteMapPromise = null;
+let gradientPreviewSyncToken = 0;
+
+function normalizeHexColor(value, fallback) {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed) ? trimmed : fallback;
+}
+
+function hexToRgb(value) {
+  const normalized = normalizeHexColor(value, null);
+  if (!normalized) return null;
+  const raw = normalized.slice(1);
+  const hex = raw.length === 3
+    ? raw.split('').map((channel) => channel + channel).join('')
+    : raw;
+  const numeric = Number.parseInt(hex, 16);
+  if (!Number.isFinite(numeric)) return null;
+  return {
+    r: (numeric >> 16) & 255,
+    g: (numeric >> 8) & 255,
+    b: numeric & 255
+  };
+}
+
+function toRgba(value, alpha) {
+  const rgb = hexToRgb(value);
+  const safeAlpha = Math.max(0, Math.min(1, Number(alpha)));
+  if (!rgb) return `rgba(39, 42, 49, ${safeAlpha})`;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${safeAlpha})`;
+}
+
+function normalizePreviewPalette(value = {}) {
+  const safeValue = value && typeof value === 'object' ? value : {};
+  return {
+    dark: normalizeHexColor(safeValue.dark, DEFAULT_GRADIENT_PREVIEW_PALETTE.dark),
+    light: normalizeHexColor(safeValue.light, DEFAULT_GRADIENT_PREVIEW_PALETTE.light),
+    solid: normalizeHexColor(safeValue.solid, DEFAULT_GRADIENT_PREVIEW_PALETTE.solid)
+  };
+}
+
+async function getColorPreviewPaletteMap() {
+  if (!colorPreviewPaletteMapPromise) {
+    colorPreviewPaletteMapPromise = loadData(COLOR_DATA_PATH).then((colors) => {
+      const paletteMap = new Map();
+      if (!Array.isArray(colors)) return paletteMap;
+      colors.forEach((color) => {
+        if (!color || typeof color.id !== 'string') return;
+        paletteMap.set(color.id, normalizePreviewPalette(color.previewPalette));
+      });
+      return paletteMap;
+    });
+  }
+  return colorPreviewPaletteMapPromise;
+}
+
+function getSelectedColorId(appState = {}) {
+  const options = appState && appState.selections && appState.selections.options
+    ? appState.selections.options
+    : {};
+  return typeof options.color === 'string' ? options.color : null;
+}
+
+function createGradientPreviewElement(card, textureSrc, previewType) {
+  const preview = document.createElement('div');
+  preview.className = 'viewer-placeholder-img color-gradient-preview';
+  preview.setAttribute('aria-hidden', 'true');
+  preview.dataset.textureSrc = textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH;
+  preview.dataset.previewType = previewType;
+  const image = card.querySelector('.viewer-placeholder-img');
+  if (image) {
+    image.replaceWith(preview);
+  } else {
+    card.insertBefore(preview, card.firstChild);
+  }
+  return preview;
+}
+
+function ensureGradientPreviewSlots() {
+  const cards = document.querySelectorAll('.option-card[data-category="color-gradient"]');
+  if (!cards.length) return [];
+
+  return Array.from(cards).map((card) => {
+    const previewType = card.getAttribute('data-preview-type')
+      || COLOR_GRADIENT_PREVIEW_TYPES[card.getAttribute('data-id')]
+      || 'single-color';
+    const existingPreview = card.querySelector('.color-gradient-preview');
+    if (existingPreview) {
+      if (!existingPreview.dataset.previewType) existingPreview.dataset.previewType = previewType;
+      if (!existingPreview.dataset.textureSrc) {
+        existingPreview.dataset.textureSrc = DEFAULT_GRADIENT_TEXTURE_PATH;
+      }
+      return existingPreview;
+    }
+
+    const image = card.querySelector('.viewer-placeholder-img');
+    const textureSrc = image && image.getAttribute('src')
+      ? image.getAttribute('src')
+      : DEFAULT_GRADIENT_TEXTURE_PATH;
+    return createGradientPreviewElement(card, textureSrc, previewType);
+  });
+}
+
+function buildGradientPreviewStyles(previewType, palette, textureSrc) {
+  const textureLayer = `url("${textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH}")`;
+  switch (previewType) {
+    case 'dark-to-light':
+      return {
+        backgroundImage: [
+          `linear-gradient(135deg, ${toRgba(palette.dark, 0.94)} 0%, ${toRgba(palette.dark, 0.88)} 18%, ${toRgba(palette.solid, 0.7)} 52%, ${toRgba(palette.light, 0.78)} 100%)`,
+          textureLayer
+        ].join(', '),
+        backgroundBlendMode: 'multiply, normal'
+      };
+    case 'light-center':
+      return {
+        backgroundImage: [
+          `radial-gradient(circle at 50% 48%, ${toRgba(palette.light, 0.92)} 0%, ${toRgba(palette.light, 0.74)} 24%, ${toRgba(palette.solid, 0.55)} 44%, ${toRgba(palette.dark, 0.9)} 100%)`,
+          textureLayer
+        ].join(', '),
+        backgroundBlendMode: 'screen, normal'
+      };
+    case 'custom':
+      return {
+        backgroundImage: [
+          `linear-gradient(145deg, ${toRgba(DEFAULT_GRADIENT_PREVIEW_PALETTE.dark, 0.92)} 0%, ${toRgba(DEFAULT_GRADIENT_PREVIEW_PALETTE.solid, 0.7)} 48%, ${toRgba(DEFAULT_GRADIENT_PREVIEW_PALETTE.light, 0.76)} 100%)`,
+          textureLayer
+        ].join(', '),
+        backgroundBlendMode: 'soft-light, normal'
+      };
+    case 'single-color':
+    default:
+      return {
+        backgroundImage: [
+          `linear-gradient(135deg, ${toRgba(palette.solid, 0.84)} 0%, ${toRgba(palette.solid, 0.84)} 100%)`,
+          textureLayer
+        ].join(', '),
+        backgroundBlendMode: 'multiply, normal'
+      };
+  }
+}
+
+async function syncColorGradientPreviews(appState = {}) {
+  const previews = ensureGradientPreviewSlots();
+  if (!previews.length) return;
+
+  const syncToken = ++gradientPreviewSyncToken;
+  const paletteMap = await getColorPreviewPaletteMap();
+  if (syncToken !== gradientPreviewSyncToken) return;
+
+  const selectedColorId = getSelectedColorId(appState);
+  const useNeutralPalette = !selectedColorId || selectedColorId === CUSTOM_COLOR_ID;
+  const selectedPalette = !useNeutralPalette && paletteMap.has(selectedColorId)
+    ? paletteMap.get(selectedColorId)
+    : DEFAULT_GRADIENT_PREVIEW_PALETTE;
+
+  previews.forEach((preview) => {
+    const previewType = preview.dataset.previewType || 'single-color';
+    const palette = previewType === 'custom' ? DEFAULT_GRADIENT_PREVIEW_PALETTE : selectedPalette;
+    const textureSrc = preview.dataset.textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH;
+    const styles = buildGradientPreviewStyles(previewType, palette, textureSrc);
+    preview.style.backgroundImage = styles.backgroundImage;
+    preview.style.backgroundBlendMode = styles.backgroundBlendMode;
+  });
+}
 
 function ensureCustomColorNoteField() {
   if (customColorCard && customColorNoteContainer && customColorNoteInput) return;
@@ -222,6 +401,7 @@ export function init() {
   setCustomColorNoteVisibility(false);
   setCustomGradientNoteVisibility(false);
   recomputeColorGradientConstraints();
+  void syncColorGradientPreviews();
 
   // Delegate click handling for material and color option-cards
   document.addEventListener('click', (ev) => {
@@ -246,6 +426,13 @@ export function init() {
     const { category, id } = ev.detail || {};
     if (category === 'color') {
       setCustomColorNoteVisibility(id === CUSTOM_COLOR_ID);
+      void syncColorGradientPreviews({
+        selections: {
+          options: {
+            color: id
+          }
+        }
+      });
     } else if (category === 'color-gradient') {
       setCustomGradientNoteVisibility(id === CUSTOM_GRADIENT_ID);
     }
@@ -253,6 +440,7 @@ export function init() {
 
   document.addEventListener('statechange', (ev) => {
     recomputeColorGradientConstraints(ev.detail && ev.detail.state);
+    void syncColorGradientPreviews(ev.detail && ev.detail.state);
   });
 }
 
@@ -292,6 +480,7 @@ export function restoreFromState(appState) {
     const storedGradientNote = opts.customColorGradientNote || '';
     syncCustomGradientNoteValue(storedGradientNote);
     recomputeColorGradientConstraints(appState);
+    void syncColorGradientPreviews(appState);
   } catch (e) { /* ignore */ }
 }
 
