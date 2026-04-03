@@ -9,7 +9,7 @@ import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
-import { createLogger } from './logger.js';
+import { createLogger, setLevel } from './logger.js';
 import { scrollElementToTop } from './ui/scrollAlignment.js';
 
 const log = createLogger('Main');
@@ -19,6 +19,11 @@ const THEME_MODES = ['system', 'light', 'dark'];
 let systemThemeMediaQuery = null;
 let systemThemeListenerBound = false;
 let footerMetricsObserver = null;
+
+if (typeof window !== 'undefined' && typeof window.WL_LOG_LEVEL !== 'string') {
+  // Reset any persisted debug logger state unless this page explicitly opts into another level.
+  setLevel('info');
+}
 
 function normalizeThemeMode(mode) {
   return THEME_MODES.includes(mode) ? mode : 'system';
@@ -1737,6 +1742,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 664');
+console.log('Edit ver: 665');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

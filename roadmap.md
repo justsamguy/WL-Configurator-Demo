@@ -27,6 +27,7 @@ Chair for reference
 - Add the option to toggle tabletop legs anbd chairs in the 3D viewer:
 When un-selected, give the models 80% transparency instead of fully hiding them.
 By default, make legs unchecked until a selection is made in the legs page (or a design preset has already pre-filled the selection)
+- Add desk model
 
 ## v2.0
 - Rebuild app in React.js
