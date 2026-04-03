@@ -29,6 +29,13 @@ const AXIS_COMPONENTS = ['x', 'y', 'z'];
 const LEG_NONE_ID = 'leg-none';
 const LEG_CUSTOM_ID = 'leg-sample-07';
 const LEG_SIGNATURE_ID = 'leg-signature';
+const DESIGN_CUSTOM_ID = 'des-custom';
+const MATERIAL_CUSTOM_ID = 'mat-08';
+const MATERIAL_COOKIE_EXCLUSIVE_ID = 'mat-09';
+const COLOR_CUSTOM_ID = 'color-01';
+const COLOR_GRADIENT_CUSTOM_ID = 'color-gradient-03';
+const COLOR_GRADIENT_SINGLE_COLOR_ID = 'color-gradient-04';
+const LEG_FINISH_CUSTOM_ID = 'leg-finish-08';
 const LEG_CUBE_ID = 'leg-sample-02';
 const LEG_TRIPOD_ID = 'leg-sample-08';
 const LEG_PAIR_COUNT_THRESHOLD = 130;
@@ -68,6 +75,47 @@ const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
 const RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE = 0.5;
 const RESIN_PREVIEW_VIEW_BLEND_MIN = 0.18;
 const RESIN_PREVIEW_VIEW_BLEND_MAX = 0.78;
+const WATERFALL_VIEWER_ADDON_IDS = new Set(['addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art']);
+const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
+const TECH_VIEWER_ADDON_IDS = new Set([
+  'addon-power-ac',
+  'addon-power-ac-usb',
+  'addon-power-ac-usb-usbc',
+  'addon-wireless-charging',
+  'addon-ethernet',
+  'addon-hdmi',
+  'addon-lighting-white',
+  'addon-lighting-color-basic',
+  'addon-lighting-color-fx',
+  'addon-lighting-custom',
+  'addon-custom-tech'
+]);
+const DESIGN_VIEWER_NOTICES = Object.freeze({
+  'des-round': {
+    title: 'Round design',
+    reason: 'Round tabletop geometry does not have a dedicated local 3D model yet.'
+  },
+  'des-cookie': {
+    title: 'Cookie design',
+    reason: 'Cookie slab geometry does not have a dedicated local 3D model yet.'
+  },
+  'des-keystone': {
+    title: 'Keystone design',
+    reason: 'This design does not have a dedicated 3D preview yet.'
+  },
+  'des-encasement': {
+    title: 'Encasement design',
+    reason: 'This layout is finished to spec, so the viewer keeps the standard slab preview.'
+  },
+  'des-encased-slab': {
+    title: 'Encased slab design',
+    reason: 'This layout does not have a dedicated local 3D model yet.'
+  },
+  [DESIGN_CUSTOM_ID]: {
+    title: 'Custom design',
+    reason: 'Custom layouts are quoted separately and do not have a standard 3D preview.'
+  }
+});
 
 let renderer = null;
 let scene = null;
@@ -99,9 +147,12 @@ const dom = {
   surface: null,
   canvas: null,
   empty: null,
-  loading: null,
   error: null,
   errorCopy: null,
+  statusBox: null,
+  statusTitle: null,
+  statusCopy: null,
+  statusSpinner: null,
   liveRegion: null,
   retryButton: null
 };
@@ -111,6 +162,7 @@ let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
 let lastObservedFinishSheenId = null;
 let lastObservedColorId = null;
+let lastObservedColorGradientId = null;
 let lastObservedLegFinishId = null;
 let lastObservedDimensionsSignature = '';
 let lastObservedLegId = null;
@@ -1743,12 +1795,247 @@ function setLiveStatus(message) {
   if (dom.liveRegion) dom.liveRegion.textContent = message;
 }
 
+function hideStatusBox() {
+  if (!dom.statusBox) return;
+  dom.statusBox.hidden = true;
+  if (dom.statusBox.dataset) delete dom.statusBox.dataset.statusTone;
+}
+
+function showStatusBox({ title = '', copy = '', loading = false } = {}) {
+  if (!dom.statusBox || !dom.statusTitle || !dom.statusCopy || !dom.statusSpinner) return;
+  dom.statusTitle.textContent = title;
+  dom.statusCopy.textContent = copy;
+  dom.statusSpinner.hidden = !loading;
+  dom.statusBox.dataset.statusTone = loading ? 'loading' : 'note';
+  dom.statusBox.hidden = false;
+}
+
 function setViewerState(mode, { errorCopy } = {}) {
   if (dom.surface) dom.surface.dataset.viewerState = mode;
   if (dom.empty) dom.empty.hidden = mode !== 'empty';
-  if (dom.loading) dom.loading.hidden = mode !== 'loading';
   if (dom.error) dom.error.hidden = mode !== 'error';
   if (typeof errorCopy === 'string' && dom.errorCopy) dom.errorCopy.textContent = errorCopy;
+}
+
+function pushViewerNotice(notices, title, reason) {
+  if (!title || !reason) return;
+  if (notices.some((notice) => notice.title === title && notice.reason === reason)) return;
+  notices.push({ title, reason });
+}
+
+function summarizeViewerNotices(notices = []) {
+  if (!Array.isArray(notices) || !notices.length) return null;
+  if (notices.length === 1) {
+    return {
+      title: notices[0].title,
+      copy: notices[0].reason
+    };
+  }
+
+  const leadNotices = notices.slice(0, 2);
+  const remainingCount = notices.length - leadNotices.length;
+  const leadTitle = leadNotices.length === 2
+    ? `${leadNotices[0].title} and ${leadNotices[1].title}`
+    : leadNotices[0].title;
+  const extraCopy = remainingCount > 0
+    ? ` plus ${remainingCount} more selection${remainingCount === 1 ? '' : 's'}`
+    : '';
+
+  return {
+    title: 'Preview note',
+    copy: `${leadTitle}${extraCopy} are not shown exactly in the 3D viewer. These details are custom-quoted or do not have local preview models yet.`
+  };
+}
+
+function getLegPreviewNotice(manifest = {}, modelId) {
+  const selectionContext = getCurrentViewerSelectionContext(modelId);
+  const legId = selectionContext.legId;
+  if (!legId) return null;
+
+  if (selectionContext.waterfallCount >= 2) {
+    return {
+      title: 'Waterfall leg layout',
+      reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.'
+    };
+  }
+
+  if (legId === LEG_NONE_ID) {
+    return {
+      title: 'No legs',
+      reason: 'Leg preview is hidden because this configuration is set to use no legs.'
+    };
+  }
+
+  if (legId === LEG_CUSTOM_ID) {
+    return {
+      title: 'Custom leg',
+      reason: 'Custom leg bases are quoted separately and do not have a dedicated 3D asset yet.'
+    };
+  }
+
+  if (legId === LEG_SIGNATURE_ID) {
+    return {
+      title: 'Signature base',
+      reason: 'The signature base does not have a dedicated local 3D asset yet.'
+    };
+  }
+
+  const defaults = manifest && manifest.defaults && typeof manifest.defaults === 'object'
+    ? manifest.defaults
+    : {};
+  const legCatalog = defaults.legAssets && typeof defaults.legAssets === 'object'
+    ? defaults.legAssets
+    : {};
+  const definition = legCatalog[legId];
+  if (!definition || typeof definition !== 'object') {
+    return {
+      title: 'Leg preview',
+      reason: 'The selected leg style does not have a local 3D asset yet.'
+    };
+  }
+
+  const variant = resolveLegVariant(definition, selectionContext);
+  if (variant) return null;
+
+  return {
+    title: 'Leg preview',
+    reason: 'The selected leg and tube combination does not have a local 3D asset yet.'
+  };
+}
+
+function collectViewerSelectionNotices(manifest = {}, modelId) {
+  const selections = getSelections();
+  const options = selections && selections.options && typeof selections.options === 'object'
+    ? selections.options
+    : {};
+  const notices = [];
+  const designId = selections && typeof selections.design === 'string' ? selections.design : null;
+  const designNotice = designId ? DESIGN_VIEWER_NOTICES[designId] : null;
+  if (designNotice) pushViewerNotice(notices, designNotice.title, designNotice.reason);
+
+  if (options.material === MATERIAL_CUSTOM_ID) {
+    pushViewerNotice(
+      notices,
+      'Custom wood',
+      'Custom wood species are quoted to spec, so the viewer keeps the standard slab material.'
+    );
+  } else if (options.material === MATERIAL_COOKIE_EXCLUSIVE_ID) {
+    pushViewerNotice(
+      notices,
+      'Cookie exclusive wood',
+      'This quoted wood option does not have a dedicated viewer texture yet.'
+    );
+  }
+
+  if (options.color === COLOR_CUSTOM_ID) {
+    pushViewerNotice(
+      notices,
+      'Custom epoxy color',
+      'Custom epoxy colors are mixed to spec, so the viewer keeps the standard resin preview.'
+    );
+  }
+
+  const selectedGradientId = options['color-gradient'] || null;
+  if (selectedGradientId === COLOR_GRADIENT_CUSTOM_ID) {
+    pushViewerNotice(
+      notices,
+      'Custom epoxy gradient',
+      'Custom gradient transitions are quoted to spec and are not rendered in the viewer.'
+    );
+  } else if (selectedGradientId && selectedGradientId !== COLOR_GRADIENT_SINGLE_COLOR_ID) {
+    pushViewerNotice(
+      notices,
+      'Epoxy gradient',
+      'Gradient transitions are not rendered in the local 3D viewer yet.'
+    );
+  }
+
+  if (options['leg-finish'] === LEG_FINISH_CUSTOM_ID) {
+    pushViewerNotice(
+      notices,
+      'Custom leg finish',
+      'The viewer uses a neutral stand-in because custom metal finishes are finalized after quoting.'
+    );
+  }
+
+  const legNotice = getLegPreviewNotice(manifest, modelId);
+  if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason);
+
+  const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
+  if (selectedAddons.some((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId)) && getWaterfallEdgeCount(state) < 2) {
+    pushViewerNotice(
+      notices,
+      'Waterfall edge',
+      'Waterfall geometry is not fully modeled in the viewer yet; the preview only adjusts the leg arrangement.'
+    );
+  }
+  if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
+    pushViewerNotice(
+      notices,
+      'Edge profile',
+      'Edge profile changes are not modeled in the local viewer yet.'
+    );
+  }
+  if (selectedAddons.includes('addon-lower-shelf')) {
+    pushViewerNotice(
+      notices,
+      'Lower shelf',
+      'Lower shelf geometry is not modeled in the local viewer yet.'
+    );
+  }
+  if (selectedAddons.includes('addon-embedded-logo')) {
+    pushViewerNotice(
+      notices,
+      'Embedded logo',
+      'Embedded logo placement is laid out to spec and is not shown in the standard viewer.'
+    );
+  }
+  if (selectedAddons.includes('addon-custom-river')) {
+    pushViewerNotice(
+      notices,
+      'Custom river design',
+      'Custom river layouts are quoted to spec and do not have a standard 3D preview.'
+    );
+  }
+  if (selectedAddons.some((addonId) => TECH_VIEWER_ADDON_IDS.has(addonId))) {
+    pushViewerNotice(
+      notices,
+      'Tech add-ons',
+      'Power, data, and lighting hardware is installed to spec and is not shown in the 3D viewer.'
+    );
+  }
+
+  return notices;
+}
+
+function applyViewerSupportNotice(manifest = {}, modelId) {
+  if (!dom.surface || dom.surface.dataset.viewerState !== 'ready') return;
+  const notice = summarizeViewerNotices(collectViewerSelectionNotices(manifest, modelId));
+  if (!notice) {
+    hideStatusBox();
+    return;
+  }
+
+  showStatusBox({
+    title: notice.title,
+    copy: notice.copy,
+    loading: false
+  });
+  setLiveStatus(`${getModelTitle(modelId)} 3D preview loaded. ${notice.copy}`);
+}
+
+async function syncViewerSupportNotice(modelId) {
+  if (!initialized || !modelId) {
+    hideStatusBox();
+    return;
+  }
+
+  if (!dom.surface || dom.surface.dataset.viewerState !== 'ready') return;
+
+  const manifest = await loadManifest();
+  const selectedModelId = state && state.selections ? state.selections.model : null;
+  if (!manifest || selectedModelId !== modelId || !currentRenderRoot) return;
+  applyViewerSupportNotice(manifest, modelId);
 }
 
 function applyViewerTheme() {
@@ -2072,7 +2359,7 @@ async function refreshCurrentRenderState(modelId) {
     selection: scaleMap ? scaleMap.selectedDimensions : null,
     framing
   });
-  showReadyState(modelId, config);
+  showReadyState(modelId, config, manifest);
 }
 
 function showEmptyState() {
@@ -2082,6 +2369,7 @@ function showEmptyState() {
   clearCurrentRenderRoot();
   log.info('Showing viewer empty state');
   setViewerState('empty');
+  hideStatusBox();
   setLiveStatus('3D preview ready. Choose a model to begin.');
 }
 
@@ -2089,14 +2377,16 @@ function showErrorState(title, errorCopy = ERROR_COPY) {
   isLoading = false;
   log.warn('Showing viewer error state', { title, errorCopy });
   setViewerState('error', { errorCopy });
+  hideStatusBox();
   setLiveStatus(`3D preview unavailable for ${title}.`);
 }
 
-function showReadyState(modelId, config = {}) {
+function showReadyState(modelId, config = {}, manifest = null) {
   const title = getModelTitle(modelId, config);
   log.info('Showing viewer ready state', { modelId, title });
   setViewerState('ready');
   setLiveStatus(`${title} 3D preview loaded.`);
+  applyViewerSupportNotice(manifest || {}, modelId);
 }
 
 export async function updateModel(modelId, { force = false } = {}) {
@@ -2140,7 +2430,7 @@ export async function updateModel(modelId, { force = false } = {}) {
     applyConfiguredPartTransforms(currentRenderRoot, config);
     const framing = frameModel(currentRenderRoot, config, { preserveView: true, previousTarget });
     log.info('Reused existing viewer asset for same model', { modelId, framing });
-    showReadyState(modelId, config);
+    showReadyState(modelId, config, manifest);
     return;
   }
 
@@ -2151,13 +2441,18 @@ export async function updateModel(modelId, { force = false } = {}) {
     applyConfiguredPartTransforms(currentRenderRoot, config);
     const framing = frameModel(currentRenderRoot, config, { preserveView: true, previousTarget });
     log.info('Reused existing viewer asset across model mapping', { modelId, framing });
-    showReadyState(modelId, config);
+    showReadyState(modelId, config, manifest);
     return;
   }
 
   const requestToken = ++pendingRequestToken;
   isLoading = true;
   setViewerState('loading');
+  showStatusBox({
+    title: 'Loading preview',
+    copy: 'Preparing the selected tabletop and leg assembly for the viewer.',
+    loading: true
+  });
   setLiveStatus(`Loading ${title} 3D preview.`);
 
   try {
@@ -2181,7 +2476,7 @@ export async function updateModel(modelId, { force = false } = {}) {
       assetPaths: getRenderAssetPaths(config),
       framing
     });
-    showReadyState(modelId, config);
+    showReadyState(modelId, config, manifest);
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
     if (requestToken !== pendingRequestToken) return;
@@ -2264,8 +2559,11 @@ export function initViewerControls() {
 export async function initViewer() {
   dom.surface = document.getElementById('viewer');
   dom.canvas = document.getElementById('viewer-canvas');
+  dom.statusBox = document.getElementById('viewer-status-box');
+  dom.statusTitle = document.getElementById('viewer-status-box-title');
+  dom.statusCopy = document.getElementById('viewer-status-box-copy');
+  dom.statusSpinner = document.getElementById('viewer-status-spinner');
   dom.empty = document.getElementById('viewer-empty-state');
-  dom.loading = document.getElementById('viewer-loading-state');
   dom.error = document.getElementById('viewer-error-state');
   dom.errorCopy = document.getElementById('viewer-error-copy');
   dom.liveRegion = document.getElementById('viewer-status');
@@ -2407,6 +2705,9 @@ document.addEventListener('statechange', () => {
   const nextColorId = state && state.selections && state.selections.options
     ? state.selections.options.color || null
     : null;
+  const nextColorGradientId = state && state.selections && state.selections.options
+    ? state.selections.options['color-gradient'] || null
+    : null;
   const nextLegId = state && state.selections && state.selections.options
     ? state.selections.options.legs || null
     : null;
@@ -2429,6 +2730,7 @@ document.addEventListener('statechange', () => {
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
   const finishSheenChanged = nextFinishSheenId !== lastObservedFinishSheenId;
   const colorChanged = nextColorId !== lastObservedColorId;
+  const colorGradientChanged = nextColorGradientId !== lastObservedColorGradientId;
   const legChanged = nextLegId !== lastObservedLegId;
   const tubeChanged = nextTubeId !== lastObservedTubeId;
   const legFinishChanged = nextLegFinishId !== lastObservedLegFinishId;
@@ -2463,6 +2765,12 @@ document.addEventListener('statechange', () => {
     log.info('Viewer observed resin color selection change', {
       previousColorId: lastObservedColorId,
       nextColorId
+    });
+  }
+  if (colorGradientChanged) {
+    log.info('Viewer observed resin gradient selection change', {
+      previousColorGradientId: lastObservedColorGradientId,
+      nextColorGradientId
     });
   }
   if (legChanged) {
@@ -2501,6 +2809,7 @@ document.addEventListener('statechange', () => {
   lastObservedMaterialId = nextMaterialId;
   lastObservedFinishSheenId = nextFinishSheenId;
   lastObservedColorId = nextColorId;
+  lastObservedColorGradientId = nextColorGradientId;
   lastObservedLegId = nextLegId;
   lastObservedTubeId = nextTubeId;
   lastObservedLegFinishId = nextLegFinishId;
@@ -2524,5 +2833,10 @@ document.addEventListener('statechange', () => {
 
   if ((designChanged || dimensionsChanged) && nextModelId) {
     void updateModel(nextModelId);
+    return;
+  }
+
+  if (colorGradientChanged && nextModelId) {
+    void syncViewerSupportNotice(nextModelId);
   }
 });

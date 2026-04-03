@@ -4,20 +4,22 @@
     <div id="viewer" class="viewer-surface" data-viewer-state="empty" aria-label="3D table viewer">
       <div id="viewer-canvas" class="viewer-canvas"></div>
 
+      <div id="viewer-status-box" class="viewer-status-box" hidden>
+        <div class="viewer-status-box-row">
+          <div id="viewer-status-spinner" class="viewer-status-spinner" aria-hidden="true" hidden></div>
+          <div class="viewer-status-box-content">
+            <p id="viewer-status-box-title" class="viewer-status-box-title">Loading preview</p>
+            <p id="viewer-status-box-copy" class="viewer-status-box-copy">Preparing the selected tabletop and leg assembly for the viewer.</p>
+          </div>
+        </div>
+      </div>
+
       <div id="viewer-empty-state" class="viewer-overlay viewer-overlay-empty">
         <div class="viewer-overlay-card">
           <img src="assets/images/Generated%20Placeholder%20Table.png" alt="" class="viewer-empty-illustration" />
           <p class="viewer-overlay-eyebrow">WoodLab configurator</p>
           <h2 class="viewer-overlay-title">Choose a model to begin</h2>
           <p class="viewer-overlay-copy">The preview uses the local tabletop and leg models that match your current selections.</p>
-        </div>
-      </div>
-
-      <div id="viewer-loading-state" class="viewer-overlay viewer-overlay-loading" hidden>
-        <div class="viewer-overlay-card">
-          <div class="viewer-loading-spinner" aria-hidden="true"></div>
-          <p class="viewer-overlay-eyebrow">Loading preview</p>
-          <p class="viewer-overlay-copy">Preparing the selected tabletop and leg assembly for the viewer.</p>
         </div>
       </div>
 
