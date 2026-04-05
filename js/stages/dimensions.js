@@ -194,6 +194,89 @@ function getConstraints() {
   return dimensionsData.constraints;
 }
 
+function getHeightOptionCards() {
+  const constraints = getConstraints();
+  const heightConstraints = constraints && constraints.height ? constraints.height : {};
+  const selectedModel = getSelectedModelId();
+  const standardHeight = Number(heightConstraints.standard);
+  const barHeight = Number(heightConstraints.bar);
+  const options = [{
+    id: 'standard',
+    title: 'Standard',
+    subtitle: Number.isFinite(standardHeight) ? `(${standardHeight}″)` : '',
+    price: 0,
+    image: 'assets/images/Generated Sitting Height.png'
+  }];
+
+  if (
+    selectedModel !== 'mdl-coffee'
+    && Number.isFinite(barHeight)
+    && barHeight > 0
+  ) {
+    options.push({
+      id: 'bar',
+      title: 'Bar Height',
+      subtitle: `(${barHeight}″)`,
+      price: 120,
+      image: 'assets/images/Generated Standing Height.png'
+    });
+  }
+
+  options.push({
+    id: 'custom',
+    title: 'Custom',
+    subtitle: '(+$250)',
+    price: 250,
+    image: OPTION_PLACEHOLDER_IMAGE
+  });
+
+  return options;
+}
+
+function getDefaultCustomHeightValue() {
+  const constraints = getConstraints();
+  const heightConstraints = constraints && constraints.height ? constraints.height : {};
+  const barHeight = Number(heightConstraints.bar);
+  const standardHeight = Number(heightConstraints.standard);
+  const minHeight = Number(heightConstraints.min);
+  const maxHeight = Number(heightConstraints.max);
+
+  if (Number.isFinite(barHeight)) return barHeight;
+  if (Number.isFinite(standardHeight)) return standardHeight;
+  if (Number.isFinite(minHeight) && Number.isFinite(maxHeight)) {
+    return Math.round((minHeight + maxHeight) / 2);
+  }
+  return 40;
+}
+
+function normalizeHeightSelectionForModel() {
+  const availableOptions = getHeightOptionCards();
+  const availableIds = new Set(availableOptions.map((option) => option.id));
+  const currentHeight = currentDimensions.height;
+
+  if (currentHeight === 'custom' && !Number.isFinite(Number(currentDimensions.heightCustom))) {
+    currentDimensions.heightCustom = getDefaultCustomHeightValue();
+    return;
+  }
+
+  if (availableIds.has(currentHeight)) return;
+
+  if (currentHeight === 'bar' && availableIds.has('custom')) {
+    currentDimensions.height = 'custom';
+    currentDimensions.heightCustom = Number.isFinite(Number(currentDimensions.heightCustom))
+      ? Number(currentDimensions.heightCustom)
+      : getDefaultCustomHeightValue();
+    return;
+  }
+
+  currentDimensions.height = availableIds.has('standard') ? 'standard' : (availableOptions[0]?.id || 'standard');
+  if (currentDimensions.height === 'custom') {
+    currentDimensions.heightCustom = Number.isFinite(Number(currentDimensions.heightCustom))
+      ? Number(currentDimensions.heightCustom)
+      : getDefaultCustomHeightValue();
+  }
+}
+
 function updateAxisInputConstraints() {
   const constraints = getConstraints();
   if (!constraints) return;
@@ -385,6 +468,7 @@ function updateUIControls() {
   }
 
   updateAxisInputConstraints();
+  normalizeHeightSelectionForModel();
   
   if (lengthInput && currentDimensions.length !== null) {
     lengthInput.value = currentDimensions.length;
@@ -748,14 +832,9 @@ function initNumericInputs() {
 function initHeightButtons() {
   const heightOptions = document.getElementById('height-options');
   if (!heightOptions) return;
-  
-  // Height options: standard, bar, custom
-  const heights = [
-    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0, image: 'assets/images/Generated Sitting Height.png' },
-    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120, image: 'assets/images/Generated Standing Height.png' },
-    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250, image: OPTION_PLACEHOLDER_IMAGE }
-  ];
-  
+
+  normalizeHeightSelectionForModel();
+  const heights = getHeightOptionCards();
   heightOptions.innerHTML = '';
   
   heights.forEach(height => {
@@ -783,15 +862,19 @@ function initHeightButtons() {
 
 // Select a height option
 function selectHeight(heightId) {
+  const previousCustomHeight = currentDimensions.heightCustom;
   currentDimensions.height = heightId;
   currentDimensions.heightCustom = null;
 
   const customContainer = document.getElementById('custom-height-container');
   if (heightId === 'custom') {
+    const defaultCustomHeight = Number.isFinite(Number(previousCustomHeight))
+      ? Number(previousCustomHeight)
+      : getDefaultCustomHeightValue();
     if (customContainer) customContainer.classList.remove('hidden');
-    currentDimensions.heightCustom = 40; // Default custom height
+    currentDimensions.heightCustom = defaultCustomHeight;
     const customInput = document.getElementById('dim-height-custom-input');
-    if (customInput) customInput.value = 40;
+    if (customInput) customInput.value = defaultCustomHeight;
   } else {
     if (customContainer) customContainer.classList.add('hidden');
   }
@@ -906,6 +989,7 @@ export function restoreFromState(appState) {
       lastKnownModel = currentModel;
       lastKnownDesign = currentDesign;
       initPresets();
+      initHeightButtons();
     }
     
     initializeFromState(appState);

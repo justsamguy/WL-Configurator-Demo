@@ -396,6 +396,9 @@ function getDimensionRules(config = {}) {
   const baseDimensions = ruleConfig.baseDimensions && typeof ruleConfig.baseDimensions === 'object'
     ? ruleConfig.baseDimensions
     : {};
+  const sourceDimensions = ruleConfig.sourceDimensions && typeof ruleConfig.sourceDimensions === 'object'
+    ? ruleConfig.sourceDimensions
+    : baseDimensions;
   const heightOptions = ruleConfig.heightOptions && typeof ruleConfig.heightOptions === 'object'
     ? ruleConfig.heightOptions
     : {};
@@ -411,6 +414,17 @@ function getDimensionRules(config = {}) {
       length: Number.isFinite(Number(baseDimensions.length)) ? Number(baseDimensions.length) : null,
       width: Number.isFinite(Number(baseDimensions.width)) ? Number(baseDimensions.width) : null,
       height: Number.isFinite(Number(baseDimensions.height)) ? Number(baseDimensions.height) : null
+    },
+    sourceDimensions: {
+      length: Number.isFinite(Number(sourceDimensions.length))
+        ? Number(sourceDimensions.length)
+        : (Number.isFinite(Number(baseDimensions.length)) ? Number(baseDimensions.length) : null),
+      width: Number.isFinite(Number(sourceDimensions.width))
+        ? Number(sourceDimensions.width)
+        : (Number.isFinite(Number(baseDimensions.width)) ? Number(baseDimensions.width) : null),
+      height: Number.isFinite(Number(sourceDimensions.height))
+        ? Number(sourceDimensions.height)
+        : (Number.isFinite(Number(baseDimensions.height)) ? Number(baseDimensions.height) : null)
     },
     heightOptions: {
       standard: Number.isFinite(Number(heightOptions.standard)) ? Number(heightOptions.standard) : null,
@@ -461,15 +475,15 @@ function getRoundPlanarScale(lengthScale, widthScale, roundScaleMode = 'uniform-
 function getDimensionScaleMap(config = {}) {
   const rules = getDimensionRules(config);
   const selectedDimensions = getSelectedDimensions(config);
-  const baseDimensions = rules.baseDimensions || {};
-  const rawLengthScale = Number.isFinite(selectedDimensions.length) && Number.isFinite(Number(baseDimensions.length)) && Number(baseDimensions.length) > 0
-    ? selectedDimensions.length / Number(baseDimensions.length)
+  const sourceDimensions = rules.sourceDimensions || {};
+  const rawLengthScale = Number.isFinite(selectedDimensions.length) && Number.isFinite(Number(sourceDimensions.length)) && Number(sourceDimensions.length) > 0
+    ? selectedDimensions.length / Number(sourceDimensions.length)
     : 1;
-  const rawWidthScale = Number.isFinite(selectedDimensions.width) && Number.isFinite(Number(baseDimensions.width)) && Number(baseDimensions.width) > 0
-    ? selectedDimensions.width / Number(baseDimensions.width)
+  const rawWidthScale = Number.isFinite(selectedDimensions.width) && Number.isFinite(Number(sourceDimensions.width)) && Number(sourceDimensions.width) > 0
+    ? selectedDimensions.width / Number(sourceDimensions.width)
     : 1;
-  const heightScale = Number.isFinite(selectedDimensions.height) && Number.isFinite(Number(baseDimensions.height)) && Number(baseDimensions.height) > 0
-    ? selectedDimensions.height / Number(baseDimensions.height)
+  const heightScale = Number.isFinite(selectedDimensions.height) && Number.isFinite(Number(sourceDimensions.height)) && Number(sourceDimensions.height) > 0
+    ? selectedDimensions.height / Number(sourceDimensions.height)
     : 1;
 
   if (selectedDimensions.isRound) {
@@ -1086,10 +1100,10 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   const selectedHeight = scaleMap && scaleMap.selectedDimensions
     ? Number(scaleMap.selectedDimensions.height)
     : NaN;
-  const baseHeight = rules && rules.baseDimensions ? Number(rules.baseDimensions.height) : NaN;
+  const sourceHeight = rules && rules.sourceDimensions ? Number(rules.sourceDimensions.height) : NaN;
   const unitsPerInch = Number.isFinite(Number(rules.unitsPerInch)) ? Number(rules.unitsPerInch) : 0.0254;
-  const heightDeltaUnits = Number.isFinite(selectedHeight) && Number.isFinite(baseHeight)
-    ? (selectedHeight - baseHeight) * unitsPerInch
+  const heightDeltaUnits = Number.isFinite(selectedHeight) && Number.isFinite(sourceHeight)
+    ? (selectedHeight - sourceHeight) * unitsPerInch
     : 0;
   const tabletopBaseState = basePartStates.tabletop && basePartStates.tabletop.metrics
     ? basePartStates.tabletop

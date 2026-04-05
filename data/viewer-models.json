@@ -125,6 +125,11 @@
         "width": 42,
         "height": 30
       },
+      "sourceDimensions": {
+        "length": 96,
+        "width": 42,
+        "height": 30
+      },
       "heightOptions": {
         "standard": 30,
         "bar": 42
