@@ -4024,7 +4024,7 @@ body.stage-0 #models-stage-section {
   --model-stage-tile-gap: clamp(1.75rem, 3.25vw, 3.5rem);
   --model-stage-row-width: calc(var(--model-stage-tile-width) * 3 + var(--model-stage-tile-gap) * 2);
   --model-stage-accent-overhang: clamp(5rem, 10vw, 8.5rem);
-  --model-stage-accent-height: clamp(1.1rem, 2.2vh, 1.5rem);
+  --model-stage-accent-height: clamp(2rem, 4vw, 2.75rem);
   --model-stage-accent-stroke-width: 4.5;
   --model-stage-label-color: #b2b8c0;
   --model-stage-accent-color: rgba(156, 163, 175, 0.82);
@@ -4132,8 +4132,9 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
 }
 
 body.stage-0 #models-stage-section .model-stage-accent {
+  align-self: stretch;
   width: 100%;
-  max-width: calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang));
+  max-width: none;
   color: var(--model-stage-accent-color);
   pointer-events: none;
   margin: 0 auto;
