@@ -95,11 +95,11 @@ function clearGroupTransitionState(group) {
 
 function finalizeGroupSwitch(viewport, currentGroup, nextGroup) {
   if (!viewport || !currentGroup || !nextGroup) return;
-  clearViewportTransitionState(viewport);
   clearGroupTransitionState(currentGroup);
   clearGroupTransitionState(nextGroup);
   setGroupSelected(currentGroup, false);
   setGroupSelected(nextGroup, true);
+  clearViewportTransitionState(viewport);
   delete viewport._wlDesignsTransition;
 }
 

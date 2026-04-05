@@ -4422,7 +4422,9 @@ body.stage-1 #stage-panel-1 > .flex {
 
 .designs-stage-panels.is-animating .designs-stage-group {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
   width: 100%;
   pointer-events: none;
 }
