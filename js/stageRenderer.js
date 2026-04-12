@@ -201,7 +201,7 @@ const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
 const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
 const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
-const HIDDEN_ADDON_GROUP_TITLES = new Set(['installation']);
+const HIDDEN_ADDON_GROUP_TITLES = new Set(['expedited production', 'installation']);
 
 function reorderAddonGroupsForModel(groups = [], modelId = '') {
   const visibleGroups = groups.filter(group => {
@@ -233,7 +233,7 @@ function reorderAddonGroupsForModel(groups = [], modelId = '') {
     moveAfter('Glass Top', 'Tech');
     moveAfter('Waterfall Edge', 'Glass Top');
   } else if (modelId === 'mdl-dining') {
-    moveToIndex('Custom River Design', 1); // Keep expedited at the top.
+    moveToIndex('Custom River Design', 1);
   }
 
   return ordered;
@@ -477,6 +477,74 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
         content.appendChild(subContainer);
       });
+    } else if (group.type === 'tile') {
+      const tilesContainer = document.createElement('div');
+      tilesContainer.className = 'addons-tiles-container';
+      if (group.layout === 'scroll') {
+        tilesContainer.classList.add('addons-tiles-scroll');
+      }
+
+      if (group.options) {
+        group.options.forEach(option => {
+          if (hiddenAddonIds.has(option.id)) return;
+          const tooltip = resolveTooltip(option);
+          const btn = document.createElement('button');
+          btn.className = 'addons-tile';
+          btn.setAttribute('data-addon-id', option.id);
+          btn.setAttribute('aria-pressed', 'false');
+          btn.setAttribute('data-price', option.price || 0);
+
+          const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
+          const hasSquoval = currentAddons.includes('addon-squoval');
+          const hasLiveEdge = currentAddons.includes('addon-live-edge');
+          const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
+          const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge'));
+          const isSquovalIncompatible = option.id === 'addon-squoval' &&
+            (hasLiveEdge || hasWaterfall);
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible;
+          const isDisabled = group.disabled || option.disabled || isIncompatible;
+
+          if (isDisabled) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+            btn.setAttribute('aria-disabled', 'true');
+            let incompatibilityTooltip = tooltip;
+            if (isRoundedCornersIncompatible || isAngledCornersIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
+            } else if (isChamferedEdgesIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
+            } else if (isSquovalIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
+            }
+            if (incompatibilityTooltip) btn.setAttribute('data-tooltip', incompatibilityTooltip);
+          }
+
+          const img = document.createElement('img');
+          img.className = 'addons-tile-image';
+          img.src = option.image || group.image || DEFAULT_ADDON_INTRO_IMAGE;
+          img.alt = option.title ? `Preview of ${option.title}` : 'Customization option';
+          btn.appendChild(img);
+
+          const label = document.createElement('div');
+          label.className = 'addons-tile-label';
+          label.textContent = option.title;
+
+          const optionPrice = document.createElement('div');
+          optionPrice.className = 'addons-tile-price';
+          optionPrice.textContent = formatPriceLabel(option.price);
+
+          btn.appendChild(label);
+          btn.appendChild(optionPrice);
+          tilesContainer.appendChild(btn);
+        });
+      }
+
+      content.appendChild(tilesContainer);
     } else {
       // Original logic for non-tech groups
       const options = document.createElement('div');

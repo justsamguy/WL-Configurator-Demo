@@ -70,7 +70,7 @@ const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
 const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
 const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
-const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.78;
+const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
 const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
 const RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE = 0.5;
@@ -1522,7 +1522,7 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   previewMaterial.opacity = isSolidBlack
     ? 1
     : (sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
-      ? Number(sourceMaterial.opacity)
+      ? Math.min(1, Number(sourceMaterial.opacity) * 2)
       : 0.98);
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;

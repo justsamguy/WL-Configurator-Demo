@@ -7,6 +7,13 @@ U-channels
 Chair for reference
 
 
+invent some sort of volumetric resin texture handling
+
+Add sirca specs to technical pdf
+
+fix the gradient overlays (screenshot)
+the existing textures accurately show dark-to-light examples. for light-center, change the gradient to be full height and run horizontal to be consistent.
+
 - invent & add model handling for each add-on:
     - 
 
@@ -31,3 +38,7 @@ By default, make legs unchecked until a selection is made in the legs page (or a
 
 ## v2.0
 - Rebuild app in React.js
+
+## v2.x
+ - Ability to upload and move logos within the viewer
+ - Screensaver (prompt after 5min inactivity w/ 15sec countdown), then start a full-view slideshow of slowly panned imagery that goes away when the mouse is moved. Images are to be zoomed in to allow the pan to happen.

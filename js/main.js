@@ -977,6 +977,23 @@ function updateLowerShelfAddonAvailability(appState) {
 }
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
 
+function setAddonTileDisabled(tile, shouldDisable, tooltip = '', disabledBy = '') {
+  if (!tile) return;
+  tile.disabled = shouldDisable;
+  tile.classList.toggle('disabled', shouldDisable);
+  if (shouldDisable) {
+    tile.setAttribute('aria-disabled', 'true');
+    tile.setAttribute('aria-pressed', 'false');
+    tile.classList.remove('selected');
+    if (tooltip) tile.setAttribute('data-tooltip', tooltip);
+    if (disabledBy) tile.setAttribute('data-disabled-by', disabledBy);
+    return;
+  }
+  tile.removeAttribute('aria-disabled');
+  tile.removeAttribute('data-disabled-by');
+  tile.removeAttribute('data-tooltip');
+}
+
 function areEdgeProfilesCompatible(firstAddonId, secondAddonId) {
   if (!firstAddonId || !secondAddonId || firstAddonId === secondAddonId) return true;
   return EDGE_PROFILE_COMPATIBLE_PAIRS.has(`${firstAddonId}:${secondAddonId}`);
@@ -1016,36 +1033,40 @@ function updateEdgeProfileAddonAvailability(appState = state) {
   EDGE_PROFILE_ADDONS.forEach((addonId) => {
     const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
     const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${addonId}"]`);
-    if (!checkbox || !option) return;
+    const tile = root.querySelector(`.addons-tile[data-addon-id="${addonId}"]`);
+    if ((!checkbox || !option) && !tile) return;
 
     const base = getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons);
     const disableBySelection = selectedEdges.some((selectedAddonId) => (
       selectedAddonId !== addonId && !areEdgeProfilesCompatible(addonId, selectedAddonId)
     ));
     const shouldDisable = base.incompatible || disableBySelection;
+    const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
 
     if (shouldDisable) {
-      checkbox.disabled = true;
-      if (disableBySelection) {
-        checkbox.checked = false;
+      if (checkbox && option) {
+        checkbox.disabled = true;
+        if (disableBySelection) {
+          checkbox.checked = false;
+        }
+        if (tooltip) {
+          checkbox.setAttribute('data-tooltip', tooltip);
+          option.setAttribute('data-tooltip', tooltip);
+        }
+        if (disableBySelection) {
+          checkbox.setAttribute('data-disabled-by', 'edge-profile');
+          option.setAttribute('data-disabled-by', 'edge-profile');
+        }
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
       }
-      const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
-      if (tooltip) {
-        checkbox.setAttribute('data-tooltip', tooltip);
-        option.setAttribute('data-tooltip', tooltip);
-      }
-      if (disableBySelection) {
-        checkbox.setAttribute('data-disabled-by', 'edge-profile');
-        option.setAttribute('data-disabled-by', 'edge-profile');
-      }
-      option.classList.add('disabled');
-      option.classList.remove('selected');
-      option.setAttribute('aria-disabled', 'true');
+      setAddonTileDisabled(tile, true, tooltip, disableBySelection ? 'edge-profile' : '');
       return;
     }
 
-    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
-    if (disabledBy === 'edge-profile') {
+    const disabledBy = checkbox ? checkbox.getAttribute('data-disabled-by') || '' : '';
+    if (checkbox && option && disabledBy === 'edge-profile') {
       checkbox.disabled = false;
       checkbox.removeAttribute('data-disabled-by');
       if (checkbox.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
@@ -1059,6 +1080,9 @@ function updateEdgeProfileAddonAvailability(appState = state) {
       if (option.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
         option.removeAttribute('data-tooltip');
       }
+    }
+    if (tile) {
+      setAddonTileDisabled(tile, false, tooltip, 'edge-profile');
     }
   });
 
@@ -1742,6 +1766,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 669');
+console.log('Edit ver: 670');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
