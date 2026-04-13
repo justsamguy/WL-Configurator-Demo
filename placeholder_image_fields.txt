@@ -5,11 +5,3 @@
 data/addons.json :: Waterfall Edge > addon-waterfall-art :: image :: assets/images/model1_placeholder.png
 data/addons.json :: Lower Shelf :: image :: assets/images/model1_placeholder.png
 data/addons.json :: Edge Profiles > addon-angled-corners :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-coat-02 :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-coat-01 :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-tint-01 :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-tint-02 :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-tint-03 :: image :: assets/images/model1_placeholder.png
-data/finish.json :: fin-tint-04 :: image :: assets/images/model1_placeholder.png
-js/stages/dimensions.js :: customTile.innerHTML image :: image :: assets/images/model1_placeholder.png
-js/stages/dimensions.js :: heights[id=custom] :: image :: assets/images/model1_placeholder.png

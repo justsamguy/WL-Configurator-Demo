@@ -1,7 +1,7 @@
 {
   "coatings": [
-    { "id": "fin-coat-02", "title": "2K Poly", "price": 0, "description": "A highly durable, industry-standard finish coating. Recommended for highest water and scratch resistance.", "image": "assets/images/model1_placeholder.png" },
-    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "A plant-based oil finish with a wide range of stain customization. Recommended for food-safe, sensitive, or user-maintenance applications.", "image": "assets/images/model1_placeholder.png" }
+    { "id": "fin-coat-02", "title": "2K Poly", "price": 0, "description": "A highly durable, industry-standard finish coating. Recommended for highest water and scratch resistance.", "image": "assets/images/Sirca Logo.png" },
+    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "A plant-based oil finish with a wide range of stain customization. Recommended for food-safe, sensitive, or user-maintenance applications.", "image": "assets/images/osmo-logo-new-sizex2.png" }
   ],
   "sheens": [
     {
@@ -51,9 +51,9 @@
     }
   ],
   "tints": [
-    { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish", "image": "assets/images/model1_placeholder.png" },
-    { "id": "fin-tint-02", "title": "Natural", "price": 100, "description": "Maintain the raw wood color as closely as possible", "image": "assets/images/model1_placeholder.png" },
-    { "id": "fin-tint-03", "title": "Darken", "price": 100, "description": "Use a dark stain to tone the wood to your liking.", "image": "assets/images/model1_placeholder.png" },
-    { "id": "fin-tint-04", "title": "Custom", "price": 250, "description": "Match the stain to my reference", "image": "assets/images/model1_placeholder.png" }
+    { "id": "fin-tint-01", "title": "Clear", "price": 0, "description": "Our standard finish", "image": "assets/images/Clear Stain Walnut.webp" },
+    { "id": "fin-tint-02", "title": "Natural", "price": 100, "description": "Maintain the raw wood color as closely as possible", "image": "assets/images/Natural Stain Walnut.webp" },
+    { "id": "fin-tint-03", "title": "Darken", "price": 100, "description": "Use a dark stain to tone the wood to your liking.", "image": "assets/images/Darken Stain Walnut.webp" },
+    { "id": "fin-tint-04", "title": "Custom", "price": 250, "description": "Match the stain to my reference", "image": "assets/images/Osmo-wood-wax-finish-palette.png" }
   ]
 }

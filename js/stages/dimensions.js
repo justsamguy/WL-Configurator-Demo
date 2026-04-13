@@ -7,7 +7,8 @@ import { createLogger } from '../logger.js';
 import { requiresCenterLeg } from '../pricing.js';
 
 const log = createLogger('Dimensions');
-const OPTION_PLACEHOLDER_IMAGE = 'assets/images/model1_placeholder.png';
+const CUSTOM_DIMENSIONS_IMAGE = 'assets/images/Custom Dimensions.png';
+const CUSTOM_HEIGHT_IMAGE = 'assets/images/Generated Custom Height.png';
 
 let dimensionsData = null;
 let currentDimensions = {
@@ -227,7 +228,7 @@ function getHeightOptionCards() {
     title: 'Custom',
     subtitle: '(+$250)',
     price: 250,
-    image: OPTION_PLACEHOLDER_IMAGE
+    image: CUSTOM_HEIGHT_IMAGE
   });
 
   return options;
@@ -652,7 +653,7 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
-    <img src="${OPTION_PLACEHOLDER_IMAGE}" alt="Custom dimensions" class="w-full h-24 object-cover rounded-t mb-2">
+    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="w-full h-24 object-cover rounded-t mb-2">
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;
