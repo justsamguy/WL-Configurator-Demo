@@ -306,7 +306,7 @@ const COLOR_LAYOUT_SPECS = {
 
 const COLOR_GRADIENT_LAYOUT_SPECS = {
   'Dark to Light': 'Gradient (dark on one end, light on the other)',
-  'Light Center': 'Gradient (light center highlight)',
+  'Light Center': 'Gradient (horizontal light center highlight)',
   'Single Color': 'Solid',
   'Custom': 'Custom'
 };

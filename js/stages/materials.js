@@ -36,7 +36,7 @@ let customColorNoteInput = null;
 let customGradientCard = null;
 let customGradientNoteContainer = null;
 let customGradientNoteInput = null;
-let colorPreviewPaletteMapPromise = null;
+let colorPreviewDataMapPromise = null;
 let gradientPreviewSyncToken = 0;
 
 function normalizeHexColor(value, fallback) {
@@ -77,19 +77,25 @@ function normalizePreviewPalette(value = {}) {
   };
 }
 
-async function getColorPreviewPaletteMap() {
-  if (!colorPreviewPaletteMapPromise) {
-    colorPreviewPaletteMapPromise = loadData(COLOR_DATA_PATH).then((colors) => {
-      const paletteMap = new Map();
-      if (!Array.isArray(colors)) return paletteMap;
+async function getColorPreviewDataMap() {
+  if (!colorPreviewDataMapPromise) {
+    colorPreviewDataMapPromise = loadData(COLOR_DATA_PATH).then((colors) => {
+      const previewDataMap = new Map();
+      if (!Array.isArray(colors)) return previewDataMap;
       colors.forEach((color) => {
         if (!color || typeof color.id !== 'string') return;
-        paletteMap.set(color.id, normalizePreviewPalette(color.previewPalette));
+        const textureSrc = typeof color.image === 'string' && color.image.trim()
+          ? color.image.trim()
+          : DEFAULT_GRADIENT_TEXTURE_PATH;
+        previewDataMap.set(color.id, {
+          palette: normalizePreviewPalette(color.previewPalette),
+          textureSrc
+        });
       });
-      return paletteMap;
+      return previewDataMap;
     });
   }
-  return colorPreviewPaletteMapPromise;
+  return colorPreviewDataMapPromise;
 }
 
 function getSelectedColorId(appState = {}) {
@@ -144,19 +150,17 @@ function buildGradientPreviewStyles(previewType, palette, textureSrc) {
   switch (previewType) {
     case 'dark-to-light':
       return {
-        backgroundImage: [
-          `linear-gradient(135deg, ${toRgba(palette.dark, 0.94)} 0%, ${toRgba(palette.dark, 0.88)} 18%, ${toRgba(palette.solid, 0.7)} 52%, ${toRgba(palette.light, 0.78)} 100%)`,
-          textureLayer
-        ].join(', '),
-        backgroundBlendMode: 'multiply, normal'
+        backgroundImage: textureLayer,
+        backgroundBlendMode: 'normal'
       };
     case 'light-center':
       return {
         backgroundImage: [
-          `radial-gradient(circle at 50% 48%, ${toRgba(palette.light, 0.92)} 0%, ${toRgba(palette.light, 0.74)} 24%, ${toRgba(palette.solid, 0.55)} 44%, ${toRgba(palette.dark, 0.9)} 100%)`,
+          `linear-gradient(90deg, ${toRgba(palette.dark, 0.68)} 0%, ${toRgba(palette.dark, 0.34)} 18%, rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 66%, ${toRgba(palette.dark, 0.34)} 82%, ${toRgba(palette.dark, 0.68)} 100%)`,
+          `linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, ${toRgba(palette.light, 0.18)} 28%, ${toRgba(palette.light, 0.78)} 50%, ${toRgba(palette.light, 0.18)} 72%, rgba(255, 255, 255, 0) 100%)`,
           textureLayer
         ].join(', '),
-        backgroundBlendMode: 'screen, normal'
+        backgroundBlendMode: 'multiply, screen, normal'
       };
     case 'custom':
       return {
@@ -183,19 +187,27 @@ async function syncColorGradientPreviews(appState = {}) {
   if (!previews.length) return;
 
   const syncToken = ++gradientPreviewSyncToken;
-  const paletteMap = await getColorPreviewPaletteMap();
+  const previewDataMap = await getColorPreviewDataMap();
   if (syncToken !== gradientPreviewSyncToken) return;
 
   const selectedColorId = getSelectedColorId(appState);
   const useNeutralPalette = !selectedColorId || selectedColorId === CUSTOM_COLOR_ID;
-  const selectedPalette = !useNeutralPalette && paletteMap.has(selectedColorId)
-    ? paletteMap.get(selectedColorId)
+  const selectedPreviewData = !useNeutralPalette && previewDataMap.has(selectedColorId)
+    ? previewDataMap.get(selectedColorId)
+    : null;
+  const selectedPalette = selectedPreviewData && selectedPreviewData.palette
+    ? selectedPreviewData.palette
     : DEFAULT_GRADIENT_PREVIEW_PALETTE;
+  const selectedTextureSrc = selectedPreviewData && selectedPreviewData.textureSrc
+    ? selectedPreviewData.textureSrc
+    : DEFAULT_GRADIENT_TEXTURE_PATH;
 
   previews.forEach((preview) => {
     const previewType = preview.dataset.previewType || 'single-color';
     const palette = previewType === 'custom' ? DEFAULT_GRADIENT_PREVIEW_PALETTE : selectedPalette;
-    const textureSrc = preview.dataset.textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH;
+    const textureSrc = previewType === 'custom' || previewType === 'single-color'
+      ? preview.dataset.textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH
+      : selectedTextureSrc;
     const styles = buildGradientPreviewStyles(previewType, palette, textureSrc);
     preview.style.backgroundImage = styles.backgroundImage;
     preview.style.backgroundBlendMode = styles.backgroundBlendMode;
