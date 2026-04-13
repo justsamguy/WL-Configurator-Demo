@@ -21,6 +21,15 @@ const COLOR_DATA_PATH = 'data/colors.json';
 const FINISH_DATA_PATH = 'data/finish.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
+const MISSING_CONFIGURATION_MODEL_COPY = "We don't have a 3D model for your configuration yet.";
+const VIEWER_LOADING_STATUS = Object.freeze({
+  title: 'Loading preview',
+  copy: 'Preparing your 3D preview.'
+});
+const VIEWER_SUPPORT_NOTICE = Object.freeze({
+  title: 'Preview may not reflect current configuration',
+  copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
+});
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
 const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
@@ -1840,26 +1849,7 @@ function pushViewerNotice(notices, title, reason) {
 
 function summarizeViewerNotices(notices = []) {
   if (!Array.isArray(notices) || !notices.length) return null;
-  if (notices.length === 1) {
-    return {
-      title: notices[0].title,
-      copy: notices[0].reason
-    };
-  }
-
-  const leadNotices = notices.slice(0, 2);
-  const remainingCount = notices.length - leadNotices.length;
-  const leadTitle = leadNotices.length === 2
-    ? `${leadNotices[0].title} and ${leadNotices[1].title}`
-    : leadNotices[0].title;
-  const extraCopy = remainingCount > 0
-    ? ` plus ${remainingCount} more selection${remainingCount === 1 ? '' : 's'}`
-    : '';
-
-  return {
-    title: 'Preview note',
-    copy: `${leadTitle}${extraCopy} are not shown exactly in the 3D viewer. These details are custom-quoted or do not have local preview models yet.`
-  };
+  return VIEWER_SUPPORT_NOTICE;
 }
 
 function getLegPreviewNotice(manifest = {}, modelId) {
@@ -2417,14 +2407,14 @@ export async function updateModel(modelId, { force = false } = {}) {
   log.info('Viewer update requested', { modelId, force });
   const manifest = await loadManifest();
   if (!manifest) {
-    showErrorState(getModelTitle(modelId), 'The local viewer manifest could not be loaded.');
+    showErrorState(getModelTitle(modelId), ERROR_COPY);
     return;
   }
 
   const config = resolveViewerConfig(manifest, modelId);
   const renderableParts = getRenderableParts(config || {});
   if (!config || !renderableParts.length) {
-    showErrorState(getModelTitle(modelId), 'No local 3D asset is mapped for the selected model yet.');
+    showErrorState(getModelTitle(modelId), MISSING_CONFIGURATION_MODEL_COPY);
     return;
   }
   const renderSignature = getRenderSignature(config);
@@ -2464,8 +2454,8 @@ export async function updateModel(modelId, { force = false } = {}) {
   isLoading = true;
   setViewerState('loading');
   showStatusBox({
-    title: 'Loading preview',
-    copy: 'Preparing the selected tabletop and leg assembly for the viewer.',
+    title: VIEWER_LOADING_STATUS.title,
+    copy: VIEWER_LOADING_STATUS.copy,
     loading: true
   });
   setLiveStatus(`Loading ${title} 3D preview.`);
@@ -2495,7 +2485,7 @@ export async function updateModel(modelId, { force = false } = {}) {
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
     if (requestToken !== pendingRequestToken) return;
-    showErrorState(title, 'The selected tabletop and leg preview could not be loaded. Try again.');
+    showErrorState(title, ERROR_COPY);
   } finally {
     if (requestToken === pendingRequestToken) isLoading = false;
   }
