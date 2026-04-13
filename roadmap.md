@@ -11,8 +11,6 @@ invent some sort of volumetric resin texture handling
 
 Add sirca specs to technical pdf
 
-fix the gradient overlays (screenshot)
-the existing textures accurately show dark-to-light examples. for light-center, change the gradient to be full height and run horizontal to be consistent.
 
 - invent & add model handling for each add-on:
     - 

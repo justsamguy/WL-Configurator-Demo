@@ -1909,8 +1909,15 @@ body.show-model-tiles #stage-panel-0 #model-options,
 #finish-coating-options .viewer-placeholder-img,
 #finish-tint-options .viewer-placeholder-img {
   object-fit: cover;
+  object-position: center center;
   background-color: transparent;
   padding: 0;
+}
+
+#finish-coating-options .option-card[data-id="fin-coat-02"] .viewer-placeholder-img,
+#finish-coating-options .option-card[data-id="fin-coat-01"] .viewer-placeholder-img {
+  object-fit: contain;
+  object-position: center center;
 }
 .stage-options-grid .option-card .title {
   font-weight: 600;
@@ -2834,7 +2841,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 .viewer-status-box {
   position: absolute;
   right: 1rem;
-  top: 1rem;
+  bottom: 1rem;
   z-index: 3;
   width: min(21rem, calc(100% - 2rem));
   padding: 0.8rem 0.9rem;
@@ -2850,16 +2857,9 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   display: none;
 }
 
-.viewer-status-box[data-status-tone="loading"] {
-  width: auto;
-  padding: 0.55rem;
-  border-radius: 9999px;
-}
-
 .viewer-status-box-row {
   display: flex;
   align-items: flex-start;
-  gap: 0.7rem;
 }
 
 .viewer-status-box-content {
@@ -2868,10 +2868,6 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   flex: 1 1 auto;
   flex-direction: column;
   gap: 0.18rem;
-}
-
-.viewer-status-box[data-status-tone="loading"] .viewer-status-box-content {
-  display: none;
 }
 
 .viewer-status-box-title {
@@ -2891,14 +2887,21 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 }
 
 .viewer-status-spinner {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  z-index: 3;
   width: 1.35rem;
   height: 1.35rem;
-  flex: 0 0 auto;
-  margin-top: 0;
   border-radius: 9999px;
   border: 2px solid rgba(27, 52, 90, 0.16);
   border-top-color: #1b345a;
   animation: viewer-spin 0.9s linear infinite;
+  pointer-events: none;
+}
+
+.viewer-status-spinner[hidden] {
+  display: none;
 }
 
 .viewer-loading-spinner {
@@ -3002,14 +3005,14 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
   .viewer-status-box {
     right: 0.75rem;
-    top: 0.75rem;
+    bottom: 0.75rem;
     width: calc(100% - 1.5rem);
     padding: 0.72rem 0.8rem;
   }
 
-  .viewer-status-box[data-status-tone="loading"] {
-    width: auto;
-    padding: 0.55rem;
+  .viewer-status-spinner {
+    right: 0.75rem;
+    top: 0.75rem;
   }
 
   .viewer-overlay-card {
@@ -3605,10 +3608,12 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 /* Keep each axis control stacked; side-by-side layout comes from the wrapper flex container */
 #dimensions-custom-wrapper .axis-control-row {
   flex-direction: column;
+  align-items: center;
   flex: 0 0 9rem;
   min-width: 9rem;
   max-width: 9rem;
   padding: 0.75rem;
+  text-align: center;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
@@ -3618,6 +3623,7 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 #dimensions-custom-wrapper {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -3745,6 +3751,21 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 #custom-height-container .control-input-row .control-input {
   flex: 0 0 5.5rem;
   max-width: 5.5rem;
+}
+
+#dimensions-custom-wrapper .control-stack,
+#custom-height-container .control-stack {
+  width: 100%;
+}
+
+#dimensions-custom-wrapper .control-input-row,
+#custom-height-container .control-input-row {
+  justify-content: center;
+}
+
+#dimensions-custom-wrapper .control-validation,
+#custom-height-container .control-validation {
+  text-align: center;
 }
 
 #dimensions-custom-wrapper .control-input-row .control-unit,
@@ -3951,6 +3972,10 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 #custom-height-container {
   margin-top: 0.75rem;
   padding: 0.75rem;
+  width: 9rem;
+  max-width: 100%;
+  align-self: center;
+  text-align: center;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
@@ -4302,6 +4327,7 @@ body.stage-1 #stage-panel-1 > .flex {
   flex-direction: column;
   gap: 0.75rem;
   position: relative;
+  box-sizing: border-box;
   padding: 0.55rem;
   border: 1px solid var(--designs-group-border);
   border-radius: 1.35rem;
@@ -4424,16 +4450,16 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 .designs-stage-panels.is-animating {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   overflow: hidden;
   will-change: height;
 }
 
 .designs-stage-panels.is-animating .designs-stage-group {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  width: 100%;
+  grid-area: 1 / 1;
+  min-width: 0;
   pointer-events: none;
 }
 
@@ -5106,6 +5132,16 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
   gap: 0.75rem;
 }
 
+.addons-edge-profile-tiles {
+  justify-content: center;
+}
+
+.addons-tiles-scroll.addons-edge-profile-tiles {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
+
 .addons-tiles-scroll {
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -5139,8 +5175,8 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
 }
 
 .addons-tile-image {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   border-radius: 0.5rem;
   object-fit: cover;
 }

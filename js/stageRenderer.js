@@ -385,6 +385,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           // Render as tiles (buttons)
           const tilesContainer = document.createElement('div');
           tilesContainer.className = 'addons-tiles-container';
+          if (group.title === 'Edge Profiles') {
+            tilesContainer.classList.add('addons-edge-profile-tiles');
+          }
           if (subsection.layout === 'scroll') {
             tilesContainer.classList.add('addons-tiles-scroll');
           }
@@ -480,6 +483,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     } else if (group.type === 'tile') {
       const tilesContainer = document.createElement('div');
       tilesContainer.className = 'addons-tiles-container';
+      if (group.title === 'Edge Profiles') {
+        tilesContainer.classList.add('addons-edge-profile-tiles');
+      }
       if (group.layout === 'scroll') {
         tilesContainer.classList.add('addons-tiles-scroll');
       }

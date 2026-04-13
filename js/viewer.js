@@ -21,14 +21,14 @@ const COLOR_DATA_PATH = 'data/colors.json';
 const FINISH_DATA_PATH = 'data/finish.json';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
-const MISSING_CONFIGURATION_MODEL_COPY = "We don't have a 3D model for your configuration yet.";
+const MISSING_CONFIGURATION_MODEL_COPY = '3D preview not available yet.';
 const VIEWER_LOADING_STATUS = Object.freeze({
   title: 'Loading preview',
   copy: 'Preparing your 3D preview.'
 });
 const VIEWER_SUPPORT_NOTICE = Object.freeze({
-  title: 'Preview may not reflect current configuration',
-  copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
+  title: 'Preview limited',
+  copy: 'Some selections are not shown in 3D.'
 });
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
@@ -1822,6 +1822,7 @@ function setLiveStatus(message) {
 function hideStatusBox() {
   if (!dom.statusBox) return;
   dom.statusBox.hidden = true;
+  if (dom.statusSpinner) dom.statusSpinner.hidden = true;
   if (dom.statusBox.dataset) delete dom.statusBox.dataset.statusTone;
 }
 
