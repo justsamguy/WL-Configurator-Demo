@@ -633,7 +633,7 @@ function initPresets() {
     tile.setAttribute('aria-label', `${presetTitle}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
-      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
+      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="dimensions-preset-image">` : ''}
       <div class="title">${presetTitle}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
@@ -653,7 +653,7 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
-    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="w-full h-24 object-cover rounded-t mb-2">
+    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="dimensions-preset-image dimensions-custom-preset-image">
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;

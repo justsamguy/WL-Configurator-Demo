@@ -1,7 +1,7 @@
 {
   "coatings": [
-    { "id": "fin-coat-02", "title": "2K Poly", "price": 0, "description": "A highly durable, industry-standard finish coating. Recommended for highest water and scratch resistance.", "image": "assets/images/Sirca Logo.png" },
-    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "A plant-based oil finish with a wide range of stain customization. Recommended for food-safe, sensitive, or user-maintenance applications.", "image": "assets/images/osmo-logo-new-sizex2.png" }
+    { "id": "fin-coat-02", "title": "2K Poly", "price": 0, "description": "Recommended for everyday-use surfaces that need strong water and scratch resistance.", "image": "assets/images/Sirca Logo.png" },
+    { "id": "fin-coat-01", "title": "Natural Oil", "price": 0, "description": "Recommended for food-safe, sensitive, or user-maintained pieces with flexible stain options.", "image": "assets/images/osmo-logo-new-sizex2.png" }
   ],
   "sheens": [
     {

@@ -110,24 +110,6 @@
     "calibrationImageAssessment": "Sample is highly reflective and lighting-biased; use it for relative brightness only, not highlight intensity."
   },
   {
-    "id": "leg-finish-07",
-    "title": "Raw Metal",
-    "price": 500,
-    "color": "#c0c0c0",
-    "image": "assets/images/Leg styles/Leg Colors/Raw Metal.webp",
-    "description": "A clear-coat that preserves the industrious look of steel.",
-    "productNumber": "Clear Satin 285092",
-    "viewerMaterial": {
-      "baseColor": "#d5d8dc",
-      "metalness": 0.96,
-      "roughness": 0.34,
-      "envIntensity": 0.98,
-      "textureSet": null
-    },
-    "calibrationNote": "Brightened substantially while staying dimmer and less polished than Titanium Silver so raw metal still reads industrial.",
-    "calibrationImageAssessment": "Sample likely exaggerates contrast from surface reflections; use it as a family reference and candidate for a flatter swatch later."
-  },
-  {
     "id": "leg-finish-08",
     "title": "Custom",
     "price": "Quoted Separately",

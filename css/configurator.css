@@ -3592,6 +3592,14 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   background-color: #eff6ff;
 }
 
+.dimensions-preset-image {
+  width: 100%;
+  height: 6rem;
+  object-fit: cover;
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 0.5rem;
+}
+
 /* Axis controls */
 .axis-controls {
   display: flex;
@@ -5139,6 +5147,7 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
 .addons-tiles-scroll.addons-edge-profile-tiles {
   flex-wrap: wrap;
   overflow-x: visible;
+  padding-bottom: 1rem;
   scroll-snap-type: none;
 }
 
@@ -5357,6 +5366,11 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
 .sheen-tile.selected {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.stage-options-grid .sheen-tile.selected::after {
+  content: none;
+  display: none;
 }
 
 .sheen-tile:focus-visible {

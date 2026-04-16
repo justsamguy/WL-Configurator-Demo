@@ -330,8 +330,7 @@ const LEG_FINISH_BRANDS = {
   'Oil Rubbed Bronze': 'Behr oil rubbed bronze B060244',
   'Satin Bronze': 'Behr satin bronze 314560',
   'Gunmetal Grey': 'Behr gunmetal grey 353091',
-  'Titanium Silver': 'Behr titanium silver 245220',
-  'Raw Metal': 'Behr raw metal Clear Satin 285092'
+  'Titanium Silver': 'Behr titanium silver 245220'
 };
 
 const TECH_CABLE_LENGTH_DEFAULT = '12 ft';
@@ -1494,7 +1493,9 @@ async function exportPdf() {
   if (finishTintTitle === 'Custom') {
     finishCoatRows.push({ label: 'Finish Base Coat', value: 'TBD' });
   } else if (finishCoatingTitle === '2K Poly') {
-    finishCoatRows.push({ label: 'Finish Base Coat', value: '2K Polyurethane' });
+    const twoKPolySheenSpec = FINISH_SHEEN_SPECS['2K Poly'][finishSheenTitle];
+    const twoKPolySheenValue = typeof twoKPolySheenSpec === 'string' ? (twoKPolySheenSpec.match(/\d+/) || [])[0] : '';
+    finishCoatRows.push({ label: 'Finish Top Coat', value: twoKPolySheenValue ? `Sirca SOPU77S15G${twoKPolySheenValue}` : 'TBD' });
   } else if (finishCoatingTitle === 'Natural Oil') {
     finishCoatRows.push({ label: 'Finish Base Coat', value: finishTintNote || 'Osmo Natural Oil base coat' });
     if (finishTintTitle === 'Natural') {
