@@ -31,8 +31,12 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
   copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
 });
 const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
-const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
-const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
+const TABLETOP_MATERIAL_TEXTURES = Object.freeze({
+  'mat-02': 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png',
+  'mat-03': 'assets/models/textures/Generated%20American%20Elm.png',
+  'mat-04': 'assets/models/textures/Generated%20Siberian%20Elm%20Texture.png',
+  'mat-05': 'assets/models/textures/Edited%20Sycamore%20Texture.png'
+});
 const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
 const LIVE_EDGE_ADDON_ID = 'addon-live-edge';
 const AXIS_COMPONENTS = ['x', 'y', 'z'];
@@ -148,7 +152,7 @@ let isLoading = false;
 let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
-let tabletopTexturePromise = null;
+let tabletopTexturePromises = new Map();
 let materialSourcePromises = new Map();
 let legFinishDataPromise = null;
 let colorDataPromise = null;
@@ -1337,10 +1341,11 @@ function getRenderAssetPaths(config = {}) {
   return getRenderableParts(config).map((partConfig) => partConfig.assetPath);
 }
 
-async function loadTabletopTexture() {
-  if (!tabletopTexturePromise) {
+async function loadTabletopTexture(texturePath) {
+  if (!texturePath) return null;
+  if (!tabletopTexturePromises.has(texturePath)) {
     const textureLoader = new THREE.TextureLoader();
-    tabletopTexturePromise = textureLoader.loadAsync(SPALTED_MAPLE_TEXTURE_PATH).then((texture) => {
+    tabletopTexturePromises.set(texturePath, textureLoader.loadAsync(texturePath).then((texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.flipY = false;
       if (renderer && renderer.capabilities) {
@@ -1348,12 +1353,12 @@ async function loadTabletopTexture() {
       }
       return texture;
     }).catch((error) => {
-      tabletopTexturePromise = null;
+      tabletopTexturePromises.delete(texturePath);
       throw error;
-    });
+    }));
   }
 
-  return tabletopTexturePromise;
+  return tabletopTexturePromises.get(texturePath);
 }
 
 function cloneReusableMaterial(material) {
@@ -1681,13 +1686,15 @@ async function applySelectedTabletopMaterial(renderRoot) {
   const selectedMaterialId = state && state.selections && state.selections.options
     ? state.selections.options.material
     : null;
-  if (selectedMaterialId !== SPALTED_MAPLE_MATERIAL_ID) return;
+  const texturePath = TABLETOP_MATERIAL_TEXTURES[selectedMaterialId];
+  if (!texturePath) return;
 
   const tabletopRoot = renderRoot.getObjectByName('tabletop');
   if (!tabletopRoot) return;
 
   try {
-    const texture = await loadTabletopTexture();
+    const texture = await loadTabletopTexture(texturePath);
+    if (!texture) return;
     tabletopRoot.traverse((child) => {
       if (!child.isMesh || !child.material) return;
       if (Array.isArray(child.material)) {
@@ -1696,14 +1703,14 @@ async function applySelectedTabletopMaterial(renderRoot) {
         child.material = cloneMaterialWithTexture(child.material, texture);
       }
     });
-    log.info('Applied spalted maple tabletop material override', {
+    log.info('Applied tabletop material texture override', {
       materialId: selectedMaterialId,
-      texturePath: SPALTED_MAPLE_TEXTURE_PATH
+      texturePath
     });
   } catch (error) {
-    log.warn('Failed to apply spalted maple tabletop texture', {
+    log.warn('Failed to apply tabletop material texture override', {
       materialId: selectedMaterialId,
-      texturePath: SPALTED_MAPLE_TEXTURE_PATH,
+      texturePath,
       error
     });
   }

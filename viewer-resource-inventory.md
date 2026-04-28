@@ -216,7 +216,6 @@ Current material ids:
 - `mat-03` -> American Elm
 - `mat-04` -> Siberian Elm
 - `mat-05` -> Sycamore
-- `mat-06` -> Ash
 - `mat-07` -> Claro Walnut
 - `mat-08` -> Custom Wood
 - `mat-09` -> Cookie Exclusive Wood

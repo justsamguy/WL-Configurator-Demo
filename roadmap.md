@@ -36,7 +36,7 @@ By default, make legs unchecked until a selection is made in the legs page (or a
     - Add Monitor Arms Addon
 
 ## v2.0
-- Rebuild app in React.js
+- Rebuild app in React.js to allow for updates to be pushed to branches and immediately reflect in-browser.
 
 ## v2.x
  - Ability to upload and move logos within the viewer

@@ -278,7 +278,6 @@ const MATERIAL_TECH_SPECS = {
   'American Elm': { density: '35-38', hardness: '800-900' },
   'Siberian Elm': { density: '30-38', hardness: '800-950' },
   'Sycamore': { density: '24-37', hardness: '720-850' },
-  'Ash': { density: '30-42', hardness: '1200-1350' },
   'Claro Walnut': { density: '40+', hardness: '1000-1200' }
 };
 
