@@ -30,6 +30,7 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
   title: 'Preview limited',
   copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
 });
+const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
 const SPALTED_MAPLE_MATERIAL_ID = 'mat-02';
 const SPALTED_MAPLE_TEXTURE_PATH = 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png';
 const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
@@ -1842,47 +1843,128 @@ function setViewerState(mode, { errorCopy } = {}) {
   if (typeof errorCopy === 'string' && dom.errorCopy) dom.errorCopy.textContent = errorCopy;
 }
 
-function pushViewerNotice(notices, title, reason) {
+function escapeSelectorValue(value) {
+  const text = String(value || '');
+  if (typeof window !== 'undefined' && window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(text);
+  return text.replace(/["\\]/g, '\\$&');
+}
+
+function cleanSelectOptionLabel(label) {
+  return String(label || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
+function getFirstTextContent(selectors = []) {
+  if (typeof document === 'undefined' || !Array.isArray(selectors)) return '';
+  for (const selector of selectors) {
+    const element = document.querySelector(selector);
+    const text = element ? String(element.textContent || '').trim() : '';
+    if (text) return text;
+  }
+  return '';
+}
+
+function getOptionDisplayName(category, id, fallback = '') {
+  if (!category || !id) return fallback || '';
+  const safeId = escapeSelectorValue(id);
+  const safeCategory = escapeSelectorValue(category);
+  if (category === 'addon') {
+    const addonLabel = getFirstTextContent([
+      `.addons-dropdown-option[data-addon-id="${safeId}"] .addons-dropdown-option-label`,
+      `.addons-tile[data-addon-id="${safeId}"] .addons-tile-label`,
+      `.addons-dropdown-select option[value="${safeId}"]`
+    ]);
+    return cleanSelectOptionLabel(addonLabel) || fallback || id;
+  }
+
+  const optionLabel = getFirstTextContent([
+    `.option-card[data-category="${safeCategory}"][data-id="${safeId}"] .title`,
+    `.option-card[data-id="${safeId}"] .title`
+  ]);
+  return optionLabel || fallback || id;
+}
+
+function formatCustomSelectionName(optionTitle, contextualName) {
+  return String(optionTitle || '').trim().toLowerCase() === 'custom'
+    ? contextualName
+    : optionTitle;
+}
+
+function formatSelectionWithDescriptor(optionTitle, descriptor) {
+  const title = String(optionTitle || '').trim();
+  const label = String(descriptor || '').trim();
+  if (!title || !label) return title || label;
+  return title.toLowerCase().includes(label.toLowerCase()) ? title : `${title} ${label}`;
+}
+
+function formatJoinedSelectionNames(names = []) {
+  const uniqueNames = [];
+  names.forEach((name) => {
+    const text = String(name || '').trim();
+    if (text && !uniqueNames.includes(text)) uniqueNames.push(text);
+  });
+  return uniqueNames;
+}
+
+function pushViewerNotice(notices, title, reason, selectionNames = title) {
   if (!title || !reason) return;
   if (notices.some((notice) => notice.title === title && notice.reason === reason)) return;
-  notices.push({ title, reason });
+  const names = Array.isArray(selectionNames) ? selectionNames : [selectionNames];
+  notices.push({ title, reason, selectionNames: formatJoinedSelectionNames(names) });
 }
 
 function summarizeViewerNotices(notices = []) {
   if (!Array.isArray(notices) || !notices.length) return null;
-  return VIEWER_SUPPORT_NOTICE;
+  const selectionNames = formatJoinedSelectionNames(notices.flatMap((notice) => notice.selectionNames || notice.title));
+  if (!selectionNames.length) return VIEWER_SUPPORT_NOTICE;
+
+  const visibleNames = selectionNames.slice(0, VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT);
+  const remainingCount = selectionNames.length - visibleNames.length;
+  const suffix = remainingCount > 0 ? `, +${remainingCount} more` : '';
+  return {
+    title: VIEWER_SUPPORT_NOTICE.title,
+    copy: `Not fully shown: ${visibleNames.join(', ')}${suffix}.`
+  };
 }
 
 function getLegPreviewNotice(manifest = {}, modelId) {
   const selectionContext = getCurrentViewerSelectionContext(modelId);
   const legId = selectionContext.legId;
   if (!legId) return null;
+  const legTitle = getOptionDisplayName('legs', legId, 'Leg preview');
+  const tubeTitle = selectionContext.tubeId
+    ? getOptionDisplayName('tube-size', selectionContext.tubeId, selectionContext.tubeId)
+    : '';
+  const legAndTubeTitle = tubeTitle ? `${legTitle} + ${tubeTitle}` : legTitle;
 
   if (selectionContext.waterfallCount >= 2) {
     return {
       title: 'Waterfall leg layout',
-      reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.'
+      reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.',
+      selectionNames: ['Waterfall leg layout']
     };
   }
 
   if (legId === LEG_NONE_ID) {
     return {
       title: 'No legs',
-      reason: 'Leg preview is hidden because this configuration is set to use no legs.'
+      reason: 'Leg preview is hidden because this configuration is set to use no legs.',
+      selectionNames: [legTitle]
     };
   }
 
   if (legId === LEG_CUSTOM_ID) {
     return {
       title: 'Custom leg',
-      reason: 'Custom leg bases are quoted separately and do not have a dedicated 3D asset yet.'
+      reason: 'Custom leg bases are quoted separately and do not have a dedicated 3D asset yet.',
+      selectionNames: [formatCustomSelectionName(legTitle, 'Custom leg')]
     };
   }
 
   if (legId === LEG_SIGNATURE_ID) {
     return {
       title: 'Signature base',
-      reason: 'The signature base does not have a dedicated local 3D asset yet.'
+      reason: 'The signature base does not have a dedicated local 3D asset yet.',
+      selectionNames: [legTitle]
     };
   }
 
@@ -1896,7 +1978,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
   if (!definition || typeof definition !== 'object') {
     return {
       title: 'Leg preview',
-      reason: 'The selected leg style does not have a local 3D asset yet.'
+      reason: 'The selected leg style does not have a local 3D asset yet.',
+      selectionNames: [legTitle]
     };
   }
 
@@ -1905,7 +1988,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
 
   return {
     title: 'Leg preview',
-    reason: 'The selected leg and tube combination does not have a local 3D asset yet.'
+    reason: 'The selected leg and tube combination does not have a local 3D asset yet.',
+    selectionNames: [legAndTubeTitle]
   };
 }
 
@@ -1917,97 +2001,127 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   const notices = [];
   const designId = selections && typeof selections.design === 'string' ? selections.design : null;
   const designNotice = designId ? DESIGN_VIEWER_NOTICES[designId] : null;
-  if (designNotice) pushViewerNotice(notices, designNotice.title, designNotice.reason);
+  if (designNotice) {
+    const designTitle = getOptionDisplayName('design', designId, designNotice.title);
+    pushViewerNotice(notices, designNotice.title, designNotice.reason, formatSelectionWithDescriptor(designTitle, 'design'));
+  }
 
   if (options.material === MATERIAL_CUSTOM_ID) {
+    const materialTitle = getOptionDisplayName('material', options.material, 'Custom wood');
     pushViewerNotice(
       notices,
       'Custom wood',
-      'Custom wood species are quoted to spec, so the viewer keeps the standard slab material.'
+      'Custom wood species are quoted to spec, so the viewer keeps the standard slab material.',
+      formatCustomSelectionName(materialTitle, 'Custom wood')
     );
   } else if (options.material === MATERIAL_COOKIE_EXCLUSIVE_ID) {
+    const materialTitle = getOptionDisplayName('material', options.material, 'Cookie exclusive wood');
     pushViewerNotice(
       notices,
       'Cookie exclusive wood',
-      'This quoted wood option does not have a dedicated viewer texture yet.'
+      'This quoted wood option does not have a dedicated viewer texture yet.',
+      materialTitle
     );
   }
 
   if (options.color === COLOR_CUSTOM_ID) {
+    const colorTitle = getOptionDisplayName('color', options.color, 'Custom epoxy color');
     pushViewerNotice(
       notices,
       'Custom epoxy color',
-      'Custom epoxy colors are mixed to spec, so the viewer keeps the standard resin preview.'
+      'Custom epoxy colors are mixed to spec, so the viewer keeps the standard resin preview.',
+      formatCustomSelectionName(colorTitle, 'Custom epoxy color')
     );
   }
 
   const selectedGradientId = options['color-gradient'] || null;
   if (selectedGradientId === COLOR_GRADIENT_CUSTOM_ID) {
+    const gradientTitle = getOptionDisplayName('color-gradient', selectedGradientId, 'Custom epoxy gradient');
     pushViewerNotice(
       notices,
       'Custom epoxy gradient',
-      'Custom gradient transitions are quoted to spec and are not rendered in the viewer.'
+      'Custom gradient transitions are quoted to spec and are not rendered in the viewer.',
+      formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient')
     );
   } else if (selectedGradientId && selectedGradientId !== COLOR_GRADIENT_SINGLE_COLOR_ID) {
+    const gradientTitle = getOptionDisplayName('color-gradient', selectedGradientId, 'Epoxy gradient');
     pushViewerNotice(
       notices,
       'Epoxy gradient',
-      'Gradient transitions are not rendered in the local 3D viewer yet.'
+      'Gradient transitions are not rendered in the local 3D viewer yet.',
+      formatSelectionWithDescriptor(gradientTitle, 'gradient')
     );
   }
 
   if (options['leg-finish'] === LEG_FINISH_CUSTOM_ID) {
+    const legFinishTitle = getOptionDisplayName('leg-finish', options['leg-finish'], 'Custom leg finish');
     pushViewerNotice(
       notices,
       'Custom leg finish',
-      'The viewer uses a neutral stand-in because custom metal finishes are finalized after quoting.'
+      'The viewer uses a neutral stand-in because custom metal finishes are finalized after quoting.',
+      formatCustomSelectionName(legFinishTitle, 'Custom leg finish')
     );
   }
 
   const legNotice = getLegPreviewNotice(manifest, modelId);
-  if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason);
+  if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
   if (selectedAddons.some((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId)) && getWaterfallEdgeCount(state) < 2) {
+    const waterfallNames = selectedAddons
+      .filter((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId))
+      .map((addonId) => getOptionDisplayName('addon', addonId, 'Waterfall edge'));
     pushViewerNotice(
       notices,
       'Waterfall edge',
-      'Waterfall geometry is not fully modeled in the viewer yet; the preview only adjusts the leg arrangement.'
+      'Waterfall geometry is not fully modeled in the viewer yet; the preview only adjusts the leg arrangement.',
+      waterfallNames
     );
   }
   if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
+    const edgeProfileNames = selectedAddons
+      .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
+      .map((addonId) => getOptionDisplayName('addon', addonId, 'Edge profile'));
     pushViewerNotice(
       notices,
       'Edge profile',
-      'Edge profile changes are not modeled in the local viewer yet.'
+      'Edge profile changes are not modeled in the local viewer yet.',
+      edgeProfileNames
     );
   }
   if (selectedAddons.includes('addon-lower-shelf')) {
     pushViewerNotice(
       notices,
       'Lower shelf',
-      'Lower shelf geometry is not modeled in the local viewer yet.'
+      'Lower shelf geometry is not modeled in the local viewer yet.',
+      getOptionDisplayName('addon', 'addon-lower-shelf', 'Lower shelf')
     );
   }
   if (selectedAddons.includes('addon-embedded-logo')) {
     pushViewerNotice(
       notices,
       'Embedded logo',
-      'Embedded logo placement is laid out to spec and is not shown in the standard viewer.'
+      'Embedded logo placement is laid out to spec and is not shown in the standard viewer.',
+      getOptionDisplayName('addon', 'addon-embedded-logo', 'Embedded logo')
     );
   }
   if (selectedAddons.includes('addon-custom-river')) {
     pushViewerNotice(
       notices,
       'Custom river design',
-      'Custom river layouts are quoted to spec and do not have a standard 3D preview.'
+      'Custom river layouts are quoted to spec and do not have a standard 3D preview.',
+      getOptionDisplayName('addon', 'addon-custom-river', 'Custom river design')
     );
   }
   if (selectedAddons.some((addonId) => TECH_VIEWER_ADDON_IDS.has(addonId))) {
+    const techAddonNames = selectedAddons
+      .filter((addonId) => TECH_VIEWER_ADDON_IDS.has(addonId))
+      .map((addonId) => getOptionDisplayName('addon', addonId, 'Tech add-on'));
     pushViewerNotice(
       notices,
       'Tech add-ons',
-      'Power, data, and lighting hardware is installed to spec and is not shown in the 3D viewer.'
+      'Power, data, and lighting hardware is installed to spec and is not shown in the 3D viewer.',
+      techAddonNames
     );
   }
 

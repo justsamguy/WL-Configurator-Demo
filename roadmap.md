@@ -5,6 +5,7 @@
 produce additional models:
 U-channels
 Chair for reference
+1x1" cube base
 
 
 invent some sort of volumetric resin texture handling
