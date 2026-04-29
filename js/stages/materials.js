@@ -15,7 +15,7 @@ const CUSTOM_GRADIENT_NOTE_INPUT_ID = 'custom-color-gradient-note-input';
 const SINGLE_COLOR_GRADIENT_ID = 'color-gradient-04';
 const SOLID_ONLY_COLOR_IDS = new Set(['color-06', 'color-07', 'color-08']);
 const SOLID_ONLY_COLOR_SOURCE = 'single-color-only';
-const SOLID_ONLY_TOOLTIP = 'gradients are only available with multiple colors.';
+const SOLID_ONLY_TOOLTIP = 'Gradients are only available with multiple colors.';
 const COLOR_DATA_PATH = 'data/colors.json';
 const DEFAULT_GRADIENT_TEXTURE_PATH = 'assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png';
 const DEFAULT_GRADIENT_PREVIEW_PALETTE = Object.freeze({
@@ -23,6 +23,7 @@ const DEFAULT_GRADIENT_PREVIEW_PALETTE = Object.freeze({
   light: '#d6dbe3',
   solid: '#7a828d'
 });
+const LIGHT_CENTER_GRADIENT_TYPE = 'light-center';
 const COLOR_GRADIENT_PREVIEW_TYPES = Object.freeze({
   'color-gradient-01': 'dark-to-light',
   'color-gradient-02': 'light-center',
@@ -87,9 +88,15 @@ async function getColorPreviewDataMap() {
         const textureSrc = typeof color.image === 'string' && color.image.trim()
           ? color.image.trim()
           : DEFAULT_GRADIENT_TEXTURE_PATH;
+        const gradientImages = color.gradientImages && typeof color.gradientImages === 'object'
+          ? color.gradientImages
+          : {};
         previewDataMap.set(color.id, {
           palette: normalizePreviewPalette(color.previewPalette),
-          textureSrc
+          textureSrc,
+          lightCenterTextureSrc: typeof gradientImages[LIGHT_CENTER_GRADIENT_TYPE] === 'string'
+            ? gradientImages[LIGHT_CENTER_GRADIENT_TYPE].trim()
+            : ''
         });
       });
       return previewDataMap;
@@ -145,7 +152,7 @@ function ensureGradientPreviewSlots() {
   });
 }
 
-function buildGradientPreviewStyles(previewType, palette, textureSrc) {
+function buildGradientPreviewStyles(previewType, palette, textureSrc, hasDedicatedTexture = false) {
   const textureLayer = `url("${textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH}")`;
   switch (previewType) {
     case 'dark-to-light':
@@ -154,6 +161,12 @@ function buildGradientPreviewStyles(previewType, palette, textureSrc) {
         backgroundBlendMode: 'normal'
       };
     case 'light-center':
+      if (hasDedicatedTexture) {
+        return {
+          backgroundImage: textureLayer,
+          backgroundBlendMode: 'normal'
+        };
+      }
       return {
         backgroundImage: [
           `linear-gradient(90deg, ${toRgba(palette.dark, 0.68)} 0%, ${toRgba(palette.dark, 0.34)} 18%, rgba(255, 255, 255, 0) 34%, rgba(255, 255, 255, 0) 66%, ${toRgba(palette.dark, 0.34)} 82%, ${toRgba(palette.dark, 0.68)} 100%)`,
@@ -205,10 +218,14 @@ async function syncColorGradientPreviews(appState = {}) {
   previews.forEach((preview) => {
     const previewType = preview.dataset.previewType || 'single-color';
     const palette = previewType === 'custom' ? DEFAULT_GRADIENT_PREVIEW_PALETTE : selectedPalette;
-    const textureSrc = previewType === 'custom' || previewType === 'single-color'
+    const hasDedicatedLightCenterTexture = previewType === LIGHT_CENTER_GRADIENT_TYPE
+      && !!(selectedPreviewData && selectedPreviewData.lightCenterTextureSrc);
+    const textureSrc = hasDedicatedLightCenterTexture
+      ? selectedPreviewData.lightCenterTextureSrc
+      : previewType === 'custom' || previewType === 'single-color'
       ? preview.dataset.textureSrc || DEFAULT_GRADIENT_TEXTURE_PATH
       : selectedTextureSrc;
-    const styles = buildGradientPreviewStyles(previewType, palette, textureSrc);
+    const styles = buildGradientPreviewStyles(previewType, palette, textureSrc, hasDedicatedLightCenterTexture);
     preview.style.backgroundImage = styles.backgroundImage;
     preview.style.backgroundBlendMode = styles.backgroundBlendMode;
   });

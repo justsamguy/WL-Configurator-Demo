@@ -22,6 +22,9 @@
       "dark": "#1b2b92",
       "light": "#26d9df",
       "solid": "#2178b6"
+    },
+    "gradientImages": {
+      "light-center": "assets/images/Epoxy Color Samples/Generated Multi-Blue Light-Center.png"
     }
   },
   {
@@ -34,6 +37,9 @@
       "dark": "#1f2228",
       "light": "#cfd4dd",
       "solid": "#7f8894"
+    },
+    "gradientImages": {
+      "light-center": "assets/images/Epoxy Color Samples/Generated Multi-Grey Light-Center.png"
     }
   },
   {
@@ -46,6 +52,9 @@
       "dark": "#835021",
       "light": "#edca99",
       "solid": "#b87d46"
+    },
+    "gradientImages": {
+      "light-center": "assets/images/Epoxy Color Samples/Generated Copper Blend Light-Center.png"
     }
   },
   {
@@ -58,6 +67,9 @@
       "dark": "#0f5f4d",
       "light": "#5de5a1",
       "solid": "#20816d"
+    },
+    "gradientImages": {
+      "light-center": "assets/images/Epoxy Color Samples/Generated Multi-Green Light-Center.png"
     }
   },
   {

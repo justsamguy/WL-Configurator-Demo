@@ -48,6 +48,7 @@ const MATERIAL_CUSTOM_ID = 'mat-08';
 const MATERIAL_COOKIE_EXCLUSIVE_ID = 'mat-09';
 const COLOR_CUSTOM_ID = 'color-01';
 const COLOR_GRADIENT_CUSTOM_ID = 'color-gradient-03';
+const COLOR_GRADIENT_LIGHT_CENTER_ID = 'color-gradient-02';
 const COLOR_GRADIENT_SINGLE_COLOR_ID = 'color-gradient-04';
 const LEG_FINISH_CUSTOM_ID = 'leg-finish-08';
 const LEG_CUBE_ID = 'leg-sample-02';
@@ -1348,6 +1349,8 @@ async function loadTabletopTexture(texturePath) {
     tabletopTexturePromises.set(texturePath, textureLoader.loadAsync(texturePath).then((texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.flipY = false;
+      texture.center.set(0.5, 0.5);
+      texture.rotation = Math.PI / 2;
       if (renderer && renderer.capabilities) {
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       }
@@ -1557,6 +1560,16 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   return previewMaterial;
 }
 
+function getDedicatedGradientTexturePath(selectedColor, selectedGradientId) {
+  if (!selectedColor || selectedGradientId !== COLOR_GRADIENT_LIGHT_CENTER_ID) return '';
+  const gradientImages = selectedColor.gradientImages && typeof selectedColor.gradientImages === 'object'
+    ? selectedColor.gradientImages
+    : {};
+  return typeof gradientImages['light-center'] === 'string'
+    ? gradientImages['light-center'].trim()
+    : '';
+}
+
 function getResinPreviewViewBlend() {
   if (!camera) return 1;
   camera.getWorldDirection(cameraViewDirection);
@@ -1723,6 +1736,9 @@ async function applySelectedResinPreview(renderRoot) {
   const selectedColorId = state && state.selections && state.selections.options
     ? state.selections.options.color || null
     : null;
+  const selectedGradientId = state && state.selections && state.selections.options
+    ? state.selections.options['color-gradient'] || null
+    : null;
   if (!selectedColorId) return;
 
   const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
@@ -1731,9 +1747,10 @@ async function applySelectedResinPreview(renderRoot) {
   try {
     const colorDefinitions = await loadColorDefinitions();
     const selectedColor = colorDefinitions.find((entry) => entry && entry.id === selectedColorId);
-    const texturePath = selectedColor && typeof selectedColor.image === 'string'
+    const gradientTexturePath = getDedicatedGradientTexturePath(selectedColor, selectedGradientId);
+    const texturePath = gradientTexturePath || (selectedColor && typeof selectedColor.image === 'string'
       ? selectedColor.image.trim()
-      : '';
+      : '');
     if (!texturePath) return;
 
     const texture = await loadResinPreviewTexture(texturePath);
@@ -1752,12 +1769,14 @@ async function applySelectedResinPreview(renderRoot) {
 
     log.info('Applied resin preview test material override', {
       colorId: selectedColorId,
+      gradientId: selectedGradientId,
       texturePath,
       epoxyPartName: EPOXY_PREVIEW_PART_NAME
     });
   } catch (error) {
     log.warn('Failed to apply resin preview test material override', {
       colorId: selectedColorId,
+      gradientId: selectedGradientId,
       error
     });
   }
@@ -2050,7 +2069,11 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       'Custom gradient transitions are quoted to spec and are not rendered in the viewer.',
       formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient')
     );
-  } else if (selectedGradientId && selectedGradientId !== COLOR_GRADIENT_SINGLE_COLOR_ID) {
+  } else if (
+    selectedGradientId
+    && selectedGradientId !== COLOR_GRADIENT_SINGLE_COLOR_ID
+    && selectedGradientId !== COLOR_GRADIENT_LIGHT_CENTER_ID
+  ) {
     const gradientTitle = getOptionDisplayName('color-gradient', selectedGradientId, 'Epoxy gradient');
     pushViewerNotice(
       notices,

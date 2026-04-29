@@ -1883,6 +1883,10 @@ body.show-model-tiles #stage-panel-0 #model-options,
   padding: 0;
 }
 
+#materials-options .option-card:not([data-id="mat-01"]) .viewer-placeholder-img {
+  transform: rotate(90deg);
+}
+
 #color-options .viewer-placeholder-img {
   object-fit: cover;
   padding: 0;

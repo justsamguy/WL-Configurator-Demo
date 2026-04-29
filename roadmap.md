@@ -10,8 +10,6 @@ Chair for reference
 
 invent some sort of volumetric resin texture handling
 
-Add sirca specs to technical pdf
-
 
 - invent & add model handling for each add-on:
     - 
