@@ -26,7 +26,7 @@ invent some sort of volumetric resin texture handling
  - make the footer from the desktop permanent and add a "back" button. keep the effect but keep it to the bottom of the screen instead of slightly above.
  - move the nav bar into a hamburger menu icon in the top left in a persistent header that shares space with the woodlab logo. make it look spatially balanced horizontally, and keep the logo size contained by the header size. move the light/dark/system to the bottom of the menu. the menu will come onto the screen from the left side and fill the whole screen, the hamburger icon animates and turns into an X icon in the top right of the menu while it fully opens. (animates and moves at the same time) tapping the X or swiping left or selecting a stage will close the menu (except models, where the menu only closes if the user picks "yes" in the dialog).
 
-- Add the option to toggle tabletop legs anbd chairs in the 3D viewer:
+- Add the option to toggle tabletop legs anbd chairs in the 3D viewer (separate toglles for each):
 When un-selected, give the legs 80% transparency instead of fully hiding them. Make chairs fully hidden.
 By default, make legs unchecked until a selection is made in the legs page (or a design preset has already pre-filled the selection)
 - Add desk model

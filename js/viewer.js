@@ -80,6 +80,22 @@ const RESIN_VIEWER_TINTS = Object.freeze({
   'color-07': '#161618',
   'color-08': '#101011'
 });
+const TABLETOP_FINISH_TINTS = Object.freeze({
+  'fin-tint-02': {
+    label: 'Natural',
+    brightness: 1.035,
+    saturation: 0.88,
+    tintColor: '#f3eadc',
+    tintMix: 0.045
+  },
+  'fin-tint-03': {
+    label: 'Darken',
+    brightness: 0.9,
+    saturation: 0.96,
+    tintColor: '#5f3f2c',
+    tintMix: 0.035
+  }
+});
 const LIVE_EDGE_RESIN_SAMPLE_COUNT = 15;
 const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
 const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
@@ -177,6 +193,7 @@ let lastObservedModelId = null;
 let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
 let lastObservedFinishSheenId = null;
+let lastObservedFinishTintId = null;
 let lastObservedColorId = null;
 let lastObservedColorGradientId = null;
 let lastObservedLegFinishId = null;
@@ -1652,6 +1669,44 @@ function cloneMaterialWithFinish(material, finishMaterial = {}) {
   return clonedMaterial;
 }
 
+function cloneMaterialWithTabletopTint(material, tintConfig = {}) {
+  if (!material || typeof material.clone !== 'function') return material;
+
+  const clonedMaterial = material.clone();
+  const brightness = Number.isFinite(Number(tintConfig.brightness)) ? Number(tintConfig.brightness) : 1;
+  const saturation = Number.isFinite(Number(tintConfig.saturation)) ? Number(tintConfig.saturation) : 1;
+  const tintMix = Number.isFinite(Number(tintConfig.tintMix)) ? Number(tintConfig.tintMix) : 0;
+  const tintColor = typeof tintConfig.tintColor === 'string' && tintConfig.tintColor.trim()
+    ? new THREE.Color(tintConfig.tintColor)
+    : new THREE.Color(0xffffff);
+
+  // Tint in shader space so texture-backed walnut can get lighter, darker, and less saturated.
+  clonedMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.tabletopTintColor = { value: tintColor };
+    shader.uniforms.tabletopTintBrightness = { value: brightness };
+    shader.uniforms.tabletopTintSaturation = { value: saturation };
+    shader.uniforms.tabletopTintMix = { value: tintMix };
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>
+        float tabletopTintGray = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+        diffuseColor.rgb = mix(vec3(tabletopTintGray), diffuseColor.rgb, tabletopTintSaturation);
+        diffuseColor.rgb *= tabletopTintBrightness;
+        diffuseColor.rgb = mix(diffuseColor.rgb, tabletopTintColor, tabletopTintMix);
+        diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);`
+    );
+  };
+  clonedMaterial.customProgramCacheKey = () => [
+    'tabletop-finish-tint',
+    brightness,
+    saturation,
+    tintConfig.tintColor || '',
+    tintMix
+  ].join(':');
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
 async function applySelectedTabletopSheen(renderRoot) {
   if (!renderRoot) return;
 
@@ -1691,6 +1746,33 @@ async function applySelectedTabletopSheen(renderRoot) {
       error
     });
   }
+}
+
+async function applySelectedTabletopTint(renderRoot) {
+  if (!renderRoot) return;
+
+  const selectedTintId = state && state.selections && state.selections.options
+    ? state.selections.options['finish-tint'] || null
+    : null;
+  const tintConfig = TABLETOP_FINISH_TINTS[selectedTintId];
+  if (!tintConfig) return;
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  if (!tabletopRoot) return;
+
+  tabletopRoot.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map((material) => cloneMaterialWithTabletopTint(material, tintConfig));
+    } else {
+      child.material = cloneMaterialWithTabletopTint(child.material, tintConfig);
+    }
+  });
+
+  log.info('Applied tabletop finish tint override', {
+    tintId: selectedTintId,
+    tintLabel: tintConfig.label
+  });
 }
 
 async function applySelectedTabletopMaterial(renderRoot) {
@@ -2476,6 +2558,7 @@ async function buildRenderRoot(config) {
   renderRoot.add(createGlassTopPart());
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedTabletopSheen(renderRoot);
+  await applySelectedTabletopTint(renderRoot);
   await applySelectedResinPreview(renderRoot);
   await applySelectedLegFinish(renderRoot);
   captureRenderRootBaseState(renderRoot);
@@ -2853,6 +2936,9 @@ document.addEventListener('statechange', () => {
   const nextFinishSheenId = state && state.selections && state.selections.options
     ? state.selections.options['finish-sheen'] || null
     : null;
+  const nextFinishTintId = state && state.selections && state.selections.options
+    ? state.selections.options['finish-tint'] || null
+    : null;
   const nextColorId = state && state.selections && state.selections.options
     ? state.selections.options.color || null
     : null;
@@ -2880,6 +2966,7 @@ document.addEventListener('statechange', () => {
   const designChanged = nextDesignId !== lastObservedDesignId;
   const materialChanged = nextMaterialId !== lastObservedMaterialId;
   const finishSheenChanged = nextFinishSheenId !== lastObservedFinishSheenId;
+  const finishTintChanged = nextFinishTintId !== lastObservedFinishTintId;
   const colorChanged = nextColorId !== lastObservedColorId;
   const colorGradientChanged = nextColorGradientId !== lastObservedColorGradientId;
   const legChanged = nextLegId !== lastObservedLegId;
@@ -2910,6 +2997,12 @@ document.addEventListener('statechange', () => {
     log.info('Viewer observed finish sheen selection change', {
       previousFinishSheenId: lastObservedFinishSheenId,
       nextFinishSheenId
+    });
+  }
+  if (finishTintChanged) {
+    log.info('Viewer observed finish tint selection change', {
+      previousFinishTintId: lastObservedFinishTintId,
+      nextFinishTintId
     });
   }
   if (colorChanged) {
@@ -2959,6 +3052,7 @@ document.addEventListener('statechange', () => {
   lastObservedDesignId = nextDesignId;
   lastObservedMaterialId = nextMaterialId;
   lastObservedFinishSheenId = nextFinishSheenId;
+  lastObservedFinishTintId = nextFinishTintId;
   lastObservedColorId = nextColorId;
   lastObservedColorGradientId = nextColorGradientId;
   lastObservedLegId = nextLegId;
@@ -2972,7 +3066,7 @@ document.addEventListener('statechange', () => {
     return;
   }
 
-  if ((materialChanged || finishSheenChanged || colorChanged || legFinishChanged) && nextModelId) {
+  if ((materialChanged || finishSheenChanged || finishTintChanged || colorChanged || legFinishChanged) && nextModelId) {
     void updateModel(nextModelId, { force: true });
     return;
   }
