@@ -1673,6 +1673,10 @@ function cloneMaterialWithTabletopTint(material, tintConfig = {}) {
   if (!material || typeof material.clone !== 'function') return material;
 
   const clonedMaterial = material.clone();
+  const previousOnBeforeCompile = clonedMaterial.onBeforeCompile;
+  const previousCustomProgramCacheKey = typeof clonedMaterial.customProgramCacheKey === 'function'
+    ? clonedMaterial.customProgramCacheKey.bind(clonedMaterial)
+    : null;
   const brightness = Number.isFinite(Number(tintConfig.brightness)) ? Number(tintConfig.brightness) : 1;
   const saturation = Number.isFinite(Number(tintConfig.saturation)) ? Number(tintConfig.saturation) : 1;
   const tintMix = Number.isFinite(Number(tintConfig.tintMix)) ? Number(tintConfig.tintMix) : 0;
@@ -1681,23 +1685,35 @@ function cloneMaterialWithTabletopTint(material, tintConfig = {}) {
     : new THREE.Color(0xffffff);
 
   // Tint in shader space so texture-backed walnut can get lighter, darker, and less saturated.
-  clonedMaterial.onBeforeCompile = (shader) => {
+  clonedMaterial.onBeforeCompile = (shader, rendererInstance) => {
+    if (typeof previousOnBeforeCompile === 'function') previousOnBeforeCompile.call(clonedMaterial, shader, rendererInstance);
     shader.uniforms.tabletopTintColor = { value: tintColor };
     shader.uniforms.tabletopTintBrightness = { value: brightness };
     shader.uniforms.tabletopTintSaturation = { value: saturation };
     shader.uniforms.tabletopTintMix = { value: tintMix };
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <color_fragment>',
-      `#include <color_fragment>
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform vec3 tabletopTintColor;
+        uniform float tabletopTintBrightness;
+        uniform float tabletopTintSaturation;
+        uniform float tabletopTintMix;`
+      )
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
         float tabletopTintGray = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
         diffuseColor.rgb = mix(vec3(tabletopTintGray), diffuseColor.rgb, tabletopTintSaturation);
         diffuseColor.rgb *= tabletopTintBrightness;
         diffuseColor.rgb = mix(diffuseColor.rgb, tabletopTintColor, tabletopTintMix);
         diffuseColor.rgb = clamp(diffuseColor.rgb, 0.0, 1.0);`
-    );
+      );
   };
   clonedMaterial.customProgramCacheKey = () => [
     'tabletop-finish-tint',
+    previousCustomProgramCacheKey ? previousCustomProgramCacheKey() : '',
     brightness,
     saturation,
     tintConfig.tintColor || '',
@@ -3066,7 +3082,7 @@ document.addEventListener('statechange', () => {
     return;
   }
 
-  if ((materialChanged || finishSheenChanged || finishTintChanged || colorChanged || legFinishChanged) && nextModelId) {
+  if ((materialChanged || finishSheenChanged || finishTintChanged || colorChanged || colorGradientChanged || legFinishChanged) && nextModelId) {
     void updateModel(nextModelId, { force: true });
     return;
   }
@@ -3081,7 +3097,4 @@ document.addEventListener('statechange', () => {
     return;
   }
 
-  if (colorGradientChanged && nextModelId) {
-    void syncViewerSupportNotice(nextModelId);
-  }
 });
