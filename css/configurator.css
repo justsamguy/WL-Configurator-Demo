@@ -4078,8 +4078,8 @@ body.stage-0 #stage-panel-0 > .flex {
 body.stage-0 #models-stage-section {
   --model-stage-tile-width: clamp(250px, 20.5vw, 360px);
   --model-stage-tile-gap: clamp(1.75rem, 3.25vw, 3.5rem);
-  --model-stage-row-width: calc(var(--model-stage-tile-width) * 3 + var(--model-stage-tile-gap) * 2);
-  --model-stage-accent-overhang: clamp(5rem, 10vw, 8.5rem);
+  --model-stage-row-width: calc(var(--model-stage-tile-width) + var(--model-stage-tile-width) + var(--model-stage-tile-width) + var(--model-stage-tile-gap) + var(--model-stage-tile-gap));
+  --model-stage-layout-width: min(100%, var(--model-stage-row-width));
   --model-stage-accent-height: clamp(2rem, 4vw, 2.75rem);
   --model-stage-accent-stroke-width: 4.5;
   --model-stage-label-color: #b2b8c0;
@@ -4094,7 +4094,7 @@ body.stage-0 #models-stage-section {
 
 body.stage-0 #models-stage-section > .model-stage-shell {
   width: 100%;
-  max-width: calc(var(--model-stage-row-width) + var(--model-stage-accent-overhang));
+  max-width: var(--model-stage-layout-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4188,9 +4188,9 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
 }
 
 body.stage-0 #models-stage-section .model-stage-accent {
-  align-self: stretch;
-  width: 100%;
-  max-width: none;
+  flex: 0 0 auto;
+  width: var(--model-stage-layout-width);
+  max-width: 100%;
   color: var(--model-stage-accent-color);
   pointer-events: none;
   margin: 0 auto;
