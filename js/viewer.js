@@ -32,10 +32,10 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
 });
 const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
 const TABLETOP_MATERIAL_TEXTURES = Object.freeze({
-  'mat-02': 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.png',
-  'mat-03': 'assets/models/textures/Generated%20American%20Elm.png',
-  'mat-04': 'assets/models/textures/Generated%20Siberian%20Elm%20Texture.png',
-  'mat-05': 'assets/models/textures/Edited%20Sycamore%20Texture.png'
+  'mat-02': 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.jpg',
+  'mat-03': 'assets/models/textures/Generated%20American%20Elm.jpg',
+  'mat-04': 'assets/models/textures/Generated%20Siberian%20Elm%20Texture.jpg',
+  'mat-05': 'assets/models/textures/Edited%20Sycamore%20Texture.jpg'
 });
 const EPOXY_PREVIEW_PART_NAME = 'tabletop-epoxy';
 const LIVE_EDGE_ADDON_ID = 'addon-live-edge';
