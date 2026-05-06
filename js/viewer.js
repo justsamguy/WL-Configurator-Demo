@@ -24,6 +24,8 @@ const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
 const LEG_FINISH_DATA_PATH = 'data/leg-finish.json';
 const COLOR_DATA_PATH = 'data/colors.json';
 const FINISH_DATA_PATH = 'data/finish.json';
+const MATERIAL_BLACK_WALNUT_ID = 'mat-01';
+const LOWER_SHELF_LINEAR_WALNUT_TEXTURE_PATH = 'assets/models/textures/Generated%20Linear%20Walnut.png';
 const FALLBACK_CAMERA_OFFSET = Object.freeze([1.65, 0.94, 1.95]);
 const ERROR_COPY = 'The selected 3D preview could not be loaded. Try again.';
 const MISSING_CONFIGURATION_MODEL_COPY = "We don't have a 3D model for your configuration yet.";
@@ -99,10 +101,10 @@ const TABLETOP_FINISH_TINTS = Object.freeze({
   },
   'fin-tint-03': {
     label: 'Darken',
-    brightness: 0.8,
-    saturation: 0.92,
-    tintColor: '#5f3f2c',
-    tintMix: 0.07
+    brightness: 0.68,
+    saturation: 1.12,
+    tintColor: '#4a2718',
+    tintMix: 0.1
   }
 });
 const LIVE_EDGE_RESIN_SAMPLE_COUNT = 15;
@@ -116,6 +118,13 @@ const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
 const RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE = 0.5;
 const RESIN_PREVIEW_VIEW_BLEND_MIN = 0.18;
 const RESIN_PREVIEW_VIEW_BLEND_MAX = 0.78;
+const TABLETOP_GLARE_LIGHT_COLOR = 0xfff7eb;
+const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
+  'fin-sheen-01': 0.7,
+  'fin-sheen-02': 1.3,
+  'fin-sheen-03': 1.85,
+  default: 1.2
+});
 const WATERFALL_VIEWER_ADDON_IDS = new Set(['addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art']);
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
 const TECH_VIEWER_ADDON_IDS = new Set([
@@ -164,6 +173,7 @@ let camera = null;
 let controls = null;
 let loader = null;
 let floorMesh = null;
+let tabletopGlareLight = null;
 let initialized = false;
 let manifestPromise = null;
 let resizeObserver = null;
@@ -179,6 +189,7 @@ let defaultCameraPosition = new THREE.Vector3(32, 22, 40);
 let defaultCameraTarget = new THREE.Vector3(0, 10, 0);
 let hasLoggedManifestSummary = false;
 let tabletopTexturePromises = new Map();
+let lowerShelfTexturePromises = new Map();
 let materialSourcePromises = new Map();
 let legFinishDataPromise = null;
 let colorDataPromise = null;
@@ -212,6 +223,7 @@ let lastObservedTubeId = null;
 let lastObservedAddonsSignature = '';
 let activeResinPreviewMaterials = [];
 const cameraViewDirection = new THREE.Vector3();
+const tabletopSurfaceNormal = new THREE.Vector3(0, 1, 0);
 
 function getSelections() {
   return state && state.selections && typeof state.selections === 'object'
@@ -588,6 +600,50 @@ function getObjectMetrics(root) {
     max: bounds.max.clone(),
     center: bounds.getCenter(new THREE.Vector3())
   };
+}
+
+function getTabletopGlareLightIntensity() {
+  const selectedSheenId = getSelectedOption('finish-sheen');
+  return TABLETOP_GLARE_LIGHT_INTENSITY[selectedSheenId] || TABLETOP_GLARE_LIGHT_INTENSITY.default;
+}
+
+function syncTabletopGlareLight(renderRoot = currentRenderRoot) {
+  if (!tabletopGlareLight || !camera) return;
+  if (!renderRoot) {
+    tabletopGlareLight.visible = false;
+    return;
+  }
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const tabletopMetrics = getObjectMetrics(tabletopRoot);
+  if (!tabletopMetrics) {
+    tabletopGlareLight.visible = false;
+    return;
+  }
+
+  const tabletopSize = tabletopMetrics.bounds.getSize(new THREE.Vector3());
+  const tabletopSpan = Math.max(tabletopSize.x, tabletopSize.z, 1);
+  const surfacePoint = new THREE.Vector3(
+    tabletopMetrics.center.x,
+    tabletopMetrics.max.y + Math.max(tabletopSpan * 0.002, 0.002),
+    tabletopMetrics.center.z
+  );
+  const surfaceToCamera = camera.position.clone().sub(surfacePoint);
+  if (surfaceToCamera.lengthSq() < 0.0001) {
+    tabletopGlareLight.visible = false;
+    return;
+  }
+
+  // Mirror the camera vector across the tabletop plane so the highlight faces the active view.
+  const reflectedLightVector = surfaceToCamera.clone().negate().reflect(tabletopSurfaceNormal);
+  const lightDistance = THREE.MathUtils.clamp(surfaceToCamera.length(), tabletopSpan * 0.65, tabletopSpan * 2.6);
+  reflectedLightVector.setLength(lightDistance);
+
+  tabletopGlareLight.position.copy(surfacePoint).add(reflectedLightVector);
+  tabletopGlareLight.target.position.copy(surfacePoint);
+  tabletopGlareLight.target.updateMatrixWorld();
+  tabletopGlareLight.intensity = getTabletopGlareLightIntensity();
+  tabletopGlareLight.visible = true;
 }
 
 function getNamedMeshMetrics(root, namePattern) {
@@ -1141,34 +1197,20 @@ function getFirstMeshMaterial(root) {
   return material || null;
 }
 
-function syncLowerShelfMaterial(lowerShelfRoot, tabletopRoot) {
-  if (!lowerShelfRoot || !tabletopRoot) return;
-  const shelfMesh = lowerShelfRoot.getObjectByName(`${LOWER_SHELF_PART_NAME}-mesh`);
-  const sourceMaterial = getFirstMeshMaterial(tabletopRoot);
-  if (!shelfMesh || !sourceMaterial) return;
+function rotateLowerShelfTexture(texture) {
+  if (!texture) return texture;
+  texture.center.set(0.5, 0.5);
+  texture.rotation = Math.PI / 2;
+  texture.needsUpdate = true;
+  return texture;
+}
 
-  const sourceMaterialUuid = sourceMaterial.uuid || '';
-  if (shelfMesh.userData.sourceMaterialUuid === sourceMaterialUuid) return;
-
-  const previousMaterial = shelfMesh.material;
-  const nextMaterial = cloneReusableMaterial(sourceMaterial);
-  if (nextMaterial && typeof nextMaterial === 'object') {
-    nextMaterial.userData = {
-      ...(nextMaterial.userData || {}),
-      lowerShelfMaterial: true
-    };
-  }
-  shelfMesh.material = nextMaterial;
-  shelfMesh.userData.sourceMaterialUuid = sourceMaterialUuid;
-
-  if (
-    previousMaterial
-    && previousMaterial !== nextMaterial
-    && previousMaterial.userData
-    && previousMaterial.userData.lowerShelfMaterial
-  ) {
-    disposeMaterial(previousMaterial);
-  }
+function rotateLowerShelfMaterialTextures(material) {
+  if (!material) return;
+  ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach((key) => {
+    if (material[key]) rotateLowerShelfTexture(material[key]);
+  });
+  material.needsUpdate = true;
 }
 
 function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot = null) {
@@ -1187,7 +1229,8 @@ function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletop
     legId,
     tubeId: options['tube-size'] || null,
     length: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.length) : NaN,
-    width: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.width) : NaN
+    width: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.width) : NaN,
+    height: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.height) : NaN
   });
 
   if (!hasSelectedAddon(LOWER_SHELF_ADDON_ID) || !shelfDimensions) {
@@ -1208,7 +1251,6 @@ function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletop
   lowerShelfRoot.visible = true;
   lowerShelfRoot.position.set(0, shelfCenterY, 0);
   lowerShelfRoot.scale.set(shelfWidth, shelfThickness, shelfLength);
-  syncLowerShelfMaterial(lowerShelfRoot, tabletopRoot || renderRoot.getObjectByName('tabletop'));
 }
 
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
@@ -1493,6 +1535,26 @@ async function loadTabletopTexture(texturePath) {
   }
 
   return tabletopTexturePromises.get(texturePath);
+}
+
+async function loadLowerShelfTexture(texturePath) {
+  if (!texturePath) return null;
+  if (!lowerShelfTexturePromises.has(texturePath)) {
+    const textureLoader = new THREE.TextureLoader();
+    lowerShelfTexturePromises.set(texturePath, textureLoader.loadAsync(texturePath).then((texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.flipY = false;
+      if (renderer && renderer.capabilities) {
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      }
+      return rotateLowerShelfTexture(texture);
+    }).catch((error) => {
+      lowerShelfTexturePromises.delete(texturePath);
+      throw error;
+    }));
+  }
+
+  return lowerShelfTexturePromises.get(texturePath);
 }
 
 function cloneReusableMaterial(material) {
@@ -1938,6 +2000,61 @@ async function applySelectedTabletopMaterial(renderRoot) {
       texturePath,
       error
     });
+  }
+}
+
+async function applySelectedLowerShelfMaterial(renderRoot) {
+  if (!renderRoot) return;
+
+  const lowerShelfRoot = renderRoot.getObjectByName(LOWER_SHELF_PART_NAME);
+  const shelfMesh = lowerShelfRoot && lowerShelfRoot.getObjectByName(`${LOWER_SHELF_PART_NAME}-mesh`);
+  if (!shelfMesh) return;
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const sourceMaterial = getFirstMeshMaterial(tabletopRoot);
+  const previousMaterial = shelfMesh.material;
+  let nextMaterial = sourceMaterial && typeof sourceMaterial.clone === 'function'
+    ? cloneReusableMaterial(sourceMaterial)
+    : previousMaterial;
+
+  const selectedMaterialId = state && state.selections && state.selections.options
+    ? state.selections.options.material || null
+    : null;
+
+  if (selectedMaterialId === MATERIAL_BLACK_WALNUT_ID) {
+    try {
+      const texture = await loadLowerShelfTexture(LOWER_SHELF_LINEAR_WALNUT_TEXTURE_PATH);
+      if (texture) {
+        const texturedMaterial = cloneMaterialWithTexture(nextMaterial, texture);
+        if (texturedMaterial !== nextMaterial && nextMaterial !== previousMaterial) disposeMaterial(nextMaterial);
+        nextMaterial = texturedMaterial;
+      }
+    } catch (error) {
+      log.warn('Failed to apply lower shelf walnut texture', {
+        texturePath: LOWER_SHELF_LINEAR_WALNUT_TEXTURE_PATH,
+        error
+      });
+    }
+  }
+
+  rotateLowerShelfMaterialTextures(nextMaterial);
+  if (nextMaterial && typeof nextMaterial === 'object') {
+    nextMaterial.userData = {
+      ...(nextMaterial.userData || {}),
+      lowerShelfMaterial: true
+    };
+  }
+
+  shelfMesh.material = nextMaterial;
+  shelfMesh.userData.sourceMaterialUuid = sourceMaterial && sourceMaterial.uuid ? sourceMaterial.uuid : '';
+
+  if (
+    previousMaterial
+    && previousMaterial !== nextMaterial
+    && previousMaterial.userData
+    && previousMaterial.userData.lowerShelfMaterial
+  ) {
+    disposeMaterial(previousMaterial);
   }
 }
 
@@ -2467,6 +2584,7 @@ function clearCurrentRenderRoot() {
   currentRenderRoot = null;
   displayedModelId = null;
   displayedRenderSignature = null;
+  syncTabletopGlareLight(null);
 }
 
 function getFramingBounds(root) {
@@ -2569,7 +2687,9 @@ function applyFramingMetrics(metrics, config = {}, { preserveView = false, previ
 function frameModel(root, config = {}, options = {}) {
   if (!root || !camera || !controls) return null;
   const metrics = getModelFramingMetrics(root);
-  return applyFramingMetrics(metrics, config, options);
+  const framing = applyFramingMetrics(metrics, config, options);
+  syncTabletopGlareLight(root);
+  return framing;
 }
 
 async function loadManifest() {
@@ -2705,6 +2825,7 @@ async function buildRenderRoot(config) {
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedTabletopSheen(renderRoot);
   await applySelectedTabletopTint(renderRoot);
+  await applySelectedLowerShelfMaterial(renderRoot);
   await applySelectedResinPreview(renderRoot);
   await applySelectedLegFinish(renderRoot);
   captureRenderRootBaseState(renderRoot);
@@ -2873,6 +2994,7 @@ function orbitCamera(direction = 1) {
   const nextOffset = new THREE.Vector3().setFromSpherical(spherical);
   camera.position.copy(controls.target.clone().add(nextOffset));
   controls.update();
+  syncTabletopGlareLight();
 }
 
 function zoomCamera(direction = 1) {
@@ -2888,6 +3010,7 @@ function zoomCamera(direction = 1) {
   offset.setLength(nextDistance);
   camera.position.copy(controls.target.clone().add(offset));
   controls.update();
+  syncTabletopGlareLight();
 }
 
 export function resetView() {
@@ -2896,6 +3019,7 @@ export function resetView() {
   controls.target.copy(defaultCameraTarget);
   controls.reset();
   controls.update();
+  syncTabletopGlareLight();
 }
 
 export function resizeViewer() {
@@ -3018,6 +3142,12 @@ export async function initViewer() {
   rimLight.position.set(-12, 20, -18);
   scene.add(rimLight);
 
+  tabletopGlareLight = new THREE.DirectionalLight(TABLETOP_GLARE_LIGHT_COLOR, TABLETOP_GLARE_LIGHT_INTENSITY.default);
+  tabletopGlareLight.name = 'tabletop-glare-light';
+  tabletopGlareLight.visible = false;
+  scene.add(tabletopGlareLight);
+  scene.add(tabletopGlareLight.target);
+
   floorMesh = new THREE.Mesh(
     new THREE.CircleGeometry(1, 80),
     new THREE.MeshStandardMaterial({
@@ -3040,6 +3170,7 @@ export async function initViewer() {
   controls.minPolarAngle = 0.2;
   controls.maxPolarAngle = Math.PI / 2.02;
   controls.target.copy(defaultCameraTarget);
+  controls.addEventListener('change', () => syncTabletopGlareLight());
   controls.update();
 
   applyViewerTheme();

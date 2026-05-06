@@ -457,7 +457,8 @@ function resolveLowerShelfDimensions(selections) {
     legId: selections.options.legs || null,
     tubeId: selections.options['tube-size'] || null,
     length,
-    width
+    width,
+    height: resolveTableHeight(selections)
   });
 }
 

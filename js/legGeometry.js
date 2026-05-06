@@ -1,10 +1,13 @@
 const LEG_CUBE_ID = 'leg-sample-02';
+const LEG_SQUARED_ID = 'leg-sample-04';
+const LEG_TAPERED_ID = 'leg-sample-05';
 const LEG_TRIPOD_ID = 'leg-sample-08';
 const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
 const LOWER_SHELF_COMPATIBLE_LEG_IDS = new Set(['leg-sample-02', 'leg-sample-04', 'leg-sample-05']);
 export const LOWER_SHELF_THICKNESS_IN = 1;
 export const LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN = 6;
 export const LOWER_SHELF_EDGE_CLEARANCE_IN = 0.25;
+const LOWER_SHELF_TABLETOP_THICKNESS_IN = 2;
 const COFFEE_LEG_END_SETBACK_LABEL = '5-7 in';
 const DEFAULT_LEG_END_SETBACK_LABEL = '12-14 in';
 const LONG_LEG_END_SETBACK_LABEL = '18-20 in';
@@ -15,6 +18,20 @@ const LOWER_SHELF_TUBE_ENVELOPES = Object.freeze({
   'tube-1x1': { side: 1, end: 1 },
   'tube-1x3': { side: 1, end: 3 },
   'tube-2x4': { side: 2, end: 4 }
+});
+const LOWER_SHELF_PAIRED_SUPPORT_RULES = Object.freeze({
+  [LEG_SQUARED_ID]: {
+    sourceSpanX: 22,
+    sourceInnerWidth: 16,
+    supportDepth: 8
+  },
+  [LEG_TAPERED_ID]: {
+    sourceSpanX: 22,
+    sourceInnerWidthBottom: 14.3,
+    sourceInnerWidthTop: 18,
+    sourceLegHeight: 16,
+    supportDepth: 6
+  }
 });
 
 function formatNumber(value) {
@@ -118,21 +135,74 @@ export function getLowerShelfTubeEnvelope(tubeId) {
   return LOWER_SHELF_TUBE_ENVELOPES[tubeId] || DEFAULT_LOWER_SHELF_TUBE_ENVELOPE;
 }
 
-export function getLowerShelfDimensions({ modelId, legId, tubeId, length, width } = {}) {
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
+}
+
+function getLowerShelfPairedSupportInnerWidth(rule = {}, targetSpanX, tableHeight) {
+  if (!Number.isFinite(targetSpanX) || !Number.isFinite(rule.sourceSpanX) || rule.sourceSpanX <= 0) return null;
+  if (Number.isFinite(rule.sourceInnerWidth)) {
+    return targetSpanX * (rule.sourceInnerWidth / rule.sourceSpanX);
+  }
+
+  const selectedLegHeight = Number.isFinite(tableHeight)
+    ? Math.max(tableHeight - LOWER_SHELF_TABLETOP_THICKNESS_IN, LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN)
+    : (Number(rule.sourceLegHeight) || 16);
+  const sourceLegHeight = Number(rule.sourceLegHeight) || selectedLegHeight;
+  const sourceShelfY = clamp(
+    (LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN / selectedLegHeight) * sourceLegHeight,
+    0,
+    sourceLegHeight
+  );
+  const interpolation = sourceLegHeight > 0 ? sourceShelfY / sourceLegHeight : 0;
+  const sourceInnerWidth = Number(rule.sourceInnerWidthBottom)
+    + ((Number(rule.sourceInnerWidthTop) - Number(rule.sourceInnerWidthBottom)) * interpolation);
+
+  return Number.isFinite(sourceInnerWidth)
+    ? targetSpanX * (sourceInnerWidth / rule.sourceSpanX)
+    : null;
+}
+
+function getLowerShelfPairedSupportDepth(rule = {}, tubeId) {
+  const baseTubeDepth = DEFAULT_LOWER_SHELF_TUBE_ENVELOPE.end;
+  const selectedTubeDepth = getLowerShelfTubeEnvelope(tubeId).end;
+  const supportDepth = Number(rule.supportDepth);
+  if (!Number.isFinite(supportDepth) || supportDepth <= 0) return selectedTubeDepth;
+  if (!Number.isFinite(selectedTubeDepth) || selectedTubeDepth <= 0 || !Number.isFinite(baseTubeDepth) || baseTubeDepth <= 0) {
+    return supportDepth;
+  }
+  return supportDepth * (selectedTubeDepth / baseTubeDepth);
+}
+
+export function getLowerShelfDimensions({ modelId, legId, tubeId, length, width, height } = {}) {
   if (!isLowerShelfCompatibleContext({ modelId, legId })) return null;
   if (!Number.isFinite(length) || !Number.isFinite(width)) return null;
 
   const tubeEnvelope = getLowerShelfTubeEnvelope(tubeId);
   const clearance = LOWER_SHELF_EDGE_CLEARANCE_IN * 2;
-  const outerWidth = legId === LEG_CUBE_ID
+  const pairedSupportRule = LOWER_SHELF_PAIRED_SUPPORT_RULES[legId] || null;
+  const targetSpanX = legId === LEG_CUBE_ID
     ? Math.max(width - (CUBE_EDGE_SETBACK_IN * 2), 8)
     : getLegWidthForTable(width, { modelId });
+  const pairedInnerWidth = pairedSupportRule
+    ? getLowerShelfPairedSupportInnerWidth(pairedSupportRule, targetSpanX, height)
+    : null;
   const outerLength = legId === LEG_CUBE_ID
     ? Math.max(length - (CUBE_EDGE_SETBACK_IN * 2), 8)
-    : Math.max(length - ((getLegEndSetbackValue({ modelId, length, hasLegs: true }) || 0) * 2), 8);
+    : Math.max(
+      length
+      - ((getLegEndSetbackValue({ modelId, length, hasLegs: true }) || 0) * 2)
+      - (getLowerShelfPairedSupportDepth(pairedSupportRule, tubeId) * 2),
+      0
+    );
 
-  const shelfWidth = Math.max(0, outerWidth - (tubeEnvelope.side * 2) - clearance);
-  const shelfLength = Math.max(0, outerLength - (tubeEnvelope.end * 2) - clearance);
+  const shelfWidth = pairedSupportRule
+    ? Math.max(0, pairedInnerWidth - clearance)
+    : Math.max(0, targetSpanX - (tubeEnvelope.side * 2) - clearance);
+  const shelfLength = legId === LEG_CUBE_ID
+    ? Math.max(0, outerLength - (tubeEnvelope.end * 2) - clearance)
+    : Math.max(0, outerLength - clearance);
   if (!Number.isFinite(shelfWidth) || !Number.isFinite(shelfLength) || shelfWidth <= 0 || shelfLength <= 0) return null;
 
   return {
