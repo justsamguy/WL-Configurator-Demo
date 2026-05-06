@@ -3,9 +3,4 @@
 # Remove entries when that field is updated to a final image.
 
 data/addons.json :: Waterfall Edge > addon-waterfall-art :: image :: assets/images/model1_placeholder.png
-data/addons.json :: Edge Profiles > addon-angled-corners :: image :: assets/images/model1_placeholder.png
 data/designs.json :: des-keystone :: image :: assets/images/model1_placeholder.png
-data/dimensions.json :: dim-preset-06 :: image :: assets/images/model1_placeholder.png
-data/dimensions.json :: dim-preset-07 :: image :: assets/images/model1_placeholder.png
-data/dimensions.json :: dim-preset-08 :: image :: assets/images/model1_placeholder.png
-data/legs.json :: leg-signature :: image :: assets/images/model1_placeholder.png

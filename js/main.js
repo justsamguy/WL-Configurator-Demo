@@ -462,9 +462,12 @@ function initStageSubsectionDropdowns(root = document) {
  * @returns {Array} Filtered array of designs compatible with the selected model
  */
 function filterDesignsByModel(designs, modelId) {
-  if (!modelId) return designs; // Show all designs if no model selected
+  const visibleDesigns = Array.isArray(designs)
+    ? designs.filter(design => !(design && design.hidden === true))
+    : designs;
+  if (!modelId) return visibleDesigns; // Show all visible designs if no model selected
 
-  return designs.filter(design => {
+  return visibleDesigns.filter(design => {
     // Check if this design has pricing for the selected model
     return design.prices && design.prices[modelId];
   });
@@ -1768,6 +1771,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 709');
+console.log('Edit ver: 711');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
