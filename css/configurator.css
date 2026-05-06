@@ -4080,10 +4080,7 @@ body.stage-0 #models-stage-section {
   --model-stage-tile-gap: clamp(1.75rem, 3.25vw, 3.5rem);
   --model-stage-row-width: calc(var(--model-stage-tile-width) + var(--model-stage-tile-width) + var(--model-stage-tile-width) + var(--model-stage-tile-gap) + var(--model-stage-tile-gap));
   --model-stage-layout-width: min(100%, var(--model-stage-row-width));
-  --model-stage-accent-height: clamp(2rem, 4vw, 2.75rem);
-  --model-stage-accent-stroke-width: 4.5;
   --model-stage-label-color: #b2b8c0;
-  --model-stage-accent-color: rgba(156, 163, 175, 0.82);
   flex: 1 1 auto;
   width: 100%;
   display: flex;
@@ -4185,31 +4182,6 @@ body.stage-0 #models-stage-section .option-card[data-id^="mdl-"][aria-pressed="t
 
 body.stage-0 #models-stage-section .option-card[data-id^="mdl-"] .description {
   display: none;
-}
-
-body.stage-0 #models-stage-section .model-stage-accent {
-  flex: 0 0 auto;
-  width: var(--model-stage-layout-width);
-  max-width: 100%;
-  color: var(--model-stage-accent-color);
-  pointer-events: none;
-  margin: 0 auto;
-}
-
-body.stage-0 #models-stage-section .model-stage-accent svg {
-  display: block;
-  width: 100%;
-  height: var(--model-stage-accent-height);
-  overflow: visible;
-}
-
-body.stage-0 #models-stage-section .model-stage-accent path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: var(--model-stage-accent-stroke-width);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
 }
 
 @media (max-width: 1100px) {

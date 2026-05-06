@@ -1,5 +1,10 @@
 import { showOptionCardInfoDialog } from './ui/optionCardInfoDialog.js';
 import { scrollElementToTop } from './ui/scrollAlignment.js';
+import {
+  getLowerShelfCompatibilityTooltip,
+  isLowerShelfCompatibleContext,
+  isLowerShelfCompatibleModel
+} from './legGeometry.js';
 
 // Renders option-card buttons from a data array into a container element.
 // data: array of { id, title, price, image, description, disabled, tooltip }
@@ -198,9 +203,6 @@ export function renderOptionCards(container, data = [], opts = {}) {
 
 const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
-const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
-const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
-const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
 const HIDDEN_ADDON_GROUP_TITLES = new Set(['expedited production', 'installation']);
 
 function reorderAddonGroupsForModel(groups = [], modelId = '') {
@@ -289,7 +291,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
   orderedGroups.forEach(group => {
     const hasLowerShelfOption = Array.isArray(group.options) && group.options.some(option => option && option.id === LOWER_SHELF_ADDON_ID);
-    if (hasLowerShelfOption && currentModel !== LOWER_SHELF_COMPATIBLE_MODEL_ID) {
+    if (hasLowerShelfOption && !isLowerShelfCompatibleModel(currentModel)) {
       return;
     }
     if (group.options && group.options.length && group.options.every(option => hiddenAddonIds.has(option.id))) {
@@ -599,8 +601,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           ) && !currentAddons.includes('addon-waterfall-single');
           const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
           const isLowerShelfLegIncompatible = option.id === LOWER_SHELF_ADDON_ID &&
-            currentModel === LOWER_SHELF_COMPATIBLE_MODEL_ID &&
-            currentLeg !== LOWER_SHELF_COMPATIBLE_LEG_ID;
+            isLowerShelfCompatibleModel(currentModel) &&
+            !isLowerShelfCompatibleContext({ modelId: currentModel, legId: currentLeg });
           const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle || isLowerShelfLegIncompatible;
           const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
 
@@ -626,7 +628,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
             } else if (isLowerShelfLegIncompatible) {
-              incompatibilityTooltip = LOWER_SHELF_TOOLTIP;
+              incompatibilityTooltip = getLowerShelfCompatibilityTooltip();
               checkbox.setAttribute('data-disabled-by', 'lower-shelf');
               optionDiv.setAttribute('data-disabled-by', 'lower-shelf');
             } else if (isLiveEdgeRequired) {

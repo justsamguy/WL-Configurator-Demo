@@ -9,6 +9,7 @@ import {
   getLegEndSetbackLabel,
   getLegSideSetbackLabel,
   getPlateEndSetbackLabel,
+  getLowerShelfDimensions,
   parseSetbackValue
 } from '../legGeometry.js';
 
@@ -445,7 +446,29 @@ function getLegWeight({ legId, tubeId, length, width, height, waterfallCount }) 
   return weight;
 }
 
-function getAddonWeight(addons, length, width) {
+function resolveLowerShelfDimensions(selections) {
+  if (!selections || !selections.options || !selections.dimensionsDetail) return null;
+  const detail = selections.dimensionsDetail;
+  const length = typeof detail.length === 'number' ? detail.length : null;
+  const width = typeof detail.width === 'number' ? detail.width : null;
+  if (!Number.isFinite(length) || !Number.isFinite(width)) return null;
+  return getLowerShelfDimensions({
+    modelId: selections.model || null,
+    legId: selections.options.legs || null,
+    tubeId: selections.options['tube-size'] || null,
+    length,
+    width
+  });
+}
+
+function getLowerShelfWeight(lowerShelfDimensions) {
+  if (!lowerShelfDimensions) return 0;
+  const { length, width, thickness } = lowerShelfDimensions;
+  if (!Number.isFinite(length) || !Number.isFinite(width) || !Number.isFinite(thickness)) return 0;
+  return length * width * thickness * 0.03;
+}
+
+function getAddonWeight(addons, length, width, { selections = null } = {}) {
   if (!Array.isArray(addons)) return 0;
   let weight = 0;
 
@@ -459,6 +482,9 @@ function getAddonWeight(addons, length, width) {
   if (addons.some(id => id && id.startsWith('addon-lighting-'))) weight += 30;
   if (addons.includes('addon-glass-top') && typeof length === 'number' && typeof width === 'number') {
     weight += length * width * 0.25 * 0.1;
+  }
+  if (addons.includes('addon-lower-shelf')) {
+    weight += getLowerShelfWeight(resolveLowerShelfDimensions(selections));
   }
 
   return weight;
@@ -502,7 +528,7 @@ function calculateShippingEstimate({ zip, selections }) {
 
   const tabletopWeight = getTabletopWeight({ length, width, height, waterfallCount });
   const legWeight = getLegWeight({ legId, tubeId, length, width, height, waterfallCount });
-  const addonWeight = getAddonWeight(addons, length, width);
+  const addonWeight = getAddonWeight(addons, length, width, { selections });
   const totalWeight = getPackagingWeight(tabletopWeight + legWeight + addonWeight);
 
   const crateLength = length + 7;
@@ -1462,6 +1488,7 @@ async function exportPdf() {
   const tabletopThicknessLabel = isCookieDesign ? 'TBD (quoted separately)' : `${TABLETOP_THICKNESS_DEFAULT} in +/- 0.25 in`;
   const overallDimensionsLabel = formatDimensionTriple(length, width, height);
   const addons = Array.isArray(opts.addon) ? opts.addon : [];
+  const lowerShelfDimensions = addons.includes('addon-lower-shelf') ? resolveLowerShelfDimensions(selections) : null;
   const waterfallCount = getWaterfallEdgeCount({ selections });
   const edgeDetails = [];
   if (addons.includes('addon-live-edge')) edgeDetails.push('Live edge');
@@ -1582,7 +1609,7 @@ async function exportPdf() {
       height,
       waterfallCount
     });
-    const addonWeight = getAddonWeight(addons, length, width);
+    const addonWeight = getAddonWeight(addons, length, width, { selections });
     const rawWeight = estimatedTabletopWeight + estimatedLegWeight + addonWeight;
     if (Number.isFinite(rawWeight)) estimatedTotalWeight = rawWeight;
   }
@@ -1694,6 +1721,7 @@ async function exportPdf() {
     addons.includes('addon-custom-river') ||
     addons.includes('addon-embedded-logo') ||
     addons.includes('addon-live-edge') ||
+    addons.includes('addon-lower-shelf') ||
     !!powerStripId ||
     !!lightingAddonId ||
     !!edgeDetailLabel;
@@ -1704,6 +1732,17 @@ async function exportPdf() {
     if (addons.includes('addon-glass-top')) {
       addTechRow('Glass thickness', '1/4 in');
       addTechRow('Glass type', 'TBD');
+    }
+    if (addons.includes('addon-lower-shelf')) {
+      addTechRow(
+        'Lower Shelf Dimensions',
+        lowerShelfDimensions
+          ? formatDimensionTriple(lowerShelfDimensions.length, lowerShelfDimensions.width, lowerShelfDimensions.thickness)
+          : 'TBD'
+      );
+      addTechRow('Lower Shelf Thickness', lowerShelfDimensions ? formatInches(lowerShelfDimensions.thickness) : 'TBD');
+      addTechRow('Lower Shelf Top Height from Floor', lowerShelfDimensions ? formatInches(lowerShelfDimensions.topHeightFromFloor) : 'TBD');
+      addTechRow('Lower Shelf Underside Clearance', lowerShelfDimensions ? formatInches(lowerShelfDimensions.undersideClearance) : 'TBD');
     }
     if (powerStripId) {
       const powerStripSpecs = POWER_STRIP_SPECS[powerStripId];

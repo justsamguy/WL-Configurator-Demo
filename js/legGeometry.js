@@ -1,8 +1,21 @@
 const LEG_CUBE_ID = 'leg-sample-02';
 const LEG_TRIPOD_ID = 'leg-sample-08';
+const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
+const LOWER_SHELF_COMPATIBLE_LEG_IDS = new Set(['leg-sample-02', 'leg-sample-04', 'leg-sample-05']);
+export const LOWER_SHELF_THICKNESS_IN = 1;
+export const LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN = 6;
+export const LOWER_SHELF_EDGE_CLEARANCE_IN = 0.25;
 const COFFEE_LEG_END_SETBACK_LABEL = '5-7 in';
 const DEFAULT_LEG_END_SETBACK_LABEL = '12-14 in';
 const LONG_LEG_END_SETBACK_LABEL = '18-20 in';
+const CUBE_EDGE_SETBACK_IN = 0.25;
+const DEFAULT_LOWER_SHELF_TUBE_ENVELOPE = Object.freeze({ side: 1, end: 3 });
+const LOWER_SHELF_TUBE_ENVELOPES = Object.freeze({
+  'tube-1x0.5': { side: 1, end: 1 },
+  'tube-1x1': { side: 1, end: 1 },
+  'tube-1x3': { side: 1, end: 3 },
+  'tube-2x4': { side: 2, end: 4 }
+});
 
 function formatNumber(value) {
   if (!Number.isFinite(value)) return '0';
@@ -86,5 +99,47 @@ export function getLegSideSetbackLabel({ width, legWidth, plateLength, legId, de
   return {
     leg: Number.isFinite(legSetback) ? formatInches(legSetback, Number.isInteger(legSetback) ? 0 : 1) : 'TBD',
     plate: Number.isFinite(plateSetback) ? formatInches(plateSetback, Number.isInteger(plateSetback) ? 0 : 1) : 'TBD'
+  };
+}
+
+export function isLowerShelfCompatibleContext({ modelId, legId } = {}) {
+  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID && LOWER_SHELF_COMPATIBLE_LEG_IDS.has(legId);
+}
+
+export function isLowerShelfCompatibleModel(modelId) {
+  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID;
+}
+
+export function getLowerShelfCompatibilityTooltip() {
+  return 'Select Cube, Squared, or Tapered coffee legs to enable';
+}
+
+export function getLowerShelfTubeEnvelope(tubeId) {
+  return LOWER_SHELF_TUBE_ENVELOPES[tubeId] || DEFAULT_LOWER_SHELF_TUBE_ENVELOPE;
+}
+
+export function getLowerShelfDimensions({ modelId, legId, tubeId, length, width } = {}) {
+  if (!isLowerShelfCompatibleContext({ modelId, legId })) return null;
+  if (!Number.isFinite(length) || !Number.isFinite(width)) return null;
+
+  const tubeEnvelope = getLowerShelfTubeEnvelope(tubeId);
+  const clearance = LOWER_SHELF_EDGE_CLEARANCE_IN * 2;
+  const outerWidth = legId === LEG_CUBE_ID
+    ? Math.max(width - (CUBE_EDGE_SETBACK_IN * 2), 8)
+    : getLegWidthForTable(width, { modelId });
+  const outerLength = legId === LEG_CUBE_ID
+    ? Math.max(length - (CUBE_EDGE_SETBACK_IN * 2), 8)
+    : Math.max(length - ((getLegEndSetbackValue({ modelId, length, hasLegs: true }) || 0) * 2), 8);
+
+  const shelfWidth = Math.max(0, outerWidth - (tubeEnvelope.side * 2) - clearance);
+  const shelfLength = Math.max(0, outerLength - (tubeEnvelope.end * 2) - clearance);
+  if (!Number.isFinite(shelfWidth) || !Number.isFinite(shelfLength) || shelfWidth <= 0 || shelfLength <= 0) return null;
+
+  return {
+    length: shelfLength,
+    width: shelfWidth,
+    thickness: LOWER_SHELF_THICKNESS_IN,
+    topHeightFromFloor: LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN,
+    undersideClearance: Math.max(0, LOWER_SHELF_TOP_HEIGHT_FROM_FLOOR_IN - LOWER_SHELF_THICKNESS_IN)
   };
 }

@@ -8,7 +8,12 @@ import { loadData } from './dataLoader.js';
 import { getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
-import { getLegEndSetbackValue, getLegWidthForTable } from './legGeometry.js';
+import {
+  getLegEndSetbackValue,
+  getLegWidthForTable,
+  getLowerShelfDimensions,
+  isLowerShelfCompatibleContext
+} from './legGeometry.js';
 
 const VIEWER_DEBUG_ENABLED = false;
 const log = VIEWER_DEBUG_ENABLED
@@ -47,9 +52,11 @@ const DESIGN_CUSTOM_ID = 'des-custom';
 const MATERIAL_CUSTOM_ID = 'mat-08';
 const MATERIAL_COOKIE_EXCLUSIVE_ID = 'mat-09';
 const COLOR_CUSTOM_ID = 'color-01';
+const COLOR_GRADIENT_DARK_TO_LIGHT_ID = 'color-gradient-01';
 const COLOR_GRADIENT_CUSTOM_ID = 'color-gradient-03';
 const COLOR_GRADIENT_LIGHT_CENTER_ID = 'color-gradient-02';
 const COLOR_GRADIENT_SINGLE_COLOR_ID = 'color-gradient-04';
+const VIEWER_SINGLE_COLOR_RENDERED_COLOR_IDS = new Set(['color-06', 'color-07', 'color-08']);
 const LEG_FINISH_CUSTOM_ID = 'leg-finish-08';
 const LEG_CUBE_ID = 'leg-sample-02';
 const LEG_TRIPOD_ID = 'leg-sample-08';
@@ -61,6 +68,8 @@ const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
 const EPOXY_VERTICAL_INSET = 0.0015;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
+const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
+const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const GLASS_TOP_THICKNESS_IN = 0.25;
 const GLASS_TOP_AXIS_REDUCTION_IN = 0.125;
 const GLASS_TOP_SURFACE_GAP = 0.0007;
@@ -90,10 +99,10 @@ const TABLETOP_FINISH_TINTS = Object.freeze({
   },
   'fin-tint-03': {
     label: 'Darken',
-    brightness: 0.9,
-    saturation: 0.96,
+    brightness: 0.8,
+    saturation: 0.92,
     tintColor: '#5f3f2c',
-    tintMix: 0.035
+    tintMix: 0.07
   }
 });
 const LIVE_EDGE_RESIN_SAMPLE_COUNT = 15;
@@ -1122,6 +1131,86 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
   );
 }
 
+function getFirstMeshMaterial(root) {
+  if (!root) return null;
+  let material = null;
+  root.traverse((child) => {
+    if (material || !child.isMesh || !child.material) return;
+    material = Array.isArray(child.material) ? child.material.find(Boolean) : child.material;
+  });
+  return material || null;
+}
+
+function syncLowerShelfMaterial(lowerShelfRoot, tabletopRoot) {
+  if (!lowerShelfRoot || !tabletopRoot) return;
+  const shelfMesh = lowerShelfRoot.getObjectByName(`${LOWER_SHELF_PART_NAME}-mesh`);
+  const sourceMaterial = getFirstMeshMaterial(tabletopRoot);
+  if (!shelfMesh || !sourceMaterial) return;
+
+  const sourceMaterialUuid = sourceMaterial.uuid || '';
+  if (shelfMesh.userData.sourceMaterialUuid === sourceMaterialUuid) return;
+
+  const previousMaterial = shelfMesh.material;
+  const nextMaterial = cloneReusableMaterial(sourceMaterial);
+  if (nextMaterial && typeof nextMaterial === 'object') {
+    nextMaterial.userData = {
+      ...(nextMaterial.userData || {}),
+      lowerShelfMaterial: true
+    };
+  }
+  shelfMesh.material = nextMaterial;
+  shelfMesh.userData.sourceMaterialUuid = sourceMaterialUuid;
+
+  if (
+    previousMaterial
+    && previousMaterial !== nextMaterial
+    && previousMaterial.userData
+    && previousMaterial.userData.lowerShelfMaterial
+  ) {
+    disposeMaterial(previousMaterial);
+  }
+}
+
+function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot = null) {
+  if (!renderRoot) return;
+  const lowerShelfRoot = renderRoot.getObjectByName(LOWER_SHELF_PART_NAME);
+  if (!lowerShelfRoot) return;
+
+  const selections = getSelections();
+  const options = selections && selections.options && typeof selections.options === 'object'
+    ? selections.options
+    : {};
+  const modelId = selections.model || null;
+  const legId = options.legs || null;
+  const shelfDimensions = getLowerShelfDimensions({
+    modelId,
+    legId,
+    tubeId: options['tube-size'] || null,
+    length: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.length) : NaN,
+    width: scaleMap && scaleMap.selectedDimensions ? Number(scaleMap.selectedDimensions.width) : NaN
+  });
+
+  if (!hasSelectedAddon(LOWER_SHELF_ADDON_ID) || !shelfDimensions) {
+    lowerShelfRoot.visible = false;
+    return;
+  }
+
+  const shelfMesh = lowerShelfRoot.getObjectByName(`${LOWER_SHELF_PART_NAME}-mesh`);
+  const shelfWidth = shelfDimensions.width * unitsPerInch;
+  const shelfLength = shelfDimensions.length * unitsPerInch;
+  const shelfThickness = shelfDimensions.thickness * unitsPerInch;
+  const shelfCenterY = (shelfDimensions.topHeightFromFloor * unitsPerInch) - (shelfThickness / 2);
+  if (!shelfMesh || !Number.isFinite(shelfWidth) || !Number.isFinite(shelfLength) || !Number.isFinite(shelfThickness)) {
+    lowerShelfRoot.visible = false;
+    return;
+  }
+
+  lowerShelfRoot.visible = true;
+  lowerShelfRoot.position.set(0, shelfCenterY, 0);
+  lowerShelfRoot.scale.set(shelfWidth, shelfThickness, shelfLength);
+  syncLowerShelfMaterial(lowerShelfRoot, tabletopRoot || renderRoot.getObjectByName('tabletop'));
+}
+
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
@@ -1183,6 +1272,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   });
 
   computeGlassTopTransform(renderRoot, unitsPerInch);
+  computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot);
 
   return scaleMap;
 }
@@ -1332,6 +1422,30 @@ function createGlassTopPart() {
   glassRoot.add(glassMesh);
   glassRoot.visible = false;
   return glassRoot;
+}
+
+function createLowerShelfPart() {
+  const shelfRoot = new THREE.Group();
+  shelfRoot.name = LOWER_SHELF_PART_NAME;
+  shelfRoot.userData.partConfig = {
+    role: 'lower-shelf'
+  };
+
+  const shelfMaterial = new THREE.MeshStandardMaterial({
+    color: 0x7a5334,
+    roughness: 0.5,
+    metalness: 0.02
+  });
+  shelfMaterial.userData = { lowerShelfMaterial: true };
+
+  const shelfMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), shelfMaterial);
+  shelfMesh.name = `${LOWER_SHELF_PART_NAME}-mesh`;
+  shelfMesh.castShadow = true;
+  shelfMesh.receiveShadow = true;
+  shelfMesh.frustumCulled = false;
+  shelfRoot.add(shelfMesh);
+  shelfRoot.visible = false;
+  return shelfRoot;
 }
 
 function applySurfaceInsetTransform(assetRoot, partConfig = {}) {
@@ -2168,9 +2282,21 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient')
     );
   } else if (
+    selectedGradientId === COLOR_GRADIENT_SINGLE_COLOR_ID
+    && !VIEWER_SINGLE_COLOR_RENDERED_COLOR_IDS.has(options.color)
+  ) {
+    const gradientTitle = getOptionDisplayName('color-gradient', selectedGradientId, 'Single color epoxy');
+    pushViewerNotice(
+      notices,
+      'Single color epoxy',
+      'Single-color epoxy is not rendered for multi-color epoxy palettes in the local 3D viewer yet.',
+      formatSelectionWithDescriptor(gradientTitle, 'epoxy')
+    );
+  } else if (
     selectedGradientId
     && selectedGradientId !== COLOR_GRADIENT_SINGLE_COLOR_ID
     && selectedGradientId !== COLOR_GRADIENT_LIGHT_CENTER_ID
+    && selectedGradientId !== COLOR_GRADIENT_DARK_TO_LIGHT_ID
   ) {
     const gradientTitle = getOptionDisplayName('color-gradient', selectedGradientId, 'Epoxy gradient');
     pushViewerNotice(
@@ -2217,12 +2343,15 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       edgeProfileNames
     );
   }
-  if (selectedAddons.includes('addon-lower-shelf')) {
+  if (
+    selectedAddons.includes(LOWER_SHELF_ADDON_ID)
+    && !isLowerShelfCompatibleContext({ modelId, legId: options.legs || null })
+  ) {
     pushViewerNotice(
       notices,
       'Lower shelf',
-      'Lower shelf geometry is not modeled in the local viewer yet.',
-      getOptionDisplayName('addon', 'addon-lower-shelf', 'Lower shelf')
+      'Lower shelf geometry is only shown for compatible coffee table bases.',
+      getOptionDisplayName('addon', LOWER_SHELF_ADDON_ID, 'Lower shelf')
     );
   }
   if (selectedAddons.includes('addon-embedded-logo')) {
@@ -2572,6 +2701,7 @@ async function buildRenderRoot(config) {
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
   renderRoot.add(createGlassTopPart());
+  renderRoot.add(createLowerShelfPart());
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedTabletopSheen(renderRoot);
   await applySelectedTabletopTint(renderRoot);

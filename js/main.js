@@ -11,6 +11,10 @@ import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
 import { createLogger, setLevel } from './logger.js';
 import { scrollElementToTop } from './ui/scrollAlignment.js';
+import {
+  getLowerShelfCompatibilityTooltip,
+  isLowerShelfCompatibleContext
+} from './legGeometry.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
@@ -899,9 +903,6 @@ const EDGE_PROFILE_COMPATIBLE_PAIRS = new Set([
   'addon-chamfered-edges:addon-angled-corners'
 ]);
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
-const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
-const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
-const LOWER_SHELF_DISABLED_TOOLTIP = 'Select Squared legs to enable';
 const DEFAULT_LEG_ID = 'leg-sample-04';
 const EDGE_CORNER_ADDONS = [
   'addon-live-edge',
@@ -916,7 +917,7 @@ const EDGE_CORNER_ADDONS = [
 function isLowerShelfAddonContextValid(appState) {
   const modelId = appState && appState.selections && appState.selections.model;
   const legId = appState && appState.selections && appState.selections.options && appState.selections.options.legs;
-  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID && legId === LOWER_SHELF_COMPATIBLE_LEG_ID;
+  return isLowerShelfCompatibleContext({ modelId, legId });
 }
 
 function stripInvalidLowerShelfAddon(appState) {
@@ -946,21 +947,22 @@ function updateLowerShelfAddonAvailability(appState) {
   if (!checkbox || !option) return;
   const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
   const shouldDisable = !isLowerShelfAddonContextValid(appState);
+  const lowerShelfTooltip = getLowerShelfCompatibilityTooltip();
 
   if (shouldDisable) {
     checkbox.disabled = true;
     checkbox.checked = false;
     checkbox.setAttribute('data-disabled-by', 'lower-shelf');
-    checkbox.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    checkbox.setAttribute('data-tooltip', lowerShelfTooltip);
     option.classList.add('disabled');
     option.classList.remove('selected');
     option.setAttribute('aria-disabled', 'true');
     option.setAttribute('data-disabled-by', 'lower-shelf');
-    option.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    option.setAttribute('data-tooltip', lowerShelfTooltip);
   } else if (disabledBy === 'lower-shelf') {
     checkbox.disabled = false;
     checkbox.removeAttribute('data-disabled-by');
-    if (checkbox.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+    if (checkbox.getAttribute('data-tooltip') === lowerShelfTooltip) {
       checkbox.removeAttribute('data-tooltip');
     }
     option.classList.remove('disabled');
@@ -968,7 +970,7 @@ function updateLowerShelfAddonAvailability(appState) {
     if (option.getAttribute('data-disabled-by') === 'lower-shelf') {
       option.removeAttribute('data-disabled-by');
     }
-    if (option.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+    if (option.getAttribute('data-tooltip') === lowerShelfTooltip) {
       option.removeAttribute('data-tooltip');
     }
   }
@@ -1250,7 +1252,7 @@ document.addEventListener('option-selected', async (ev) => {
       { ...state.selections.options, addon: currentAddons },
       window._allLegsData || []
     );
-    if (state.selections.model !== LOWER_SHELF_COMPATIBLE_MODEL_ID || nextOptions.legs !== LOWER_SHELF_COMPATIBLE_LEG_ID) {
+    if (!isLowerShelfCompatibleContext({ modelId: state.selections.model, legId: nextOptions.legs })) {
       nextOptions.addon = currentAddons.filter((addonId) => addonId !== LOWER_SHELF_ADDON_ID);
     }
     if (id === 'des-signature') {
@@ -1766,6 +1768,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 702');
+console.log('Edit ver: 706');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });
