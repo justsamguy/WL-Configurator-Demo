@@ -139,6 +139,7 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
   'fin-sheen-03': 1.85,
   default: 1.2
 });
+const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
@@ -724,16 +725,17 @@ function syncTabletopGlareLight(renderRoot = currentRenderRoot) {
     tabletopMetrics.max.y + Math.max(tabletopSpan * 0.002, 0.002),
     tabletopMetrics.center.z
   );
-  const surfaceToCamera = camera.position.clone().sub(surfacePoint);
-  if (surfaceToCamera.lengthSq() < 0.0001) {
+  const surfaceToDefaultView = defaultCameraPosition.clone().sub(surfacePoint);
+  if (surfaceToDefaultView.lengthSq() < 0.0001) {
     tabletopGlareLight.visible = false;
     return;
   }
 
-  // Mirror the camera vector across the tabletop plane so the highlight faces the active view.
-  const reflectedLightVector = surfaceToCamera.clone().negate().reflect(tabletopSurfaceNormal);
-  const lightDistance = THREE.MathUtils.clamp(surfaceToCamera.length(), tabletopSpan * 0.65, tabletopSpan * 2.6);
+  // Anchor the glare to the saved default view so it reads like a fixed ceiling light while orbiting.
+  const reflectedLightVector = surfaceToDefaultView.clone().negate().reflect(tabletopSurfaceNormal);
+  const lightDistance = THREE.MathUtils.clamp(surfaceToDefaultView.length(), tabletopSpan * 0.65, tabletopSpan * 2.6);
   reflectedLightVector.setLength(lightDistance);
+  reflectedLightVector.y = Math.max(reflectedLightVector.y, tabletopSpan * TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO);
 
   tabletopGlareLight.position.copy(surfacePoint).add(reflectedLightVector);
   tabletopGlareLight.target.position.copy(surfacePoint);

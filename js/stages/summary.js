@@ -1133,9 +1133,8 @@ async function exportPdf() {
     return;
   }
 
-  const snapshotUrl = SNAPSHOT_CAPTURE_ENABLED ? await captureSnapshot() : null;
+  // The PDF preview section is hidden for now, so export skips snapshot capture.
   const logoDataUrl = await loadLogoDataUrl();
-  pdfLog.debug('Snapshot capture', { hasSnapshot: !!snapshotUrl });
 
   let summaryData = null;
   try {
@@ -1373,29 +1372,6 @@ async function exportPdf() {
   const generatedAt = new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
   doc.text(`Generated ${generatedAt}`, pageWidth - margin - 14, y + 52, { align: 'right' });
   y += headerHeight + 16;
-
-  // Preview
-  addSectionTitle('Preview');
-  if (snapshotUrl) {
-    const imgProps = doc.getImageProperties(snapshotUrl);
-    const maxImgWidth = pageWidth - margin * 2;
-    const maxImgHeight = 240;
-    const ratio = imgProps.width / imgProps.height || 1;
-    let imgWidth = maxImgWidth;
-    let imgHeight = imgWidth / ratio;
-    if (imgHeight > maxImgHeight) {
-      imgHeight = maxImgHeight;
-      imgWidth = imgHeight * ratio;
-    }
-    ensureSpace(imgHeight + 16);
-    const imgX = margin + ((maxImgWidth - imgWidth) / 2);
-    doc.setDrawColor(229, 231, 235);
-    doc.roundedRect(margin, y, maxImgWidth, imgHeight + 12, 6, 6, 'S');
-    doc.addImage(snapshotUrl, 'PNG', imgX, y + 6, imgWidth, imgHeight);
-    y += imgHeight + 24;
-  } else {
-    addKeyValue('Preview', 'Snapshot not captured yet');
-  }
 
   // Configuration
   addSectionTitle('Configuration');
