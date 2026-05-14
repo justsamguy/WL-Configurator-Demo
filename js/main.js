@@ -6,7 +6,7 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
+import { computePrice, getLegPriceMultiplier, getVisibleLegCount, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
 import { createLogger, setLevel } from './logger.js';
@@ -775,9 +775,12 @@ function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
       messages.push('Leg prices updated automatically because we require 3 legs on tables over 130" long.');
     }
     if (waterfallCount === 1) {
-      messages.push('Single waterfall halves leg pricing.');
+      messages.push('Single waterfall replaces one end leg; leg pricing updated automatically.');
     } else if (waterfallCount >= 2) {
-      messages.push('Two waterfalls replace legs; leg pricing set to $0.');
+      const visibleLegCount = getVisibleLegCount(appState);
+      messages.push(visibleLegCount > 0
+        ? 'Two waterfalls replace end legs; center support pricing remains.'
+        : 'Two waterfalls replace legs; leg pricing set to $0.');
     }
     banner.classList.toggle('hidden', messages.length === 0);
     if (messages.length) banner.textContent = messages.join(' ');
@@ -1771,6 +1774,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 711');
+console.log('Edit ver: 715');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

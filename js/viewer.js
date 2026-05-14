@@ -5,13 +5,17 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/exampl
 import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { loadData } from './dataLoader.js';
-import { getWaterfallEdgeCount } from './pricing.js';
+import { getVisibleLegCount, getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
 import {
+  getLegEndSetbackLabel,
   getLegEndSetbackValue,
+  getLegSideSetbackLabel,
   getLegWidthForTable,
   getLowerShelfDimensions,
+  getPlateEndSetbackLabel,
+  parseSetbackValue,
   isLowerShelfCompatibleContext
 } from './legGeometry.js';
 
@@ -72,6 +76,12 @@ const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
+const U_CHANNEL_ROLE = 'u-channel';
+const U_CHANNEL_ASSET_PATH = 'assets/models/3x1%20U-Channel.glb';
+const U_CHANNEL_MIN_TABLE_LENGTH_IN = 72;
+const U_CHANNEL_WIDTH_IN = 3;
+const U_CHANNEL_PLATE_CLEARANCE_IN = 6;
+const U_CHANNEL_UNDERSIDE_RENDER_OFFSET = 0.00045;
 const GLASS_TOP_THICKNESS_IN = 0.25;
 const GLASS_TOP_AXIS_REDUCTION_IN = 0.125;
 const GLASS_TOP_SURFACE_GAP = 0.0007;
@@ -248,11 +258,22 @@ function hasSelectedAddon(addonId) {
   return typeof addonId === 'string' && getSelectedAddons().includes(addonId);
 }
 
-function getCurrentViewerSelectionContext(modelId) {
+function getCurrentViewerSelectionContext(modelId, config = {}) {
   const selections = getSelections();
   const detail = selections && selections.dimensionsDetail && typeof selections.dimensionsDetail === 'object'
     ? selections.dimensionsDetail
     : {};
+  const selectedDimensions = config && config.dimensionRules
+    ? getSelectedDimensions(config)
+    : null;
+  const detailLength = Number(detail.length);
+  const detailWidth = Number(detail.width);
+  const fallbackLength = selectedDimensions && Number.isFinite(Number(selectedDimensions.length))
+    ? Number(selectedDimensions.length)
+    : null;
+  const fallbackWidth = selectedDimensions && Number.isFinite(Number(selectedDimensions.width))
+    ? Number(selectedDimensions.width)
+    : null;
 
   return {
     modelId,
@@ -260,16 +281,74 @@ function getCurrentViewerSelectionContext(modelId) {
     legId: getSelectedOption('legs'),
     tubeId: getSelectedOption('tube-size'),
     waterfallCount: getWaterfallEdgeCount(state),
-    length: Number.isFinite(Number(detail.length)) ? Number(detail.length) : null,
-    width: Number.isFinite(Number(detail.width)) ? Number(detail.width) : null
+    visibleLegCount: getVisibleLegCount(state),
+    length: Number.isFinite(detailLength) ? detailLength : fallbackLength,
+    width: Number.isFinite(detailWidth) ? detailWidth : fallbackWidth
   };
 }
 
 function isLegPreviewSuppressed(selectionContext = {}) {
-  const { legId, waterfallCount } = selectionContext;
+  const { legId, waterfallCount, visibleLegCount } = selectionContext;
   if (!legId) return true;
   if (legId === LEG_NONE_ID || legId === LEG_CUSTOM_ID || legId === LEG_SIGNATURE_ID) return true;
-  return waterfallCount >= 2;
+  return waterfallCount >= 2 && visibleLegCount <= 0;
+}
+
+function hasLegsForHardware(selectionContext = {}) {
+  const { legId, visibleLegCount } = selectionContext;
+  return !!legId && legId !== LEG_NONE_ID && visibleLegCount > 0;
+}
+
+function isUChannelEligible(selectionContext = {}) {
+  const length = Number(selectionContext.length);
+  return hasLegsForHardware(selectionContext)
+    && Number.isFinite(length)
+    && length > U_CHANNEL_MIN_TABLE_LENGTH_IN;
+}
+
+function getUChannelPlacementSpec(selectionContext = {}) {
+  if (!isUChannelEligible(selectionContext)) return null;
+
+  const length = Number(selectionContext.length);
+  const width = Number(selectionContext.width);
+  if (!Number.isFinite(length) || !Number.isFinite(width)) return null;
+
+  const legEndSetbackLabel = getLegEndSetbackLabel({
+    modelId: selectionContext.modelId,
+    length,
+    hasLegs: true
+  });
+  const plateEndSetback = parseSetbackValue(getPlateEndSetbackLabel(legEndSetbackLabel));
+  const plateLength = Math.max(0, width - U_CHANNEL_PLATE_CLEARANCE_IN);
+  const sideSetbacks = getLegSideSetbackLabel({
+    width,
+    legWidth: getLegWidthForTable(width, { modelId: selectionContext.modelId }),
+    plateLength,
+    legId: selectionContext.legId,
+    designId: selectionContext.designId
+  });
+  const plateSideSetback = parseSetbackValue(sideSetbacks.plate);
+  const channelLength = Number.isFinite(plateEndSetback)
+    ? Math.max(0, length - (plateEndSetback * 2))
+    : null;
+
+  if (!Number.isFinite(channelLength) || channelLength <= 0 || !Number.isFinite(plateSideSetback)) return null;
+  return {
+    length: channelLength,
+    sideSetback: plateSideSetback,
+    width: U_CHANNEL_WIDTH_IN
+  };
+}
+
+function buildUChannelRenderableParts(selectionContext = {}) {
+  if (!getUChannelPlacementSpec(selectionContext)) return [];
+  return ['left', 'right'].map((placement) => ({
+    name: `u-channel-${placement}`,
+    role: U_CHANNEL_ROLE,
+    placement,
+    assetPath: U_CHANNEL_ASSET_PATH,
+    receiveModelShadows: true
+  }));
 }
 
 function getLegCount(length) {
@@ -382,6 +461,20 @@ function buildLegRenderableParts(legCatalog = {}, selectionContext = {}) {
       }));
   }
 
+  if (selectionContext.waterfallCount >= 2) {
+    return placements
+      .filter((placement) => placement === 'middle')
+      .map((placement) => ({
+        name: `leg-${placement}`,
+        role: 'leg',
+        placement,
+        layout: 'paired-supports',
+        legId: selectionContext.legId,
+        assetPath: variant.assetPath,
+        tubeFallbackScale
+      }));
+  }
+
   return placements.map((placement) => ({
     name: `leg-${placement}`,
     role: 'leg',
@@ -393,7 +486,7 @@ function buildLegRenderableParts(legCatalog = {}, selectionContext = {}) {
   }));
 }
 
-function getConfiguredLegParts(manifest = {}, modelId) {
+function getConfiguredLegParts(manifest = {}, modelId, selectionContextOverride = null) {
   const defaults = manifest && manifest.defaults && typeof manifest.defaults === 'object'
     ? manifest.defaults
     : {};
@@ -404,7 +497,7 @@ function getConfiguredLegParts(manifest = {}, modelId) {
     ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
     ...(modelEntry && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
   };
-  const selectionContext = getCurrentViewerSelectionContext(modelId);
+  const selectionContext = selectionContextOverride || getCurrentViewerSelectionContext(modelId);
   const cameraSettings = getCameraSettings({ camera: cameraConfig });
   selectionContext.defaultViewNearestPlacement = Number(cameraSettings.offset[2]) < 0 ? 'back' : 'front';
   const legCatalog = defaults.legAssets && typeof defaults.legAssets === 'object'
@@ -1127,6 +1220,87 @@ function computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, select
   partRoot.position.z += centerZ - metrics.center.z;
 }
 
+function getUChannelTransformContext(scaleMap = {}) {
+  const selections = getSelections();
+  const options = selections && selections.options && typeof selections.options === 'object'
+    ? selections.options
+    : {};
+  const selectedDimensions = scaleMap && scaleMap.selectedDimensions
+    ? scaleMap.selectedDimensions
+    : {};
+
+  return {
+    modelId: selections.model || null,
+    designId: selections.design || null,
+    legId: options.legs || null,
+    waterfallCount: getWaterfallEdgeCount(state),
+    visibleLegCount: getVisibleLegCount(state),
+    length: Number.isFinite(Number(selectedDimensions.length)) ? Number(selectedDimensions.length) : null,
+    width: Number.isFinite(Number(selectedDimensions.width)) ? Number(selectedDimensions.width) : null
+  };
+}
+
+function computeUChannelTransform(partRoot, baseState, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY) {
+  if (!partRoot || !baseState || !baseState.metrics || !tabletopMetrics) return;
+
+  const partConfig = getPartConfig(partRoot);
+  const placementSpec = getUChannelPlacementSpec(getUChannelTransformContext(scaleMap));
+  const baseSpanZ = getPartSpan(baseState.metrics, 'z');
+  if (!placementSpec || !Number.isFinite(baseSpanZ) || baseSpanZ <= 0) {
+    partRoot.visible = false;
+    return;
+  }
+
+  const targetLength = placementSpec.length * unitsPerInch;
+  if (!Number.isFinite(targetLength) || targetLength <= 0) {
+    partRoot.visible = false;
+    return;
+  }
+
+  partRoot.visible = true;
+  partRoot.scale.z = baseState.scale.z * (targetLength / baseSpanZ);
+
+  const metrics = getObjectMetrics(partRoot);
+  if (!metrics) {
+    partRoot.visible = false;
+    return;
+  }
+
+  const channelWidth = getPartSpan(metrics, 'x');
+  const sideSetback = placementSpec.sideSetback * unitsPerInch;
+  if (!Number.isFinite(channelWidth) || !Number.isFinite(sideSetback)) {
+    partRoot.visible = false;
+    return;
+  }
+
+  const isRightSide = partConfig.placement === 'right';
+  const outerEdgeX = isRightSide
+    ? tabletopMetrics.max.x - sideSetback
+    : tabletopMetrics.min.x + sideSetback;
+  const centerX = isRightSide
+    ? outerEdgeX - (channelWidth / 2)
+    : outerEdgeX + (channelWidth / 2);
+  const undersideY = Number.isFinite(tabletopMetrics.min.y)
+    ? tabletopMetrics.min.y
+    : selectedUndersideY;
+  // Keep the exposed channel face visually flush with the underside without z-fighting.
+  const channelBottomY = undersideY - U_CHANNEL_UNDERSIDE_RENDER_OFFSET;
+
+  partRoot.position.x += centerX - metrics.center.x;
+  partRoot.position.y += channelBottomY - metrics.min.y;
+  partRoot.position.z += tabletopMetrics.center.z - metrics.center.z;
+}
+
+function computeUChannelTransforms(renderRoot, basePartStates = {}, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY) {
+  if (!renderRoot || !tabletopMetrics) return;
+  renderRoot.children.forEach((partRoot) => {
+    const partConfig = getPartConfig(partRoot);
+    const isUChannel = partConfig.role === U_CHANNEL_ROLE || partRoot.name.startsWith('u-channel-');
+    if (!isUChannel) return;
+    computeUChannelTransform(partRoot, basePartStates[partRoot.name], scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY);
+  });
+}
+
 function computeGlassTopTransform(renderRoot, unitsPerInch) {
   if (!renderRoot) return;
 
@@ -1307,12 +1481,15 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
       return;
     }
 
+    if (role === U_CHANNEL_ROLE || partName.startsWith('u-channel-')) return;
+
     const metrics = getObjectMetrics(partRoot);
     if (!metrics || !baseState.metrics) return;
     partRoot.position.x += baseState.metrics.center.x - metrics.center.x;
     partRoot.position.z += baseState.metrics.center.z - metrics.center.z;
   });
 
+  computeUChannelTransforms(renderRoot, basePartStates, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY);
   computeGlassTopTransform(renderRoot, unitsPerInch);
   computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot);
 
@@ -2291,7 +2468,7 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     : '';
   const legAndTubeTitle = tubeTitle ? `${legTitle} + ${tubeTitle}` : legTitle;
 
-  if (selectionContext.waterfallCount >= 2) {
+  if (selectionContext.waterfallCount >= 2 && selectionContext.visibleLegCount <= 0) {
     return {
       title: 'Waterfall leg layout',
       reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.',
@@ -2543,8 +2720,21 @@ function applyViewerTheme() {
   floorMesh.material.color.setHex(isDark ? 0x1b2538 : 0xe7eef6);
 }
 
+function applyUChannelMaterial(material) {
+  if (!material) return;
+  if ('color' in material && material.color && typeof material.color.setHex === 'function') {
+    material.color.setHex(0x111111);
+  }
+  if ('metalness' in material) material.metalness = 0.65;
+  if ('roughness' in material) material.roughness = 0.72;
+  if ('envMapIntensity' in material) material.envMapIntensity = 0.8;
+  material.name = material.name || 'Matte Black U-Channel';
+  material.needsUpdate = true;
+}
+
 function configureModelMeshes(root, config = {}) {
   const receiveModelShadows = config && config.receiveModelShadows === true;
+  const usesUChannelMaterial = config && config.role === U_CHANNEL_ROLE;
   root.traverse((child) => {
     if (!child.isMesh) return;
 
@@ -2559,6 +2749,7 @@ function configureModelMeshes(root, config = {}) {
     const materials = Array.isArray(child.material) ? child.material : [child.material];
     materials.forEach((material) => {
       if (!material) return;
+      if (usesUChannelMaterial) applyUChannelMaterial(material);
       if ('shadowSide' in material) material.shadowSide = THREE.FrontSide;
       material.needsUpdate = true;
     });
@@ -2721,46 +2912,50 @@ function resolveViewerConfig(manifest, modelId) {
   const modelDimensionRules = modelEntry.dimensionRules && typeof modelEntry.dimensionRules === 'object'
     ? modelEntry.dimensionRules
     : null;
+  const camera = {
+    ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
+    ...(modelEntry.camera && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
+  };
+  const dimensionRules = {
+    ...defaultDimensionRules,
+    ...(modelDimensionRules || {}),
+    baseDimensions: {
+      ...(defaultDimensionRules.baseDimensions && typeof defaultDimensionRules.baseDimensions === 'object'
+        ? defaultDimensionRules.baseDimensions
+        : {}),
+      ...(modelDimensionRules && modelDimensionRules.baseDimensions && typeof modelDimensionRules.baseDimensions === 'object'
+        ? modelDimensionRules.baseDimensions
+        : {})
+    },
+    heightOptions: {
+      ...(defaultDimensionRules.heightOptions && typeof defaultDimensionRules.heightOptions === 'object'
+        ? defaultDimensionRules.heightOptions
+        : {}),
+      ...(modelDimensionRules && modelDimensionRules.heightOptions && typeof modelDimensionRules.heightOptions === 'object'
+        ? modelDimensionRules.heightOptions
+        : {})
+    },
+    partBehaviors: {
+      ...(defaultDimensionRules.partBehaviors && typeof defaultDimensionRules.partBehaviors === 'object'
+        ? defaultDimensionRules.partBehaviors
+        : {}),
+      ...(modelDimensionRules && modelDimensionRules.partBehaviors && typeof modelDimensionRules.partBehaviors === 'object'
+        ? modelDimensionRules.partBehaviors
+        : {})
+    }
+  };
+  const selectionContext = getCurrentViewerSelectionContext(modelId, { dimensionRules });
 
   return {
     ...defaults,
     ...modelEntry,
     parts: [
       ...getRenderableParts({ parts: defaults.parts || [] }),
-      ...getConfiguredLegParts(manifest, modelId)
+      ...getConfiguredLegParts(manifest, modelId, selectionContext),
+      ...buildUChannelRenderableParts(selectionContext)
     ],
-    camera: {
-      ...(defaults.camera && typeof defaults.camera === 'object' ? defaults.camera : {}),
-      ...(modelEntry.camera && typeof modelEntry.camera === 'object' ? modelEntry.camera : {})
-    },
-    dimensionRules: {
-      ...defaultDimensionRules,
-      ...(modelDimensionRules || {}),
-      baseDimensions: {
-        ...(defaultDimensionRules.baseDimensions && typeof defaultDimensionRules.baseDimensions === 'object'
-          ? defaultDimensionRules.baseDimensions
-          : {}),
-        ...(modelDimensionRules && modelDimensionRules.baseDimensions && typeof modelDimensionRules.baseDimensions === 'object'
-          ? modelDimensionRules.baseDimensions
-          : {})
-      },
-      heightOptions: {
-        ...(defaultDimensionRules.heightOptions && typeof defaultDimensionRules.heightOptions === 'object'
-          ? defaultDimensionRules.heightOptions
-          : {}),
-        ...(modelDimensionRules && modelDimensionRules.heightOptions && typeof modelDimensionRules.heightOptions === 'object'
-          ? modelDimensionRules.heightOptions
-          : {})
-      },
-      partBehaviors: {
-        ...(defaultDimensionRules.partBehaviors && typeof defaultDimensionRules.partBehaviors === 'object'
-          ? defaultDimensionRules.partBehaviors
-          : {}),
-        ...(modelDimensionRules && modelDimensionRules.partBehaviors && typeof modelDimensionRules.partBehaviors === 'object'
-          ? modelDimensionRules.partBehaviors
-          : {})
-      }
-    }
+    camera,
+    dimensionRules
   };
 }
 

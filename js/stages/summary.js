@@ -425,15 +425,23 @@ function getLegCount(length) {
   return length > 130 ? 3 : 2;
 }
 
+function getVisibleLegCount(length, waterfallCount) {
+  const baseLegCount = getLegCount(length);
+  if (waterfallCount >= 2) return baseLegCount > 2 ? 1 : 0;
+  if (waterfallCount === 1) return Math.max(0, baseLegCount - 1);
+  return baseLegCount;
+}
+
 function getLegWeight({ legId, tubeId, length, width, height, waterfallCount }) {
   if (!legId) return 0;
-  if (waterfallCount >= 2) return 0;
+  const visibleLegCount = getVisibleLegCount(length, waterfallCount);
+  if (visibleLegCount <= 0) return 0;
   const rule = LEG_WEIGHT_RULES[legId];
   if (!rule || !rule.weight) return 0;
 
   let weight = rule.weight;
   if (!rule.isFlat) {
-    const legCount = rule.perLeg ? getLegCount(length) : 1;
+    const legCount = rule.perLeg ? visibleLegCount : 1;
     weight = weight * legCount;
     if (tubeId === 'tube-2x4') weight *= 1.52;
     if (typeof height === 'number') {
@@ -442,7 +450,9 @@ function getLegWeight({ legId, tubeId, length, width, height, waterfallCount }) 
     }
   }
 
-  if (waterfallCount === 1) weight *= 0.5;
+  if (waterfallCount > 0 && !rule.perLeg) {
+    weight *= visibleLegCount / getLegCount(length);
+  }
   return weight;
 }
 
@@ -698,6 +708,11 @@ function parseTubeDimensions(title) {
   return matches.map(val => Number(val)).filter(Number.isFinite);
 }
 
+function formatTubeSizeSpec(title) {
+  if (!title) return 'TBD';
+  return title.replace(/"/g, ' in');
+}
+
 function calculateEmptyCrateWeight(lengthIn, widthIn, heightIn) {
   if (!Number.isFinite(lengthIn) || !Number.isFinite(widthIn) || !Number.isFinite(heightIn)) return null;
   const skidH = 5.5;
@@ -809,7 +824,12 @@ export function buildOptionGroups(selections, summaryData) {
   addOptionItem(legsItems, 'Leg Finish', opts['leg-finish'], summaryData && opts['leg-finish'] ? summaryData.legFinishes.get(opts['leg-finish']) : null, 'leg-finish');
   if (waterfallCount >= 2 && legsItems.length) {
     const legsItem = legsItems.find(item => item.type === 'legs');
-    if (legsItem) legsItem.value = 'replaced by waterfall';
+    const visibleLegCount = getVisibleLegCount(
+      selections.dimensionsDetail && selections.dimensionsDetail.length,
+      waterfallCount
+    );
+    if (legsItem && visibleLegCount > 0) legsItem.value = `Center support only (${legsItem.value})`;
+    else if (legsItem) legsItem.value = 'replaced by waterfall';
   }
   if (legsItems.length) groups.push({ title: 'Legs', items: legsItems });
 
@@ -1426,7 +1446,8 @@ async function exportPdf() {
     addGroupSeparator();
   }
 
-  const zipLabel = shippingDetails.zip ? shippingDetails.zip : 'TBD';
+  const isLocalDelivery = shippingDetails.mode === 'Local delivery';
+  const zipLabel = isLocalDelivery ? 'Local' : (shippingDetails.zip ? shippingDetails.zip : 'TBD');
   const accessoryItems = Array.isArray(shippingDetails.accessoryItems) ? shippingDetails.accessoryItems : [];
 
   // Shipping details
@@ -1551,15 +1572,19 @@ async function exportPdf() {
   const legFinishTitle = getEntryTitle(legFinishEntry, opts['leg-finish']);
   const legFinishBrand = LEG_FINISH_BRANDS[legFinishTitle];
   const legFinishLabel = legFinishBrand ? `${legFinishTitle} (${legFinishBrand})` : (legFinishTitle || 'TBD');
-  const hasLegs = opts.legs && opts.legs !== 'leg-none' && waterfallCount < 2;
-  const legStyleLabel = hasLegs ? (legTitle || 'TBD') : (waterfallCount >= 2 ? 'Replaced by waterfall' : (legTitle || 'None'));
+  const visibleLegCount = getVisibleLegCount(length, waterfallCount);
+  const centerSupportOnly = waterfallCount >= 2 && visibleLegCount > 0;
+  const hasLegs = opts.legs && opts.legs !== 'leg-none' && visibleLegCount > 0;
+  const legStyleLabel = hasLegs
+    ? (centerSupportOnly ? `Center support only (${legTitle || 'TBD'})` : (legTitle || 'TBD'))
+    : (waterfallCount >= 2 ? 'Replaced by waterfall' : (legTitle || 'None'));
   const legWidth = getLegWidthForTable(width, { modelId: selections.model });
   const legHeight = Number.isFinite(height) && Number.isFinite(tabletopThickness)
     ? Math.max(0, height - tabletopThickness)
     : null;
-  const legCount = (hasLegs && Number.isFinite(length)) ? getLegCount(length) : null;
-  const legEndSetback = getLegEndSetbackLabel({ modelId: selections.model, length, hasLegs });
-  const plateEndSetback = getPlateEndSetbackLabel(legEndSetback);
+  const legCount = hasLegs ? visibleLegCount : null;
+  const legEndSetback = centerSupportOnly ? 'Centered' : getLegEndSetbackLabel({ modelId: selections.model, length, hasLegs });
+  const plateEndSetback = centerSupportOnly ? 'Centered' : getPlateEndSetbackLabel(legEndSetback);
   const tubeDims = parseTubeDimensions(tubeTitle);
   const tubeDepth = tubeDims.length ? Math.max(...tubeDims) : null;
   const legHeightWithoutPlate = Number.isFinite(legHeight)
@@ -1664,7 +1689,7 @@ async function exportPdf() {
   addTechRow('Leg Style', legStyleLabel);
   if (hasLegs) {
     addTechRow('Leg Material', 'HSS steel');
-    addTechRow('Leg Tube Size', tubeTitle || 'TBD');
+    addTechRow('Leg Tube Size', formatTubeSizeSpec(tubeTitle));
     addTechRow('Leg Tube Wall Thickness', '14 gauge (0.083 in)');
     addTechRow('Legs (qty)', Number.isFinite(legCount) ? String(legCount) : 'TBD');
     if (legException) addTechRow('Leg Exceptions', legException);
@@ -1799,28 +1824,27 @@ async function exportPdf() {
     if (addons.includes('addon-embedded-logo')) addTechRow('Embedded Logo', 'Custom inlay');
   }
 
-  addTechSubheading('Shipping');
-  const shippingMode = shippingDetails.mode || 'Standard shipping';
-  const shippingMethod = shippingMode === 'Standard shipping' ? 'LTL' : shippingMode;
-  const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
-  const isLocalDelivery = shippingDetails.mode === 'Local delivery';
-  const destinationLabel = isLocalDelivery
-    ? 'Local'
-    : (shippingDetails.zip || shippingDetails.region
+  if (!isLocalDelivery) {
+    addTechSubheading('Shipping');
+    const shippingMode = shippingDetails.mode || 'Standard shipping';
+    const shippingMethod = shippingMode === 'Standard shipping' ? 'LTL' : shippingMode;
+    const transitTime = shippingMode === 'Standard shipping' ? '5-10 business days' : 'TBD';
+    const destinationLabel = shippingDetails.zip || shippingDetails.region
       ? [shippingDetails.zip, shippingDetails.region].filter(Boolean).join(' · ')
-      : 'Not provided');
-  addTechRow('Shipping Method', shippingMethod);
-  addTechRow('Estimated Transit Time', transitTime);
-  addTechRow('Delivery Region', destinationLabel);
-  addTechRow('Crate Dimensions', crateDimensions);
-  addTechRow('Crate Material (walls/floor/top)', '7/16 in OSB');
-  addTechRow('Crate Material (frame)', '2x2/2x4/2x6 lumber');
-  addTechRow('Crate Hardware', 'T-25 screws 3/4in - 3in');
-  addTechRow('Crate seal', 'DAP Alex Plus Clear');
-  addTechRow('Table Packaging', 'Table wrap: 1/4 in PE foam + 80 Ga stretch wrap');
-  addTechRow('Crate Packaging', 'Crate lining: 1 in EPS foam');
-  addTechRow('Estimated Empty Crate Weight', formatWeight(emptyCrateWeight));
-  addTechRow('Estimated Crate Weight (loaded)', formatWeight(loadedCrateWeight));
+      : 'Not provided';
+    addTechRow('Shipping Method', shippingMethod);
+    addTechRow('Estimated Transit Time', transitTime);
+    addTechRow('Delivery Region', destinationLabel);
+    addTechRow('Crate Dimensions', crateDimensions);
+    addTechRow('Crate Material (walls/floor/top)', '7/16 in OSB');
+    addTechRow('Crate Material (frame)', '2x2/2x4/2x6 lumber');
+    addTechRow('Crate Hardware', 'T-25 screws 3/4in - 3in');
+    addTechRow('Crate seal', 'DAP Alex Plus Clear');
+    addTechRow('Table Packaging', 'Table wrap: 1/4 in PE foam + 80 Ga stretch wrap');
+    addTechRow('Crate Packaging', 'Crate lining: 1 in EPS foam');
+    addTechRow('Estimated Empty Crate Weight', formatWeight(emptyCrateWeight));
+    addTechRow('Estimated Crate Weight (loaded)', formatWeight(loadedCrateWeight));
+  }
 
   // Technical specs disclaimer
   const techDisclaimer = 'These specifications are standard and may not be identical for every custom project.';

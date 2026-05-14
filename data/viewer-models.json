@@ -32,7 +32,12 @@
           {
             "assetPath": "assets/models/table-leg-cube-base-custom-14Hx22W.glb",
             "modelIds": ["mdl-coffee"],
-            "tubeIds": ["tube-1x0.5", "tube-1x1"]
+            "tubeIds": ["tube-1x0.5"]
+          },
+          {
+            "assetPath": "assets/models/14x14x14%20cube%20base%201x1%20tube.glb",
+            "modelIds": ["mdl-coffee"],
+            "tubeIds": ["tube-1x1"]
           }
         ]
       },

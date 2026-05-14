@@ -1,10 +1,9 @@
 # WL Configurator — Roadmap
 
 ## v1.1
-- add 3x1" U-channel model 
-- add 1x1" cube base model
 - implement waterfall edge in 3d viewer
-- make some sort of rainbow-colored epoxy/pigment image for custom color
+- reorganize all of the files in "assets" for better organization
+
 
 ## v1.2
 - Mobile website (new branch + sub branches for dev)
@@ -31,3 +30,4 @@ Chairs are hidden by default.
 ## v2.x
  - Ability to upload and move logos within the viewer
  - Screensaver (prompt after 5min inactivity w/ 15sec countdown), then start a full-view slideshow of slowly panned imagery that goes away when the mouse is moved. Images are to be zoomed in to allow the pan to happen.
+ - "Build" Button in viewer controls that allows the viewer to play an animation of all the 3D models in a way that builds and assembles the table, revealing all features and parts.

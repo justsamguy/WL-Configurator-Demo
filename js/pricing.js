@@ -167,12 +167,16 @@ export function requiresCenterLeg(appState) {
   return typeof length === 'number' && length > CENTER_LEG_LENGTH_THRESHOLD;
 }
 
-export function getLegPriceMultiplier(appState) {
-  const lengthMultiplier = requiresCenterLeg(appState) ? 1.5 : 1;
+export function getVisibleLegCount(appState) {
+  const baseLegCount = requiresCenterLeg(appState) ? 3 : 2;
   const waterfallCount = getWaterfallEdgeCount(appState);
-  if (waterfallCount >= 2) return 0;
-  if (waterfallCount === 1) return lengthMultiplier * 0.5;
-  return lengthMultiplier;
+  if (waterfallCount >= 2) return baseLegCount > 2 ? 1 : 0;
+  if (waterfallCount === 1) return Math.max(0, baseLegCount - 1);
+  return baseLegCount;
+}
+
+export function getLegPriceMultiplier(appState) {
+  return getVisibleLegCount(appState) / 2;
 }
 
 // Central pricing helper
