@@ -78,6 +78,16 @@ const WATERFALL_PART_NAME = 'tabletop-waterfall';
 const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
 const WATERFALL_DEPTH_IN = 2;
 const WATERFALL_SEAM_OVERLAP = 0.001;
+const WATERFALL_FALLBACK_RESIN_WIDTH_RATIO = 0.24;
+const WATERFALL_TEXTURE_ROTATION = Math.PI / 2;
+const WATERFALL_TEXTURE_KEYS = Object.freeze([
+  'map',
+  'normalMap',
+  'roughnessMap',
+  'metalnessMap',
+  'aoMap',
+  'alphaMap'
+]);
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const U_CHANNEL_ROLE = 'u-channel';
@@ -1375,6 +1385,13 @@ function clearGeneratedPart(root) {
 function cloneWaterfallMaterial(material) {
   const clonedMaterial = cloneReusableMaterial(material);
   if (!clonedMaterial || typeof clonedMaterial !== 'object') return null;
+  WATERFALL_TEXTURE_KEYS.forEach((key) => {
+    const texture = clonedMaterial[key];
+    if (!texture || !texture.isTexture) return;
+    texture.center.set(0.5, 0.5);
+    texture.rotation += WATERFALL_TEXTURE_ROTATION;
+    texture.needsUpdate = true;
+  });
   if ('shadowSide' in clonedMaterial) clonedMaterial.shadowSide = THREE.FrontSide;
   clonedMaterial.needsUpdate = true;
   return clonedMaterial;
@@ -1422,11 +1439,12 @@ function getWaterfallPlacementNames(config = {}) {
   return Number(cameraSettings.offset[2]) < 0 ? ['back'] : ['front'];
 }
 
-function getWaterfallRegions(tabletopMetrics, epoxyMetrics) {
+function getWaterfallRegions(tabletopMetrics, epoxyMetrics, hasResinMaterial = false) {
   const tableMinX = tabletopMetrics.min.x;
   const tableMaxX = tabletopMetrics.max.x;
   const tableWidth = tableMaxX - tableMinX;
   if (!Number.isFinite(tableWidth) || tableWidth <= 0) return [];
+  if (!hasResinMaterial) return [{ type: 'wood', minX: tableMinX, maxX: tableMaxX }];
 
   const epoxyMinX = epoxyMetrics ? Math.max(tableMinX, epoxyMetrics.min.x) : null;
   const epoxyMaxX = epoxyMetrics ? Math.min(tableMaxX, epoxyMetrics.max.x) : null;
@@ -1434,14 +1452,23 @@ function getWaterfallRegions(tabletopMetrics, epoxyMetrics) {
     ? epoxyMaxX - epoxyMinX
     : 0;
   const minRegionWidth = tableWidth * 0.01;
-  if (!Number.isFinite(epoxyWidth) || epoxyWidth <= minRegionWidth || epoxyWidth >= tableWidth - minRegionWidth) {
-    return [{ type: 'wood', minX: tableMinX, maxX: tableMaxX }];
-  }
+  const useEpoxyBounds = Number.isFinite(epoxyWidth)
+    && epoxyWidth > minRegionWidth
+    && epoxyWidth < tableWidth - minRegionWidth;
+  const resinWidth = useEpoxyBounds
+    ? epoxyWidth
+    : tableWidth * WATERFALL_FALLBACK_RESIN_WIDTH_RATIO;
+  const resinMinX = useEpoxyBounds
+    ? epoxyMinX
+    : tableMinX + ((tableWidth - resinWidth) / 2);
+  const resinMaxX = useEpoxyBounds
+    ? epoxyMaxX
+    : resinMinX + resinWidth;
 
   return [
-    { type: 'wood', minX: tableMinX, maxX: epoxyMinX },
-    { type: 'resin', minX: epoxyMinX, maxX: epoxyMaxX },
-    { type: 'wood', minX: epoxyMaxX, maxX: tableMaxX }
+    { type: 'wood', minX: tableMinX, maxX: resinMinX },
+    { type: 'resin', minX: resinMinX, maxX: resinMaxX },
+    { type: 'wood', minX: resinMaxX, maxX: tableMaxX }
   ].filter((region) => Number.isFinite(region.maxX - region.minX) && region.maxX - region.minX > minRegionWidth);
 }
 
@@ -1476,7 +1503,7 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
   const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
   const woodSourceMaterial = getFirstMeshMaterial(tabletopRoot);
   const resinSourceMaterial = getFirstMeshMaterial(epoxyRoot);
-  const regions = getWaterfallRegions(tabletopMetrics, resinSourceMaterial ? epoxyMetrics : null);
+  const regions = getWaterfallRegions(tabletopMetrics, epoxyMetrics, !!resinSourceMaterial);
   if (!regions.length || !woodSourceMaterial) {
     waterfallRoot.visible = false;
     return;
