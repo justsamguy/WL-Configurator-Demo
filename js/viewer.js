@@ -74,6 +74,10 @@ const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
 const EPOXY_VERTICAL_INSET = 0.0015;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
+const WATERFALL_PART_NAME = 'tabletop-waterfall';
+const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
+const WATERFALL_DEPTH_IN = 2;
+const WATERFALL_SEAM_OVERLAP = 0.001;
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const U_CHANNEL_ROLE = 'u-channel';
@@ -135,7 +139,6 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
   'fin-sheen-03': 1.85,
   default: 1.2
 });
-const WATERFALL_VIEWER_ADDON_IDS = new Set(['addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art']);
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
@@ -1361,6 +1364,156 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
   );
 }
 
+function clearGeneratedPart(root) {
+  if (!root) return;
+  root.children.forEach((child) => disposeObject3D(child));
+  root.clear();
+}
+
+function cloneWaterfallMaterial(material) {
+  const clonedMaterial = cloneReusableMaterial(material);
+  if (!clonedMaterial || typeof clonedMaterial !== 'object') return null;
+  if ('shadowSide' in clonedMaterial) clonedMaterial.shadowSide = THREE.FrontSide;
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
+function createWaterfallSegmentMesh({
+  name,
+  material,
+  centerX,
+  centerY,
+  centerZ,
+  width,
+  height,
+  depth,
+  renderOrder = 4
+}) {
+  if (
+    !material
+    || !Number.isFinite(width)
+    || !Number.isFinite(height)
+    || !Number.isFinite(depth)
+    || width <= 0
+    || height <= 0
+    || depth <= 0
+  ) {
+    return null;
+  }
+
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
+  mesh.name = name;
+  mesh.position.set(centerX, centerY, centerZ);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = renderOrder;
+  return mesh;
+}
+
+function getWaterfallPlacementNames(config = {}) {
+  const waterfallCount = getWaterfallEdgeCount(state);
+  if (waterfallCount <= 0) return [];
+  if (waterfallCount >= 2) return ['front', 'back'];
+
+  const cameraSettings = getCameraSettings(config);
+  return Number(cameraSettings.offset[2]) < 0 ? ['back'] : ['front'];
+}
+
+function getWaterfallRegions(tabletopMetrics, epoxyMetrics) {
+  const tableMinX = tabletopMetrics.min.x;
+  const tableMaxX = tabletopMetrics.max.x;
+  const tableWidth = tableMaxX - tableMinX;
+  if (!Number.isFinite(tableWidth) || tableWidth <= 0) return [];
+
+  const epoxyMinX = epoxyMetrics ? Math.max(tableMinX, epoxyMetrics.min.x) : null;
+  const epoxyMaxX = epoxyMetrics ? Math.min(tableMaxX, epoxyMetrics.max.x) : null;
+  const epoxyWidth = Number.isFinite(epoxyMinX) && Number.isFinite(epoxyMaxX)
+    ? epoxyMaxX - epoxyMinX
+    : 0;
+  const minRegionWidth = tableWidth * 0.01;
+  if (!Number.isFinite(epoxyWidth) || epoxyWidth <= minRegionWidth || epoxyWidth >= tableWidth - minRegionWidth) {
+    return [{ type: 'wood', minX: tableMinX, maxX: tableMaxX }];
+  }
+
+  return [
+    { type: 'wood', minX: tableMinX, maxX: epoxyMinX },
+    { type: 'resin', minX: epoxyMinX, maxX: epoxyMaxX },
+    { type: 'wood', minX: epoxyMaxX, maxX: tableMaxX }
+  ].filter((region) => Number.isFinite(region.maxX - region.minX) && region.maxX - region.minX > minRegionWidth);
+}
+
+function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tabletopMetrics, epoxyMetrics) {
+  if (!renderRoot) return;
+
+  const waterfallRoot = renderRoot.getObjectByName(WATERFALL_PART_NAME);
+  if (!waterfallRoot) return;
+
+  clearGeneratedPart(waterfallRoot);
+
+  const placements = getWaterfallPlacementNames(config);
+  const depth = WATERFALL_DEPTH_IN * unitsPerInch;
+  const floorY = 0;
+  const height = tabletopMetrics ? tabletopMetrics.max.y - floorY : null;
+  const width = tabletopMetrics ? getPartSpan(tabletopMetrics, 'x') : null;
+  if (
+    !placements.length
+    || !tabletopMetrics
+    || !Number.isFinite(width)
+    || !Number.isFinite(height)
+    || !Number.isFinite(depth)
+    || width <= 0
+    || height <= 0
+    || depth <= 0
+  ) {
+    waterfallRoot.visible = false;
+    return;
+  }
+
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
+  const woodSourceMaterial = getFirstMeshMaterial(tabletopRoot);
+  const resinSourceMaterial = getFirstMeshMaterial(epoxyRoot);
+  const regions = getWaterfallRegions(tabletopMetrics, resinSourceMaterial ? epoxyMetrics : null);
+  if (!regions.length || !woodSourceMaterial) {
+    waterfallRoot.visible = false;
+    return;
+  }
+
+  const centerY = floorY + (height / 2);
+  const seamOverlap = Math.min(WATERFALL_SEAM_OVERLAP, depth * 0.2);
+
+  placements.forEach((placement) => {
+    const isFront = placement === 'front';
+    const centerZ = isFront
+      ? tabletopMetrics.max.z + (depth / 2) - seamOverlap
+      : tabletopMetrics.min.z - (depth / 2) + seamOverlap;
+
+    regions.forEach((region) => {
+      const regionWidth = region.maxX - region.minX;
+      const sourceMaterial = region.type === 'resin' && resinSourceMaterial
+        ? resinSourceMaterial
+        : woodSourceMaterial;
+      const material = cloneWaterfallMaterial(sourceMaterial);
+      const mesh = createWaterfallSegmentMesh({
+        name: `${WATERFALL_PART_NAME}-${placement}-${region.type}`,
+        material,
+        centerX: region.minX + (regionWidth / 2),
+        centerY,
+        centerZ,
+        width: regionWidth,
+        height,
+        depth,
+        renderOrder: region.type === 'resin' ? 7 : 4
+      });
+      if (mesh) waterfallRoot.add(mesh);
+      else if (material) disposeMaterial(material);
+    });
+  });
+
+  waterfallRoot.visible = waterfallRoot.children.length > 0;
+}
+
 function getFirstMeshMaterial(root) {
   if (!root) return null;
   let material = null;
@@ -1449,6 +1602,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     ? tabletopBaseState.metrics.min.y + heightDeltaUnits
     : null;
   let tabletopMetrics = null;
+  let epoxyMetrics = null;
   let tabletopRoot = null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
@@ -1462,8 +1616,11 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     const partConfig = getPartConfig(partRoot);
     const role = partConfig.role || '';
 
+    if (role === 'waterfall' || partName === WATERFALL_PART_NAME) return;
+
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
       computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
+      epoxyMetrics = getObjectMetrics(partRoot);
       return;
     }
 
@@ -1492,6 +1649,9 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   computeUChannelTransforms(renderRoot, basePartStates, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY);
   computeGlassTopTransform(renderRoot, unitsPerInch);
   computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot);
+  computeWaterfallTransform(renderRoot, config, unitsPerInch, tabletopMetrics, epoxyMetrics);
+  setActiveResinPreviewMaterialsFromRoot(renderRoot);
+  updateResinPreviewMaterialsForView();
 
   return scaleMap;
 }
@@ -1641,6 +1801,16 @@ function createGlassTopPart() {
   glassRoot.add(glassMesh);
   glassRoot.visible = false;
   return glassRoot;
+}
+
+function createWaterfallPart() {
+  const waterfallRoot = new THREE.Group();
+  waterfallRoot.name = WATERFALL_PART_NAME;
+  waterfallRoot.userData.partConfig = {
+    role: 'waterfall'
+  };
+  waterfallRoot.visible = false;
+  return waterfallRoot;
 }
 
 function createLowerShelfPart() {
@@ -2468,13 +2638,7 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     : '';
   const legAndTubeTitle = tubeTitle ? `${legTitle} + ${tubeTitle}` : legTitle;
 
-  if (selectionContext.waterfallCount >= 2 && selectionContext.visibleLegCount <= 0) {
-    return {
-      title: 'Waterfall leg layout',
-      reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.',
-      selectionNames: ['Waterfall leg layout']
-    };
-  }
+  if (selectionContext.waterfallCount >= 2 && selectionContext.visibleLegCount <= 0) return null;
 
   if (legId === LEG_NONE_ID) {
     return {
@@ -2615,15 +2779,12 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
-  if (selectedAddons.some((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId)) && getWaterfallEdgeCount(state) < 2) {
-    const waterfallNames = selectedAddons
-      .filter((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId))
-      .map((addonId) => getOptionDisplayName('addon', addonId, 'Waterfall edge'));
+  if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
     pushViewerNotice(
       notices,
-      'Waterfall edge',
-      'Waterfall geometry is not fully modeled in the viewer yet; the preview only adjusts the leg arrangement.',
-      waterfallNames
+      'Waterfall art',
+      'Waterfall art is quoted to spec and is not shown in the standard viewer.',
+      getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
     );
   }
   if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
@@ -3016,6 +3177,7 @@ async function buildRenderRoot(config) {
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
   renderRoot.add(createGlassTopPart());
+  renderRoot.add(createWaterfallPart());
   renderRoot.add(createLowerShelfPart());
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedTabletopSheen(renderRoot);

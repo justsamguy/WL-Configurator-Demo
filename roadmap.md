@@ -1,7 +1,8 @@
 # WL Configurator — Roadmap
 
 ## v1.1
-- implement waterfall edge in 3d viewer
+- for now, hide the preview section in the pdf export.
+- fix the glare so it shines on the table based on the default view, but acts like a second ceiling light (right now, the glare light is in the center of the table so there is always glare no matter what.)
 - reorganize all of the files in "assets" for better organization
 
 
