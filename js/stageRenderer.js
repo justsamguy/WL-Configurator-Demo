@@ -172,6 +172,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
       img.decoding = 'async';
+      img.draggable = false;
       btn.appendChild(img);
     }
 
@@ -251,6 +252,7 @@ function buildAddonIntro(group = {}) {
     image.className = 'addons-dropdown-intro-image';
     image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
     image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+    image.draggable = false;
     introWrapper.appendChild(image);
   }
 
@@ -426,6 +428,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               img.className = 'addons-tile-image';
               img.src = option.image;
               img.alt = option.title ? `Preview of ${option.title}` : 'Tech option';
+              img.draggable = false;
               btn.appendChild(img);
             }
 
@@ -536,6 +539,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           img.className = 'addons-tile-image';
           img.src = option.image || group.image || DEFAULT_ADDON_INTRO_IMAGE;
           img.alt = option.title ? `Preview of ${option.title}` : 'Customization option';
+          img.draggable = false;
           btn.appendChild(img);
 
           const label = document.createElement('div');
@@ -721,6 +725,7 @@ export function renderSheenSlider(container, data = []) {
       img.src = item.image;
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
+      img.draggable = false;
       tile.appendChild(img);
     }
 

@@ -633,7 +633,7 @@ function initPresets() {
     tile.setAttribute('aria-label', `${presetTitle}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
-      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="dimensions-preset-image">` : ''}
+      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="dimensions-preset-image" draggable="false">` : ''}
       <div class="title">${presetTitle}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
@@ -653,7 +653,7 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
-    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="dimensions-preset-image dimensions-custom-preset-image">
+    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="dimensions-preset-image dimensions-custom-preset-image" draggable="false">
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;
@@ -845,7 +845,7 @@ function initHeightButtons() {
     button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
     button.innerHTML = `
-      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
+      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2" draggable="false">` : ''}
       <div class="title">${height.title} ${height.subtitle}</div>
       <div class="description">+$${height.price}</div>
     `;

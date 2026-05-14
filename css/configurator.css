@@ -5166,6 +5166,39 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
   object-fit: cover;
 }
 
+/* Keep selectable tile media from starting native image drag or text selection gestures. */
+.option-card,
+.addons-tile {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.option-card img,
+.viewer-placeholder-img,
+.addons-tile-image,
+.dimensions-preset-image {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+.option-card input,
+.option-card textarea,
+.option-card select,
+.option-card [contenteditable="true"],
+.addons-tile input,
+.addons-tile textarea,
+.addons-tile select,
+.addons-tile [contenteditable="true"] {
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
+}
+
 .addons-tile:hover {
   border-color: #93c5fd;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
