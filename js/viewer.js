@@ -76,9 +76,9 @@ const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const WATERFALL_PART_NAME = 'tabletop-waterfall';
 const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
+// Match the tabletop slab thickness so cloned epoxy remains inset and does not z-fight with the wood face.
 const WATERFALL_DEPTH_IN = 2;
 const WATERFALL_SEAM_OVERLAP = 0.001;
-const WATERFALL_RESIN_SURFACE_OFFSET = 0.0008;
 const WATERFALL_MIN_SOURCE_SPAN = 0.0001;
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
@@ -1406,16 +1406,15 @@ function createWaterfallMapContext({
   seamOverlap,
   materialRole
 }) {
-  const sourceLength = Math.max(getPartSpan(sourceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
-  const sourceThickness = Math.max(getPartSpan(sourceMetrics, 'y') || 0, WATERFALL_MIN_SOURCE_SPAN);
+  // Resin uses the tabletop envelope so the manifest's epoxy inset stays behind the wood face after folding.
+  const referenceMetrics = materialRole === 'resin' ? tabletopMetrics : sourceMetrics;
+  const sourceLength = Math.max(getPartSpan(referenceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || 0, WATERFALL_MIN_SOURCE_SPAN);
   const dropHeight = Math.max(tabletopMetrics.max.y - floorY, WATERFALL_MIN_SOURCE_SPAN);
   const isFront = placement === 'front';
   const outerZ = isFront
     ? tabletopMetrics.max.z + seamOverlap
     : tabletopMetrics.min.z - seamOverlap;
-  const resinOffset = materialRole === 'resin'
-    ? (isFront ? WATERFALL_RESIN_SURFACE_OFFSET : -WATERFALL_RESIN_SURFACE_OFFSET)
-    : 0;
   const ySlope = isFront ? dropHeight / sourceLength : -dropHeight / sourceLength;
   const zSlope = isFront ? depth / sourceThickness : -depth / sourceThickness;
   const normalMatrix = new THREE.Matrix3().getNormalMatrix(new THREE.Matrix4().set(
@@ -1429,14 +1428,14 @@ function createWaterfallMapContext({
     normalMatrix,
     mapPoint(point) {
       const lengthProgress = isFront
-        ? (sourceMetrics.max.z - point.z) / sourceLength
-        : (point.z - sourceMetrics.min.z) / sourceLength;
-      const thicknessProgress = (sourceMetrics.max.y - point.y) / sourceThickness;
+        ? (referenceMetrics.max.z - point.z) / sourceLength
+        : (point.z - referenceMetrics.min.z) / sourceLength;
+      const thicknessProgress = (referenceMetrics.max.y - point.y) / sourceThickness;
       const targetPoint = new THREE.Vector3(point.x, 0, 0);
       targetPoint.y = tabletopMetrics.max.y - (THREE.MathUtils.clamp(lengthProgress, 0, 1) * dropHeight);
       targetPoint.z = isFront
-        ? outerZ - (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth) + resinOffset
-        : outerZ + (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth) + resinOffset;
+        ? outerZ - (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth)
+        : outerZ + (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth);
       return targetPoint;
     }
   };
