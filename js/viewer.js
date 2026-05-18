@@ -87,10 +87,10 @@ const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const WATERFALL_PART_NAME = 'tabletop-waterfall';
 const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
-// Match the tabletop slab thickness so cloned epoxy remains inset and does not z-fight with the wood face.
+// Fallback only; live waterfall depth follows the transformed tabletop thickness.
 const WATERFALL_DEPTH_IN = 2;
-const WATERFALL_SEAM_OVERLAP = 0.001;
 const WATERFALL_MIN_SOURCE_SPAN = 0.0001;
+const WATERFALL_MITER_EPSILON = 0.00001;
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const U_CHANNEL_ROLE = 'u-channel';
@@ -1404,6 +1404,155 @@ function cloneWaterfallMaterials(material) {
   return cloneWaterfallMaterial(material);
 }
 
+function cloneVector3AttributeValues(attribute) {
+  if (!attribute || !Number.isFinite(attribute.count)) return null;
+
+  const values = new Float32Array(attribute.count * 3);
+  for (let index = 0; index < attribute.count; index += 1) {
+    const offset = index * 3;
+    values[offset] = attribute.getX(index);
+    values[offset + 1] = attribute.getY(index);
+    values[offset + 2] = attribute.getZ(index);
+  }
+  return values;
+}
+
+function restoreVector3AttributeValues(attribute, values) {
+  if (!attribute || !values || values.length !== attribute.count * 3) return false;
+
+  for (let index = 0; index < attribute.count; index += 1) {
+    const offset = index * 3;
+    attribute.setXYZ(index, values[offset], values[offset + 1], values[offset + 2]);
+  }
+  attribute.needsUpdate = true;
+  return true;
+}
+
+function getWaterfallMiterGeometryState(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!geometry || !positionAttribute) return null;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  const expectedPositionLength = positionAttribute.count * 3;
+  const expectedNormalLength = normalAttribute ? normalAttribute.count * 3 : 0;
+  const userData = mesh.userData || (mesh.userData = {});
+  const currentState = userData.waterfallMiterBaseState || {};
+  const shouldCapturePositions = !currentState.positions || currentState.positions.length !== expectedPositionLength;
+  const shouldCaptureNormals = normalAttribute
+    && (!currentState.normals || currentState.normals.length !== expectedNormalLength);
+
+  if (shouldCapturePositions || shouldCaptureNormals || (!normalAttribute && currentState.normals)) {
+    userData.waterfallMiterBaseState = {
+      positions: shouldCapturePositions
+        ? cloneVector3AttributeValues(positionAttribute)
+        : currentState.positions,
+      normals: normalAttribute
+        ? (shouldCaptureNormals ? cloneVector3AttributeValues(normalAttribute) : currentState.normals)
+        : null
+    };
+  }
+
+  return userData.waterfallMiterBaseState;
+}
+
+function refreshGeometryBounds(geometry) {
+  if (!geometry) return;
+  if (typeof geometry.computeBoundingBox === 'function') geometry.computeBoundingBox();
+  if (typeof geometry.computeBoundingSphere === 'function') geometry.computeBoundingSphere();
+}
+
+function resetMeshWaterfallMiterGeometry(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const state = mesh && mesh.userData ? mesh.userData.waterfallMiterBaseState : null;
+  if (!geometry || !state || !state.positions) return false;
+
+  const positionAttribute = geometry.getAttribute('position');
+  if (!restoreVector3AttributeValues(positionAttribute, state.positions)) return false;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  if (state.normals && normalAttribute) restoreVector3AttributeValues(normalAttribute, state.normals);
+  else if (typeof geometry.computeVertexNormals === 'function') geometry.computeVertexNormals();
+
+  refreshGeometryBounds(geometry);
+  return true;
+}
+
+function resetWaterfallMiterGeometry(root) {
+  if (!root) return;
+  root.traverse((child) => {
+    if (!child || !child.isMesh) return;
+    resetMeshWaterfallMiterGeometry(child);
+  });
+}
+
+function applyWaterfallMiterGeometry(root, referenceMetrics, placements, depth) {
+  if (!root || !referenceMetrics || !Array.isArray(placements) || !placements.length) return;
+
+  const referenceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+  if (!Number.isFinite(depth) || depth <= 0 || !Number.isFinite(referenceThickness) || referenceThickness <= 0) return;
+
+  const hasFrontMiter = placements.includes('front');
+  const hasBackMiter = placements.includes('back');
+  if (!hasFrontMiter && !hasBackMiter) return;
+
+  root.updateWorldMatrix(true, true);
+  const localPoint = new THREE.Vector3();
+  const worldPoint = new THREE.Vector3();
+  const worldToLocal = new THREE.Matrix4();
+
+  root.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
+
+    const geometryState = getWaterfallMiterGeometryState(child);
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!geometryState || !positionAttribute) return;
+
+    resetMeshWaterfallMiterGeometry(child);
+    worldToLocal.copy(child.matrixWorld).invert();
+
+    let changed = false;
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      localPoint.fromBufferAttribute(positionAttribute, index);
+      worldPoint.copy(localPoint).applyMatrix4(child.matrixWorld);
+      let vertexChanged = false;
+
+      const yProgress = THREE.MathUtils.clamp(
+        (worldPoint.y - referenceMetrics.min.y) / referenceThickness,
+        0,
+        1
+      );
+
+      if (hasFrontMiter) {
+        const frontLimitZ = referenceMetrics.max.z - depth + (yProgress * depth);
+        if (worldPoint.z > frontLimitZ + WATERFALL_MITER_EPSILON) {
+          worldPoint.z = frontLimitZ;
+          vertexChanged = true;
+        }
+      }
+
+      if (hasBackMiter) {
+        const backLimitZ = referenceMetrics.min.z + depth - (yProgress * depth);
+        if (worldPoint.z < backLimitZ - WATERFALL_MITER_EPSILON) {
+          worldPoint.z = backLimitZ;
+          vertexChanged = true;
+        }
+      }
+
+      if (vertexChanged) {
+        localPoint.copy(worldPoint).applyMatrix4(worldToLocal);
+        positionAttribute.setXYZ(index, localPoint.x, localPoint.y, localPoint.z);
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+    positionAttribute.needsUpdate = true;
+    if (typeof child.geometry.computeVertexNormals === 'function') child.geometry.computeVertexNormals();
+    refreshGeometryBounds(child.geometry);
+  });
+}
+
 function getFallbackWaterfallUv(point, sourceMetrics, placement) {
   const sourceWidth = Math.max(getPartSpan(sourceMetrics, 'x') || 1, WATERFALL_MIN_SOURCE_SPAN);
   const sourceLength = Math.max(getPartSpan(sourceMetrics, 'z') || 1, WATERFALL_MIN_SOURCE_SPAN);
@@ -1420,39 +1569,34 @@ function createWaterfallMapContext({
   tabletopMetrics,
   depth,
   floorY,
-  seamOverlap,
   materialRole
 }) {
   // Resin uses the tabletop envelope so the manifest's epoxy inset stays behind the wood face after folding.
   const referenceMetrics = materialRole === 'resin' ? tabletopMetrics : sourceMetrics;
   const sourceLength = Math.max(getPartSpan(referenceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
-  const sourceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || 0, WATERFALL_MIN_SOURCE_SPAN);
-  const dropHeight = Math.max(tabletopMetrics.max.y - floorY, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
   const isFront = placement === 'front';
   const outerZ = isFront
-    ? tabletopMetrics.max.z + seamOverlap
-    : tabletopMetrics.min.z - seamOverlap;
-  const ySlope = isFront ? dropHeight / sourceLength : -dropHeight / sourceLength;
-  const zSlope = isFront ? depth / sourceThickness : -depth / sourceThickness;
-  const normalMatrix = new THREE.Matrix3().getNormalMatrix(new THREE.Matrix4().set(
-    1, 0, 0, 0,
-    0, 0, ySlope, 0,
-    0, zSlope, 0, 0,
-    0, 0, 0, 1
-  ));
+    ? tabletopMetrics.max.z
+    : tabletopMetrics.min.z;
 
   return {
-    normalMatrix,
     mapPoint(point) {
       const lengthProgress = isFront
         ? (referenceMetrics.max.z - point.z) / sourceLength
         : (point.z - referenceMetrics.min.z) / sourceLength;
-      const thicknessProgress = (referenceMetrics.max.y - point.y) / sourceThickness;
+      const clampedLengthProgress = THREE.MathUtils.clamp(lengthProgress, 0, 1);
+      const thicknessProgress = THREE.MathUtils.clamp(
+        (referenceMetrics.max.y - point.y) / sourceThickness,
+        0,
+        1
+      );
+      const miterTopY = tabletopMetrics.max.y - (thicknessProgress * depth);
       const targetPoint = new THREE.Vector3(point.x, 0, 0);
-      targetPoint.y = tabletopMetrics.max.y - (THREE.MathUtils.clamp(lengthProgress, 0, 1) * dropHeight);
+      targetPoint.y = floorY + ((miterTopY - floorY) * (1 - clampedLengthProgress));
       targetPoint.z = isFront
-        ? outerZ - (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth)
-        : outerZ + (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth);
+        ? outerZ - (thicknessProgress * depth)
+        : outerZ + (thicknessProgress * depth);
       return targetPoint;
     }
   };
@@ -1486,7 +1630,6 @@ function createWaterfallMeshClone({
   placement,
   depth,
   floorY,
-  seamOverlap,
   materialRole,
   meshIndex
 }) {
@@ -1499,22 +1642,17 @@ function createWaterfallMeshClone({
 
   sourceMesh.updateWorldMatrix(true, false);
   const sourceToWorld = sourceMesh.matrixWorld;
-  const sourceNormalMatrix = new THREE.Matrix3().getNormalMatrix(sourceToWorld);
-  const sourceNormal = sourceGeometry.getAttribute('normal');
   const mapContext = createWaterfallMapContext({
     placement,
     sourceMetrics,
     tabletopMetrics,
     depth,
     floorY,
-    seamOverlap,
     materialRole
   });
   const positions = [];
-  const normals = [];
   const fallbackUvValues = [];
   const point = new THREE.Vector3();
-  const normal = new THREE.Vector3();
 
   for (let index = 0; index < sourcePosition.count; index += 1) {
     point.fromBufferAttribute(sourcePosition, index).applyMatrix4(sourceToWorld);
@@ -1523,22 +1661,12 @@ function createWaterfallMeshClone({
 
     const fallbackUv = getFallbackWaterfallUv(point, sourceMetrics, placement);
     fallbackUvValues.push(fallbackUv[0], fallbackUv[1]);
-
-    if (sourceNormal) {
-      normal.fromBufferAttribute(sourceNormal, index)
-        .applyMatrix3(sourceNormalMatrix)
-        .normalize()
-        .applyMatrix3(mapContext.normalMatrix)
-        .normalize();
-      normals.push(normal.x, normal.y, normal.z);
-    }
   }
 
   const targetGeometry = new THREE.BufferGeometry();
   targetGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  if (sourceNormal) targetGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   cloneWaterfallGeometryAttributes(sourceGeometry, targetGeometry, fallbackUvValues);
-  if (!sourceNormal) targetGeometry.computeVertexNormals();
+  targetGeometry.computeVertexNormals();
   targetGeometry.computeBoundingBox();
   targetGeometry.computeBoundingSphere();
 
@@ -1568,7 +1696,6 @@ function addWaterfallSourceClones({
   placements,
   depth,
   floorY,
-  seamOverlap,
   materialRole
 }) {
   if (!sourceRoot || !sourceMetrics || !waterfallRoot) return;
@@ -1584,7 +1711,6 @@ function addWaterfallSourceClones({
         placement,
         depth,
         floorY,
-        seamOverlap,
         materialRole,
         meshIndex
       });
@@ -1603,10 +1729,20 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
   clearGeneratedPart(waterfallRoot);
 
   const placements = getWaterfallPlacementNames(config);
-  const depth = WATERFALL_DEPTH_IN * unitsPerInch;
   const floorY = 0;
+  const tabletopThickness = tabletopMetrics ? getPartSpan(tabletopMetrics, 'y') : null;
+  const fallbackDepth = WATERFALL_DEPTH_IN * unitsPerInch;
+  const depth = Number.isFinite(tabletopThickness) && tabletopThickness > 0
+    ? tabletopThickness
+    : fallbackDepth;
   const height = tabletopMetrics ? tabletopMetrics.max.y - floorY : null;
   const width = tabletopMetrics ? getPartSpan(tabletopMetrics, 'x') : null;
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
+
+  resetWaterfallMiterGeometry(tabletopRoot);
+  resetWaterfallMiterGeometry(epoxyRoot);
+
   if (
     !placements.length
     || !tabletopMetrics
@@ -1621,14 +1757,11 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
     return;
   }
 
-  const tabletopRoot = renderRoot.getObjectByName('tabletop');
-  const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
   if (!tabletopRoot) {
     waterfallRoot.visible = false;
     return;
   }
 
-  const seamOverlap = Math.min(WATERFALL_SEAM_OVERLAP, depth * 0.2);
   renderRoot.updateWorldMatrix(true, true);
 
   addWaterfallSourceClones({
@@ -1639,7 +1772,6 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
     placements,
     depth,
     floorY,
-    seamOverlap,
     materialRole: 'wood'
   });
   addWaterfallSourceClones({
@@ -1650,10 +1782,11 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
     placements,
     depth,
     floorY,
-    seamOverlap,
     materialRole: 'resin'
   });
 
+  applyWaterfallMiterGeometry(tabletopRoot, tabletopMetrics, placements, depth);
+  applyWaterfallMiterGeometry(epoxyRoot, tabletopMetrics, placements, depth);
   waterfallRoot.visible = waterfallRoot.children.length > 0;
 }
 
@@ -1726,6 +1859,7 @@ function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletop
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
+  resetWaterfallMiterGeometry(renderRoot);
 
   const basePartStates = renderRoot.userData.basePartStates || {};
   const rules = getDimensionRules(config);

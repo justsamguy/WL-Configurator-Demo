@@ -1641,7 +1641,7 @@ async function exportPdf() {
     const calcLabel = (Number.isFinite(width) && Number.isFinite(height))
       ? ` (calc 2 x ${formatNumber(width)} in x ${formatNumber(height)} in)`
       : ' (calc 2 x width x height)';
-    addTechRow('Waterfall Edge', `${waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall'}, drop ${dropLabel}${calcLabel}`);
+    addTechRow('Waterfall Edge', `${waterfallCount === 1 ? 'Single waterfall' : 'Double waterfall'}, 45-degree mitered joint, drop ${dropLabel}${calcLabel}`);
   }
 
   addTechSubheading('Tabletop');
