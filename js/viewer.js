@@ -42,6 +42,17 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
   copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
 });
 const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
+const DEBUG_AXIS_SIZE = 96;
+const DEBUG_AXIS_LENGTH = 1.15;
+const DEBUG_AXIS_HEAD_LENGTH = 0.22;
+const DEBUG_AXIS_HEAD_WIDTH = 0.14;
+const DEBUG_AXIS_LABEL_OFFSET = 0.32;
+const DEBUG_AXIS_LABEL_SIZE = 0.32;
+const DEBUG_AXIS_COLORS = Object.freeze({
+  x: 0xef4444,
+  y: 0x22c55e,
+  z: 0x3b82f6
+});
 const TABLETOP_MATERIAL_TEXTURES = Object.freeze({
   'mat-02': 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.jpg',
   'mat-03': 'assets/models/textures/Generated%20American%20Elm.jpg',
@@ -210,6 +221,12 @@ let materialSourcePromises = new Map();
 let legFinishDataPromise = null;
 let colorDataPromise = null;
 let finishDataPromise = null;
+let viewerDebugEnabled = false;
+let debugAxisContainer = null;
+let debugAxisRenderer = null;
+let debugAxisScene = null;
+let debugAxisCamera = null;
+let debugAxisRoot = null;
 
 const dom = {
   surface: null,
@@ -2648,6 +2665,128 @@ function setLiveStatus(message) {
   if (dom.liveRegion) dom.liveRegion.textContent = message;
 }
 
+function formatDebugAxisLabelColor(color) {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}
+
+function createDebugAxisLabel(text, color) {
+  const canvas = document.createElement('canvas');
+  const size = 128;
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  context.clearRect(0, 0, size, size);
+  context.font = '700 72px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineWidth = 12;
+  context.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  context.fillStyle = formatDebugAxisLabelColor(color);
+  context.strokeText(text, size / 2, size / 2);
+  context.fillText(text, size / 2, size / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(DEBUG_AXIS_LABEL_SIZE, DEBUG_AXIS_LABEL_SIZE, 1);
+  return sprite;
+}
+
+function addDebugAxis(name, direction, color) {
+  if (!debugAxisRoot) return;
+  const axis = new THREE.ArrowHelper(
+    direction,
+    new THREE.Vector3(0, 0, 0),
+    DEBUG_AXIS_LENGTH,
+    color,
+    DEBUG_AXIS_HEAD_LENGTH,
+    DEBUG_AXIS_HEAD_WIDTH
+  );
+  axis.name = `debug-axis-${name}`;
+  debugAxisRoot.add(axis);
+
+  const label = createDebugAxisLabel(name.toUpperCase(), color);
+  label.position.copy(direction).multiplyScalar(DEBUG_AXIS_LENGTH + DEBUG_AXIS_LABEL_OFFSET);
+  label.name = `debug-axis-${name}-label`;
+  debugAxisRoot.add(label);
+}
+
+function createDebugAxisScene() {
+  debugAxisScene = new THREE.Scene();
+  debugAxisCamera = new THREE.OrthographicCamera(-1.9, 1.9, 1.9, -1.9, 0.1, 10);
+  debugAxisCamera.position.set(0, 0, 4);
+  debugAxisCamera.lookAt(0, 0, 0);
+
+  debugAxisRoot = new THREE.Group();
+  debugAxisScene.add(debugAxisRoot);
+  addDebugAxis('x', new THREE.Vector3(1, 0, 0), DEBUG_AXIS_COLORS.x);
+  addDebugAxis('y', new THREE.Vector3(0, 1, 0), DEBUG_AXIS_COLORS.y);
+  addDebugAxis('z', new THREE.Vector3(0, 0, 1), DEBUG_AXIS_COLORS.z);
+}
+
+function mountDebugAxisIndicator() {
+  if (!dom.surface || debugAxisContainer) return;
+
+  debugAxisContainer = document.createElement('div');
+  debugAxisContainer.className = 'viewer-debug-axis';
+  debugAxisContainer.hidden = !viewerDebugEnabled;
+  debugAxisContainer.setAttribute('aria-hidden', 'true');
+
+  debugAxisRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  debugAxisRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  debugAxisRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  debugAxisRenderer.setSize(DEBUG_AXIS_SIZE, DEBUG_AXIS_SIZE, false);
+  debugAxisRenderer.domElement.setAttribute('aria-hidden', 'true');
+  debugAxisContainer.appendChild(debugAxisRenderer.domElement);
+
+  createDebugAxisScene();
+  dom.surface.appendChild(debugAxisContainer);
+}
+
+function updateDebugAxisVisibility() {
+  if (!viewerDebugEnabled && !debugAxisContainer) return;
+  mountDebugAxisIndicator();
+  if (debugAxisContainer) debugAxisContainer.hidden = !viewerDebugEnabled;
+}
+
+function renderDebugAxisIndicator() {
+  if (
+    !viewerDebugEnabled
+    || !debugAxisRenderer
+    || !debugAxisScene
+    || !debugAxisCamera
+    || !debugAxisRoot
+    || !camera
+  ) return;
+
+  debugAxisRoot.quaternion.copy(camera.quaternion).invert();
+  debugAxisRenderer.render(debugAxisScene, debugAxisCamera);
+}
+
+function setViewerDebugMode(enabled) {
+  viewerDebugEnabled = enabled === true;
+  updateDebugAxisVisibility();
+  console.info(`Viewer debug mode ${viewerDebugEnabled ? 'enabled' : 'disabled'}.`);
+  return viewerDebugEnabled;
+}
+
+function installViewerDebugConsoleApi() {
+  if (typeof window === 'undefined') return;
+  window.WLViewerDebug = {
+    enable: () => setViewerDebugMode(true),
+    disable: () => setViewerDebugMode(false),
+    toggle: () => setViewerDebugMode(!viewerDebugEnabled),
+    isEnabled: () => viewerDebugEnabled
+  };
+}
+
 function hideStatusBox() {
   if (!dom.statusBox) return;
   dom.statusBox.hidden = true;
@@ -3513,6 +3652,10 @@ export function resizeViewer() {
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
+  if (debugAxisRenderer) {
+    debugAxisRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    debugAxisRenderer.setSize(DEBUG_AXIS_SIZE, DEBUG_AXIS_SIZE, false);
+  }
 }
 
 export function initViewerControls() {
@@ -3662,6 +3805,7 @@ export async function initViewer() {
     if (controls) controls.update();
     updateResinPreviewMaterialsForView();
     renderer.render(scene, camera);
+    renderDebugAxisIndicator();
   });
 
   if (typeof ResizeObserver === 'function') {
@@ -3675,11 +3819,14 @@ export async function initViewer() {
   }
 
   initialized = true;
+  updateDebugAxisVisibility();
   initViewerControls();
   resizeViewer();
   showEmptyState();
   await updateModel(state && state.selections ? state.selections.model : null);
 }
+
+installViewerDebugConsoleApi();
 
 window.addEventListener('resize', () => {
   if (resizeTimeout) clearTimeout(resizeTimeout);
