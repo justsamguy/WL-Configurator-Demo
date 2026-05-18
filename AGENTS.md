@@ -120,6 +120,7 @@ If repeated attempts don’t resolve an issue:
 - You may run **file operation** commands needed for the task (read, list, edit, move/rename) without prompting.
 - If you suggest a command the user did not request (especially non-file ops), **explain what it does** and **ask before running it**.
 - Local app loading over `file://` is not a valid runtime verification path for this project: the current setup relies on ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
+- Because this app is primarily real-time visual/interactive, the **user owns runtime visual verification** by default. Do not run, suggest, or substitute local visual/runtime testing unless the user explicitly requests it; instead, keep validation to static inspection or requested commands and state what was not runtime-verified.
 
 > Note: Avoid running local verify/test/build commands unless the user explicitly requests them.
 > Note: When runtime validation is needed, use a live server environment or GitHub Pages rather than opening `index.html` directly via `file://`.

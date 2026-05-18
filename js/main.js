@@ -1774,6 +1774,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-02-06 13:27');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 721');
+console.log('Edit ver: 722');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
 });

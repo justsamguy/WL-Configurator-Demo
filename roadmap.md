@@ -2,7 +2,7 @@
 
 ## v1.1
 - reorganize all of the files in "assets" for better organization
-I'm noticing that the leg/plate placement and the U-channel placement have inconsistent setback values. can you tell me whether this is incorrect values in the leg/plate setback, or in the channels?
+PARENT BRANCH - I'm noticing that the leg/plate placement and the U-channel placement have inconsistent setback values. can you tell me whether this is incorrect values in the leg/plate setback, or in the channels?
 
 
 ## v1.2
@@ -24,7 +24,7 @@ Chairs are hidden by default.
     - Add Monitor Arms Addon
 - Unhide keystone option for conference tables and add dimension handling
 ## v2.0
-- Rebuild app in React.js to allow for updates to be pushed to branches and immediately reflect in-browser.
+- Rebuild app in React.js to allow for updates to be pushed to branches and immediately reflect in-browser. (confirm if this will happen on the internet because of browser caching)
 - update all variable/object names in code to be recognizable to humans without significantly increasing character count/codebase size
 
 ## v2.x

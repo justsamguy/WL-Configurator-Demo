@@ -36,7 +36,8 @@ alwaysApply: true
   - Note: Testing must occur in a live server environment due to CDN dependencies.
   - Note: Opening `index.html` via `file://` is not a valid runtime check for this project; the current setup uses ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
   - Recommendation: Commit changes and deploy to verify functionality.
-  - Next steps: Ensure accessibility, responsiveness, and debug issues as needed.
+  - Because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default. Do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
+  - Next steps: User verifies accessibility, responsiveness, and runtime visual behavior on deployment and provides feedback.
   - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
   - Test: Stage, commit, and sync to GitHub. User to provide feedback on live deployment.
 
@@ -71,7 +72,7 @@ alwaysApply: true
 
 - **Definition of Done**
   - All checklist items in the guidelines are complete.
-  - Ensure all features work as expected.
+  - User performs final runtime visual verification unless explicit testing is requested.
   - This workflow file and the guidelines are committed to the repo.
 
 ---

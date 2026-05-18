@@ -78,15 +78,8 @@ const WATERFALL_PART_NAME = 'tabletop-waterfall';
 const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
 const WATERFALL_DEPTH_IN = 2;
 const WATERFALL_SEAM_OVERLAP = 0.001;
-const WATERFALL_FALLBACK_RESIN_WIDTH_RATIO = 0.24;
-const WATERFALL_TEXTURE_KEYS = Object.freeze([
-  'map',
-  'normalMap',
-  'roughnessMap',
-  'metalnessMap',
-  'aoMap',
-  'alphaMap'
-]);
+const WATERFALL_RESIN_SURFACE_OFFSET = 0.0008;
+const WATERFALL_MIN_SOURCE_SPAN = 0.0001;
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const U_CHANNEL_ROLE = 'u-channel';
@@ -1384,146 +1377,161 @@ function clearGeneratedPart(root) {
 function cloneWaterfallMaterial(material) {
   const clonedMaterial = cloneReusableMaterial(material);
   if (!clonedMaterial || typeof clonedMaterial !== 'object') return null;
-  WATERFALL_TEXTURE_KEYS.forEach((key) => {
-    const texture = clonedMaterial[key];
-    if (!texture || !texture.isTexture) return;
-    texture.center.set(0.5, 0.5);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.needsUpdate = true;
-  });
   if ('shadowSide' in clonedMaterial) clonedMaterial.shadowSide = THREE.FrontSide;
   clonedMaterial.needsUpdate = true;
   return clonedMaterial;
 }
 
-function getWaterfallPlanUv(x, z, tabletopMetrics) {
-  const tableWidth = getPartSpan(tabletopMetrics, 'x') || 1;
-  const tableLength = getPartSpan(tabletopMetrics, 'z') || 1;
-  return [
-    (x - tabletopMetrics.min.x) / tableWidth,
-    (z - tabletopMetrics.min.z) / tableLength
-  ];
+function cloneWaterfallMaterials(material) {
+  if (Array.isArray(material)) return material.map((entry) => cloneWaterfallMaterial(entry));
+  return cloneWaterfallMaterial(material);
 }
 
-function getWaterfallFoldUv(x, y, tabletopMetrics, placement) {
-  const tableWidth = getPartSpan(tabletopMetrics, 'x') || 1;
-  const tableLength = getPartSpan(tabletopMetrics, 'z') || 1;
-  const fallDistance = tabletopMetrics.max.y - y;
-  const edgeV = placement === 'front' ? 1 : 0;
-  const vDirection = placement === 'front' ? 1 : -1;
-  return [
-    (x - tabletopMetrics.min.x) / tableWidth,
-    edgeV + (vDirection * (fallDistance / tableLength))
-  ];
+function getFallbackWaterfallUv(point, sourceMetrics, placement) {
+  const sourceWidth = Math.max(getPartSpan(sourceMetrics, 'x') || 1, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceLength = Math.max(getPartSpan(sourceMetrics, 'z') || 1, WATERFALL_MIN_SOURCE_SPAN);
+  const u = (point.x - sourceMetrics.min.x) / sourceWidth;
+  const v = placement === 'front'
+    ? (sourceMetrics.max.z - point.z) / sourceLength
+    : (point.z - sourceMetrics.min.z) / sourceLength;
+  return [u, v];
 }
 
-function createWaterfallBoxGeometry({ minX, maxX, minY, maxY, minZ, maxZ, tabletopMetrics, placement }) {
-  const positions = [];
-  const normals = [];
-  const uvs = [];
+function createWaterfallMapContext({
+  placement,
+  sourceMetrics,
+  tabletopMetrics,
+  depth,
+  floorY,
+  seamOverlap,
+  materialRole
+}) {
+  const sourceLength = Math.max(getPartSpan(sourceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceThickness = Math.max(getPartSpan(sourceMetrics, 'y') || 0, WATERFALL_MIN_SOURCE_SPAN);
+  const dropHeight = Math.max(tabletopMetrics.max.y - floorY, WATERFALL_MIN_SOURCE_SPAN);
+  const isFront = placement === 'front';
+  const outerZ = isFront
+    ? tabletopMetrics.max.z + seamOverlap
+    : tabletopMetrics.min.z - seamOverlap;
+  const resinOffset = materialRole === 'resin'
+    ? (isFront ? WATERFALL_RESIN_SURFACE_OFFSET : -WATERFALL_RESIN_SURFACE_OFFSET)
+    : 0;
+  const ySlope = isFront ? dropHeight / sourceLength : -dropHeight / sourceLength;
+  const zSlope = isFront ? depth / sourceThickness : -depth / sourceThickness;
+  const normalMatrix = new THREE.Matrix3().getNormalMatrix(new THREE.Matrix4().set(
+    1, 0, 0, 0,
+    0, 0, ySlope, 0,
+    0, zSlope, 0, 0,
+    0, 0, 0, 1
+  ));
 
-  const addVertex = (point, normal, uv) => {
-    positions.push(point[0], point[1], point[2]);
-    normals.push(normal[0], normal[1], normal[2]);
-    uvs.push(uv[0], uv[1]);
+  return {
+    normalMatrix,
+    mapPoint(point) {
+      const lengthProgress = isFront
+        ? (sourceMetrics.max.z - point.z) / sourceLength
+        : (point.z - sourceMetrics.min.z) / sourceLength;
+      const thicknessProgress = (sourceMetrics.max.y - point.y) / sourceThickness;
+      const targetPoint = new THREE.Vector3(point.x, 0, 0);
+      targetPoint.y = tabletopMetrics.max.y - (THREE.MathUtils.clamp(lengthProgress, 0, 1) * dropHeight);
+      targetPoint.z = isFront
+        ? outerZ - (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth) + resinOffset
+        : outerZ + (THREE.MathUtils.clamp(thicknessProgress, 0, 1) * depth) + resinOffset;
+      return targetPoint;
+    }
   };
-
-  const addFace = (corners, normal, getUv) => {
-    const face = [corners[0], corners[1], corners[2], corners[0], corners[2], corners[3]];
-    face.forEach((corner) => addVertex(corner, normal, getUv(corner)));
-  };
-
-  const frontOutside = placement === 'front';
-  const outsideZ = frontOutside ? maxZ : minZ;
-  const insideZ = frontOutside ? minZ : maxZ;
-
-  const outsideCorners = frontOutside
-    ? [[minX, minY, outsideZ], [maxX, minY, outsideZ], [maxX, maxY, outsideZ], [minX, maxY, outsideZ]]
-    : [[maxX, minY, outsideZ], [minX, minY, outsideZ], [minX, maxY, outsideZ], [maxX, maxY, outsideZ]];
-  addFace(
-    outsideCorners,
-    frontOutside ? [0, 0, 1] : [0, 0, -1],
-    ([x, y]) => getWaterfallFoldUv(x, y, tabletopMetrics, placement)
-  );
-
-  const insideCorners = frontOutside
-    ? [[maxX, minY, insideZ], [minX, minY, insideZ], [minX, maxY, insideZ], [maxX, maxY, insideZ]]
-    : [[minX, minY, insideZ], [maxX, minY, insideZ], [maxX, maxY, insideZ], [minX, maxY, insideZ]];
-  addFace(
-    insideCorners,
-    frontOutside ? [0, 0, -1] : [0, 0, 1],
-    ([x, y]) => getWaterfallFoldUv(x, y, tabletopMetrics, placement)
-  );
-
-  addFace(
-    [[maxX, minY, maxZ], [maxX, minY, minZ], [maxX, maxY, minZ], [maxX, maxY, maxZ]],
-    [1, 0, 0],
-    ([, y, z]) => [(z - minZ) / Math.max(maxZ - minZ, 0.0001), (y - minY) / Math.max(maxY - minY, 0.0001)]
-  );
-  addFace(
-    [[minX, minY, minZ], [minX, minY, maxZ], [minX, maxY, maxZ], [minX, maxY, minZ]],
-    [-1, 0, 0],
-    ([, y, z]) => [(z - minZ) / Math.max(maxZ - minZ, 0.0001), (y - minY) / Math.max(maxY - minY, 0.0001)]
-  );
-  addFace(
-    [[minX, maxY, maxZ], [maxX, maxY, maxZ], [maxX, maxY, minZ], [minX, maxY, minZ]],
-    [0, 1, 0],
-    ([x, , z]) => getWaterfallPlanUv(x, z, tabletopMetrics)
-  );
-  addFace(
-    [[minX, minY, minZ], [maxX, minY, minZ], [maxX, minY, maxZ], [minX, minY, maxZ]],
-    [0, -1, 0],
-    ([x, , z]) => getWaterfallPlanUv(x, z, tabletopMetrics)
-  );
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
 }
 
-function createWaterfallSegmentMesh({
-  name,
-  material,
-  minX,
-  maxX,
-  minY,
-  maxY,
-  minZ,
-  maxZ,
+function cloneWaterfallGeometryAttributes(sourceGeometry, targetGeometry, fallbackUvValues) {
+  const uvAttribute = sourceGeometry.getAttribute('uv');
+  const uv2Attribute = sourceGeometry.getAttribute('uv2');
+  const colorAttribute = sourceGeometry.getAttribute('color');
+
+  if (uvAttribute) targetGeometry.setAttribute('uv', uvAttribute.clone());
+  else targetGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(fallbackUvValues, 2));
+  if (uv2Attribute) targetGeometry.setAttribute('uv2', uv2Attribute.clone());
+  if (colorAttribute) targetGeometry.setAttribute('color', colorAttribute.clone());
+
+  if (sourceGeometry.index) targetGeometry.setIndex(sourceGeometry.index.clone());
+  if (Array.isArray(sourceGeometry.groups) && sourceGeometry.groups.length) {
+    sourceGeometry.groups.forEach((group) => {
+      targetGeometry.addGroup(group.start, group.count, group.materialIndex);
+    });
+  }
+  if (sourceGeometry.drawRange) {
+    targetGeometry.setDrawRange(sourceGeometry.drawRange.start, sourceGeometry.drawRange.count);
+  }
+}
+
+function createWaterfallMeshClone({
+  sourceMesh,
+  sourceMetrics,
   tabletopMetrics,
   placement,
-  renderOrder = 4
+  depth,
+  floorY,
+  seamOverlap,
+  materialRole,
+  meshIndex
 }) {
-  if (
-    !material
-    || !tabletopMetrics
-    || !Number.isFinite(minX)
-    || !Number.isFinite(maxX)
-    || !Number.isFinite(minY)
-    || !Number.isFinite(maxY)
-    || !Number.isFinite(minZ)
-    || !Number.isFinite(maxZ)
-    || maxX <= minX
-    || maxY <= minY
-    || maxZ <= minZ
-  ) {
-    return null;
+  const sourceGeometry = sourceMesh && sourceMesh.geometry;
+  const sourcePosition = sourceGeometry && sourceGeometry.getAttribute('position');
+  if (!sourceMesh || !sourceGeometry || !sourcePosition) return null;
+
+  const sourceMaterial = cloneWaterfallMaterials(sourceMesh.material);
+  if (!sourceMaterial || (Array.isArray(sourceMaterial) && !sourceMaterial.some(Boolean))) return null;
+
+  sourceMesh.updateWorldMatrix(true, false);
+  const sourceToWorld = sourceMesh.matrixWorld;
+  const sourceNormalMatrix = new THREE.Matrix3().getNormalMatrix(sourceToWorld);
+  const sourceNormal = sourceGeometry.getAttribute('normal');
+  const mapContext = createWaterfallMapContext({
+    placement,
+    sourceMetrics,
+    tabletopMetrics,
+    depth,
+    floorY,
+    seamOverlap,
+    materialRole
+  });
+  const positions = [];
+  const normals = [];
+  const fallbackUvValues = [];
+  const point = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+
+  for (let index = 0; index < sourcePosition.count; index += 1) {
+    point.fromBufferAttribute(sourcePosition, index).applyMatrix4(sourceToWorld);
+    const targetPoint = mapContext.mapPoint(point);
+    positions.push(targetPoint.x, targetPoint.y, targetPoint.z);
+
+    const fallbackUv = getFallbackWaterfallUv(point, sourceMetrics, placement);
+    fallbackUvValues.push(fallbackUv[0], fallbackUv[1]);
+
+    if (sourceNormal) {
+      normal.fromBufferAttribute(sourceNormal, index)
+        .applyMatrix3(sourceNormalMatrix)
+        .normalize()
+        .applyMatrix3(mapContext.normalMatrix)
+        .normalize();
+      normals.push(normal.x, normal.y, normal.z);
+    }
   }
 
-  const mesh = new THREE.Mesh(
-    createWaterfallBoxGeometry({ minX, maxX, minY, maxY, minZ, maxZ, tabletopMetrics, placement }),
-    material
-  );
-  mesh.name = name;
+  const targetGeometry = new THREE.BufferGeometry();
+  targetGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if (sourceNormal) targetGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  cloneWaterfallGeometryAttributes(sourceGeometry, targetGeometry, fallbackUvValues);
+  if (!sourceNormal) targetGeometry.computeVertexNormals();
+  targetGeometry.computeBoundingBox();
+  targetGeometry.computeBoundingSphere();
+
+  const mesh = new THREE.Mesh(targetGeometry, sourceMaterial);
+  mesh.name = `${WATERFALL_PART_NAME}-${placement}-${materialRole}-${meshIndex + 1}`;
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
-  mesh.renderOrder = renderOrder;
+  mesh.renderOrder = materialRole === 'resin' ? 7 : 4;
   return mesh;
 }
 
@@ -1536,95 +1544,38 @@ function getWaterfallPlacementNames(config = {}) {
   return Number(cameraSettings.offset[2]) < 0 ? ['back'] : ['front'];
 }
 
-function createWaterfallFallbackResinInterval(tableMinX, tableMaxX) {
-  const tableWidth = tableMaxX - tableMinX;
-  const resinWidth = tableWidth * WATERFALL_FALLBACK_RESIN_WIDTH_RATIO;
-  const minX = tableMinX + ((tableWidth - resinWidth) / 2);
-  return { minX, maxX: minX + resinWidth };
-}
+function addWaterfallSourceClones({
+  sourceRoot,
+  sourceMetrics,
+  waterfallRoot,
+  tabletopMetrics,
+  placements,
+  depth,
+  floorY,
+  seamOverlap,
+  materialRole
+}) {
+  if (!sourceRoot || !sourceMetrics || !waterfallRoot) return;
 
-function getEpoxyIntervalsAtWaterfallEdge(epoxyRoot, epoxyMetrics, tabletopMetrics, placement, depth) {
-  if (!epoxyRoot || !epoxyMetrics || !tabletopMetrics) return [];
-
-  const epoxyLength = getPartSpan(epoxyMetrics, 'z');
-  if (!Number.isFinite(epoxyLength) || epoxyLength <= 0) return [];
-
-  const triangles = getLiveEdgeTopSurfaceTriangles(epoxyRoot, epoxyMetrics);
-  if (!triangles.length) return [];
-
-  const sampleInset = Math.max(
-    Math.min(depth * 0.35, epoxyLength * 0.02),
-    epoxyLength * 0.002
-  );
-  const sampleZ = placement === 'front'
-    ? epoxyMetrics.max.z - sampleInset
-    : epoxyMetrics.min.z + sampleInset;
-  const tableMinX = tabletopMetrics.min.x;
-  const tableMaxX = tabletopMetrics.max.x;
-
-  return getLiveEdgeIntervalsAtZ(triangles, sampleZ)
-    .map(([minX, maxX]) => ({
-      minX: Math.max(tableMinX, minX),
-      maxX: Math.min(tableMaxX, maxX)
-    }))
-    .filter((interval) => interval.maxX > interval.minX);
-}
-
-function buildWaterfallRegionsFromResinIntervals(tableMinX, tableMaxX, intervals, minRegionWidth) {
-  const regions = [];
-  let cursorX = tableMinX;
-
-  intervals
-    .slice()
-    .sort((left, right) => left.minX - right.minX)
-    .forEach((interval) => {
-      const resinMinX = THREE.MathUtils.clamp(interval.minX, tableMinX, tableMaxX);
-      const resinMaxX = THREE.MathUtils.clamp(interval.maxX, tableMinX, tableMaxX);
-      if (resinMaxX - resinMinX <= minRegionWidth) return;
-      if (resinMinX - cursorX > minRegionWidth) {
-        regions.push({ type: 'wood', minX: cursorX, maxX: resinMinX });
-      }
-      regions.push({ type: 'resin', minX: resinMinX, maxX: resinMaxX });
-      cursorX = resinMaxX;
+  placements.forEach((placement) => {
+    let meshIndex = 0;
+    sourceRoot.traverse((child) => {
+      if (!child || !child.isMesh) return;
+      const clone = createWaterfallMeshClone({
+        sourceMesh: child,
+        sourceMetrics,
+        tabletopMetrics,
+        placement,
+        depth,
+        floorY,
+        seamOverlap,
+        materialRole,
+        meshIndex
+      });
+      meshIndex += 1;
+      if (clone) waterfallRoot.add(clone);
     });
-
-  if (tableMaxX - cursorX > minRegionWidth) {
-    regions.push({ type: 'wood', minX: cursorX, maxX: tableMaxX });
-  }
-
-  return regions;
-}
-
-function getWaterfallRegions(tabletopMetrics, epoxyRoot, epoxyMetrics, placement, depth, hasResinMaterial = false) {
-  const tableMinX = tabletopMetrics.min.x;
-  const tableMaxX = tabletopMetrics.max.x;
-  const tableWidth = tableMaxX - tableMinX;
-  if (!Number.isFinite(tableWidth) || tableWidth <= 0) return [];
-  if (!hasResinMaterial) return [{ type: 'wood', minX: tableMinX, maxX: tableMaxX }];
-
-  const epoxyMinX = epoxyMetrics ? Math.max(tableMinX, epoxyMetrics.min.x) : null;
-  const epoxyMaxX = epoxyMetrics ? Math.min(tableMaxX, epoxyMetrics.max.x) : null;
-  const epoxyWidth = Number.isFinite(epoxyMinX) && Number.isFinite(epoxyMaxX)
-    ? epoxyMaxX - epoxyMinX
-    : 0;
-  const minRegionWidth = tableWidth * 0.01;
-  const useEpoxyBounds = Number.isFinite(epoxyWidth)
-    && epoxyWidth > minRegionWidth
-    && epoxyWidth < tableWidth - minRegionWidth;
-  const edgeIntervals = getEpoxyIntervalsAtWaterfallEdge(epoxyRoot, epoxyMetrics, tabletopMetrics, placement, depth);
-  const validEdgeIntervals = edgeIntervals.filter((interval) => {
-    const intervalWidth = interval.maxX - interval.minX;
-    return intervalWidth > minRegionWidth && intervalWidth < tableWidth - minRegionWidth;
   });
-
-  if (validEdgeIntervals.length) {
-    return buildWaterfallRegionsFromResinIntervals(tableMinX, tableMaxX, validEdgeIntervals, minRegionWidth);
-  }
-
-  const interval = useEpoxyBounds
-    ? { minX: epoxyMinX, maxX: epoxyMaxX }
-    : createWaterfallFallbackResinInterval(tableMinX, tableMaxX);
-  return buildWaterfallRegionsFromResinIntervals(tableMinX, tableMaxX, [interval], minRegionWidth);
 }
 
 function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tabletopMetrics, epoxyMetrics) {
@@ -1656,53 +1607,35 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
 
   const tabletopRoot = renderRoot.getObjectByName('tabletop');
   const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
-  const woodSourceMaterial = getFirstMeshMaterial(tabletopRoot);
-  const resinSourceMaterial = getFirstMeshMaterial(epoxyRoot);
-  if (!woodSourceMaterial) {
+  if (!tabletopRoot) {
     waterfallRoot.visible = false;
     return;
   }
 
   const seamOverlap = Math.min(WATERFALL_SEAM_OVERLAP, depth * 0.2);
+  renderRoot.updateWorldMatrix(true, true);
 
-  placements.forEach((placement) => {
-    const isFront = placement === 'front';
-    const minZ = isFront
-      ? tabletopMetrics.max.z - seamOverlap
-      : tabletopMetrics.min.z - depth + seamOverlap;
-    const maxZ = isFront
-      ? tabletopMetrics.max.z + depth - seamOverlap
-      : tabletopMetrics.min.z + seamOverlap;
-    const regions = getWaterfallRegions(
-      tabletopMetrics,
-      epoxyRoot,
-      epoxyMetrics,
-      placement,
-      depth,
-      !!resinSourceMaterial
-    );
-
-    regions.forEach((region) => {
-      const sourceMaterial = region.type === 'resin' && resinSourceMaterial
-        ? resinSourceMaterial
-        : woodSourceMaterial;
-      const material = cloneWaterfallMaterial(sourceMaterial);
-      const mesh = createWaterfallSegmentMesh({
-        name: `${WATERFALL_PART_NAME}-${placement}-${region.type}`,
-        material,
-        minX: region.minX,
-        maxX: region.maxX,
-        minY: floorY,
-        maxY: tabletopMetrics.max.y,
-        minZ,
-        maxZ,
-        tabletopMetrics,
-        placement,
-        renderOrder: region.type === 'resin' ? 7 : 4
-      });
-      if (mesh) waterfallRoot.add(mesh);
-      else if (material) disposeMaterial(material);
-    });
+  addWaterfallSourceClones({
+    sourceRoot: tabletopRoot,
+    sourceMetrics: tabletopMetrics,
+    waterfallRoot,
+    tabletopMetrics,
+    placements,
+    depth,
+    floorY,
+    seamOverlap,
+    materialRole: 'wood'
+  });
+  addWaterfallSourceClones({
+    sourceRoot: epoxyRoot,
+    sourceMetrics: epoxyMetrics,
+    waterfallRoot,
+    tabletopMetrics,
+    placements,
+    depth,
+    floorY,
+    seamOverlap,
+    materialRole: 'resin'
   });
 
   waterfallRoot.visible = waterfallRoot.children.length > 0;
