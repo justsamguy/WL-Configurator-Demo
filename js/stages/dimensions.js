@@ -5,6 +5,7 @@
 import { state } from '../state.js';
 import { createLogger } from '../logger.js';
 import { requiresCenterLeg } from '../pricing.js';
+import { applyTestingDisabledState } from '../stageRenderer.js';
 
 const log = createLogger('Dimensions');
 const CUSTOM_DIMENSIONS_IMAGE = 'assets/images/Custom Dimensions.png';
@@ -638,7 +639,17 @@ function initPresets() {
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
 
+    if (preset.disabled) {
+      tile.disabled = true;
+      tile.classList.add('disabled');
+      tile.setAttribute('aria-disabled', 'true');
+      tile.setAttribute('data-hard-disabled', 'true');
+      if (preset.tooltip) tile.setAttribute('data-tooltip', preset.tooltip);
+    }
+    applyTestingDisabledState(tile, preset);
+
     tile.addEventListener('click', () => {
+      if (tile.disabled) return;
       selectPreset(preset, tile);
     });
 

@@ -6326,3 +6326,57 @@ body[data-resolved-theme="dark"] .border-t,
 body[data-resolved-theme="dark"] .border-b {
   border-color: #334155 !important;
 }
+
+/* Test-disabled options are locked by default and unlocked by console debug mode. */
+.option-card.is-testing-disabled,
+.addons-tile.is-testing-disabled,
+.addons-dropdown-option.is-testing-disabled {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.option-card.is-testing-disabled-active,
+.addons-tile.is-testing-disabled-active,
+.addons-dropdown-option.is-testing-disabled-active {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.option-card.is-testing-disabled-active > :not(.option-testing-disabled-overlay),
+.addons-tile.is-testing-disabled-active > :not(.option-testing-disabled-overlay),
+.addons-dropdown-option.is-testing-disabled-active > :not(.option-testing-disabled-overlay) {
+  filter: blur(7px);
+  opacity: 0.32;
+}
+
+.option-testing-disabled-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: inherit;
+  background: rgba(248, 250, 252, 0.78);
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.is-testing-disabled-unlocked .option-testing-disabled-overlay {
+  display: none;
+}
+
+body[data-resolved-theme="dark"] .option-testing-disabled-overlay {
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+}

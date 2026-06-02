@@ -8,6 +8,7 @@ import { loadData } from './dataLoader.js';
 import { getVisibleLegCount, getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
+import { isDebugModeEnabled, setDebugModeEnabled } from './debugMode.js';
 import {
   getLegEndSetbackLabel,
   getLegEndSetbackValue,
@@ -2975,6 +2976,7 @@ function renderDebugAxisIndicator() {
 
 function setViewerDebugMode(enabled) {
   viewerDebugEnabled = enabled === true;
+  setDebugModeEnabled(viewerDebugEnabled, { source: 'WLViewerDebug' });
   updateDebugAxisVisibility();
   console.info(`Viewer debug mode ${viewerDebugEnabled ? 'enabled' : 'disabled'}.`);
   return viewerDebugEnabled;
@@ -2986,7 +2988,7 @@ function installViewerDebugConsoleApi() {
     enable: () => setViewerDebugMode(true),
     disable: () => setViewerDebugMode(false),
     toggle: () => setViewerDebugMode(!viewerDebugEnabled),
-    isEnabled: () => viewerDebugEnabled
+    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled()
   };
 }
 
