@@ -140,8 +140,7 @@ const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
 const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
 const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
-const WATERFALL_RESIN_OPENING_INSET = 0.00035;
-const WATERFALL_RESIN_SAMPLE_NUDGE_RATIO = 0.002;
+const WATERFALL_RESIN_BOX_INSET = 0.0015;
 const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
 const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
@@ -999,64 +998,6 @@ function getLiveEdgeResinFit(tabletopRoot, tabletopMetrics) {
   };
 }
 
-function getRiverOpeningBoundsFromIntervals(intervals, edgeInset = 0) {
-  if (!Array.isArray(intervals) || intervals.length < 2) return null;
-
-  const leftSpan = intervals[0];
-  const rightSpan = intervals[intervals.length - 1];
-  const left = leftSpan[1] + edgeInset;
-  const right = rightSpan[0] - edgeInset;
-  const width = right - left;
-
-  if (!Number.isFinite(width) || width <= LIVE_EDGE_RESIN_MIN_GAP) return null;
-  return { left, right };
-}
-
-function createWaterfallResinClipContext(tabletopRoot, tabletopMetrics) {
-  if (!tabletopRoot || !tabletopMetrics) return null;
-
-  const tabletopLength = getPartSpan(tabletopMetrics, 'z');
-  if (!Number.isFinite(tabletopLength) || tabletopLength <= 0) return null;
-
-  const triangles = getLiveEdgeTopSurfaceTriangles(tabletopRoot, tabletopMetrics);
-  if (!triangles.length) return null;
-
-  const sampleNudge = Math.max(tabletopLength * WATERFALL_RESIN_SAMPLE_NUDGE_RATIO, WATERFALL_RESIN_OPENING_INSET);
-  const cache = new Map();
-
-  const getBoundsAtZ = (sampleZ) => {
-    if (!Number.isFinite(sampleZ)) return null;
-
-    const clampedZ = THREE.MathUtils.clamp(sampleZ, tabletopMetrics.min.z, tabletopMetrics.max.z);
-    const cacheKey = clampedZ.toFixed(5);
-    if (cache.has(cacheKey)) return cache.get(cacheKey);
-
-    const candidateZValues = [
-      clampedZ,
-      THREE.MathUtils.clamp(clampedZ - sampleNudge, tabletopMetrics.min.z, tabletopMetrics.max.z),
-      THREE.MathUtils.clamp(clampedZ + sampleNudge, tabletopMetrics.min.z, tabletopMetrics.max.z)
-    ];
-    let bounds = null;
-
-    for (let index = 0; index < candidateZValues.length; index += 1) {
-      const intervals = getLiveEdgeIntervalsAtZ(triangles, candidateZValues[index]);
-      bounds = getRiverOpeningBoundsFromIntervals(intervals, WATERFALL_RESIN_OPENING_INSET);
-      if (bounds) break;
-    }
-
-    cache.set(cacheKey, bounds);
-    return bounds;
-  };
-
-  return {
-    clipPoint(point) {
-      const bounds = getBoundsAtZ(point && point.z);
-      if (!bounds) return;
-      point.x = THREE.MathUtils.clamp(point.x, bounds.left, bounds.right);
-    }
-  };
-}
-
 function addUniqueShapePoint(points, x, y, tolerance = GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE) {
   if (!Array.isArray(points)) return;
 
@@ -1629,11 +1570,9 @@ function createWaterfallMapContext({
   sourceMetrics,
   tabletopMetrics,
   depth,
-  floorY,
-  materialRole
+  floorY
 }) {
-  // Resin uses the tabletop envelope so the manifest's epoxy inset stays behind the wood face after folding.
-  const referenceMetrics = materialRole === 'resin' ? tabletopMetrics : sourceMetrics;
+  const referenceMetrics = sourceMetrics;
   const sourceLength = Math.max(getPartSpan(referenceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
   const sourceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
   const isFront = placement === 'front';
@@ -1692,7 +1631,6 @@ function createWaterfallMeshClone({
   depth,
   floorY,
   materialRole,
-  resinClipContext,
   meshIndex
 }) {
   const sourceGeometry = sourceMesh && sourceMesh.geometry;
@@ -1709,8 +1647,7 @@ function createWaterfallMeshClone({
     sourceMetrics,
     tabletopMetrics,
     depth,
-    floorY,
-    materialRole
+    floorY
   });
   const positions = [];
   const fallbackUvValues = [];
@@ -1720,7 +1657,6 @@ function createWaterfallMeshClone({
   for (let index = 0; index < sourcePosition.count; index += 1) {
     point.fromBufferAttribute(sourcePosition, index).applyMatrix4(sourceToWorld);
     mappedPoint.copy(point);
-    if (resinClipContext) resinClipContext.clipPoint(mappedPoint);
 
     const targetPoint = mapContext.mapPoint(mappedPoint);
     positions.push(targetPoint.x, targetPoint.y, targetPoint.z);
@@ -1745,6 +1681,68 @@ function createWaterfallMeshClone({
   return mesh;
 }
 
+function createInsetAxisRange(min, max, inset = 0) {
+  const span = max - min;
+  if (!Number.isFinite(span) || span <= WATERFALL_MIN_SOURCE_SPAN) return null;
+
+  const safeInset = Math.min(Math.max(Number(inset) || 0, 0), span * 0.45);
+  const insetMin = min + safeInset;
+  const insetMax = max - safeInset;
+  const insetSpan = insetMax - insetMin;
+
+  if (!Number.isFinite(insetSpan) || insetSpan <= WATERFALL_MIN_SOURCE_SPAN) return null;
+  return {
+    min: insetMin,
+    max: insetMax,
+    center: (insetMin + insetMax) / 2,
+    span: insetSpan
+  };
+}
+
+function createWaterfallResinBoxMesh({
+  sourceRoot,
+  epoxyMetrics,
+  tabletopMetrics,
+  placement,
+  depth,
+  floorY,
+  meshIndex
+}) {
+  if (!sourceRoot || !epoxyMetrics || !tabletopMetrics || !Number.isFinite(depth) || depth <= 0) return null;
+
+  const sourceMaterial = getFirstMeshMaterial(sourceRoot);
+  const material = cloneWaterfallMaterial(sourceMaterial);
+  if (!material) return null;
+
+  const xRange = createInsetAxisRange(
+    Math.max(epoxyMetrics.min.x, tabletopMetrics.min.x),
+    Math.min(epoxyMetrics.max.x, tabletopMetrics.max.x),
+    WATERFALL_RESIN_BOX_INSET
+  );
+  const yRange = createInsetAxisRange(floorY, tabletopMetrics.max.y, WATERFALL_RESIN_BOX_INSET);
+  const isFront = placement === 'front';
+  const zRange = createInsetAxisRange(
+    isFront ? tabletopMetrics.max.z - depth : tabletopMetrics.min.z,
+    isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z + depth,
+    WATERFALL_RESIN_BOX_INSET
+  );
+
+  if (!xRange || !yRange || !zRange) return null;
+
+  const geometry = new THREE.BoxGeometry(xRange.span, yRange.span, zRange.span);
+  geometry.translate(xRange.center, yRange.center, zRange.center);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = `${WATERFALL_PART_NAME}-${placement}-resin-box-${meshIndex + 1}`;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 7;
+  return mesh;
+}
+
 function getWaterfallPlacementNames(config = {}) {
   const waterfallCount = getWaterfallEdgeCount(state);
   if (waterfallCount <= 0) return [];
@@ -1762,8 +1760,7 @@ function addWaterfallSourceClones({
   placements,
   depth,
   floorY,
-  materialRole,
-  resinClipContext = null
+  materialRole
 }) {
   if (!sourceRoot || !sourceMetrics || !waterfallRoot) return;
 
@@ -1779,12 +1776,36 @@ function addWaterfallSourceClones({
         depth,
         floorY,
         materialRole,
-        resinClipContext,
         meshIndex
       });
       meshIndex += 1;
       if (clone) waterfallRoot.add(clone);
     });
+  });
+}
+
+function addWaterfallResinBoxClones({
+  sourceRoot,
+  epoxyMetrics,
+  waterfallRoot,
+  tabletopMetrics,
+  placements,
+  depth,
+  floorY
+}) {
+  if (!sourceRoot || !epoxyMetrics || !waterfallRoot || !tabletopMetrics || !Array.isArray(placements)) return;
+
+  placements.forEach((placement, meshIndex) => {
+    const resinBox = createWaterfallResinBoxMesh({
+      sourceRoot,
+      epoxyMetrics,
+      tabletopMetrics,
+      placement,
+      depth,
+      floorY,
+      meshIndex
+    });
+    if (resinBox) waterfallRoot.add(resinBox);
   });
 }
 
@@ -1831,7 +1852,6 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
   }
 
   renderRoot.updateWorldMatrix(true, true);
-  const resinClipContext = createWaterfallResinClipContext(tabletopRoot, tabletopMetrics);
 
   addWaterfallSourceClones({
     sourceRoot: tabletopRoot,
@@ -1843,16 +1863,14 @@ function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tablet
     floorY,
     materialRole: 'wood'
   });
-  addWaterfallSourceClones({
+  addWaterfallResinBoxClones({
     sourceRoot: epoxyRoot,
-    sourceMetrics: epoxyMetrics,
     waterfallRoot,
     tabletopMetrics,
+    epoxyMetrics,
     placements,
     depth,
-    floorY,
-    materialRole: 'resin',
-    resinClipContext
+    floorY
   });
 
   applyWaterfallMiterGeometry(tabletopRoot, tabletopMetrics, placements, depth);
