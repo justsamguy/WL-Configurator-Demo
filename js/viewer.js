@@ -1701,6 +1701,11 @@ function createInsetAxisRange(min, max, inset = 0) {
   };
 }
 
+function getRangeProgress(value, range) {
+  if (!range || !Number.isFinite(range.span) || range.span <= WATERFALL_MIN_SOURCE_SPAN) return 0;
+  return THREE.MathUtils.clamp((value - range.min) / range.span, 0, 1);
+}
+
 function applyWaterfallResinMiterTop(geometry, {
   isFront,
   outerZ,
@@ -1726,6 +1731,48 @@ function applyWaterfallResinMiterTop(geometry, {
   }
 
   positionAttribute.needsUpdate = true;
+}
+
+function applyWaterfallResinBoxUvs(geometry, {
+  isFront,
+  outerZ,
+  depth,
+  tabletopMetrics,
+  xRange,
+  yRange
+}) {
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  const normalAttribute = geometry && geometry.getAttribute('normal');
+  if (!positionAttribute || !tabletopMetrics || !xRange || !yRange || !Number.isFinite(depth) || depth <= 0) return;
+
+  if (!geometry.getAttribute('uv') || geometry.getAttribute('uv').count !== positionAttribute.count) {
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(positionAttribute.count * 2, 2));
+  }
+
+  const uvAttribute = geometry.getAttribute('uv');
+  const tabletopThickness = Math.max(getPartSpan(tabletopMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    const vertexX = positionAttribute.getX(index);
+    const vertexY = positionAttribute.getY(index);
+    const vertexZ = positionAttribute.getZ(index);
+    const distanceFromOuter = isFront ? outerZ - vertexZ : vertexZ - outerZ;
+    const depthProgress = THREE.MathUtils.clamp(distanceFromOuter / depth, 0, 1);
+    const miterTopY = tabletopMetrics.max.y - (depthProgress * tabletopThickness) - WATERFALL_RESIN_MITER_RELIEF;
+    const verticalSpan = Math.max(miterTopY - yRange.min, WATERFALL_MIN_SOURCE_SPAN);
+    const verticalProgress = THREE.MathUtils.clamp((vertexY - yRange.min) / verticalSpan, 0, 1);
+    const xProgress = getRangeProgress(vertexX, xRange);
+
+    const normalY = normalAttribute ? Math.abs(normalAttribute.getY(index)) : 0;
+    const normalX = normalAttribute ? Math.abs(normalAttribute.getX(index)) : 0;
+    const u = normalX > 0.5 ? depthProgress : xProgress;
+    // Mirror from the tabletop edge down the waterfall face instead of using BoxGeometry's default face UVs.
+    const v = normalY > 0.5 ? depthProgress : 1 - verticalProgress;
+
+    uvAttribute.setXY(index, u, v);
+  }
+
+  uvAttribute.needsUpdate = true;
 }
 
 function createWaterfallResinBoxMesh({
@@ -1770,6 +1817,14 @@ function createWaterfallResinBoxMesh({
     yRange
   });
   geometry.computeVertexNormals();
+  applyWaterfallResinBoxUvs(geometry, {
+    isFront,
+    outerZ,
+    depth,
+    tabletopMetrics,
+    xRange,
+    yRange
+  });
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
