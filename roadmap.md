@@ -1,8 +1,8 @@
 # WL Configurator — Roadmap
 
 ## v1.1
-- implement waterfall edge in 3d viewer
 - reorganize all of the files in "assets" for better organization
+PARENT BRANCH - I'm noticing that the leg/plate placement and the U-channel placement have inconsistent setback values. can you tell me whether this is incorrect values in the leg/plate setback, or in the channels?
 
 
 ## v1.2
@@ -12,6 +12,7 @@
  - hide 3D viewer on mobile or move it to a "preview" tab in the menu
  - make the footer from the desktop permanent and add a "back" button. keep the effect but keep it to the bottom of the screen instead of slightly above.
  - move the nav bar into a hamburger menu icon in the top left in a persistent header that shares space with the woodlab logo. make it look spatially balanced horizontally, and keep the logo size contained by the header size. move the light/dark/system to the bottom of the menu. the menu will come onto the screen from the left side and fill the whole screen, the hamburger icon animates and turns into an X icon in the top right of the menu while it fully opens. (animates and moves at the same time) tapping the X or swiping left or selecting a stage will close the menu (except models, where the menu only closes if the user picks "yes" in the dialog).
+ - Add url modifiers # using numbers to allow for link sharing in the config app and use this to replace the copy/paste button action in the summary page (plan before implementing)
 
 - Add a way to display edge customizations in the viewer (edge_profile_3d_preview_plan.md)
 - add Chair models
@@ -24,7 +25,7 @@ Chairs are hidden by default.
     - Add Monitor Arms Addon
 - Unhide keystone option for conference tables and add dimension handling
 ## v2.0
-- Rebuild app in React.js to allow for updates to be pushed to branches and immediately reflect in-browser.
+- Rebuild app in React.js to allow for updates to be pushed to branches and immediately reflect in-browser. (confirm if this will happen on the internet because of browser caching)
 - update all variable/object names in code to be recognizable to humans without significantly increasing character count/codebase size
 
 ## v2.x

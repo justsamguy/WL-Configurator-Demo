@@ -22,7 +22,7 @@
         "scale": 1,
         "surfaceInsetScale": [0.9972, 0.998, 0.9972],
         "surfaceInsetOffset": [0, -0.0015, 0],
-        "designNote": "Intentional by design: the epoxy overlay is inset slightly so it stays inside the wood slab, avoids viewer z-fighting, and only shows through the open resin channels."
+        "designNote": "Intentional by design: these epoxy thickness/inset settings keep the resin slightly inside the wood slab and waterfall clone, preventing wood/resin face z-fighting and letting resin show only through open channels."
       }
     ],
     "legAssets": {

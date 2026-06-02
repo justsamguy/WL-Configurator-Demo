@@ -8,6 +8,7 @@ import { loadData } from './dataLoader.js';
 import { getVisibleLegCount, getWaterfallEdgeCount } from './pricing.js';
 import { state } from './state.js';
 import { createLogger } from './logger.js';
+import { isDebugModeEnabled, setDebugModeEnabled } from './debugMode.js';
 import {
   getLegEndSetbackLabel,
   getLegEndSetbackValue,
@@ -42,6 +43,17 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
   copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
 });
 const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
+const DEBUG_AXIS_SIZE = 96;
+const DEBUG_AXIS_LENGTH = 1.15;
+const DEBUG_AXIS_HEAD_LENGTH = 0.22;
+const DEBUG_AXIS_HEAD_WIDTH = 0.14;
+const DEBUG_AXIS_LABEL_OFFSET = 0.32;
+const DEBUG_AXIS_LABEL_SIZE = 0.32;
+const DEBUG_AXIS_COLORS = Object.freeze({
+  x: 0xef4444,
+  y: 0x22c55e,
+  z: 0x3b82f6
+});
 const TABLETOP_MATERIAL_TEXTURES = Object.freeze({
   'mat-02': 'assets/models/textures/Gemini_Generated_Image_otflgaotflgaotfl.jpg',
   'mat-03': 'assets/models/textures/Generated%20American%20Elm.jpg',
@@ -74,6 +86,12 @@ const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
 const EPOXY_VERTICAL_INSET = 0.0015;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
+const WATERFALL_PART_NAME = 'tabletop-waterfall';
+const WATERFALL_ART_ADDON_ID = 'addon-waterfall-art';
+// Fallback only; live waterfall depth follows the transformed tabletop thickness.
+const WATERFALL_DEPTH_IN = 2;
+const WATERFALL_MIN_SOURCE_SPAN = 0.0001;
+const WATERFALL_MITER_EPSILON = 0.00001;
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
 const LOWER_SHELF_PART_NAME = 'lower-shelf';
 const U_CHANNEL_ROLE = 'u-channel';
@@ -122,6 +140,9 @@ const LIVE_EDGE_RESIN_MIN_GAP = 0.01;
 const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
 const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
+const WATERFALL_RESIN_BOX_INSET = 0.0015;
+const WATERFALL_RESIN_BOX_DEPTH_SCALE = 0.62;
+const WATERFALL_RESIN_MITER_RELIEF = 0.0002;
 const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
 const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
@@ -135,7 +156,7 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
   'fin-sheen-03': 1.85,
   default: 1.2
 });
-const WATERFALL_VIEWER_ADDON_IDS = new Set(['addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art']);
+const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
@@ -204,6 +225,12 @@ let materialSourcePromises = new Map();
 let legFinishDataPromise = null;
 let colorDataPromise = null;
 let finishDataPromise = null;
+let viewerDebugEnabled = false;
+let debugAxisContainer = null;
+let debugAxisRenderer = null;
+let debugAxisScene = null;
+let debugAxisCamera = null;
+let debugAxisRoot = null;
 
 const dom = {
   surface: null,
@@ -721,16 +748,17 @@ function syncTabletopGlareLight(renderRoot = currentRenderRoot) {
     tabletopMetrics.max.y + Math.max(tabletopSpan * 0.002, 0.002),
     tabletopMetrics.center.z
   );
-  const surfaceToCamera = camera.position.clone().sub(surfacePoint);
-  if (surfaceToCamera.lengthSq() < 0.0001) {
+  const surfaceToDefaultView = defaultCameraPosition.clone().sub(surfacePoint);
+  if (surfaceToDefaultView.lengthSq() < 0.0001) {
     tabletopGlareLight.visible = false;
     return;
   }
 
-  // Mirror the camera vector across the tabletop plane so the highlight faces the active view.
-  const reflectedLightVector = surfaceToCamera.clone().negate().reflect(tabletopSurfaceNormal);
-  const lightDistance = THREE.MathUtils.clamp(surfaceToCamera.length(), tabletopSpan * 0.65, tabletopSpan * 2.6);
+  // Anchor the glare to the saved default view so it reads like a fixed ceiling light while orbiting.
+  const reflectedLightVector = surfaceToDefaultView.clone().negate().reflect(tabletopSurfaceNormal);
+  const lightDistance = THREE.MathUtils.clamp(surfaceToDefaultView.length(), tabletopSpan * 0.65, tabletopSpan * 2.6);
   reflectedLightVector.setLength(lightDistance);
+  reflectedLightVector.y = Math.max(reflectedLightVector.y, tabletopSpan * TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO);
 
   tabletopGlareLight.position.copy(surfacePoint).add(reflectedLightVector);
   tabletopGlareLight.target.position.copy(surfacePoint);
@@ -1361,6 +1389,589 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
   );
 }
 
+function clearGeneratedPart(root) {
+  if (!root) return;
+  root.children.forEach((child) => disposeObject3D(child));
+  root.clear();
+}
+
+function cloneWaterfallMaterial(material) {
+  const clonedMaterial = cloneReusableMaterial(material);
+  if (!clonedMaterial || typeof clonedMaterial !== 'object') return null;
+  if ('shadowSide' in clonedMaterial) clonedMaterial.shadowSide = THREE.FrontSide;
+  clonedMaterial.needsUpdate = true;
+  return clonedMaterial;
+}
+
+function cloneWaterfallMaterials(material) {
+  if (Array.isArray(material)) return material.map((entry) => cloneWaterfallMaterial(entry));
+  return cloneWaterfallMaterial(material);
+}
+
+function cloneVector3AttributeValues(attribute) {
+  if (!attribute || !Number.isFinite(attribute.count)) return null;
+
+  const values = new Float32Array(attribute.count * 3);
+  for (let index = 0; index < attribute.count; index += 1) {
+    const offset = index * 3;
+    values[offset] = attribute.getX(index);
+    values[offset + 1] = attribute.getY(index);
+    values[offset + 2] = attribute.getZ(index);
+  }
+  return values;
+}
+
+function restoreVector3AttributeValues(attribute, values) {
+  if (!attribute || !values || values.length !== attribute.count * 3) return false;
+
+  for (let index = 0; index < attribute.count; index += 1) {
+    const offset = index * 3;
+    attribute.setXYZ(index, values[offset], values[offset + 1], values[offset + 2]);
+  }
+  attribute.needsUpdate = true;
+  return true;
+}
+
+function getWaterfallMiterGeometryState(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!geometry || !positionAttribute) return null;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  const expectedPositionLength = positionAttribute.count * 3;
+  const expectedNormalLength = normalAttribute ? normalAttribute.count * 3 : 0;
+  const userData = mesh.userData || (mesh.userData = {});
+  const currentState = userData.waterfallMiterBaseState || {};
+  const shouldCapturePositions = !currentState.positions || currentState.positions.length !== expectedPositionLength;
+  const shouldCaptureNormals = normalAttribute
+    && (!currentState.normals || currentState.normals.length !== expectedNormalLength);
+
+  if (shouldCapturePositions || shouldCaptureNormals || (!normalAttribute && currentState.normals)) {
+    userData.waterfallMiterBaseState = {
+      positions: shouldCapturePositions
+        ? cloneVector3AttributeValues(positionAttribute)
+        : currentState.positions,
+      normals: normalAttribute
+        ? (shouldCaptureNormals ? cloneVector3AttributeValues(normalAttribute) : currentState.normals)
+        : null
+    };
+  }
+
+  return userData.waterfallMiterBaseState;
+}
+
+function refreshGeometryBounds(geometry) {
+  if (!geometry) return;
+  if (typeof geometry.computeBoundingBox === 'function') geometry.computeBoundingBox();
+  if (typeof geometry.computeBoundingSphere === 'function') geometry.computeBoundingSphere();
+}
+
+function resetMeshWaterfallMiterGeometry(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const state = mesh && mesh.userData ? mesh.userData.waterfallMiterBaseState : null;
+  if (!geometry || !state || !state.positions) return false;
+
+  const positionAttribute = geometry.getAttribute('position');
+  if (!restoreVector3AttributeValues(positionAttribute, state.positions)) return false;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  if (state.normals && normalAttribute) restoreVector3AttributeValues(normalAttribute, state.normals);
+  else if (typeof geometry.computeVertexNormals === 'function') geometry.computeVertexNormals();
+
+  refreshGeometryBounds(geometry);
+  return true;
+}
+
+function resetWaterfallMiterGeometry(root) {
+  if (!root) return;
+  root.traverse((child) => {
+    if (!child || !child.isMesh) return;
+    resetMeshWaterfallMiterGeometry(child);
+  });
+}
+
+function applyWaterfallMiterGeometry(root, referenceMetrics, placements, depth) {
+  if (!root || !referenceMetrics || !Array.isArray(placements) || !placements.length) return;
+
+  const referenceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+  if (!Number.isFinite(depth) || depth <= 0 || !Number.isFinite(referenceThickness) || referenceThickness <= 0) return;
+
+  const hasFrontMiter = placements.includes('front');
+  const hasBackMiter = placements.includes('back');
+  if (!hasFrontMiter && !hasBackMiter) return;
+
+  root.updateWorldMatrix(true, true);
+  const localPoint = new THREE.Vector3();
+  const worldPoint = new THREE.Vector3();
+  const worldToLocal = new THREE.Matrix4();
+
+  root.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
+
+    const geometryState = getWaterfallMiterGeometryState(child);
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!geometryState || !positionAttribute) return;
+
+    resetMeshWaterfallMiterGeometry(child);
+    worldToLocal.copy(child.matrixWorld).invert();
+
+    let changed = false;
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      localPoint.fromBufferAttribute(positionAttribute, index);
+      worldPoint.copy(localPoint).applyMatrix4(child.matrixWorld);
+      let vertexChanged = false;
+
+      const yProgress = THREE.MathUtils.clamp(
+        (worldPoint.y - referenceMetrics.min.y) / referenceThickness,
+        0,
+        1
+      );
+
+      if (hasFrontMiter) {
+        const frontLimitZ = referenceMetrics.max.z - depth + (yProgress * depth);
+        if (worldPoint.z > frontLimitZ + WATERFALL_MITER_EPSILON) {
+          worldPoint.z = frontLimitZ;
+          vertexChanged = true;
+        }
+      }
+
+      if (hasBackMiter) {
+        const backLimitZ = referenceMetrics.min.z + depth - (yProgress * depth);
+        if (worldPoint.z < backLimitZ - WATERFALL_MITER_EPSILON) {
+          worldPoint.z = backLimitZ;
+          vertexChanged = true;
+        }
+      }
+
+      if (vertexChanged) {
+        localPoint.copy(worldPoint).applyMatrix4(worldToLocal);
+        positionAttribute.setXYZ(index, localPoint.x, localPoint.y, localPoint.z);
+        changed = true;
+      }
+    }
+
+    if (!changed) return;
+    positionAttribute.needsUpdate = true;
+    if (typeof child.geometry.computeVertexNormals === 'function') child.geometry.computeVertexNormals();
+    refreshGeometryBounds(child.geometry);
+  });
+}
+
+function getFallbackWaterfallUv(point, sourceMetrics, placement) {
+  const sourceWidth = Math.max(getPartSpan(sourceMetrics, 'x') || 1, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceLength = Math.max(getPartSpan(sourceMetrics, 'z') || 1, WATERFALL_MIN_SOURCE_SPAN);
+  const u = (point.x - sourceMetrics.min.x) / sourceWidth;
+  const v = placement === 'front'
+    ? (sourceMetrics.max.z - point.z) / sourceLength
+    : (point.z - sourceMetrics.min.z) / sourceLength;
+  return [u, v];
+}
+
+function createWaterfallMapContext({
+  placement,
+  sourceMetrics,
+  tabletopMetrics,
+  depth,
+  floorY
+}) {
+  const referenceMetrics = sourceMetrics;
+  const sourceLength = Math.max(getPartSpan(referenceMetrics, 'z') || 0, WATERFALL_MIN_SOURCE_SPAN);
+  const sourceThickness = Math.max(getPartSpan(referenceMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+  const isFront = placement === 'front';
+  const outerZ = isFront
+    ? tabletopMetrics.max.z
+    : tabletopMetrics.min.z;
+
+  return {
+    mapPoint(point) {
+      const lengthProgress = isFront
+        ? (referenceMetrics.max.z - point.z) / sourceLength
+        : (point.z - referenceMetrics.min.z) / sourceLength;
+      const clampedLengthProgress = THREE.MathUtils.clamp(lengthProgress, 0, 1);
+      const thicknessProgress = THREE.MathUtils.clamp(
+        (referenceMetrics.max.y - point.y) / sourceThickness,
+        0,
+        1
+      );
+      const miterTopY = tabletopMetrics.max.y - (thicknessProgress * depth);
+      const targetPoint = new THREE.Vector3(point.x, 0, 0);
+      targetPoint.y = floorY + ((miterTopY - floorY) * (1 - clampedLengthProgress));
+      targetPoint.z = isFront
+        ? outerZ - (thicknessProgress * depth)
+        : outerZ + (thicknessProgress * depth);
+      return targetPoint;
+    }
+  };
+}
+
+function cloneWaterfallGeometryAttributes(sourceGeometry, targetGeometry, fallbackUvValues) {
+  const uvAttribute = sourceGeometry.getAttribute('uv');
+  const uv2Attribute = sourceGeometry.getAttribute('uv2');
+  const colorAttribute = sourceGeometry.getAttribute('color');
+
+  if (uvAttribute) targetGeometry.setAttribute('uv', uvAttribute.clone());
+  else targetGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(fallbackUvValues, 2));
+  if (uv2Attribute) targetGeometry.setAttribute('uv2', uv2Attribute.clone());
+  if (colorAttribute) targetGeometry.setAttribute('color', colorAttribute.clone());
+
+  if (sourceGeometry.index) targetGeometry.setIndex(sourceGeometry.index.clone());
+  if (Array.isArray(sourceGeometry.groups) && sourceGeometry.groups.length) {
+    sourceGeometry.groups.forEach((group) => {
+      targetGeometry.addGroup(group.start, group.count, group.materialIndex);
+    });
+  }
+  if (sourceGeometry.drawRange) {
+    targetGeometry.setDrawRange(sourceGeometry.drawRange.start, sourceGeometry.drawRange.count);
+  }
+}
+
+function createWaterfallMeshClone({
+  sourceMesh,
+  sourceMetrics,
+  tabletopMetrics,
+  placement,
+  depth,
+  floorY,
+  materialRole,
+  meshIndex
+}) {
+  const sourceGeometry = sourceMesh && sourceMesh.geometry;
+  const sourcePosition = sourceGeometry && sourceGeometry.getAttribute('position');
+  if (!sourceMesh || !sourceGeometry || !sourcePosition) return null;
+
+  const sourceMaterial = cloneWaterfallMaterials(sourceMesh.material);
+  if (!sourceMaterial || (Array.isArray(sourceMaterial) && !sourceMaterial.some(Boolean))) return null;
+
+  sourceMesh.updateWorldMatrix(true, false);
+  const sourceToWorld = sourceMesh.matrixWorld;
+  const mapContext = createWaterfallMapContext({
+    placement,
+    sourceMetrics,
+    tabletopMetrics,
+    depth,
+    floorY
+  });
+  const positions = [];
+  const fallbackUvValues = [];
+  const point = new THREE.Vector3();
+  const mappedPoint = new THREE.Vector3();
+
+  for (let index = 0; index < sourcePosition.count; index += 1) {
+    point.fromBufferAttribute(sourcePosition, index).applyMatrix4(sourceToWorld);
+    mappedPoint.copy(point);
+
+    const targetPoint = mapContext.mapPoint(mappedPoint);
+    positions.push(targetPoint.x, targetPoint.y, targetPoint.z);
+
+    const fallbackUv = getFallbackWaterfallUv(point, sourceMetrics, placement);
+    fallbackUvValues.push(fallbackUv[0], fallbackUv[1]);
+  }
+
+  const targetGeometry = new THREE.BufferGeometry();
+  targetGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  cloneWaterfallGeometryAttributes(sourceGeometry, targetGeometry, fallbackUvValues);
+  targetGeometry.computeVertexNormals();
+  targetGeometry.computeBoundingBox();
+  targetGeometry.computeBoundingSphere();
+
+  const mesh = new THREE.Mesh(targetGeometry, sourceMaterial);
+  mesh.name = `${WATERFALL_PART_NAME}-${placement}-${materialRole}-${meshIndex + 1}`;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = materialRole === 'resin' ? 7 : 4;
+  return mesh;
+}
+
+function createInsetAxisRange(min, max, inset = 0) {
+  const span = max - min;
+  if (!Number.isFinite(span) || span <= WATERFALL_MIN_SOURCE_SPAN) return null;
+
+  const safeInset = Math.min(Math.max(Number(inset) || 0, 0), span * 0.45);
+  const insetMin = min + safeInset;
+  const insetMax = max - safeInset;
+  const insetSpan = insetMax - insetMin;
+
+  if (!Number.isFinite(insetSpan) || insetSpan <= WATERFALL_MIN_SOURCE_SPAN) return null;
+  return {
+    min: insetMin,
+    max: insetMax,
+    center: (insetMin + insetMax) / 2,
+    span: insetSpan
+  };
+}
+
+function getRangeProgress(value, range) {
+  if (!range || !Number.isFinite(range.span) || range.span <= WATERFALL_MIN_SOURCE_SPAN) return 0;
+  return THREE.MathUtils.clamp((value - range.min) / range.span, 0, 1);
+}
+
+function applyWaterfallResinMiterTop(geometry, {
+  isFront,
+  outerZ,
+  depth,
+  tabletopMetrics,
+  yRange
+}) {
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!positionAttribute || !tabletopMetrics || !yRange || !Number.isFinite(depth) || depth <= 0) return;
+
+  const tabletopThickness = Math.max(getPartSpan(tabletopMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+  const topVertexThreshold = yRange.center;
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    const currentY = positionAttribute.getY(index);
+    if (currentY < topVertexThreshold) continue;
+
+    const vertexZ = positionAttribute.getZ(index);
+    const distanceFromOuter = isFront ? outerZ - vertexZ : vertexZ - outerZ;
+    const miterProgress = THREE.MathUtils.clamp(distanceFromOuter / depth, 0, 1);
+    const miterY = tabletopMetrics.max.y - (miterProgress * tabletopThickness) - WATERFALL_RESIN_MITER_RELIEF;
+    positionAttribute.setY(index, THREE.MathUtils.clamp(miterY, yRange.min + WATERFALL_MIN_SOURCE_SPAN, yRange.max));
+  }
+
+  positionAttribute.needsUpdate = true;
+}
+
+function applyWaterfallResinBoxUvs(geometry, {
+  isFront,
+  outerZ,
+  depth,
+  tabletopMetrics,
+  xRange,
+  yRange
+}) {
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  const normalAttribute = geometry && geometry.getAttribute('normal');
+  if (!positionAttribute || !tabletopMetrics || !xRange || !yRange || !Number.isFinite(depth) || depth <= 0) return;
+
+  if (!geometry.getAttribute('uv') || geometry.getAttribute('uv').count !== positionAttribute.count) {
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(positionAttribute.count * 2, 2));
+  }
+
+  const uvAttribute = geometry.getAttribute('uv');
+  const tabletopThickness = Math.max(getPartSpan(tabletopMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    const vertexX = positionAttribute.getX(index);
+    const vertexY = positionAttribute.getY(index);
+    const vertexZ = positionAttribute.getZ(index);
+    const distanceFromOuter = isFront ? outerZ - vertexZ : vertexZ - outerZ;
+    const depthProgress = THREE.MathUtils.clamp(distanceFromOuter / depth, 0, 1);
+    const miterTopY = tabletopMetrics.max.y - (depthProgress * tabletopThickness) - WATERFALL_RESIN_MITER_RELIEF;
+    const verticalSpan = Math.max(miterTopY - yRange.min, WATERFALL_MIN_SOURCE_SPAN);
+    const verticalProgress = THREE.MathUtils.clamp((vertexY - yRange.min) / verticalSpan, 0, 1);
+    const xProgress = getRangeProgress(vertexX, xRange);
+
+    const normalY = normalAttribute ? Math.abs(normalAttribute.getY(index)) : 0;
+    const normalX = normalAttribute ? Math.abs(normalAttribute.getX(index)) : 0;
+    const u = normalX > 0.5 ? depthProgress : xProgress;
+    // Mirror from the tabletop edge down the waterfall face instead of using BoxGeometry's default face UVs.
+    const v = normalY > 0.5 ? depthProgress : 1 - verticalProgress;
+
+    uvAttribute.setXY(index, u, v);
+  }
+
+  uvAttribute.needsUpdate = true;
+}
+
+function createWaterfallResinBoxMesh({
+  sourceRoot,
+  epoxyMetrics,
+  tabletopMetrics,
+  placement,
+  depth,
+  floorY,
+  meshIndex
+}) {
+  if (!sourceRoot || !epoxyMetrics || !tabletopMetrics || !Number.isFinite(depth) || depth <= 0) return null;
+
+  const sourceMaterial = getFirstMeshMaterial(sourceRoot);
+  const material = cloneWaterfallMaterial(sourceMaterial);
+  if (!material) return null;
+
+  const xRange = createInsetAxisRange(
+    Math.max(epoxyMetrics.min.x, tabletopMetrics.min.x),
+    Math.min(epoxyMetrics.max.x, tabletopMetrics.max.x),
+    WATERFALL_RESIN_BOX_INSET
+  );
+  const yRange = createInsetAxisRange(floorY, tabletopMetrics.max.y, WATERFALL_RESIN_BOX_INSET);
+  const isFront = placement === 'front';
+  const outerZ = isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z;
+  const resinDepth = Math.max(depth * WATERFALL_RESIN_BOX_DEPTH_SCALE, WATERFALL_MIN_SOURCE_SPAN);
+  const zRange = createInsetAxisRange(
+    isFront ? outerZ - resinDepth : outerZ,
+    isFront ? outerZ : outerZ + resinDepth,
+    WATERFALL_RESIN_BOX_INSET
+  );
+
+  if (!xRange || !yRange || !zRange) return null;
+
+  const geometry = new THREE.BoxGeometry(xRange.span, yRange.span, zRange.span);
+  geometry.translate(xRange.center, yRange.center, zRange.center);
+  applyWaterfallResinMiterTop(geometry, {
+    isFront,
+    outerZ,
+    depth,
+    tabletopMetrics,
+    yRange
+  });
+  geometry.computeVertexNormals();
+  applyWaterfallResinBoxUvs(geometry, {
+    isFront,
+    outerZ,
+    depth,
+    tabletopMetrics,
+    xRange,
+    yRange
+  });
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = `${WATERFALL_PART_NAME}-${placement}-resin-box-${meshIndex + 1}`;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 7;
+  return mesh;
+}
+
+function getWaterfallPlacementNames(config = {}) {
+  const waterfallCount = getWaterfallEdgeCount(state);
+  if (waterfallCount <= 0) return [];
+  if (waterfallCount >= 2) return ['front', 'back'];
+
+  const cameraSettings = getCameraSettings(config);
+  return Number(cameraSettings.offset[2]) < 0 ? ['back'] : ['front'];
+}
+
+function addWaterfallSourceClones({
+  sourceRoot,
+  sourceMetrics,
+  waterfallRoot,
+  tabletopMetrics,
+  placements,
+  depth,
+  floorY,
+  materialRole
+}) {
+  if (!sourceRoot || !sourceMetrics || !waterfallRoot) return;
+
+  placements.forEach((placement) => {
+    let meshIndex = 0;
+    sourceRoot.traverse((child) => {
+      if (!child || !child.isMesh) return;
+      const clone = createWaterfallMeshClone({
+        sourceMesh: child,
+        sourceMetrics,
+        tabletopMetrics,
+        placement,
+        depth,
+        floorY,
+        materialRole,
+        meshIndex
+      });
+      meshIndex += 1;
+      if (clone) waterfallRoot.add(clone);
+    });
+  });
+}
+
+function addWaterfallResinBoxClones({
+  sourceRoot,
+  epoxyMetrics,
+  waterfallRoot,
+  tabletopMetrics,
+  placements,
+  depth,
+  floorY
+}) {
+  if (!sourceRoot || !epoxyMetrics || !waterfallRoot || !tabletopMetrics || !Array.isArray(placements)) return;
+
+  placements.forEach((placement, meshIndex) => {
+    const resinBox = createWaterfallResinBoxMesh({
+      sourceRoot,
+      epoxyMetrics,
+      tabletopMetrics,
+      placement,
+      depth,
+      floorY,
+      meshIndex
+    });
+    if (resinBox) waterfallRoot.add(resinBox);
+  });
+}
+
+function computeWaterfallTransform(renderRoot, config = {}, unitsPerInch, tabletopMetrics, epoxyMetrics) {
+  if (!renderRoot) return;
+
+  const waterfallRoot = renderRoot.getObjectByName(WATERFALL_PART_NAME);
+  if (!waterfallRoot) return;
+
+  clearGeneratedPart(waterfallRoot);
+
+  const placements = getWaterfallPlacementNames(config);
+  const floorY = 0;
+  const tabletopThickness = tabletopMetrics ? getPartSpan(tabletopMetrics, 'y') : null;
+  const fallbackDepth = WATERFALL_DEPTH_IN * unitsPerInch;
+  const depth = Number.isFinite(tabletopThickness) && tabletopThickness > 0
+    ? tabletopThickness
+    : fallbackDepth;
+  const height = tabletopMetrics ? tabletopMetrics.max.y - floorY : null;
+  const width = tabletopMetrics ? getPartSpan(tabletopMetrics, 'x') : null;
+  const tabletopRoot = renderRoot.getObjectByName('tabletop');
+  const epoxyRoot = renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME);
+
+  resetWaterfallMiterGeometry(tabletopRoot);
+  resetWaterfallMiterGeometry(epoxyRoot);
+
+  if (
+    !placements.length
+    || !tabletopMetrics
+    || !Number.isFinite(width)
+    || !Number.isFinite(height)
+    || !Number.isFinite(depth)
+    || width <= 0
+    || height <= 0
+    || depth <= 0
+  ) {
+    waterfallRoot.visible = false;
+    return;
+  }
+
+  if (!tabletopRoot) {
+    waterfallRoot.visible = false;
+    return;
+  }
+
+  renderRoot.updateWorldMatrix(true, true);
+
+  addWaterfallSourceClones({
+    sourceRoot: tabletopRoot,
+    sourceMetrics: tabletopMetrics,
+    waterfallRoot,
+    tabletopMetrics,
+    placements,
+    depth,
+    floorY,
+    materialRole: 'wood'
+  });
+  addWaterfallResinBoxClones({
+    sourceRoot: epoxyRoot,
+    waterfallRoot,
+    tabletopMetrics,
+    epoxyMetrics,
+    placements,
+    depth,
+    floorY
+  });
+
+  applyWaterfallMiterGeometry(tabletopRoot, tabletopMetrics, placements, depth);
+  applyWaterfallMiterGeometry(epoxyRoot, tabletopMetrics, placements, depth);
+  waterfallRoot.visible = waterfallRoot.children.length > 0;
+}
+
 function getFirstMeshMaterial(root) {
   if (!root) return null;
   let material = null;
@@ -1430,6 +2041,7 @@ function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletop
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
+  resetWaterfallMiterGeometry(renderRoot);
 
   const basePartStates = renderRoot.userData.basePartStates || {};
   const rules = getDimensionRules(config);
@@ -1449,6 +2061,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     ? tabletopBaseState.metrics.min.y + heightDeltaUnits
     : null;
   let tabletopMetrics = null;
+  let epoxyMetrics = null;
   let tabletopRoot = null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
@@ -1462,8 +2075,11 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     const partConfig = getPartConfig(partRoot);
     const role = partConfig.role || '';
 
+    if (role === 'waterfall' || partName === WATERFALL_PART_NAME) return;
+
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
       computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
+      epoxyMetrics = getObjectMetrics(partRoot);
       return;
     }
 
@@ -1492,6 +2108,9 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   computeUChannelTransforms(renderRoot, basePartStates, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY);
   computeGlassTopTransform(renderRoot, unitsPerInch);
   computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot);
+  computeWaterfallTransform(renderRoot, config, unitsPerInch, tabletopMetrics, epoxyMetrics);
+  setActiveResinPreviewMaterialsFromRoot(renderRoot);
+  updateResinPreviewMaterialsForView();
 
   return scaleMap;
 }
@@ -1641,6 +2260,16 @@ function createGlassTopPart() {
   glassRoot.add(glassMesh);
   glassRoot.visible = false;
   return glassRoot;
+}
+
+function createWaterfallPart() {
+  const waterfallRoot = new THREE.Group();
+  waterfallRoot.name = WATERFALL_PART_NAME;
+  waterfallRoot.userData.partConfig = {
+    role: 'waterfall'
+  };
+  waterfallRoot.visible = false;
+  return waterfallRoot;
 }
 
 function createLowerShelfPart() {
@@ -1906,15 +2535,11 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
     previewMaterial.color.setHex(0xffffff);
   }
   previewMaterial.map = texture;
-  previewMaterial.transparent = !isSolidBlack;
-  previewMaterial.opacity = isSolidBlack
-    ? 1
-    : (sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
-      ? Math.min(1, Number(sourceMaterial.opacity) * 2)
-      : 0.98);
+  previewMaterial.transparent = false;
+  previewMaterial.opacity = 1;
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
-  if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : RESIN_PREVIEW_TOP_VIEW_TRANSMISSION;
+  if ('transmission' in previewMaterial) previewMaterial.transmission = 0;
   if ('thickness' in previewMaterial) previewMaterial.thickness = 1.1;
   if ('ior' in previewMaterial) previewMaterial.ior = 1.46;
   if ('envMapIntensity' in previewMaterial) previewMaterial.envMapIntensity = 1.08;
@@ -1924,7 +2549,7 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   if ('attenuationColor' in previewMaterial) previewMaterial.attenuationColor = new THREE.Color(resinTint);
   previewMaterial.userData = {
     ...(previewMaterial.userData || {}),
-    resinPreviewMaterial: !isSolidBlack
+    resinPreviewMaterial: false
   };
   previewMaterial.needsUpdate = true;
   return previewMaterial;
@@ -2352,6 +2977,129 @@ function setLiveStatus(message) {
   if (dom.liveRegion) dom.liveRegion.textContent = message;
 }
 
+function formatDebugAxisLabelColor(color) {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}
+
+function createDebugAxisLabel(text, color) {
+  const canvas = document.createElement('canvas');
+  const size = 128;
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  context.clearRect(0, 0, size, size);
+  context.font = '700 72px Arial, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineWidth = 12;
+  context.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  context.fillStyle = formatDebugAxisLabelColor(color);
+  context.strokeText(text, size / 2, size / 2);
+  context.fillText(text, size / 2, size / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(DEBUG_AXIS_LABEL_SIZE, DEBUG_AXIS_LABEL_SIZE, 1);
+  return sprite;
+}
+
+function addDebugAxis(name, direction, color) {
+  if (!debugAxisRoot) return;
+  const axis = new THREE.ArrowHelper(
+    direction,
+    new THREE.Vector3(0, 0, 0),
+    DEBUG_AXIS_LENGTH,
+    color,
+    DEBUG_AXIS_HEAD_LENGTH,
+    DEBUG_AXIS_HEAD_WIDTH
+  );
+  axis.name = `debug-axis-${name}`;
+  debugAxisRoot.add(axis);
+
+  const label = createDebugAxisLabel(name.toUpperCase(), color);
+  label.position.copy(direction).multiplyScalar(DEBUG_AXIS_LENGTH + DEBUG_AXIS_LABEL_OFFSET);
+  label.name = `debug-axis-${name}-label`;
+  debugAxisRoot.add(label);
+}
+
+function createDebugAxisScene() {
+  debugAxisScene = new THREE.Scene();
+  debugAxisCamera = new THREE.OrthographicCamera(-1.9, 1.9, 1.9, -1.9, 0.1, 10);
+  debugAxisCamera.position.set(0, 0, 4);
+  debugAxisCamera.lookAt(0, 0, 0);
+
+  debugAxisRoot = new THREE.Group();
+  debugAxisScene.add(debugAxisRoot);
+  addDebugAxis('x', new THREE.Vector3(1, 0, 0), DEBUG_AXIS_COLORS.x);
+  addDebugAxis('y', new THREE.Vector3(0, 1, 0), DEBUG_AXIS_COLORS.y);
+  addDebugAxis('z', new THREE.Vector3(0, 0, 1), DEBUG_AXIS_COLORS.z);
+}
+
+function mountDebugAxisIndicator() {
+  if (!dom.surface || debugAxisContainer) return;
+
+  debugAxisContainer = document.createElement('div');
+  debugAxisContainer.className = 'viewer-debug-axis';
+  debugAxisContainer.hidden = !viewerDebugEnabled;
+  debugAxisContainer.setAttribute('aria-hidden', 'true');
+
+  debugAxisRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  debugAxisRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  debugAxisRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  debugAxisRenderer.setSize(DEBUG_AXIS_SIZE, DEBUG_AXIS_SIZE, false);
+  debugAxisRenderer.domElement.setAttribute('aria-hidden', 'true');
+  debugAxisContainer.appendChild(debugAxisRenderer.domElement);
+
+  createDebugAxisScene();
+  dom.surface.appendChild(debugAxisContainer);
+}
+
+function updateDebugAxisVisibility() {
+  if (!viewerDebugEnabled && !debugAxisContainer) return;
+  mountDebugAxisIndicator();
+  if (debugAxisContainer) debugAxisContainer.hidden = !viewerDebugEnabled;
+}
+
+function renderDebugAxisIndicator() {
+  if (
+    !viewerDebugEnabled
+    || !debugAxisRenderer
+    || !debugAxisScene
+    || !debugAxisCamera
+    || !debugAxisRoot
+    || !camera
+  ) return;
+
+  debugAxisRoot.quaternion.copy(camera.quaternion).invert();
+  debugAxisRenderer.render(debugAxisScene, debugAxisCamera);
+}
+
+function setViewerDebugMode(enabled) {
+  viewerDebugEnabled = enabled === true;
+  setDebugModeEnabled(viewerDebugEnabled, { source: 'WLViewerDebug' });
+  updateDebugAxisVisibility();
+  console.info(`Viewer debug mode ${viewerDebugEnabled ? 'enabled' : 'disabled'}.`);
+  return viewerDebugEnabled;
+}
+
+function installViewerDebugConsoleApi() {
+  if (typeof window === 'undefined') return;
+  window.WLViewerDebug = {
+    enable: () => setViewerDebugMode(true),
+    disable: () => setViewerDebugMode(false),
+    toggle: () => setViewerDebugMode(!viewerDebugEnabled),
+    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled()
+  };
+}
+
 function hideStatusBox() {
   if (!dom.statusBox) return;
   dom.statusBox.hidden = true;
@@ -2468,13 +3216,7 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     : '';
   const legAndTubeTitle = tubeTitle ? `${legTitle} + ${tubeTitle}` : legTitle;
 
-  if (selectionContext.waterfallCount >= 2 && selectionContext.visibleLegCount <= 0) {
-    return {
-      title: 'Waterfall leg layout',
-      reason: 'Two waterfalls replace the leg assembly, and waterfall geometry is not modeled in the local viewer yet.',
-      selectionNames: ['Waterfall leg layout']
-    };
-  }
+  if (selectionContext.waterfallCount >= 2 && selectionContext.visibleLegCount <= 0) return null;
 
   if (legId === LEG_NONE_ID) {
     return {
@@ -2615,15 +3357,12 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
-  if (selectedAddons.some((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId)) && getWaterfallEdgeCount(state) < 2) {
-    const waterfallNames = selectedAddons
-      .filter((addonId) => WATERFALL_VIEWER_ADDON_IDS.has(addonId))
-      .map((addonId) => getOptionDisplayName('addon', addonId, 'Waterfall edge'));
+  if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
     pushViewerNotice(
       notices,
-      'Waterfall edge',
-      'Waterfall geometry is not fully modeled in the viewer yet; the preview only adjusts the leg arrangement.',
-      waterfallNames
+      'Waterfall art',
+      'Waterfall art is quoted to spec and is not shown in the standard viewer.',
+      getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
     );
   }
   if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
@@ -3016,6 +3755,7 @@ async function buildRenderRoot(config) {
   const parts = await Promise.all(renderableParts.map((partConfig, index) => buildRenderAsset(partConfig, index)));
   parts.forEach((partRoot) => renderRoot.add(partRoot));
   renderRoot.add(createGlassTopPart());
+  renderRoot.add(createWaterfallPart());
   renderRoot.add(createLowerShelfPart());
   await applySelectedTabletopMaterial(renderRoot);
   await applySelectedTabletopSheen(renderRoot);
@@ -3225,6 +3965,10 @@ export function resizeViewer() {
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
+  if (debugAxisRenderer) {
+    debugAxisRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    debugAxisRenderer.setSize(DEBUG_AXIS_SIZE, DEBUG_AXIS_SIZE, false);
+  }
 }
 
 export function initViewerControls() {
@@ -3374,6 +4118,7 @@ export async function initViewer() {
     if (controls) controls.update();
     updateResinPreviewMaterialsForView();
     renderer.render(scene, camera);
+    renderDebugAxisIndicator();
   });
 
   if (typeof ResizeObserver === 'function') {
@@ -3387,11 +4132,14 @@ export async function initViewer() {
   }
 
   initialized = true;
+  updateDebugAxisVisibility();
   initViewerControls();
   resizeViewer();
   showEmptyState();
   await updateModel(state && state.selections ? state.selections.model : null);
 }
+
+installViewerDebugConsoleApi();
 
 window.addEventListener('resize', () => {
   if (resizeTimeout) clearTimeout(resizeTimeout);

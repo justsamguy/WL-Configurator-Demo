@@ -35,6 +35,7 @@ This repo maintains multiple rule files for different tools/agents. Keep shared 
 - **Edit version rule:** After app edits, increment the `Edit ver:` line immediately after it by 1.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
 - **UI styling:** For JS-generated UI, prefer class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
+- Because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default. Do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
 - For runtime verification, prefer a live server environment or GitHub Pages instead of opening `index.html` via `file://`.
 
 ## Provenance

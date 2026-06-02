@@ -1,5 +1,6 @@
 import { showOptionCardInfoDialog } from './ui/optionCardInfoDialog.js';
 import { scrollElementToTop } from './ui/scrollAlignment.js';
+import { DEBUG_MODE_CHANGED_EVENT, isDebugModeEnabled } from './debugMode.js';
 import {
   getLowerShelfCompatibilityTooltip,
   isLowerShelfCompatibleContext,
@@ -7,7 +8,7 @@ import {
 } from './legGeometry.js';
 
 // Renders option-card buttons from a data array into a container element.
-// data: array of { id, title, price, image, description, disabled, tooltip }
+// data: array of { id, title, price, image, description, disabled, disabledForTesting, tooltip }
 // opts.showPrice: set false to hide price text for the rendered tiles
 function isQuotedLabel(value) {
   return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
@@ -24,6 +25,175 @@ function formatPriceLabel(value, opts = {}) {
 }
 
 let optionCardInfoObserver = null;
+let testingDisabledObserver = null;
+let testingDisabledSyncQueued = false;
+
+const TESTING_DISABLED_TOOLTIP = 'Coming soon. Enable debug mode to test this option.';
+
+function isTestingDisabledItem(item = {}) {
+  return item
+    && (item.disabledForTesting === true || item.testingDisabled === true || item.comingSoon === true);
+}
+
+function getTestingDisabledLabel(item = {}) {
+  const label = item.testingDisabledLabel || item.comingSoonLabel || 'COMING SOON';
+  return String(label || 'COMING SOON').trim() || 'COMING SOON';
+}
+
+function getTestingDisabledTooltip(item = {}) {
+  return String(item.testingDisabledTooltip || item.tooltip || TESTING_DISABLED_TOOLTIP).trim() || TESTING_DISABLED_TOOLTIP;
+}
+
+function getDisabledByList(el) {
+  const raw = el ? el.getAttribute('data-disabled-by') || '' : '';
+  return raw ? raw.split('||').filter(Boolean) : [];
+}
+
+function hasHardDisabledState(el) {
+  if (!el) return false;
+  if (el.getAttribute('data-hard-disabled') === 'true') return true;
+  return getDisabledByList(el).length > 0;
+}
+
+function setControlDisabled(el, disabled) {
+  if (!el) return;
+  if ('disabled' in el) {
+    if (el.disabled !== disabled) el.disabled = disabled;
+  }
+  if (disabled) {
+    if (!el.hasAttribute('disabled')) el.setAttribute('disabled', 'true');
+    if (el.getAttribute('aria-disabled') !== 'true') el.setAttribute('aria-disabled', 'true');
+    el.classList.add('disabled');
+  } else {
+    if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
+    if (el.hasAttribute('aria-disabled')) el.removeAttribute('aria-disabled');
+    el.classList.remove('disabled');
+  }
+}
+
+function setHardDisabled(el, tooltip = '') {
+  if (!el) return;
+  el.setAttribute('data-hard-disabled', 'true');
+  setControlDisabled(el, true);
+  if (tooltip) el.setAttribute('data-tooltip', tooltip);
+}
+
+function setSoftDisabled(el, tooltip = '', disabledBy = 'compatibility') {
+  if (!el) return;
+  setControlDisabled(el, true);
+  if (disabledBy) el.setAttribute('data-disabled-by', disabledBy);
+  if (tooltip) el.setAttribute('data-tooltip', tooltip);
+}
+
+function setTestingTooltip(el) {
+  if (!el || el.getAttribute('data-testing-tooltip-active') === 'true') return;
+  el.setAttribute('data-testing-original-tooltip', el.getAttribute('data-tooltip') || '');
+  el.setAttribute('data-tooltip', el.getAttribute('data-testing-disabled-tooltip') || TESTING_DISABLED_TOOLTIP);
+  el.setAttribute('data-testing-tooltip-active', 'true');
+}
+
+function restoreTestingTooltip(el) {
+  if (!el || el.getAttribute('data-testing-tooltip-active') !== 'true') return;
+  const originalTooltip = el.getAttribute('data-testing-original-tooltip') || '';
+  const testingTooltip = el.getAttribute('data-testing-disabled-tooltip') || TESTING_DISABLED_TOOLTIP;
+  const currentTooltip = el.getAttribute('data-tooltip') || '';
+  if (currentTooltip === testingTooltip) {
+    if (originalTooltip) el.setAttribute('data-tooltip', originalTooltip);
+    else el.removeAttribute('data-tooltip');
+  }
+  el.removeAttribute('data-testing-original-tooltip');
+  el.removeAttribute('data-testing-tooltip-active');
+}
+
+function ensureTestingDisabledOverlay(el, label) {
+  if (!el) return;
+  let overlay = el.querySelector(':scope > .option-testing-disabled-overlay');
+  if (!overlay) {
+    overlay = document.createElement('span');
+    overlay.className = 'option-testing-disabled-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    el.appendChild(overlay);
+  }
+  overlay.textContent = label;
+}
+
+function syncTestingDisabledControl(el) {
+  if (!el || el.getAttribute('data-testing-disabled') !== 'true') return;
+  const unlocked = isDebugModeEnabled();
+  const hasHardDisable = hasHardDisabledState(el);
+
+  el.classList.toggle('is-testing-disabled-active', !unlocked);
+  el.classList.toggle('is-testing-disabled-unlocked', unlocked);
+
+  if (unlocked) {
+    el.setAttribute('data-testing-disabled-active', 'false');
+    restoreTestingTooltip(el);
+    setControlDisabled(el, hasHardDisable);
+    return;
+  }
+
+  el.setAttribute('data-testing-disabled-active', 'true');
+  setControlDisabled(el, true);
+  setTestingTooltip(el);
+}
+
+export function applyTestingDisabledState(el, item = {}, options = {}) {
+  if (!el || !isTestingDisabledItem(item)) return;
+  el.setAttribute('data-testing-disabled', 'true');
+  el.setAttribute('data-testing-disabled-tooltip', getTestingDisabledTooltip(item));
+  el.classList.add('is-testing-disabled');
+  if (options.overlay !== false) {
+    ensureTestingDisabledOverlay(el, getTestingDisabledLabel(item));
+  }
+  syncTestingDisabledControl(el);
+}
+
+function syncTestingDisabledControls(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('[data-testing-disabled="true"]').forEach((el) => {
+    syncTestingDisabledControl(el);
+  });
+}
+
+function queueTestingDisabledSync(root = document) {
+  if (testingDisabledSyncQueued) return;
+  testingDisabledSyncQueued = true;
+  const run = () => {
+    testingDisabledSyncQueued = false;
+    syncTestingDisabledControls(root);
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+  else setTimeout(run, 0);
+}
+
+function initTestingDisabledSync() {
+  if (typeof document === 'undefined') return;
+  document.addEventListener(DEBUG_MODE_CHANGED_EVENT, () => syncTestingDisabledControls(document));
+  if (typeof MutationObserver === 'undefined') return;
+
+  const startObserver = () => {
+    if (testingDisabledObserver || !document.body) return;
+    testingDisabledObserver = new MutationObserver((mutations) => {
+      const shouldSync = mutations.some((mutation) => (
+        mutation.type === 'attributes'
+        && mutation.target instanceof Element
+        && mutation.target.getAttribute('data-testing-disabled') === 'true'
+        && (mutation.attributeName === 'disabled' || mutation.attributeName === 'data-disabled-by' || mutation.attributeName === 'data-hard-disabled')
+      ));
+      if (shouldSync) queueTestingDisabledSync(document);
+    });
+    testingDisabledObserver.observe(document.body, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['disabled', 'data-disabled-by', 'data-hard-disabled']
+    });
+  };
+
+  if (document.body) startObserver();
+  else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+}
+
+initTestingDisabledSync();
 
 function isAddonTile(card) {
   if (!card) return false;
@@ -55,6 +225,7 @@ function isActivationEvent(ev) {
 
 function applyOptionCardInfoDialogTrigger(card) {
   if (!card || card.dataset.infoEnhanced === 'true') return;
+  if (card.hasAttribute('disabled') || card.getAttribute('data-testing-disabled') === 'true') return;
   if (isAddonTile(card) || isExcludedStageTile(card) || isCustomInputTile(card)) return;
 
   const titleEl = card.querySelector('.title');
@@ -151,8 +322,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.setAttribute('aria-pressed', 'false');
     }
     if (item.disabled) {
-      btn.setAttribute('disabled', 'true');
-      if (item.tooltip) btn.setAttribute('data-tooltip', item.tooltip);
+      setHardDisabled(btn, item.tooltip || '');
     }
 
     if (item.badge) {
@@ -172,6 +342,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
       img.decoding = 'async';
+      img.draggable = false;
       btn.appendChild(img);
     }
 
@@ -195,6 +366,7 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.appendChild(d);
     }
 
+    applyTestingDisabledState(btn, item);
     fragment.appendChild(btn);
   });
   container.replaceChildren(fragment);
@@ -251,6 +423,7 @@ function buildAddonIntro(group = {}) {
     image.className = 'addons-dropdown-intro-image';
     image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
     image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+    image.draggable = false;
     introWrapper.appendChild(image);
   }
 
@@ -409,16 +582,16 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
               (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
-            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+            const isConfiguredDisabled = group.disabled || subsection.disabled || option.disabled;
+            const isDisabled = isConfiguredDisabled || isIncompatible;
 
             if (isDisabled) {
-              btn.disabled = true;
-              btn.classList.add('disabled');
               let tooltip = resolveTooltip(option, subsection);
               if (isInnerlightingIncompatible) {
                 tooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
               }
-              if (tooltip) btn.setAttribute('data-tooltip', tooltip);
+              if (isConfiguredDisabled) setHardDisabled(btn, tooltip || '');
+              else setSoftDisabled(btn, tooltip || '', 'design-compatibility');
             }
 
             if (option.image) {
@@ -426,6 +599,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               img.className = 'addons-tile-image';
               img.src = option.image;
               img.alt = option.title ? `Preview of ${option.title}` : 'Tech option';
+              img.draggable = false;
               btn.appendChild(img);
             }
 
@@ -439,6 +613,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
             btn.appendChild(label);
             btn.appendChild(price);
+            applyTestingDisabledState(btn, option);
             tilesContainer.appendChild(btn);
 
           });
@@ -450,10 +625,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const groupId = subsection.groupId || subsection.title;
           select.setAttribute('data-addon-group', groupId);
           if (group.disabled || subsection.disabled) {
-            select.disabled = true;
-            select.classList.add('disabled');
             const tooltip = resolveTooltip({}, subsection);
-            if (tooltip) select.setAttribute('data-tooltip', tooltip);
+            setHardDisabled(select, tooltip || '');
           }
 
           subsection.options.forEach(option => {
@@ -468,11 +641,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
               (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
-            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+            const isConfiguredDisabled = group.disabled || subsection.disabled || option.disabled;
+            const isDisabled = isConfiguredDisabled || isIncompatible;
 
             if (isDisabled) {
-              opt.disabled = true;
+              if (isConfiguredDisabled) setHardDisabled(opt);
+              else setSoftDisabled(opt, '', 'design-compatibility');
             }
+            applyTestingDisabledState(opt, option, { overlay: false });
             select.appendChild(opt);
           });
 
@@ -515,27 +691,29 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
             (hasLiveEdge || hasWaterfall);
           const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible;
-          const isDisabled = group.disabled || option.disabled || isIncompatible;
+          const isConfiguredDisabled = group.disabled || option.disabled;
+          const isDisabled = isConfiguredDisabled || isIncompatible;
 
           if (isDisabled) {
-            btn.disabled = true;
-            btn.classList.add('disabled');
-            btn.setAttribute('aria-disabled', 'true');
             let incompatibilityTooltip = tooltip;
+            let disabledBySource = 'edge-profile-base';
             if (isRoundedCornersIncompatible || isAngledCornersIncompatible) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isChamferedEdgesIncompatible) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
             } else if (isSquovalIncompatible) {
               incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
+              disabledBySource = 'edge-profile';
             }
-            if (incompatibilityTooltip) btn.setAttribute('data-tooltip', incompatibilityTooltip);
+            if (isConfiguredDisabled) setHardDisabled(btn, incompatibilityTooltip || '');
+            else setSoftDisabled(btn, incompatibilityTooltip || '', disabledBySource);
           }
 
           const img = document.createElement('img');
           img.className = 'addons-tile-image';
           img.src = option.image || group.image || DEFAULT_ADDON_INTRO_IMAGE;
           img.alt = option.title ? `Preview of ${option.title}` : 'Customization option';
+          img.draggable = false;
           btn.appendChild(img);
 
           const label = document.createElement('div');
@@ -548,6 +726,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
           btn.appendChild(label);
           btn.appendChild(optionPrice);
+          applyTestingDisabledState(btn, option);
           tilesContainer.appendChild(btn);
         });
       }
@@ -604,15 +783,15 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             isLowerShelfCompatibleModel(currentModel) &&
             !isLowerShelfCompatibleContext({ modelId: currentModel, legId: currentLeg });
           const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle || isLowerShelfLegIncompatible;
-          const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
+          const isConfiguredDisabled = group.disabled || option.disabled;
+          const isDisabled = isConfiguredDisabled || isIncompatible || isLiveEdgeRequired;
 
           if (isDisabled) {
-            checkbox.disabled = true;
-            optionDiv.classList.add('disabled');
-            optionDiv.setAttribute('aria-disabled', 'true');
             let incompatibilityTooltip = tooltip;
+            let disabledBySource = 'addon-compatibility';
             if (requiresWaterfallSingle) {
               incompatibilityTooltip = 'Select Single Waterfall to enable';
+              disabledBySource = 'waterfall';
               checkbox.setAttribute('data-disabled-by', 'waterfall');
               optionDiv.setAttribute('data-disabled-by', 'waterfall');
             } else if (isRoundedCornersIncompatible) {
@@ -625,16 +804,26 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
             } else if (isSquovalIncompatible) {
               incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
+              disabledBySource = 'edge-profile-base';
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
+              disabledBySource = 'squoval';
             } else if (isLowerShelfLegIncompatible) {
               incompatibilityTooltip = getLowerShelfCompatibilityTooltip();
+              disabledBySource = 'lower-shelf';
               checkbox.setAttribute('data-disabled-by', 'lower-shelf');
               optionDiv.setAttribute('data-disabled-by', 'lower-shelf');
             } else if (isLiveEdgeRequired) {
               incompatibilityTooltip = 'Included with Slab design';
+              disabledBySource = 'included-with-design';
             }
-            if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
+            if (isConfiguredDisabled) {
+              setHardDisabled(checkbox);
+              setHardDisabled(optionDiv, incompatibilityTooltip || '');
+            } else {
+              setSoftDisabled(checkbox, '', disabledBySource);
+              setSoftDisabled(optionDiv, incompatibilityTooltip || '', disabledBySource);
+            }
           }
 
           const label = document.createElement('div');
@@ -648,6 +837,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
           optionDiv.appendChild(optionPrice);
+          applyTestingDisabledState(optionDiv, option);
+          applyTestingDisabledState(checkbox, option, { overlay: false });
 
           options.appendChild(optionDiv);
         });
@@ -658,7 +849,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
     // Handle disabled state
     if (group.disabled) {
-      content.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+      content.querySelectorAll('input, button, select').forEach(el => setHardDisabled(el));
       if (group.tooltip) {
         tile.setAttribute('data-tooltip', group.tooltip);
       }
@@ -721,6 +912,7 @@ export function renderSheenSlider(container, data = []) {
       img.src = item.image;
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
+      img.draggable = false;
       tile.appendChild(img);
     }
 
@@ -740,6 +932,8 @@ export function renderSheenSlider(container, data = []) {
       tile.appendChild(d);
     }
 
+    if (item.disabled) setHardDisabled(tile, item.tooltip || '');
+    applyTestingDisabledState(tile, item);
     tilesContainer.appendChild(tile);
     tileElements.push(tile);
   });
@@ -782,6 +976,7 @@ export function renderSheenSlider(container, data = []) {
   tilesContainer.addEventListener('click', (event) => {
     const tile = event.target.closest('.sheen-tile');
     if (!tile) return;
+    if (tile.hasAttribute('disabled')) return;
     const selectedIndex = tileElements.indexOf(tile);
     if (selectedIndex !== -1) {
       selectIndex(selectedIndex);
@@ -798,5 +993,6 @@ export default {
   renderAddonsDropdown,
   renderSheenSlider,
   enhanceOptionCardsWithInfo,
-  initOptionCardInfoDialogs
+  initOptionCardInfoDialogs,
+  applyTestingDisabledState
 };

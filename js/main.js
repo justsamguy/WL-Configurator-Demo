@@ -588,6 +588,14 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
         title: preset.title,
         image: preset.image,
         description: preset.description,
+        disabled: preset.disabled,
+        disabledForTesting: preset.disabledForTesting,
+        testingDisabled: preset.testingDisabled,
+        comingSoon: preset.comingSoon,
+        testingDisabledLabel: preset.testingDisabledLabel,
+        comingSoonLabel: preset.comingSoonLabel,
+        testingDisabledTooltip: preset.testingDisabledTooltip,
+        tooltip: preset.tooltip,
         badge: { label: 'Preset', tone: 'preset' },
         attributes: {
           'data-preset-id': preset.id,
@@ -994,7 +1002,7 @@ function setAddonTileDisabled(tile, shouldDisable, tooltip = '', disabledBy = ''
     tile.setAttribute('aria-pressed', 'false');
     tile.classList.remove('selected');
     if (tooltip) tile.setAttribute('data-tooltip', tooltip);
-    if (disabledBy) tile.setAttribute('data-disabled-by', disabledBy);
+    tile.setAttribute('data-disabled-by', disabledBy || 'addon-compatibility');
     return;
   }
   tile.removeAttribute('aria-disabled');
@@ -1050,6 +1058,7 @@ function updateEdgeProfileAddonAvailability(appState = state) {
     ));
     const shouldDisable = base.incompatible || disableBySelection;
     const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
+    const disabledBySource = disableBySelection ? 'edge-profile' : (base.incompatible ? 'edge-profile-base' : '');
 
     if (shouldDisable) {
       if (checkbox && option) {
@@ -1061,33 +1070,29 @@ function updateEdgeProfileAddonAvailability(appState = state) {
           checkbox.setAttribute('data-tooltip', tooltip);
           option.setAttribute('data-tooltip', tooltip);
         }
-        if (disableBySelection) {
-          checkbox.setAttribute('data-disabled-by', 'edge-profile');
-          option.setAttribute('data-disabled-by', 'edge-profile');
+        if (disabledBySource) {
+          checkbox.setAttribute('data-disabled-by', disabledBySource);
+          option.setAttribute('data-disabled-by', disabledBySource);
         }
         option.classList.add('disabled');
         option.classList.remove('selected');
         option.setAttribute('aria-disabled', 'true');
       }
-      setAddonTileDisabled(tile, true, tooltip, disableBySelection ? 'edge-profile' : '');
+      setAddonTileDisabled(tile, true, tooltip, disabledBySource);
       return;
     }
 
     const disabledBy = checkbox ? checkbox.getAttribute('data-disabled-by') || '' : '';
-    if (checkbox && option && disabledBy === 'edge-profile') {
+    if (checkbox && option && (disabledBy === 'edge-profile' || disabledBy === 'edge-profile-base')) {
       checkbox.disabled = false;
       checkbox.removeAttribute('data-disabled-by');
-      if (checkbox.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
-        checkbox.removeAttribute('data-tooltip');
-      }
+      checkbox.removeAttribute('data-tooltip');
       option.classList.remove('disabled');
       option.removeAttribute('aria-disabled');
-      if (option.getAttribute('data-disabled-by') === 'edge-profile') {
+      if (option.getAttribute('data-disabled-by') === 'edge-profile' || option.getAttribute('data-disabled-by') === 'edge-profile-base') {
         option.removeAttribute('data-disabled-by');
       }
-      if (option.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
-        option.removeAttribute('data-tooltip');
-      }
+      option.removeAttribute('data-tooltip');
     }
     if (tile) {
       setAddonTileDisabled(tile, false, tooltip, 'edge-profile');
@@ -1772,8 +1777,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-02-06 13:27');
+console.log('Last updated: 2026-06-02 17:03');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 715');
+console.log('Edit ver: 732');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
+  console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
