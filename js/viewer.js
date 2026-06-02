@@ -142,6 +142,7 @@ const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
 const WATERFALL_RESIN_BOX_INSET = 0.0015;
 const WATERFALL_RESIN_BOX_DEPTH_SCALE = 0.62;
+const WATERFALL_RESIN_MITER_RELIEF = 0.0002;
 const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
 const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
@@ -1700,6 +1701,33 @@ function createInsetAxisRange(min, max, inset = 0) {
   };
 }
 
+function applyWaterfallResinMiterTop(geometry, {
+  isFront,
+  outerZ,
+  depth,
+  tabletopMetrics,
+  yRange
+}) {
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!positionAttribute || !tabletopMetrics || !yRange || !Number.isFinite(depth) || depth <= 0) return;
+
+  const tabletopThickness = Math.max(getPartSpan(tabletopMetrics, 'y') || depth, WATERFALL_MIN_SOURCE_SPAN);
+  const topVertexThreshold = yRange.center;
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    const currentY = positionAttribute.getY(index);
+    if (currentY < topVertexThreshold) continue;
+
+    const vertexZ = positionAttribute.getZ(index);
+    const distanceFromOuter = isFront ? outerZ - vertexZ : vertexZ - outerZ;
+    const miterProgress = THREE.MathUtils.clamp(distanceFromOuter / depth, 0, 1);
+    const miterY = tabletopMetrics.max.y - (miterProgress * tabletopThickness) - WATERFALL_RESIN_MITER_RELIEF;
+    positionAttribute.setY(index, THREE.MathUtils.clamp(miterY, yRange.min + WATERFALL_MIN_SOURCE_SPAN, yRange.max));
+  }
+
+  positionAttribute.needsUpdate = true;
+}
+
 function createWaterfallResinBoxMesh({
   sourceRoot,
   epoxyMetrics,
@@ -1720,11 +1748,7 @@ function createWaterfallResinBoxMesh({
     Math.min(epoxyMetrics.max.x, tabletopMetrics.max.x),
     WATERFALL_RESIN_BOX_INSET
   );
-  const resinTopY = Number.isFinite(tabletopMetrics.min.y) && tabletopMetrics.min.y > floorY
-    ? tabletopMetrics.min.y
-    : tabletopMetrics.max.y;
-  // Stop below the tabletop so the generated waterfall resin does not z-fight with the top surface.
-  const yRange = createInsetAxisRange(floorY, resinTopY, WATERFALL_RESIN_BOX_INSET);
+  const yRange = createInsetAxisRange(floorY, tabletopMetrics.max.y, WATERFALL_RESIN_BOX_INSET);
   const isFront = placement === 'front';
   const outerZ = isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z;
   const resinDepth = Math.max(depth * WATERFALL_RESIN_BOX_DEPTH_SCALE, WATERFALL_MIN_SOURCE_SPAN);
@@ -1738,6 +1762,14 @@ function createWaterfallResinBoxMesh({
 
   const geometry = new THREE.BoxGeometry(xRange.span, yRange.span, zRange.span);
   geometry.translate(xRange.center, yRange.center, zRange.center);
+  applyWaterfallResinMiterTop(geometry, {
+    isFront,
+    outerZ,
+    depth,
+    tabletopMetrics,
+    yRange
+  });
+  geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
