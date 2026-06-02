@@ -141,6 +141,7 @@ const LIVE_EDGE_RESIN_NORMAL_Y_MIN = 0.7;
 const LIVE_EDGE_RESIN_INNER_OVERDRAW = 0.0015;
 const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
 const WATERFALL_RESIN_BOX_INSET = 0.0015;
+const WATERFALL_RESIN_BOX_DEPTH_SCALE = 0.62;
 const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
 const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
@@ -1721,9 +1722,11 @@ function createWaterfallResinBoxMesh({
   );
   const yRange = createInsetAxisRange(floorY, tabletopMetrics.max.y, WATERFALL_RESIN_BOX_INSET);
   const isFront = placement === 'front';
+  const outerZ = isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z;
+  const resinDepth = Math.max(depth * WATERFALL_RESIN_BOX_DEPTH_SCALE, WATERFALL_MIN_SOURCE_SPAN);
   const zRange = createInsetAxisRange(
-    isFront ? tabletopMetrics.max.z - depth : tabletopMetrics.min.z,
-    isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z + depth,
+    isFront ? outerZ - resinDepth : outerZ,
+    isFront ? outerZ : outerZ + resinDepth,
     WATERFALL_RESIN_BOX_INSET
   );
 
