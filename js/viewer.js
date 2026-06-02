@@ -1720,7 +1720,11 @@ function createWaterfallResinBoxMesh({
     Math.min(epoxyMetrics.max.x, tabletopMetrics.max.x),
     WATERFALL_RESIN_BOX_INSET
   );
-  const yRange = createInsetAxisRange(floorY, tabletopMetrics.max.y, WATERFALL_RESIN_BOX_INSET);
+  const resinTopY = Number.isFinite(tabletopMetrics.min.y) && tabletopMetrics.min.y > floorY
+    ? tabletopMetrics.min.y
+    : tabletopMetrics.max.y;
+  // Stop below the tabletop so the generated waterfall resin does not z-fight with the top surface.
+  const yRange = createInsetAxisRange(floorY, resinTopY, WATERFALL_RESIN_BOX_INSET);
   const isFront = placement === 'front';
   const outerZ = isFront ? tabletopMetrics.max.z : tabletopMetrics.min.z;
   const resinDepth = Math.max(depth * WATERFALL_RESIN_BOX_DEPTH_SCALE, WATERFALL_MIN_SOURCE_SPAN);
