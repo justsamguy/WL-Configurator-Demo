@@ -1,8 +1,5 @@
 # WL Configurator — Roadmap
 
-## v1.1
-- reorganize all of the files in "assets" for better organization
-PARENT BRANCH - I'm noticing that the leg/plate placement and the U-channel placement have inconsistent setback values. can you tell me whether this is incorrect values in the leg/plate setback, or in the channels?
 
 
 ## v1.2

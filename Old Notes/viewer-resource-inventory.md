@@ -189,6 +189,10 @@ Hidden / currently not expected in viewer unless restored:
 - leg placement rules for coffee, dining, and conference footprints
 - one explicit no-leg handling rule for `leg-none`
 
+### Intentional placement limitation
+
+The current viewer may show minor mismatch between leg/mounting-plate placement and U-channel placement because the preview is intended to communicate the overall table design, not serve as a 100% construction-accurate hardware layout. This was explicitly reviewed and left as-is; revisit only if the viewer scope changes from design visualization to fabrication-accurate placement.
+
 ### Tube size resources
 
 Current tube ids:
