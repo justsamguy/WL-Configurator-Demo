@@ -2536,12 +2536,8 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
     previewMaterial.color.setHex(0xffffff);
   }
   previewMaterial.map = texture;
-  previewMaterial.transparent = !isSolidBlack;
-  previewMaterial.opacity = isSolidBlack
-    ? 1
-    : (sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
-      ? Math.min(1, Number(sourceMaterial.opacity) * 2)
-      : 0.98);
+  previewMaterial.transparent = false;
+  previewMaterial.opacity = 1;
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
   if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : RESIN_PREVIEW_TOP_VIEW_TRANSMISSION;
