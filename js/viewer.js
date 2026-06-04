@@ -143,8 +143,8 @@ const LIVE_EDGE_RESIN_OUTER_CLEARANCE = 0.0015;
 const WATERFALL_RESIN_BOX_INSET = 0.0015;
 const WATERFALL_RESIN_BOX_DEPTH_SCALE = 0.62;
 const WATERFALL_RESIN_MITER_RELIEF = 0.0002;
-const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.2;
-const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.25;
+const RESIN_PREVIEW_TOP_VIEW_TRANSMISSION = 0.39;
+const RESIN_PREVIEW_END_VIEW_TRANSMISSION = 0.54;
 const RESIN_PREVIEW_TOP_VIEW_ATTENUATION_DISTANCE = 0.82;
 const RESIN_PREVIEW_END_VIEW_ATTENUATION_DISTANCE = 0.5;
 const RESIN_PREVIEW_VIEW_BLEND_MIN = 0.18;
@@ -1679,7 +1679,7 @@ function createWaterfallMeshClone({
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
-  mesh.renderOrder = materialRole === 'resin' ? 7 : 4;
+  mesh.renderOrder = materialRole === 'resin' ? 0 : 4;
   return mesh;
 }
 
@@ -1833,7 +1833,8 @@ function createWaterfallResinBoxMesh({
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
-  mesh.renderOrder = 7;
+  // Keep transparent waterfall resin in normal sorting so it does not draw over nearer tabletop resin.
+  mesh.renderOrder = 0;
   return mesh;
 }
 
@@ -2534,12 +2535,13 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   if (previewMaterial.color && typeof previewMaterial.color.setHex === 'function') {
     previewMaterial.color.setHex(0xffffff);
   }
-  const usesResinTransparency = !isSolidBlack;
   previewMaterial.map = texture;
-  previewMaterial.transparent = usesResinTransparency;
-  previewMaterial.opacity = usesResinTransparency ? 0.98 : 1;
-  previewMaterial.depthWrite = !usesResinTransparency;
-  previewMaterial.depthTest = true;
+  previewMaterial.transparent = !isSolidBlack;
+  previewMaterial.opacity = isSolidBlack
+    ? 1
+    : (sourceMaterial && Number.isFinite(Number(sourceMaterial.opacity))
+      ? Math.min(1, Number(sourceMaterial.opacity) * 2)
+      : 0.98);
   if ('metalness' in previewMaterial) previewMaterial.metalness = 0.03;
   if ('roughness' in previewMaterial) previewMaterial.roughness = 0.16;
   if ('transmission' in previewMaterial) previewMaterial.transmission = isSolidBlack ? 0 : RESIN_PREVIEW_TOP_VIEW_TRANSMISSION;
@@ -2552,7 +2554,7 @@ function cloneMaterialForResinPreview(material, texture, resinTint = DEFAULT_RES
   if ('attenuationColor' in previewMaterial) previewMaterial.attenuationColor = new THREE.Color(resinTint);
   previewMaterial.userData = {
     ...(previewMaterial.userData || {}),
-    resinPreviewMaterial: usesResinTransparency
+    resinPreviewMaterial: !isSolidBlack
   };
   previewMaterial.needsUpdate = true;
   return previewMaterial;
