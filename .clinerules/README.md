@@ -34,3 +34,5 @@ After editing any rule file, run **“Cline: Reload Rules”** in VS Code (or re
 All rules in this folder are project-specific and must align with the WoodLab Configurator guidelines, locked tech stack, and deployment requirements.
 
 Shared workflow reminder: keep placeholder-backed image fields tracked in the root `placeholder_image_fields.txt` file (add on placeholder use, remove when replaced).
+
+Shared testing reminder: because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default; do not run or suggest local visual/runtime testing unless explicitly requested.

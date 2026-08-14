@@ -4,9 +4,12 @@
 
 import { state } from '../state.js';
 import { createLogger } from '../logger.js';
+import { requiresCenterLeg } from '../pricing.js';
+import { applyTestingDisabledState } from '../stageRenderer.js';
 
 const log = createLogger('Dimensions');
-const OPTION_PLACEHOLDER_IMAGE = 'assets/images/model1_placeholder.png';
+const CUSTOM_DIMENSIONS_IMAGE = 'assets/images/Custom Dimensions.png';
+const CUSTOM_HEIGHT_IMAGE = 'assets/images/Generated Custom Height.png';
 
 let dimensionsData = null;
 let currentDimensions = {
@@ -18,7 +21,8 @@ let currentDimensions = {
 let selectedTileId = null; // Track which tile is currently selected (preset id or 'custom')
 let lastKnownModel = null; // Track the model to detect changes
 let lastKnownDesign = null; // Track the design to detect round/non-round changes
-let axisSteps = { length: 12, width: 6, 'height-custom': 5 };
+let axisSteps = { length: 12, width: 6, 'height-custom': 6 };
+let controlsWired = false;
 
 
 
@@ -192,6 +196,89 @@ function getConstraints() {
   return dimensionsData.constraints;
 }
 
+function getHeightOptionCards() {
+  const constraints = getConstraints();
+  const heightConstraints = constraints && constraints.height ? constraints.height : {};
+  const selectedModel = getSelectedModelId();
+  const standardHeight = Number(heightConstraints.standard);
+  const barHeight = Number(heightConstraints.bar);
+  const options = [{
+    id: 'standard',
+    title: 'Standard',
+    subtitle: Number.isFinite(standardHeight) ? `(${standardHeight}″)` : '',
+    price: 0,
+    image: 'assets/images/Generated Sitting Height.png'
+  }];
+
+  if (
+    selectedModel !== 'mdl-coffee'
+    && Number.isFinite(barHeight)
+    && barHeight > 0
+  ) {
+    options.push({
+      id: 'bar',
+      title: 'Bar Height',
+      subtitle: `(${barHeight}″)`,
+      price: 120,
+      image: 'assets/images/Generated Standing Height.png'
+    });
+  }
+
+  options.push({
+    id: 'custom',
+    title: 'Custom',
+    subtitle: '(+$250)',
+    price: 250,
+    image: CUSTOM_HEIGHT_IMAGE
+  });
+
+  return options;
+}
+
+function getDefaultCustomHeightValue() {
+  const constraints = getConstraints();
+  const heightConstraints = constraints && constraints.height ? constraints.height : {};
+  const barHeight = Number(heightConstraints.bar);
+  const standardHeight = Number(heightConstraints.standard);
+  const minHeight = Number(heightConstraints.min);
+  const maxHeight = Number(heightConstraints.max);
+
+  if (Number.isFinite(barHeight)) return barHeight;
+  if (Number.isFinite(standardHeight)) return standardHeight;
+  if (Number.isFinite(minHeight) && Number.isFinite(maxHeight)) {
+    return Math.round((minHeight + maxHeight) / 2);
+  }
+  return 40;
+}
+
+function normalizeHeightSelectionForModel() {
+  const availableOptions = getHeightOptionCards();
+  const availableIds = new Set(availableOptions.map((option) => option.id));
+  const currentHeight = currentDimensions.height;
+
+  if (currentHeight === 'custom' && !Number.isFinite(Number(currentDimensions.heightCustom))) {
+    currentDimensions.heightCustom = getDefaultCustomHeightValue();
+    return;
+  }
+
+  if (availableIds.has(currentHeight)) return;
+
+  if (currentHeight === 'bar' && availableIds.has('custom')) {
+    currentDimensions.height = 'custom';
+    currentDimensions.heightCustom = Number.isFinite(Number(currentDimensions.heightCustom))
+      ? Number(currentDimensions.heightCustom)
+      : getDefaultCustomHeightValue();
+    return;
+  }
+
+  currentDimensions.height = availableIds.has('standard') ? 'standard' : (availableOptions[0]?.id || 'standard');
+  if (currentDimensions.height === 'custom') {
+    currentDimensions.heightCustom = Number.isFinite(Number(currentDimensions.heightCustom))
+      ? Number(currentDimensions.heightCustom)
+      : getDefaultCustomHeightValue();
+  }
+}
+
 function updateAxisInputConstraints() {
   const constraints = getConstraints();
   if (!constraints) return;
@@ -293,33 +380,50 @@ function updateValidationMessage(axis) {
 function updateOversizeBanners() {
   const bannersContainer = document.getElementById('dimensions-banners');
   if (!bannersContainer) return;
-  
+
   bannersContainer.innerHTML = '';
-  
-  if (currentDimensions.width === null) return;
-  const message = checkOversizeThreshold('width', currentDimensions.width);
-  if (!message) return;
 
-  const banner = document.createElement('div');
-  banner.className = 'summary-shipping-warning';
-  banner.setAttribute('aria-live', 'polite');
-  banner.setAttribute('aria-atomic', 'true');
+  const appendBanner = (titleText, subtitleText) => {
+    const banner = document.createElement('div');
+    banner.className = 'summary-shipping-warning';
+    banner.setAttribute('aria-live', 'polite');
+    banner.setAttribute('aria-atomic', 'true');
 
-  const textWrap = document.createElement('div');
-  textWrap.className = 'summary-shipping-warning-text';
+    const textWrap = document.createElement('div');
+    textWrap.className = 'summary-shipping-warning-text';
 
-  const title = document.createElement('span');
-  title.className = 'summary-shipping-warning-title';
-  title.textContent = 'Oversize width';
+    const title = document.createElement('span');
+    title.className = 'summary-shipping-warning-title';
+    title.textContent = titleText;
 
-  const subtitle = document.createElement('span');
-  subtitle.className = 'summary-shipping-warning-subtitle';
-  subtitle.textContent = message;
+    const subtitle = document.createElement('span');
+    subtitle.className = 'summary-shipping-warning-subtitle';
+    subtitle.textContent = subtitleText;
 
-  textWrap.appendChild(title);
-  textWrap.appendChild(subtitle);
-  banner.appendChild(textWrap);
-  bannersContainer.appendChild(banner);
+    textWrap.appendChild(title);
+    textWrap.appendChild(subtitle);
+    banner.appendChild(textWrap);
+    bannersContainer.appendChild(banner);
+  };
+
+  if (currentDimensions.width !== null) {
+    const oversizeWidthMessage = checkOversizeThreshold('width', currentDimensions.width);
+    if (oversizeWidthMessage) appendBanner('Oversize width', oversizeWidthMessage);
+  }
+
+  const dimensionsState = {
+    selections: {
+      dimensionsDetail: {
+        length: currentDimensions.length,
+        width: currentDimensions.width,
+        height: currentDimensions.height,
+        heightCustom: currentDimensions.heightCustom
+      }
+    }
+  };
+  if (requiresCenterLeg(dimensionsState)) {
+    appendBanner('Center leg required', 'Tables over 130" long require a center leg.');
+  }
 }
 
 // Show/hide custom dimension controls based on selection
@@ -366,6 +470,7 @@ function updateUIControls() {
   }
 
   updateAxisInputConstraints();
+  normalizeHeightSelectionForModel();
   
   if (lengthInput && currentDimensions.length !== null) {
     lengthInput.value = currentDimensions.length;
@@ -529,12 +634,22 @@ function initPresets() {
     tile.setAttribute('aria-label', `${presetTitle}: ${preset.length}″ × ${preset.width}″`);
 
     tile.innerHTML = `
-      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
+      ${preset.image ? `<img src="${preset.image}" alt="${presetTitle}" class="dimensions-preset-image" draggable="false">` : ''}
       <div class="title">${presetTitle}</div>
       <div class="description">${preset.length}″ × ${preset.width}″${preset.description ? ' — ' + preset.description : ''}</div>
     `;
 
+    if (preset.disabled) {
+      tile.disabled = true;
+      tile.classList.add('disabled');
+      tile.setAttribute('aria-disabled', 'true');
+      tile.setAttribute('data-hard-disabled', 'true');
+      if (preset.tooltip) tile.setAttribute('data-tooltip', preset.tooltip);
+    }
+    applyTestingDisabledState(tile, preset);
+
     tile.addEventListener('click', () => {
+      if (tile.disabled) return;
       selectPreset(preset, tile);
     });
 
@@ -549,7 +664,7 @@ function initPresets() {
   customTile.setAttribute('aria-label', 'Custom dimensions');
   
   customTile.innerHTML = `
-    <img src="${OPTION_PLACEHOLDER_IMAGE}" alt="Custom dimensions" class="w-full h-24 object-cover rounded-t mb-2">
+    <img src="${CUSTOM_DIMENSIONS_IMAGE}" alt="Custom dimensions" class="dimensions-preset-image dimensions-custom-preset-image" draggable="false">
     <div class="title">Custom</div>
     <div class="description">Your custom size</div>
   `;
@@ -729,14 +844,9 @@ function initNumericInputs() {
 function initHeightButtons() {
   const heightOptions = document.getElementById('height-options');
   if (!heightOptions) return;
-  
-  // Height options: standard, bar, custom
-  const heights = [
-    { id: 'standard', title: 'Standard', subtitle: '(30″)', price: 0, image: 'assets/images/Generated Sitting Height.png' },
-    { id: 'bar', title: 'Bar Height', subtitle: '(42″)', price: 120, image: 'assets/images/Generated Standing Height.png' },
-    { id: 'custom', title: 'Custom', subtitle: '(+$250)', price: 250, image: OPTION_PLACEHOLDER_IMAGE }
-  ];
-  
+
+  normalizeHeightSelectionForModel();
+  const heights = getHeightOptionCards();
   heightOptions.innerHTML = '';
   
   heights.forEach(height => {
@@ -746,7 +856,7 @@ function initHeightButtons() {
     button.setAttribute('aria-label', `${height.title}${height.subtitle ? ' ' + height.subtitle : ''}`);
     
     button.innerHTML = `
-      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2">` : ''}
+      ${height.image ? `<img src="${height.image}" alt="${height.title}" class="w-full h-24 object-cover rounded-t mb-2" draggable="false">` : ''}
       <div class="title">${height.title} ${height.subtitle}</div>
       <div class="description">+$${height.price}</div>
     `;
@@ -764,15 +874,19 @@ function initHeightButtons() {
 
 // Select a height option
 function selectHeight(heightId) {
+  const previousCustomHeight = currentDimensions.heightCustom;
   currentDimensions.height = heightId;
   currentDimensions.heightCustom = null;
 
   const customContainer = document.getElementById('custom-height-container');
   if (heightId === 'custom') {
+    const defaultCustomHeight = Number.isFinite(Number(previousCustomHeight))
+      ? Number(previousCustomHeight)
+      : getDefaultCustomHeightValue();
     if (customContainer) customContainer.classList.remove('hidden');
-    currentDimensions.heightCustom = 40; // Default custom height
+    currentDimensions.heightCustom = defaultCustomHeight;
     const customInput = document.getElementById('dim-height-custom-input');
-    if (customInput) customInput.value = 40;
+    if (customInput) customInput.value = defaultCustomHeight;
   } else {
     if (customContainer) customContainer.classList.add('hidden');
   }
@@ -856,11 +970,14 @@ export async function init() {
   
   // Wire up controls
   initPresets();
-  initAxisControls();
-  initNumericInputs();
   initHeightButtons();
-  initResetButton();
-  initApplyButton();
+  if (!controlsWired) {
+    initAxisControls();
+    initNumericInputs();
+    initResetButton();
+    initApplyButton();
+    controlsWired = true;
+  }
   
   // Initial UI update
   updateUIControls();
@@ -884,6 +1001,7 @@ export function restoreFromState(appState) {
       lastKnownModel = currentModel;
       lastKnownDesign = currentDesign;
       initPresets();
+      initHeightButtons();
     }
     
     initializeFromState(appState);

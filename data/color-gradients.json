@@ -3,28 +3,32 @@
     "id": "color-gradient-01",
     "title": "Dark to Light",
     "price": 0,
-    "image": "assets/images/model1_placeholder.png",
+    "image": "assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png",
+    "previewType": "dark-to-light",
     "description": "Gradient transitions from a darker edge tone into a lighter tone."
   },
   {
     "id": "color-gradient-02",
     "title": "Light Center",
     "price": 0,
-    "image": "assets/images/model1_placeholder.png",
-    "description": "Gradient brightens toward the center for a highlighted river effect."
+    "image": "assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png",
+    "previewType": "light-center",
+    "description": "Gradient brightens through a full-height center band for a highlighted river effect."
   },
   {
     "id": "color-gradient-04",
     "title": "Single Color",
     "price": 0,
-    "image": "assets/images/model1_placeholder.png",
+    "image": "assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png",
+    "previewType": "single-color",
     "description": "No gradient. Keeps a consistent color tone across the river."
   },
   {
     "id": "color-gradient-03",
     "title": "Custom",
     "price": 0,
-    "image": "assets/images/model1_placeholder.png",
+    "image": "assets/images/Epoxy Color Samples/Dark Grey Texture Edited.png",
+    "previewType": "custom",
     "description": "Describe your preferred gradient direction, fade, and color transitions.",
     "customNote": true
   }

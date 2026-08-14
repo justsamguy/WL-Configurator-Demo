@@ -140,6 +140,14 @@ Keep one persistent Three.js scene instance for the session.
 
 This matches the older viewer guidance already present in repo notes and avoids unnecessary flicker.
 
+### Measurement convention
+
+Use inches as the canonical model-space convention for this project.
+
+- Exported `.glb` assets should be authored and handed off with inch-based dimensions.
+- Viewer integration should assume inches when validating scale and expected overall size.
+- If any normalization step is needed in code, it should preserve the inch-based convention rather than switching the project to meters.
+
 ### Camera
 
 Use a single perspective camera with:
@@ -177,32 +185,9 @@ This is important because furniture floating in empty space looks broken even if
 
 ## Model Representation Strategy
 
-The viewer should support three representation levels so the app can ship incremental value.
+For the first working implementation, the viewer should load local `.glb` assets directly.
 
-### Level 1: Guaranteed fallback
-
-Always available for every supported model:
-
-- simple procedural table geometry built in Three.js
-- table top
-- legs / base
-- basic proportions per model family
-
-This ensures the viewer never goes blank.
-
-### Level 2: Curated static previews
-
-Use curated local images when a model or option exists visually in marketing assets but not yet as a 3D mesh.
-
-Use this for:
-
-- complex one-off designs
-- options without modeled geometry
-- temporary fallback during migration
-
-### Level 3: Real imported 3D assets
-
-Use local `.glb` assets for supported model families once ready.
+Use local `.glb` assets for supported model families.
 
 Use imported assets when:
 
@@ -211,11 +196,49 @@ Use imported assets when:
 - dimensions need believable scaling
 - premium finishes benefit from real geometry
 
+### Core implementation rule
+
+Do not create one full exported model for every possible configuration.
+
+That would create too many assets, make maintenance expensive, and slow down iteration.
+
+Instead, use a hybrid model strategy:
+
+- swap the whole base `.glb` only when silhouette changes significantly
+- swap parts when a component changes
+- swap materials when appearance changes
+- keep low-visual-impact options out of 3D when needed
+
+### Practical decision rules
+
+Use a different base `.glb` when:
+
+- the overall table silhouette changes substantially
+- the design family is visually different enough that part-swapping would be brittle
+- a model needs a fundamentally different layout or river composition
+
+Use part swapping when:
+
+- legs or base assemblies change
+- a component can be isolated cleanly as its own mesh or group
+- the tabletop remains the same family but supporting structure changes
+
+Use material swapping when:
+
+- the geometry stays the same
+- the user is changing wood species, resin color family, metal finish, sheen, or similar surface properties
+
+Keep an option out of 3D when:
+
+- the option has little visible impact
+- the option would require disproportionate asset work for low user value
+- the option is better represented in summary/specification output than in the viewer
+
 ## Asset Loading Plan
 
 ### Preferred asset format
 
-Use `.glb` as the primary runtime format.
+Use `.glb` as the only runtime format.
 
 Why:
 
@@ -223,10 +246,11 @@ Why:
 - native fit for Three.js loaders
 - materials, transforms, and meshes travel together
 - easier static hosting than multi-file formats
+- keeps the first implementation narrow and predictable
 
 ### Source of truth
 
-Create a local viewer manifest that maps configurator selections to viewer assets and render rules.
+Create a local viewer manifest that maps configurator selections to `.glb` assets and render rules.
 
 Suggested file:
 
@@ -235,20 +259,19 @@ Suggested file:
 Each entry should define:
 
 - configurator model id
-- asset type: procedural, image, or glb
-- asset path
+- asset path to a `.glb`
 - default camera framing values
 - scale normalization values
 - supported material overrides
 - supported leg/base variants
-- unsupported option notes if needed
+- known limitations if needed
 
 ### Loading flow
 
 1. User changes a selection.
 2. `js/main.js` updates canonical app state.
 3. Viewer receives normalized selection data.
-4. Viewer resolves the correct representation from the manifest.
+4. Viewer resolves the correct `.glb` asset from the manifest.
 5. Viewer shows loading state immediately.
 6. Viewer updates existing scene nodes or loads the required asset.
 7. Viewer swaps in the finished representation without rebuilding the entire renderer.
@@ -261,7 +284,7 @@ Imported 3D assets should be prepared before entering the repo.
 
 - pivot placed sensibly near the table center
 - model oriented consistently
-- real-world-ish scale, in inches or meters with one documented convention
+- real-world scale in inches
 - baked transforms where possible
 - unnecessary cameras/lights removed
 - material slot names kept stable
@@ -286,11 +309,76 @@ Imported models should support selective material replacement so the app can swa
 
 This means imported assets should be authored with stable mesh/material separation instead of one merged material across the whole model.
 
+### Material standards
+
+Material swapping should be treated as a supported core feature, not a special-case hack.
+
+Required standards:
+
+- meshes that may change appearance must have stable material assignments
+- material slot names must be predictable across models
+- tabletop, resin, metal base, and accent materials should be separated where applicable
+- avoid collapsing the entire model to one material if multiple finish regions exist
+
+Recommended material slot patterns:
+
+- `mat/tabletop_wood`
+- `mat/river_resin`
+- `mat/leg_metal`
+- `mat/glass`
+- `mat/accent_light`
+
+### Texture standards
+
+Material swaps may use real textures, not just flat color changes.
+
+Recommended approach by surface type:
+
+- tabletop hero surfaces: use proper UV-unwrapped textures authored for that mesh
+- resin/river surfaces: use proper UV-unwrapped textures or maps when the pattern is part of the design
+- metal legs/bases: tileable textures are acceptable and often preferable
+- subtle roughness/noise/detail overlays: tileable textures are acceptable
+
+Texture rules:
+
+- textures do not need to be tileable if they are uniquely UV-mapped to the target mesh
+- textures should be tileable when they are intended to repeat across scalable or reusable surfaces
+- avoid relying on tileable textures alone for premium wood tabletop visuals if a unique mapped texture is available
+- prefer consistent texture resolution ranges across comparable assets
+
+### Mesh separation standards
+
+To support part and material swapping correctly, exported `.glb` models should separate the scene into logical runtime-editable regions.
+
+Required mesh separation where applicable:
+
+- tabletop
+- river/resin area
+- leg/base assembly
+- optional add-on meshes that may toggle on/off
+
+Recommended:
+
+- separate left/right or front/rear leg groups if independent placement is needed
+- separate glass and lighting elements from wood and metal geometry
+- keep decorative or non-configurable details grouped under stable parent nodes
+
+### Simplicity rule for first implementation
+
+Do not build a multi-format asset pipeline yet.
+
+- no `.gltf`
+- no `.obj`
+- no `.fbx`
+- no runtime format fallbacks
+
+If a `.glb` cannot be loaded, show an error state in the viewer rather than switching to another asset format.
+
 ## Rendering Update Rules By Selection Type
 
 ### Model selection
 
-- Can swap the entire base asset or procedural template
+- Can swap the entire base `.glb`
 - Resets camera framing only on the first selection or explicit reset
 
 ### Design selection
@@ -308,7 +396,58 @@ This means imported assets should be authored with stable mesh/material separati
 - Scale only the supported axes
 - Keep proportions believable
 - Prevent impossible stretching on complex imported meshes
-- If a given asset cannot scale safely, fall back to variant-specific meshes or procedural geometry
+- If a given asset cannot scale safely, use variant-specific `.glb` files instead of procedural geometry
+
+### Dimension strategy
+
+Because the supported size range can span several multiples between smallest and largest options, naive whole-model scaling is not acceptable as the long-term solution.
+
+Preferred order of implementation:
+
+1. controlled part-based scaling and repositioning
+2. size-bucketed `.glb` variants with limited scaling inside each bucket
+3. full base-model replacement for designs that cannot survive scaling cleanly
+
+### Dimension handling rules
+
+Scale only the parts that are supposed to grow:
+
+- tabletop width
+- tabletop length
+- river width or placement where the design supports it
+
+Reposition parts that should spread apart instead of becoming thicker:
+
+- left/right legs
+- front/rear legs
+- base supports
+- islands or structural supports
+
+Do not proportionally scale parts that should keep their physical thickness:
+
+- leg thickness
+- metal tube profile thickness
+- edge profile thickness
+- hardware and attachment elements
+
+If a model breaks visually outside a safe scaling range:
+
+- do not stretch it further
+- route that size range to a different `.glb`
+- document that limit in the viewer manifest
+
+### Size-bucket guidance
+
+When a single asset cannot cover the whole dimensional range convincingly, split it into size families.
+
+Example approach:
+
+- small
+- medium
+- large
+- conference
+
+Each family can then support only a controlled amount of scaling before the viewer switches to another `.glb`.
 
 ### Legs and base
 
@@ -399,32 +538,45 @@ Recommended non-viewer responsibilities:
 - stage gating
 - compatibility rules
 
+## Viewer Standards Summary
+
+The current agreed standards for the first implementation are:
+
+- inches are the canonical unit convention
+- `.glb` is the only runtime model format
+- the viewer should not use model-format fallbacks
+- full model swaps are for major silhouette changes
+- part swaps are for leg/base/component changes
+- material swaps are for appearance-only changes
+- low-impact options do not need forced 3D representation
+- dimensional changes must avoid naive whole-model scaling across the full range
+
 ## Suggested Delivery Phases
 
 ### Phase 1: Fix visible experience
 
 - Ensure the viewer always shows a visible empty state
 - Ensure the controls and overlays stay above the floating footer
-- Add explicit loading, fallback, and error states
-- Restore a meaningful placeholder preview immediately after model selection
+- Add explicit loading and error states
+- Replace the current blank state with a real viewer-ready empty state
 
-### Phase 2: Stable procedural 3D
+### Phase 2: Stable `.glb` loading
 
-- Build procedural table representations for each model family
 - Support orbit, zoom, pan, and reset reliably
-- Update appearance for key material and finish selections
+- Load one `.glb` per supported selectable model
+- Normalize camera framing and model placement
 
 ### Phase 3: Asset manifest
 
 - Add `data/viewer-models.json`
-- Resolve selections to procedural, image, or glb representation
+- Resolve selections to a `.glb` path
 - Normalize camera framing and scaling rules per model
 
-### Phase 4: Imported GLB support
+### Phase 4: Expanded GLB support
 
-- Add local `.glb` assets for priority models
+- Expand local `.glb` coverage for priority models
 - Implement targeted material overrides
-- Keep procedural fallback for unsupported cases
+- Keep unsupported cases explicit in UI instead of adding alternate asset pipelines
 
 ### Phase 5: Richer configuration fidelity
 
@@ -447,11 +599,11 @@ The viewer is ready when all of the following are true:
 
 ## Immediate Next Implementation Target
 
-Start with Phase 1 and Phase 2 before importing real 3D assets.
+Start with Phase 1 and Phase 2 using real `.glb` assets, not a multi-format fallback system.
 
 That means the next practical engineering target is:
 
-1. Make the viewer visibly render an empty state and fallback state at all times.
+1. Make the viewer visibly render an empty state, loading state, and error state at all times.
 2. Reserve a real bottom safe area above the floating footer for the viewer and its controls.
-3. Replace the current blank experience with a stable procedural placeholder table in Three.js.
-4. Add a manifest-driven path later for `.glb` imports instead of coupling asset logic directly to stage UI code.
+3. Load a single local `.glb` successfully in the viewer with stable framing and controls.
+4. Add a manifest-driven path for `.glb` asset mapping instead of coupling asset logic directly to stage UI code.

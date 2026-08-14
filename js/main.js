@@ -6,10 +6,15 @@ import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
 import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
 import { state, setState } from './state.js';
-import { computePrice, getLegPriceMultiplier, getWaterfallEdgeCount } from './pricing.js';
+import { computePrice, getLegPriceMultiplier, getVisibleLegCount, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
 import { buildExportJSON } from './export.js';
-import { createLogger } from './logger.js';
+import { createLogger, setLevel } from './logger.js';
+import { scrollElementToTop } from './ui/scrollAlignment.js';
+import {
+  getLowerShelfCompatibilityTooltip,
+  isLowerShelfCompatibleContext
+} from './legGeometry.js';
 
 const log = createLogger('Main');
 const addonsLog = createLogger('Addons');
@@ -17,6 +22,12 @@ const THEME_STORAGE_KEY = 'wl-theme-mode';
 const THEME_MODES = ['system', 'light', 'dark'];
 let systemThemeMediaQuery = null;
 let systemThemeListenerBound = false;
+let footerMetricsObserver = null;
+
+if (typeof window !== 'undefined' && typeof window.WL_LOG_LEVEL !== 'string') {
+  // Reset any persisted debug logger state unless this page explicitly opts into another level.
+  setLevel('info');
+}
 
 function normalizeThemeMode(mode) {
   return THEME_MODES.includes(mode) ? mode : 'system';
@@ -169,6 +180,39 @@ function mixRgbColor(a, b, weight = 0.5) {
   ];
 }
 
+function syncFooterLayoutVars() {
+  const footer = document.getElementById('app-footer');
+  const footerBar = footer && footer.querySelector('.footer-bar');
+  if (!footer || !footerBar || typeof window === 'undefined') return;
+
+  const footerHeight = Math.ceil(footerBar.getBoundingClientRect().height || footerBar.offsetHeight || 0);
+  const footerStyles = window.getComputedStyle(footer);
+  const floatingGap = parseFloat(footerStyles.bottom || '0') || 0;
+
+  if (footerHeight > 0) {
+    document.documentElement.style.setProperty('--footer-height', `${footerHeight}px`);
+  }
+  document.documentElement.style.setProperty('--footer-floating-gap', `${floatingGap}px`);
+}
+
+function initFooterLayoutVars() {
+  syncFooterLayoutVars();
+
+  const footer = document.getElementById('app-footer');
+  const footerBar = footer && footer.querySelector('.footer-bar');
+  if (!footer || !footerBar) return;
+
+  if (footerMetricsObserver && typeof footerMetricsObserver.disconnect === 'function') {
+    footerMetricsObserver.disconnect();
+  }
+
+  if (typeof ResizeObserver === 'function') {
+    footerMetricsObserver = new ResizeObserver(() => syncFooterLayoutVars());
+    footerMetricsObserver.observe(footer);
+    footerMetricsObserver.observe(footerBar);
+  }
+}
+
 function initFooterLiquidGlass() {
   const footerBar = document.querySelector('.footer-bar');
   if (!footerBar || footerBar.dataset.glassBound === 'true') return;
@@ -317,6 +361,9 @@ function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
   if (shouldExpand) {
     dropdown.classList.add('expanded');
     content.hidden = false;
+    if (animate) {
+      requestAnimationFrame(() => scrollElementToTop(dropdown));
+    }
     if (!animate) {
       content.style.maxHeight = 'none';
       return;
@@ -415,9 +462,12 @@ function initStageSubsectionDropdowns(root = document) {
  * @returns {Array} Filtered array of designs compatible with the selected model
  */
 function filterDesignsByModel(designs, modelId) {
-  if (!modelId) return designs; // Show all designs if no model selected
+  const visibleDesigns = Array.isArray(designs)
+    ? designs.filter(design => !(design && design.hidden === true))
+    : designs;
+  if (!modelId) return visibleDesigns; // Show all visible designs if no model selected
 
-  return designs.filter(design => {
+  return visibleDesigns.filter(design => {
     // Check if this design has pricing for the selected model
     return design.prices && design.prices[modelId];
   });
@@ -465,6 +515,34 @@ function filterDesignPresetsByModel(presets, modelId) {
   return presets.filter((preset) => preset && preset.modelId === modelId);
 }
 
+function getModelDesignBadgeLabel(modelId) {
+  const modelLabels = {
+    'mdl-coffee': 'Coffee',
+    'mdl-dining': 'Dining',
+    'mdl-conference': 'Conference'
+  };
+  return modelLabels[modelId] || 'Model';
+}
+
+function getExclusiveDesignModelId(design) {
+  const modelIds = design && design.prices && typeof design.prices === 'object'
+    ? Object.keys(design.prices).filter(Boolean)
+    : [];
+  return modelIds.length === 1 ? modelIds[0] : null;
+}
+
+function sortDesignsForModel(designs, modelId) {
+  return designs
+    .map((design, index) => ({ design, index }))
+    .sort((a, b) => {
+      const aExclusiveRank = getExclusiveDesignModelId(a.design) === modelId ? 0 : 1;
+      const bExclusiveRank = getExclusiveDesignModelId(b.design) === modelId ? 0 : 1;
+      if (aExclusiveRank !== bExclusiveRank) return aExclusiveRank - bExclusiveRank;
+      return a.index - b.index;
+    })
+    .map(({ design }) => design);
+}
+
 async function renderDesignOptionsForModel(modelId = (state.selections && state.selections.model)) {
   const designsSection = document.getElementById('designs-stage-section');
   if (!designsSection) return;
@@ -488,10 +566,17 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
         seenDesignIds.add(design.id);
         return true;
       });
-      const designsWithPrice = dedupedDesigns.map((design) => ({
-        ...design,
-        price: modelId && design.prices ? design.prices[modelId] : 0
-      }));
+      const orderedDesigns = sortDesignsForModel(dedupedDesigns, modelId);
+      const designsWithPrice = orderedDesigns.map((design) => {
+        const exclusiveModelId = getExclusiveDesignModelId(design);
+        return {
+          ...design,
+          price: modelId && design.prices ? design.prices[modelId] : 0,
+          badge: exclusiveModelId === modelId
+            ? { label: `${getModelDesignBadgeLabel(exclusiveModelId)} Exclusive`, tone: 'exclusive' }
+            : { label: 'Layout', tone: 'layout' }
+        };
+      });
       renderOptionCards(layoutGrid, designsWithPrice, { category: 'design', ignorePlaceholder: true });
     }
 
@@ -503,6 +588,15 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
         title: preset.title,
         image: preset.image,
         description: preset.description,
+        disabled: preset.disabled,
+        disabledForTesting: preset.disabledForTesting,
+        testingDisabled: preset.testingDisabled,
+        comingSoon: preset.comingSoon,
+        testingDisabledLabel: preset.testingDisabledLabel,
+        comingSoonLabel: preset.comingSoonLabel,
+        testingDisabledTooltip: preset.testingDisabledTooltip,
+        tooltip: preset.tooltip,
+        badge: { label: 'Preset', tone: 'preset' },
         attributes: {
           'data-preset-id': preset.id,
           'data-design-id': preset.designId
@@ -648,6 +742,26 @@ function formatLegPriceLabel(value) {
   return `+$${safeNumber.toLocaleString()}`;
 }
 
+function normalizeLegSelection(modelId, designId, options = {}, allLegs = window._allLegsData) {
+  const nextOptions = { ...options };
+  if (!Array.isArray(allLegs) || !allLegs.length || !modelId) return nextOptions;
+
+  const visibleLegIds = new Set(
+    getVisibleLegs(modelId, allLegs, designId)
+      .map((leg) => leg && leg.id)
+      .filter(Boolean)
+  );
+  const currentLegId = nextOptions.legs || null;
+
+  if (currentLegId && visibleLegIds.has(currentLegId)) return nextOptions;
+  if (visibleLegIds.has(DEFAULT_LEG_ID)) {
+    nextOptions.legs = DEFAULT_LEG_ID;
+    return nextOptions;
+  }
+  nextOptions.legs = undefined;
+  return nextOptions;
+}
+
 function applyLegPriceMultiplier(legs, multiplier) {
   if (!Array.isArray(legs)) return [];
   if (multiplier === 1) return legs;
@@ -663,19 +777,18 @@ function updateLegPricingUI(appState = state, baseLegs = window._allLegsData) {
   const multiplier = getLegPriceMultiplier(appState);
   const banner = document.getElementById('legs-price-banner');
   if (banner) {
-    const length = appState && appState.selections && appState.selections.dimensionsDetail
-      ? appState.selections.dimensionsDetail.length
-      : null;
-    const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
     const waterfallCount = getWaterfallEdgeCount(appState);
     const messages = [];
-    if (lengthMultiplier > 1) {
+    if (requiresCenterLeg(appState)) {
       messages.push('Leg prices updated automatically because we require 3 legs on tables over 130" long.');
     }
     if (waterfallCount === 1) {
-      messages.push('Single waterfall halves leg pricing.');
+      messages.push('Single waterfall replaces one end leg; leg pricing updated automatically.');
     } else if (waterfallCount >= 2) {
-      messages.push('Two waterfalls replace legs; leg pricing set to $0.');
+      const visibleLegCount = getVisibleLegCount(appState);
+      messages.push(visibleLegCount > 0
+        ? 'Two waterfalls replace end legs; center support pricing remains.'
+        : 'Two waterfalls replace legs; leg pricing set to $0.');
     }
     banner.classList.toggle('hidden', messages.length === 0);
     if (messages.length) banner.textContent = messages.join(' ');
@@ -707,40 +820,44 @@ function updateWaterfallAddonAvailability(appState = state) {
   const addons = appState && appState.selections && appState.selections.options
     ? appState.selections.options.addon
     : [];
-  if (Array.isArray(addons) && addons.includes('addon-squoval')) return;
   const hasSingle = Array.isArray(addons) && addons.includes('addon-waterfall-single');
-  const shouldDisableSecond = !hasSingle;
-  const checkbox = root.querySelector('.addons-dropdown-option-checkbox[data-addon-id="addon-waterfall-second"]');
-  const option = root.querySelector('.addons-dropdown-option[data-addon-id="addon-waterfall-second"]');
-  if (!checkbox) return;
+  const shouldDisableDependentWaterfalls = !hasSingle;
+  ['addon-waterfall-second', 'addon-waterfall-art'].forEach((addonId) => {
+    const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
+    const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${addonId}"]`);
+    if (!checkbox) return;
 
-  const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
-  if (shouldDisableSecond) {
-    checkbox.disabled = true;
-    checkbox.checked = false;
-    checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
-    checkbox.setAttribute('data-disabled-by', 'waterfall');
-    if (option) {
-      option.classList.add('disabled');
-      option.classList.remove('selected');
-      option.setAttribute('aria-disabled', 'true');
-      option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
-    }
-  } else if (disabledBy === 'waterfall') {
-    checkbox.disabled = false;
-    checkbox.removeAttribute('data-tooltip');
-    checkbox.removeAttribute('data-disabled-by');
-    if (option) {
-      option.classList.remove('disabled');
-      option.removeAttribute('aria-disabled');
-      if (option.getAttribute('data-disabled-by') === 'waterfall') {
-        option.removeAttribute('data-disabled-by');
+    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
+    if (shouldDisableDependentWaterfalls) {
+      checkbox.disabled = true;
+      checkbox.checked = false;
+      checkbox.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
+      checkbox.setAttribute('data-disabled-by', 'waterfall');
+      if (option) {
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
+        option.setAttribute('data-tooltip', 'Select Single Waterfall to enable');
       }
-      if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
-        option.removeAttribute('data-tooltip');
+      return;
+    }
+
+    if (disabledBy === 'waterfall') {
+      checkbox.disabled = false;
+      checkbox.removeAttribute('data-tooltip');
+      checkbox.removeAttribute('data-disabled-by');
+      if (option) {
+        option.classList.remove('disabled');
+        option.removeAttribute('aria-disabled');
+        if (option.getAttribute('data-disabled-by') === 'waterfall') {
+          option.removeAttribute('data-disabled-by');
+        }
+        if (option.getAttribute('data-tooltip') === 'Select Single Waterfall to enable') {
+          option.removeAttribute('data-tooltip');
+        }
       }
     }
-  }
+  });
 
   updateAllIndicators();
 }
@@ -752,7 +869,7 @@ function updateEdgeAddonCompatibility(appState = state) {
     ? appState.selections.options.addon
     : [];
   const hasSquoval = Array.isArray(addons) && addons.includes('addon-squoval');
-  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second'];
+  const ids = ['addon-live-edge', 'addon-waterfall-single', 'addon-waterfall-second', 'addon-waterfall-art'];
   ids.forEach(id => {
     const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${id}"]`);
     const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${id}"]`);
@@ -795,10 +912,12 @@ function updateEdgeAddonCompatibility(appState = state) {
 }
 
 const EDGE_PROFILE_ADDONS = ['addon-chamfered-edges', 'addon-rounded-corners', 'addon-angled-corners', 'addon-squoval'];
+const EDGE_PROFILE_COMPATIBLE_PAIRS = new Set([
+  'addon-angled-corners:addon-chamfered-edges',
+  'addon-chamfered-edges:addon-angled-corners'
+]);
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
-const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
-const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
-const LOWER_SHELF_DISABLED_TOOLTIP = 'Select Squared legs to enable';
+const DEFAULT_LEG_ID = 'leg-sample-04';
 const EDGE_CORNER_ADDONS = [
   'addon-live-edge',
   'addon-waterfall-single',
@@ -812,7 +931,7 @@ const EDGE_CORNER_ADDONS = [
 function isLowerShelfAddonContextValid(appState) {
   const modelId = appState && appState.selections && appState.selections.model;
   const legId = appState && appState.selections && appState.selections.options && appState.selections.options.legs;
-  return modelId === LOWER_SHELF_COMPATIBLE_MODEL_ID && legId === LOWER_SHELF_COMPATIBLE_LEG_ID;
+  return isLowerShelfCompatibleContext({ modelId, legId });
 }
 
 function stripInvalidLowerShelfAddon(appState) {
@@ -842,21 +961,22 @@ function updateLowerShelfAddonAvailability(appState) {
   if (!checkbox || !option) return;
   const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
   const shouldDisable = !isLowerShelfAddonContextValid(appState);
+  const lowerShelfTooltip = getLowerShelfCompatibilityTooltip();
 
   if (shouldDisable) {
     checkbox.disabled = true;
     checkbox.checked = false;
     checkbox.setAttribute('data-disabled-by', 'lower-shelf');
-    checkbox.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    checkbox.setAttribute('data-tooltip', lowerShelfTooltip);
     option.classList.add('disabled');
     option.classList.remove('selected');
     option.setAttribute('aria-disabled', 'true');
     option.setAttribute('data-disabled-by', 'lower-shelf');
-    option.setAttribute('data-tooltip', LOWER_SHELF_DISABLED_TOOLTIP);
+    option.setAttribute('data-tooltip', lowerShelfTooltip);
   } else if (disabledBy === 'lower-shelf') {
     checkbox.disabled = false;
     checkbox.removeAttribute('data-disabled-by');
-    if (checkbox.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+    if (checkbox.getAttribute('data-tooltip') === lowerShelfTooltip) {
       checkbox.removeAttribute('data-tooltip');
     }
     option.classList.remove('disabled');
@@ -864,7 +984,7 @@ function updateLowerShelfAddonAvailability(appState) {
     if (option.getAttribute('data-disabled-by') === 'lower-shelf') {
       option.removeAttribute('data-disabled-by');
     }
-    if (option.getAttribute('data-tooltip') === LOWER_SHELF_DISABLED_TOOLTIP) {
+    if (option.getAttribute('data-tooltip') === lowerShelfTooltip) {
       option.removeAttribute('data-tooltip');
     }
   }
@@ -872,6 +992,28 @@ function updateLowerShelfAddonAvailability(appState) {
   updateAllIndicators();
 }
 const EDGE_PROFILE_TOOLTIP = 'Not compatible with selected edge profile';
+
+function setAddonTileDisabled(tile, shouldDisable, tooltip = '', disabledBy = '') {
+  if (!tile) return;
+  tile.disabled = shouldDisable;
+  tile.classList.toggle('disabled', shouldDisable);
+  if (shouldDisable) {
+    tile.setAttribute('aria-disabled', 'true');
+    tile.setAttribute('aria-pressed', 'false');
+    tile.classList.remove('selected');
+    if (tooltip) tile.setAttribute('data-tooltip', tooltip);
+    tile.setAttribute('data-disabled-by', disabledBy || 'addon-compatibility');
+    return;
+  }
+  tile.removeAttribute('aria-disabled');
+  tile.removeAttribute('data-disabled-by');
+  tile.removeAttribute('data-tooltip');
+}
+
+function areEdgeProfilesCompatible(firstAddonId, secondAddonId) {
+  if (!firstAddonId || !secondAddonId || firstAddonId === secondAddonId) return true;
+  return EDGE_PROFILE_COMPATIBLE_PAIRS.has(`${firstAddonId}:${secondAddonId}`);
+}
 
 function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons) {
   if (addonId === 'addon-rounded-corners') {
@@ -884,12 +1026,12 @@ function getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons
   }
   if (addonId === 'addon-chamfered-edges') {
     const incompatible = currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge');
-    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, or Live Edge' : '' };
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Cookie or Round designs or Live Edge' : '' };
   }
   if (addonId === 'addon-squoval') {
     const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
-    const incompatible = currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || currentAddons.includes('addon-live-edge') || hasWaterfall;
-    return { incompatible, tooltip: incompatible ? 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge' : '' };
+    const incompatible = currentAddons.includes('addon-live-edge') || hasWaterfall;
+    return { incompatible, tooltip: incompatible ? 'Not compatible with Live Edge or Waterfall Edge' : '' };
   }
   return { incompatible: false, tooltip: '' };
 }
@@ -902,52 +1044,58 @@ function updateEdgeProfileAddonAvailability(appState = state) {
     : [];
   const currentAddons = Array.isArray(addons) ? addons : [];
   const currentDesign = appState && appState.selections ? appState.selections.design : null;
-  const selectedEdge = EDGE_PROFILE_ADDONS.find(id => currentAddons.includes(id)) || '';
+  const selectedEdges = EDGE_PROFILE_ADDONS.filter(id => currentAddons.includes(id));
 
   EDGE_PROFILE_ADDONS.forEach((addonId) => {
     const checkbox = root.querySelector(`.addons-dropdown-option-checkbox[data-addon-id="${addonId}"]`);
     const option = root.querySelector(`.addons-dropdown-option[data-addon-id="${addonId}"]`);
-    if (!checkbox || !option) return;
+    const tile = root.querySelector(`.addons-tile[data-addon-id="${addonId}"]`);
+    if ((!checkbox || !option) && !tile) return;
 
     const base = getEdgeProfileBaseIncompatibility(addonId, currentDesign, currentAddons);
-    const disableBySelection = selectedEdge && addonId !== selectedEdge;
+    const disableBySelection = selectedEdges.some((selectedAddonId) => (
+      selectedAddonId !== addonId && !areEdgeProfilesCompatible(addonId, selectedAddonId)
+    ));
     const shouldDisable = base.incompatible || disableBySelection;
+    const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
+    const disabledBySource = disableBySelection ? 'edge-profile' : (base.incompatible ? 'edge-profile-base' : '');
 
     if (shouldDisable) {
-      checkbox.disabled = true;
-      if (disableBySelection) {
-        checkbox.checked = false;
+      if (checkbox && option) {
+        checkbox.disabled = true;
+        if (disableBySelection) {
+          checkbox.checked = false;
+        }
+        if (tooltip) {
+          checkbox.setAttribute('data-tooltip', tooltip);
+          option.setAttribute('data-tooltip', tooltip);
+        }
+        if (disabledBySource) {
+          checkbox.setAttribute('data-disabled-by', disabledBySource);
+          option.setAttribute('data-disabled-by', disabledBySource);
+        }
+        option.classList.add('disabled');
+        option.classList.remove('selected');
+        option.setAttribute('aria-disabled', 'true');
       }
-      const tooltip = base.incompatible ? base.tooltip : EDGE_PROFILE_TOOLTIP;
-      if (tooltip) {
-        checkbox.setAttribute('data-tooltip', tooltip);
-        option.setAttribute('data-tooltip', tooltip);
-      }
-      if (disableBySelection) {
-        checkbox.setAttribute('data-disabled-by', 'edge-profile');
-        option.setAttribute('data-disabled-by', 'edge-profile');
-      }
-      option.classList.add('disabled');
-      option.classList.remove('selected');
-      option.setAttribute('aria-disabled', 'true');
+      setAddonTileDisabled(tile, true, tooltip, disabledBySource);
       return;
     }
 
-    const disabledBy = checkbox.getAttribute('data-disabled-by') || '';
-    if (disabledBy === 'edge-profile') {
+    const disabledBy = checkbox ? checkbox.getAttribute('data-disabled-by') || '' : '';
+    if (checkbox && option && (disabledBy === 'edge-profile' || disabledBy === 'edge-profile-base')) {
       checkbox.disabled = false;
       checkbox.removeAttribute('data-disabled-by');
-      if (checkbox.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
-        checkbox.removeAttribute('data-tooltip');
-      }
+      checkbox.removeAttribute('data-tooltip');
       option.classList.remove('disabled');
       option.removeAttribute('aria-disabled');
-      if (option.getAttribute('data-disabled-by') === 'edge-profile') {
+      if (option.getAttribute('data-disabled-by') === 'edge-profile' || option.getAttribute('data-disabled-by') === 'edge-profile-base') {
         option.removeAttribute('data-disabled-by');
       }
-      if (option.getAttribute('data-tooltip') === EDGE_PROFILE_TOOLTIP) {
-        option.removeAttribute('data-tooltip');
-      }
+      option.removeAttribute('data-tooltip');
+    }
+    if (tile) {
+      setAddonTileDisabled(tile, false, tooltip, 'edge-profile');
     }
   });
 
@@ -973,6 +1121,11 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   const legsRoot = document.getElementById('legs-options');
   if (legsRoot) {
     renderOptionCards(legsRoot, pricedLegs, { category: 'legs' });
+    const selectedLegId = state.selections && state.selections.options && state.selections.options.legs;
+    if (selectedLegId) {
+      const selectedLegCard = legsRoot.querySelector(`.option-card[data-id="${selectedLegId}"]`);
+      if (selectedLegCard) selectedLegCard.setAttribute('aria-pressed', 'true');
+    }
   }
 
   // Filter tube sizes: only show if at least one visible leg uses it AND it's compatible with the model
@@ -982,6 +1135,11 @@ async function updateLegsOptionsForModel(modelId, allLegs, allTubeSizes, designI
   const tubeSizesRoot = document.getElementById('tube-size-options');
   if (tubeSizesRoot) {
     renderOptionCards(tubeSizesRoot, availableTubeSizes, { category: 'tube-size', showPrice: false });
+    const selectedTubeId = state.selections && state.selections.options && state.selections.options['tube-size'];
+    if (selectedTubeId) {
+      const selectedTubeCard = tubeSizesRoot.querySelector(`.option-card[data-id="${selectedTubeId}"]`);
+      if (selectedTubeCard) selectedTubeCard.setAttribute('aria-pressed', 'true');
+    }
   }
 
   // Recompute tube size constraints based on current leg selection
@@ -1010,12 +1168,14 @@ document.addEventListener('option-selected', async (ev) => {
   if (category === 'model') {
     const stageManager = window.stageManager || null;
     const originStage = stageManager && stageManager.getCurrentStage ? stageManager.getCurrentStage() : null;
+    const allLegs = window._allLegsData || [];
+    const nextOptions = normalizeLegSelection(id, null, {}, allLegs);
     // When model changes, clear ALL selections (design and all options)
     setState({ 
       selections: { 
         model: id, 
         design: null, 
-        options: {},
+        options: nextOptions,
         dimensionsDetail: null
       }, 
       pricing: { base: 0, extras: 0, total: 0 } 
@@ -1034,7 +1194,6 @@ document.addEventListener('option-selected', async (ev) => {
 
     // Update legs and tube size options based on the selected model
     try {
-      const allLegs = window._allLegsData || [];
       const allTubeSizes = window._allTubeSizesData || [];
       if (allLegs.length > 0 && allTubeSizes.length > 0) {
         updateLegsOptionsForModel(id, allLegs, allTubeSizes);
@@ -1098,7 +1257,15 @@ document.addEventListener('option-selected', async (ev) => {
     const currentAddons = Array.from(nextAddonsSet);
     // (Addons will be shown as disabled in the UI based on stageRenderer incompatibility checks)
 
-    const nextOptions = { ...state.selections.options, addon: currentAddons };
+    const nextOptions = normalizeLegSelection(
+      state.selections.model,
+      id,
+      { ...state.selections.options, addon: currentAddons },
+      window._allLegsData || []
+    );
+    if (!isLowerShelfCompatibleContext({ modelId: state.selections.model, legId: nextOptions.legs })) {
+      nextOptions.addon = currentAddons.filter((addonId) => addonId !== LOWER_SHELF_ADDON_ID);
+    }
     if (id === 'des-signature') {
       nextOptions['tube-size'] = undefined;
     }
@@ -1267,19 +1434,21 @@ document.addEventListener('addon-toggled', async (ev) => {
   else selectedAddons.delete(id);
   if (checked && EDGE_PROFILE_ADDONS.includes(id)) {
     EDGE_PROFILE_ADDONS.forEach((addonId) => {
-      if (addonId !== id) selectedAddons.delete(addonId);
+      if (addonId !== id && !areEdgeProfilesCompatible(id, addonId)) selectedAddons.delete(addonId);
     });
   }
   if (checked && id === 'addon-squoval') {
     selectedAddons.delete('addon-live-edge');
     selectedAddons.delete('addon-waterfall-single');
     selectedAddons.delete('addon-waterfall-second');
+    selectedAddons.delete('addon-waterfall-art');
   }
   if (checked && (id === 'addon-live-edge' || id === 'addon-waterfall-single' || id === 'addon-waterfall-second')) {
     selectedAddons.delete('addon-squoval');
   }
   if (id === 'addon-waterfall-single' && !checked) {
     selectedAddons.delete('addon-waterfall-second');
+    selectedAddons.delete('addon-waterfall-art');
   }
   const addonsArray = Array.from(selectedAddons);
   // persist selections then compute price via pricing module
@@ -1387,6 +1556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ModelSelection is loaded lazily into the main stage-panel by the stage manager when
   // the Select Model stage becomes active. Do not preload it into the sidebar.
   await loadComponent('app-footer', 'components/Footer.html');
+  initFooterLayoutVars();
   initThemeToggle();
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
@@ -1420,6 +1590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   setHeaderVars();
   window.addEventListener('resize', setHeaderVars);
+  window.addEventListener('resize', syncFooterLayoutVars, { passive: true });
 
   // Load icons after all components are in the DOM
   const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
@@ -1438,11 +1609,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     log.warn('Failed to initialize summary tooltip', e);
   }
 
+  try {
+    const { initMaterialsHelpPopover } = await import('./ui/materialsHelpPopover.js');
+    const materialsHelpTrigger = document.getElementById('materials-help-trigger');
+    if (materialsHelpTrigger) initMaterialsHelpPopover(materialsHelpTrigger);
+  } catch (e) {
+    log.warn('Failed to initialize materials help popover', e);
+  }
+
   // Render model and materials option cards from data files (if placeholders exist)
   try {
     const { loadData } = await import('./dataLoader.js');
-    const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoFlips } = await import('./stageRenderer.js');
-    initOptionCardInfoFlips(document.body);
+    const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoDialogs } = await import('./stageRenderer.js');
+    initOptionCardInfoDialogs(document.body);
     const modelsRoot = document.getElementById('stage-0-placeholder');
     if (modelsRoot) {
       const models = await loadData('data/models.json');
@@ -1598,8 +1777,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-02-06 13:27');
-console.log('App ver: 1.0.0');
-console.log('Edit ver: 575');
+console.log('Last updated: 2026-06-02 17:03');
+console.log('App ver: 1.0.3');
+console.log('Edit ver: 735');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
+  console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

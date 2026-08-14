@@ -1,32 +1,27 @@
 WoodLab Configurator - 3D Model Export / Format Requirements (Blender -> Web Viewer)
 
 Context (current app state)
-- The viewer uses Three.js, but it currently shows placeholders instead of loading external 3D model files.
-- For future exported models, the best target format is glTF 2.0, preferably .glb.
+- The viewer uses Three.js and the immediate goal is to get local 3D models loading reliably in the app.
+- For the current implementation path, the target format is glTF 2.0 Binary (`.glb`) only.
+- The project unit convention for 3D assets is inches.
 
-Supported / Viable File Types for a Three.js Viewer
+Supported File Type for This Project
 
-Preferred
-- .glb (glTF 2.0 binary, single file)
+Required
+- `.glb` (glTF 2.0 binary, single file)
   - Best fit for web delivery and static hosting.
-  - Keeps mesh/materials/textures/animations together in one file.
+  - Keeps mesh, materials, textures, and transforms together in one file.
+  - Matches the current decision to keep the first viewer pipeline simple.
 
-Recommended (also works well)
-- .gltf (glTF 2.0 JSON) + .bin + texture files
-  - Same core format family as .glb, but split across multiple files.
-  - Good for debugging, but easier to break if files are moved or paths change.
-
-Possible but not ideal (would require adding/importing the matching Three.js loaders)
-- .obj (+ .mtl)
-  - Older format, weaker material workflow, less reliable for modern PBR materials.
-- .fbx
-  - Can work, but heavier and more inconsistent between tools.
-- .stl
-  - Geometry only (no textures/PBR materials). Usually not suitable for final product visuals.
+Not in scope for the current implementation
+- `.gltf`
+- `.obj`
+- `.fbx`
+- `.stl`
 
 Format Decision (for this project)
-- Preferred: .glb
-- Acceptable fallback: .gltf (with all referenced files kept together)
+- Required runtime format: `.glb`
+- No alternate model format fallbacks for the first implementation
 
 ======================================================================
 EXPORT REQUIREMENTS BY IMPORTANCE
@@ -34,14 +29,14 @@ EXPORT REQUIREMENTS BY IMPORTANCE
 
 REQUIRED (must do)
 
-1) Export as glTF 2.0
+1) Export as glTF 2.0 Binary (`.glb`)
 - Blender export path: File > Export > glTF 2.0
 - Format:
-  - Preferred: glTF Binary (.glb)
-  - Acceptable: glTF Separate (.gltf + .bin + textures)
+  - Required: glTF Binary (`.glb`)
 - Importance: REQUIRED
 - Why:
-  - This is the web-native format for Three.js and preserves modern materials/structure.
+  - This is the only model format the app will target for now.
+  - It preserves modern materials and structure in a single file.
 
 2) Apply transforms before export
 - In Blender: select export objects -> Ctrl+A -> Apply Rotation & Scale
@@ -51,9 +46,9 @@ REQUIRED (must do)
   - Prevents incorrect size/orientation in the viewer.
   - Avoids loader/runtime surprises from non-applied scale values.
 
-3) Use a consistent unit scale (meters)
+3) Use a consistent unit scale (inches)
 - Blender scene units should be consistent with intended real-world dimensions.
-- Exported models should arrive in a predictable scale (example: table width in meters).
+- Exported models should arrive in a predictable inch-based scale.
 - Importance: REQUIRED
 - Why:
   - Camera framing, controls, and future sizing logic depend on predictable units.
@@ -71,9 +66,8 @@ REQUIRED (must do)
 - Why:
   - Textures will not render correctly without UV mapping.
 
-6) Use supported image textures and keep references intact
-- If using .gltf (separate files), all texture paths must remain valid.
-- Prefer common formats like .png or .jpg/.jpeg.
+6) Use supported image textures inside the `.glb`
+- Prefer common source formats like `.png` or `.jpg/.jpeg` before export if textures are used.
 - Importance: REQUIRED
 - Why:
   - Missing or broken texture references cause incomplete renders.
@@ -107,8 +101,8 @@ REQUIRED (must do)
 RECOMMENDED (strongly advised)
 ----------------------------------------------------------------------
 
-1) Use .glb instead of .gltf for delivery
-- Importance: RECOMMENDED (and project PREFERRED)
+1) Keep delivery as a single `.glb`
+- Importance: RECOMMENDED (and project REQUIRED)
 - Why:
   - Single file is easier to manage in a static app and reduces path/reference mistakes.
 
@@ -220,7 +214,7 @@ BLENDER EXPORT SETTINGS (practical baseline)
 Blender: File > Export > glTF 2.0
 
 Required / Recommended baseline settings
-- Format: glTF Binary (.glb) [PREFERRED]
+- Format: glTF Binary (`.glb`) [REQUIRED]
 - Include:
   - Limit to: Selected Objects [RECOMMENDED when exporting a single model]
 - Transform:
@@ -239,21 +233,17 @@ Required / Recommended baseline settings
 
 Notes on advanced compression
 - Draco / Meshopt compression can reduce file sizes, but only if the viewer pipeline is set up to decode it.
-- For initial integration, prefer uncompressed .glb unless/until the app explicitly adds decoder support.
+- For initial integration, prefer uncompressed `.glb` unless the app explicitly adds decoder support later.
 - Importance: PREFERRED (future optimization)
 
 ======================================================================
 APP INTEGRATION REQUIREMENTS (future viewer implementation)
 ======================================================================
 
-Required for .glb/.gltf loading in this app
+Required for `.glb` loading in this app
 - Add Three.js GLTFLoader to the viewer implementation.
 - Host model files inside repo assets (static, client-side friendly).
-- Use local paths (example: assets/models/model1.glb).
-
-If using .gltf instead of .glb
-- Keep the .gltf, .bin, and texture files together.
-- Do not rename/move textures after export unless references are updated.
+- Use local paths (example: `assets/models/model1.glb`).
 
 If using compressed glTF (future)
 - The app must add the corresponding decoder/loader support (example: Draco decoder setup).
@@ -263,7 +253,7 @@ HANDOFF CHECKLIST (quick QA before delivery)
 ======================================================================
 
 Required checks
-- Model exports as glTF 2.0 (.glb preferred)
+- Model exports as glTF 2.0 Binary (`.glb`)
 - Scale is correct and consistent
 - Orientation is correct (upright, expected facing direction)
 - Textures are present and mapped correctly
@@ -277,6 +267,7 @@ Recommended checks
 - Model opens correctly in an external glTF viewer
 
 Summary (project recommendation)
-- Use Blender -> export glTF 2.0 Binary (.glb)
+- Use Blender -> export glTF 2.0 Binary (`.glb`)
+- Use inches as the project unit convention
 - Apply transforms, maintain consistent scale/orientation, UVs/materials, and clean naming
 - Optimize for browser performance (poly count + texture sizes)

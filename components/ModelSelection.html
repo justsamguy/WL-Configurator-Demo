@@ -1,22 +1,21 @@
-<div class="flex flex-col gap-6 px-8 py-8">
+<div class="flex flex-col model-selection-shell">
   <!-- Models Stage Section -->
   <div id="models-stage-section">
-    <div class="model-row-grid">
-      <button class="option-card" data-id="mdl-coffee" aria-pressed="false">
-        <img src="assets/images/Black Walnut Multi-Grey Round Coffee Table.webp" alt="Coffee Table placeholder" class="viewer-placeholder-img" />
-        <div class="title">Coffee Table</div>
-        <div class="description">Compact, intimate seating solution.</div>
-      </button>
-      <button class="option-card" data-id="mdl-dining" aria-pressed="false">
-        <img src="assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.webp" alt="Dining Table" class="viewer-placeholder-img" />
-        <div class="title">Dining Table</div>
-        <div class="description">Spacious, family-friendly.</div>
-      </button>
-      <button class="option-card" data-id="mdl-conference" aria-pressed="false">
-        <img src="assets/images/Black Walnut Blue River Conference Table with Islands.webp" alt="Conference Table" class="viewer-placeholder-img" />
-        <div class="title">Conference Table</div>
-        <div class="description">Professional, boardroom style.</div>
-      </button>
+    <div class="model-stage-shell">
+      <div class="model-row-grid">
+        <button class="option-card" type="button" data-id="mdl-coffee" aria-label="Coffee table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Multi-Grey Round Coffee Table.webp" alt="" class="viewer-placeholder-img" draggable="false" />
+          <div class="title">Coffee</div>
+        </button>
+        <button class="option-card" type="button" data-id="mdl-dining" aria-label="Dining table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Multi-Grey Dining Table with Rounded Corners.webp" alt="" class="viewer-placeholder-img" draggable="false" />
+          <div class="title">Dining</div>
+        </button>
+        <button class="option-card" type="button" data-id="mdl-conference" aria-label="Conference table" aria-pressed="false">
+          <img src="assets/images/Black Walnut Blue River Conference Table with Islands.webp" alt="" class="viewer-placeholder-img" draggable="false" />
+          <div class="title">Conference</div>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -26,16 +25,67 @@
        model ID (e.g., "mdl-coffee", "mdl-dining", "mdl-conference"), it will be shown for that model.
        To add a new design: add it to data/designs.json with appropriate pricing for each compatible model. -->
   <div id="designs-stage-section">
-    <div class="designs-stage-group">
-      <h3 class="designs-stage-heading">Customize a design</h3>
-      <div id="design-presets-options" class="stage-options-grid">
-        <!-- Preset design cards will be dynamically rendered here based on selected model -->
+    <div class="designs-stage-shell" data-active-group="presets">
+      <div class="designs-stage-header">
+        <div class="designs-stage-tablist" role="tablist" aria-label="Choose how to browse designs">
+          <button
+            id="design-tab-presets"
+            class="designs-stage-tab is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="design-presets-panel"
+            tabindex="0"
+            data-group-type="presets"
+          >
+            <span class="designs-stage-heading-text">Customize a design</span>
+            <span class="designs-stage-tab-caption">Designs</span>
+          </button>
+          <button
+            id="design-tab-layouts"
+            class="designs-stage-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="design-layout-panel"
+            tabindex="-1"
+            data-group-type="layouts"
+          >
+            <span class="designs-stage-heading-text">Build from a layout</span>
+            <span class="designs-stage-tab-caption">Layouts</span>
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="designs-stage-group">
-      <h3 class="designs-stage-heading">Build from a layout</h3>
-      <div id="design-layout-options" class="stage-options-grid">
-        <!-- Layout design cards will be dynamically rendered here based on selected model -->
+      <div class="designs-stage-panels">
+        <section
+          id="design-presets-panel"
+          class="designs-stage-group designs-stage-group-presets is-open"
+          role="tabpanel"
+          aria-labelledby="design-tab-presets"
+          aria-hidden="false"
+          data-group-type="presets"
+        >
+          <div class="designs-stage-panel-inner">
+            <div id="design-presets-options" class="stage-options-grid">
+              <!-- Preset design cards will be dynamically rendered here based on selected model -->
+            </div>
+          </div>
+        </section>
+        <section
+          id="design-layout-panel"
+          class="designs-stage-group designs-stage-group-layouts"
+          role="tabpanel"
+          aria-labelledby="design-tab-layouts"
+          aria-hidden="true"
+          data-group-type="layouts"
+          hidden
+        >
+          <div class="designs-stage-panel-inner">
+            <div id="design-layout-options" class="stage-options-grid">
+              <!-- Layout design cards will be dynamically rendered here based on selected model -->
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>

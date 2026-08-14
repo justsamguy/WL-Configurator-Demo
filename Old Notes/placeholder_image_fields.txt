@@ -1,0 +1,6 @@
+# Placeholder-backed image fields tracker
+# Add entries when a new image field uses a placeholder image.
+# Remove entries when that field is updated to a final image.
+
+data/addons.json :: Waterfall Edge > addon-waterfall-art :: image :: assets/images/model1_placeholder.png
+data/designs.json :: des-keystone :: image :: assets/images/model1_placeholder.png

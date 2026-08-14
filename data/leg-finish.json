@@ -1,10 +1,129 @@
 [
-  { "id": "leg-finish-01", "title": "Matte Black", "price": 0, "color": "#1a1a1a", "image": "assets/images/Leg styles/Leg Colors/Matte Black.webp", "description": "Standard minimal color for maximum statement.", "productNumber": "B002144" },
-  { "id": "leg-finish-02", "title": "Satin Black", "price": 0, "color": "#2a2a2a", "image": "assets/images/Leg styles/Leg Colors/Satin Black.webp", "description": "A more \"refined\" black finish with medium reflection.", "productNumber": "346951" },
-  { "id": "leg-finish-03", "title": "Oil Rubbed Bronze", "price": 0, "color": "#704214", "image": "assets/images/Leg styles/Leg Colors/Oil Rubbed Bronze.webp", "description": "A dark earthen tone, close to black but less stark.", "productNumber": "B060244" },
-  { "id": "leg-finish-04", "title": "Satin Bronze", "price": 0, "color": "#906b47", "image": "assets/images/Leg styles/Leg Colors/Satin Bronze.webp", "description": "A dulled gold finish for a sense of luxury.", "productNumber": "314560" },
-  { "id": "leg-finish-05", "title": "Gunmetal Grey", "price": 0, "color": "#414141", "image": "assets/images/Leg styles/Leg Colors/Gunmetal Grey.webp", "description": "A medium grey that blends without disappearing.", "productNumber": "353091" },
-  { "id": "leg-finish-06", "title": "Titanium Silver", "price": 0, "color": "#d3d3d3", "image": "assets/images/Leg styles/Leg Colors/Titanium Silver.webp", "description": "A bright silver finish that resembles fine hardware.", "productNumber": "245220" },
-  { "id": "leg-finish-07", "title": "Raw Metal", "price": 500, "color": "#c0c0c0", "image": "assets/images/Leg styles/Leg Colors/Raw Metal.webp", "description": "A clear-coat that preserves the industrious look of steel.", "productNumber": "Clear Satin 285092" },
-  { "id": "leg-finish-08", "title": "Custom", "price": "Quoted Separately", "color": "#808080", "image": "assets/images/Leg styles/Leg Colors/Brushed Stainless.webp", "description": "Custom finish" }
+  {
+    "id": "leg-finish-01",
+    "title": "Matte Black",
+    "price": 0,
+    "color": "#1a1a1a",
+    "image": "assets/images/Leg styles/Leg Colors/Matte Black.webp",
+    "description": "Standard minimal color for maximum statement.",
+    "productNumber": "B002144",
+    "viewerMaterial": {
+      "baseColor": "#1f2022",
+      "metalness": 0.84,
+      "roughness": 0.88,
+      "envIntensity": 0.72,
+      "textureSet": null
+    },
+    "calibrationNote": "Calibrated from the matte black sample image to stay in the near-black family with the flattest surface response in the set.",
+    "calibrationImageAssessment": "Sample reads consistently dark with manageable lighting bias; use it as the anchor for black finish comparisons."
+  },
+  {
+    "id": "leg-finish-02",
+    "title": "Satin Black",
+    "price": 0,
+    "color": "#2a2a2a",
+    "image": "assets/images/Leg styles/Leg Colors/Satin Black.webp",
+    "description": "A more \"refined\" black finish with medium reflection.",
+    "productNumber": "346951",
+    "viewerMaterial": {
+      "baseColor": "#2a2b2d",
+      "metalness": 0.88,
+      "roughness": 0.5,
+      "envIntensity": 0.88,
+      "textureSet": null
+    },
+    "calibrationNote": "Kept adjacent to Matte Black in hue while lowering roughness so the satin finish separates under studio highlights.",
+    "calibrationImageAssessment": "Sample has moderate hotspot bias, but it is still suitable as the gloss reference for the black finishes."
+  },
+  {
+    "id": "leg-finish-03",
+    "title": "Oil Rubbed Bronze",
+    "price": 0,
+    "color": "#704214",
+    "image": "assets/images/Leg styles/Leg Colors/Oil Rubbed Bronze.webp",
+    "description": "A dark earthen tone, close to black but less stark.",
+    "productNumber": "B060244",
+    "viewerMaterial": {
+      "baseColor": "#44382d",
+      "metalness": 0.86,
+      "roughness": 0.84,
+      "envIntensity": 0.62,
+      "textureSet": null
+    },
+    "calibrationNote": "Biased toward a near-black brown-bronze read so it stays only slightly lighter than the black finishes without drifting into bright brass.",
+    "calibrationImageAssessment": "Sample includes warm reflected light; match the bronze family and overall depth, not the brightest edges."
+  },
+  {
+    "id": "leg-finish-04",
+    "title": "Satin Bronze",
+    "price": 0,
+    "color": "#906b47",
+    "image": "assets/images/Leg styles/Leg Colors/Satin Bronze.webp",
+    "description": "A dulled gold finish for a sense of luxury.",
+    "productNumber": "314560",
+    "viewerMaterial": {
+      "baseColor": "#a47d57",
+      "metalness": 0.92,
+      "roughness": 0.54,
+      "envIntensity": 0.82,
+      "textureSet": null
+    },
+    "calibrationNote": "Tuned lighter and more reflective than Oil Rubbed Bronze so the satin bronze option reads like a warmer premium metal finish.",
+    "calibrationImageAssessment": "Sample is usable for hue and brightness, though bright reflections should not be copied directly."
+  },
+  {
+    "id": "leg-finish-05",
+    "title": "Gunmetal Grey",
+    "price": 0,
+    "color": "#323232",
+    "image": "assets/images/Leg styles/Leg Colors/Gunmetal Grey.webp",
+    "description": "A medium grey that blends without disappearing.",
+    "productNumber": "353091",
+    "viewerMaterial": {
+      "baseColor": "#a7abb0",
+      "metalness": 0.78,
+      "roughness": 0.9,
+      "envIntensity": 0.62,
+      "textureSet": null
+    },
+    "calibrationNote": "Kept slightly darker than the prior target while further flattening reflections so the gunmetal reads cooler and less glossy.",
+    "calibrationImageAssessment": "Sample provides a solid mid-dark neutral target with moderate lighting bias."
+  },
+  {
+    "id": "leg-finish-06",
+    "title": "Titanium Silver",
+    "price": 0,
+    "color": "#d3d3d3",
+    "image": "assets/images/Leg styles/Leg Colors/Titanium Silver.webp",
+    "description": "A bright silver finish that resembles fine hardware.",
+    "productNumber": "245220",
+    "viewerMaterial": {
+      "baseColor": "#dde1e6",
+      "metalness": 0.72,
+      "roughness": 0.3,
+      "envIntensity": 1.14,
+      "clearcoat": 0.22,
+      "clearcoatRoughness": 0.24,
+      "textureSet": null
+    },
+    "calibrationNote": "Rebalanced toward a brighter silver body tone with a controlled metallic response so the finish stays silver off-axis instead of collapsing into dark mirror reflections.",
+    "calibrationImageAssessment": "Sample is highly reflective and lighting-biased; use it for relative brightness only, not highlight intensity."
+  },
+  {
+    "id": "leg-finish-08",
+    "title": "Custom",
+    "price": "Quoted Separately",
+    "color": "#808080",
+    "image": "assets/images/Leg styles/Leg Colors/Brushed Stainless.webp",
+    "description": "Custom finish",
+    "viewerMaterial": {
+      "baseColor": "#8a8d90",
+      "metalness": 0.9,
+      "roughness": 0.5,
+      "envIntensity": 0.9,
+      "textureSet": null
+    },
+    "calibrationNote": "Intentionally neutral fallback preview that avoids implying a specific production finish before the custom selection is quoted.",
+    "calibrationImageAssessment": "Current reference image behaves like a placeholder stainless sample and should not be treated as a final custom-finish target."
+  }
 ]

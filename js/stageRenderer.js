@@ -1,5 +1,14 @@
+import { showOptionCardInfoDialog } from './ui/optionCardInfoDialog.js';
+import { scrollElementToTop } from './ui/scrollAlignment.js';
+import { DEBUG_MODE_CHANGED_EVENT, isDebugModeEnabled } from './debugMode.js';
+import {
+  getLowerShelfCompatibilityTooltip,
+  isLowerShelfCompatibleContext,
+  isLowerShelfCompatibleModel
+} from './legGeometry.js';
+
 // Renders option-card buttons from a data array into a container element.
-// data: array of { id, title, price, image, description, disabled, tooltip }
+// data: array of { id, title, price, image, description, disabled, disabledForTesting, tooltip }
 // opts.showPrice: set false to hide price text for the rendered tiles
 function isQuotedLabel(value) {
   return typeof value === 'string' && value.trim() && Number.isNaN(Number(value));
@@ -16,6 +25,175 @@ function formatPriceLabel(value, opts = {}) {
 }
 
 let optionCardInfoObserver = null;
+let testingDisabledObserver = null;
+let testingDisabledSyncQueued = false;
+
+const TESTING_DISABLED_TOOLTIP = 'Coming soon. Enable debug mode to test this option.';
+
+function isTestingDisabledItem(item = {}) {
+  return item
+    && (item.disabledForTesting === true || item.testingDisabled === true || item.comingSoon === true);
+}
+
+function getTestingDisabledLabel(item = {}) {
+  const label = item.testingDisabledLabel || item.comingSoonLabel || 'COMING SOON';
+  return String(label || 'COMING SOON').trim() || 'COMING SOON';
+}
+
+function getTestingDisabledTooltip(item = {}) {
+  return String(item.testingDisabledTooltip || item.tooltip || TESTING_DISABLED_TOOLTIP).trim() || TESTING_DISABLED_TOOLTIP;
+}
+
+function getDisabledByList(el) {
+  const raw = el ? el.getAttribute('data-disabled-by') || '' : '';
+  return raw ? raw.split('||').filter(Boolean) : [];
+}
+
+function hasHardDisabledState(el) {
+  if (!el) return false;
+  if (el.getAttribute('data-hard-disabled') === 'true') return true;
+  return getDisabledByList(el).length > 0;
+}
+
+function setControlDisabled(el, disabled) {
+  if (!el) return;
+  if ('disabled' in el) {
+    if (el.disabled !== disabled) el.disabled = disabled;
+  }
+  if (disabled) {
+    if (!el.hasAttribute('disabled')) el.setAttribute('disabled', 'true');
+    if (el.getAttribute('aria-disabled') !== 'true') el.setAttribute('aria-disabled', 'true');
+    el.classList.add('disabled');
+  } else {
+    if (el.hasAttribute('disabled')) el.removeAttribute('disabled');
+    if (el.hasAttribute('aria-disabled')) el.removeAttribute('aria-disabled');
+    el.classList.remove('disabled');
+  }
+}
+
+function setHardDisabled(el, tooltip = '') {
+  if (!el) return;
+  el.setAttribute('data-hard-disabled', 'true');
+  setControlDisabled(el, true);
+  if (tooltip) el.setAttribute('data-tooltip', tooltip);
+}
+
+function setSoftDisabled(el, tooltip = '', disabledBy = 'compatibility') {
+  if (!el) return;
+  setControlDisabled(el, true);
+  if (disabledBy) el.setAttribute('data-disabled-by', disabledBy);
+  if (tooltip) el.setAttribute('data-tooltip', tooltip);
+}
+
+function setTestingTooltip(el) {
+  if (!el || el.getAttribute('data-testing-tooltip-active') === 'true') return;
+  el.setAttribute('data-testing-original-tooltip', el.getAttribute('data-tooltip') || '');
+  el.setAttribute('data-tooltip', el.getAttribute('data-testing-disabled-tooltip') || TESTING_DISABLED_TOOLTIP);
+  el.setAttribute('data-testing-tooltip-active', 'true');
+}
+
+function restoreTestingTooltip(el) {
+  if (!el || el.getAttribute('data-testing-tooltip-active') !== 'true') return;
+  const originalTooltip = el.getAttribute('data-testing-original-tooltip') || '';
+  const testingTooltip = el.getAttribute('data-testing-disabled-tooltip') || TESTING_DISABLED_TOOLTIP;
+  const currentTooltip = el.getAttribute('data-tooltip') || '';
+  if (currentTooltip === testingTooltip) {
+    if (originalTooltip) el.setAttribute('data-tooltip', originalTooltip);
+    else el.removeAttribute('data-tooltip');
+  }
+  el.removeAttribute('data-testing-original-tooltip');
+  el.removeAttribute('data-testing-tooltip-active');
+}
+
+function ensureTestingDisabledOverlay(el, label) {
+  if (!el) return;
+  let overlay = el.querySelector(':scope > .option-testing-disabled-overlay');
+  if (!overlay) {
+    overlay = document.createElement('span');
+    overlay.className = 'option-testing-disabled-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    el.appendChild(overlay);
+  }
+  overlay.textContent = label;
+}
+
+function syncTestingDisabledControl(el) {
+  if (!el || el.getAttribute('data-testing-disabled') !== 'true') return;
+  const unlocked = isDebugModeEnabled();
+  const hasHardDisable = hasHardDisabledState(el);
+
+  el.classList.toggle('is-testing-disabled-active', !unlocked);
+  el.classList.toggle('is-testing-disabled-unlocked', unlocked);
+
+  if (unlocked) {
+    el.setAttribute('data-testing-disabled-active', 'false');
+    restoreTestingTooltip(el);
+    setControlDisabled(el, hasHardDisable);
+    return;
+  }
+
+  el.setAttribute('data-testing-disabled-active', 'true');
+  setControlDisabled(el, true);
+  setTestingTooltip(el);
+}
+
+export function applyTestingDisabledState(el, item = {}, options = {}) {
+  if (!el || !isTestingDisabledItem(item)) return;
+  el.setAttribute('data-testing-disabled', 'true');
+  el.setAttribute('data-testing-disabled-tooltip', getTestingDisabledTooltip(item));
+  el.classList.add('is-testing-disabled');
+  if (options.overlay !== false) {
+    ensureTestingDisabledOverlay(el, getTestingDisabledLabel(item));
+  }
+  syncTestingDisabledControl(el);
+}
+
+function syncTestingDisabledControls(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('[data-testing-disabled="true"]').forEach((el) => {
+    syncTestingDisabledControl(el);
+  });
+}
+
+function queueTestingDisabledSync(root = document) {
+  if (testingDisabledSyncQueued) return;
+  testingDisabledSyncQueued = true;
+  const run = () => {
+    testingDisabledSyncQueued = false;
+    syncTestingDisabledControls(root);
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+  else setTimeout(run, 0);
+}
+
+function initTestingDisabledSync() {
+  if (typeof document === 'undefined') return;
+  document.addEventListener(DEBUG_MODE_CHANGED_EVENT, () => syncTestingDisabledControls(document));
+  if (typeof MutationObserver === 'undefined') return;
+
+  const startObserver = () => {
+    if (testingDisabledObserver || !document.body) return;
+    testingDisabledObserver = new MutationObserver((mutations) => {
+      const shouldSync = mutations.some((mutation) => (
+        mutation.type === 'attributes'
+        && mutation.target instanceof Element
+        && mutation.target.getAttribute('data-testing-disabled') === 'true'
+        && (mutation.attributeName === 'disabled' || mutation.attributeName === 'data-disabled-by' || mutation.attributeName === 'data-hard-disabled')
+      ));
+      if (shouldSync) queueTestingDisabledSync(document);
+    });
+    testingDisabledObserver.observe(document.body, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['disabled', 'data-disabled-by', 'data-hard-disabled']
+    });
+  };
+
+  if (document.body) startObserver();
+  else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+}
+
+initTestingDisabledSync();
 
 function isAddonTile(card) {
   if (!card) return false;
@@ -45,78 +223,38 @@ function isActivationEvent(ev) {
   return ev.type === 'click' || (ev.type === 'keydown' && (ev.key === 'Enter' || ev.key === ' '));
 }
 
-function applyOptionCardInfoFlip(card) {
+function applyOptionCardInfoDialogTrigger(card) {
   if (!card || card.dataset.infoEnhanced === 'true') return;
+  if (card.hasAttribute('disabled') || card.getAttribute('data-testing-disabled') === 'true') return;
   if (isAddonTile(card) || isExcludedStageTile(card) || isCustomInputTile(card)) return;
 
   const titleEl = card.querySelector('.title');
   const descriptionEl = card.querySelector('.description');
+  const titleText = titleEl ? String(titleEl.textContent || '').trim() : '';
   const descriptionText = descriptionEl ? String(descriptionEl.textContent || '').trim() : '';
-  if (!titleEl || !descriptionText) return;
+  if (!titleText || !descriptionText) return;
 
   const infoTrigger = document.createElement('span');
   infoTrigger.className = 'option-card-info-trigger';
   infoTrigger.setAttribute('role', 'button');
   infoTrigger.setAttribute('tabindex', '0');
-  infoTrigger.setAttribute('aria-label', 'Show details');
+  infoTrigger.setAttribute('aria-label', `Show details for ${titleText}`);
   infoTrigger.setAttribute('aria-expanded', 'false');
+  infoTrigger.setAttribute('aria-haspopup', 'dialog');
   infoTrigger.textContent = 'ⓘ';
-
-  const closeTrigger = document.createElement('span');
-  closeTrigger.className = 'option-card-info-close';
-  closeTrigger.setAttribute('role', 'button');
-  closeTrigger.setAttribute('tabindex', '-1');
-  closeTrigger.setAttribute('aria-label', 'Close details');
-  closeTrigger.textContent = 'X';
-
-  const frontFace = document.createElement('div');
-  frontFace.className = 'option-card-face option-card-face-front';
-
-  const backFace = document.createElement('div');
-  backFace.className = 'option-card-face option-card-face-back';
-  backFace.setAttribute('aria-hidden', 'true');
-
-  const backDescription = document.createElement('div');
-  backDescription.className = 'option-card-info-description';
-  backDescription.textContent = descriptionText;
-  backFace.appendChild(closeTrigger);
-  backFace.appendChild(backDescription);
-
-  const flipInner = document.createElement('div');
-  flipInner.className = 'option-card-flip-inner';
-
-  const currentChildren = Array.from(card.childNodes);
-  currentChildren.forEach((child) => frontFace.appendChild(child));
-  const frontDescription = frontFace.querySelector('.description');
-  if (frontDescription) frontDescription.remove();
-  frontFace.appendChild(infoTrigger);
-
-  flipInner.appendChild(frontFace);
-  flipInner.appendChild(backFace);
-  card.innerHTML = '';
-  card.appendChild(flipInner);
+  card.dataset.infoTitle = titleText;
+  card.dataset.infoDescription = descriptionText;
+  descriptionEl.remove();
+  card.appendChild(infoTrigger);
   card.classList.add('option-card-info-enabled');
-  card.setAttribute('data-info-open', 'false');
   card.dataset.infoEnhanced = 'true';
 
-  const openInfo = (focusClose = true) => {
-    if (card.getAttribute('data-info-open') === 'true') return;
-    card.classList.add('option-card-info-open');
-    card.setAttribute('data-info-open', 'true');
-    infoTrigger.setAttribute('aria-expanded', 'true');
-    closeTrigger.setAttribute('tabindex', '0');
-    backFace.setAttribute('aria-hidden', 'false');
-    if (focusClose) closeTrigger.focus();
-  };
-
-  const closeInfo = (focusInfo = true) => {
-    if (card.getAttribute('data-info-open') !== 'true') return;
-    card.classList.remove('option-card-info-open');
-    card.setAttribute('data-info-open', 'false');
-    infoTrigger.setAttribute('aria-expanded', 'false');
-    closeTrigger.setAttribute('tabindex', '-1');
-    backFace.setAttribute('aria-hidden', 'true');
-    if (focusInfo) infoTrigger.focus();
+  const openInfo = () => {
+    showOptionCardInfoDialog({
+      title: titleText,
+      description: descriptionText,
+      triggerEl: infoTrigger
+    });
   };
 
   infoTrigger.addEventListener('click', (ev) => {
@@ -129,39 +267,18 @@ function applyOptionCardInfoFlip(card) {
     consumeEvent(ev);
     openInfo();
   });
-
-  closeTrigger.addEventListener('click', (ev) => {
-    if (!isActivationEvent(ev)) return;
-    consumeEvent(ev);
-    closeInfo();
-  });
-  closeTrigger.addEventListener('keydown', (ev) => {
-    if (!isActivationEvent(ev)) return;
-    consumeEvent(ev);
-    closeInfo();
-  });
-
-  backFace.addEventListener('click', (ev) => {
-    consumeEvent(ev);
-  });
-
-  card.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'Escape' || card.getAttribute('data-info-open') !== 'true') return;
-    consumeEvent(ev);
-    closeInfo();
-  });
 }
 
 export function enhanceOptionCardsWithInfo(root = document) {
   if (!root) return;
   if (root.matches && root.matches('.option-card')) {
-    applyOptionCardInfoFlip(root);
+    applyOptionCardInfoDialogTrigger(root);
   }
   const cards = root.querySelectorAll ? root.querySelectorAll('.option-card') : [];
-  cards.forEach((card) => applyOptionCardInfoFlip(card));
+  cards.forEach((card) => applyOptionCardInfoDialogTrigger(card));
 }
 
-export function initOptionCardInfoFlips(root = document.body) {
+export function initOptionCardInfoDialogs(root = document.body) {
   if (!root) return;
   enhanceOptionCardsWithInfo(root);
   if (optionCardInfoObserver || typeof MutationObserver === 'undefined') return;
@@ -180,14 +297,16 @@ export function initOptionCardInfoFlips(root = document.body) {
 
 export function renderOptionCards(container, data = [], opts = {}) {
   if (!container) return;
-  container.innerHTML = '';
+  const fragment = document.createDocumentFragment();
   data.forEach(item => {
     const btn = document.createElement('button');
     btn.className = 'option-card';
+    btn.type = 'button';
     btn.setAttribute('data-id', item.id);
     if (opts.category) btn.setAttribute('data-category', opts.category);
     if (typeof item.price !== 'undefined') btn.setAttribute('data-price', String(item.price));
     if (item.customNote) btn.setAttribute('data-custom-note', 'true');
+    if (item.previewType) btn.setAttribute('data-preview-type', String(item.previewType));
     if (opts.ignorePlaceholder) btn.setAttribute('data-ignore-placeholder', 'true');
     if (item.attributes && typeof item.attributes === 'object') {
       Object.entries(item.attributes).forEach(([name, value]) => {
@@ -203,8 +322,18 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.setAttribute('aria-pressed', 'false');
     }
     if (item.disabled) {
-      btn.setAttribute('disabled', 'true');
-      if (item.tooltip) btn.setAttribute('data-tooltip', item.tooltip);
+      setHardDisabled(btn, item.tooltip || '');
+    }
+
+    if (item.badge) {
+      const badgeData = typeof item.badge === 'string' ? { label: item.badge } : item.badge;
+      if (badgeData && badgeData.label) {
+        const badge = document.createElement('span');
+        badge.className = 'option-card-pill';
+        if (badgeData.tone) badge.classList.add(`option-card-pill-${badgeData.tone}`);
+        badge.textContent = badgeData.label;
+        btn.appendChild(badge);
+      }
     }
 
     if (item.image) {
@@ -212,6 +341,8 @@ export function renderOptionCards(container, data = [], opts = {}) {
       img.src = item.image;
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
+      img.decoding = 'async';
+      img.draggable = false;
       btn.appendChild(img);
     }
 
@@ -235,17 +366,16 @@ export function renderOptionCards(container, data = [], opts = {}) {
       btn.appendChild(d);
     }
 
-    container.appendChild(btn);
+    applyTestingDisabledState(btn, item);
+    fragment.appendChild(btn);
   });
+  container.replaceChildren(fragment);
   enhanceOptionCardsWithInfo(container);
 }
 
 const DEFAULT_ADDON_INTRO_IMAGE = 'assets/images/model1_placeholder.png';
 const LOWER_SHELF_ADDON_ID = 'addon-lower-shelf';
-const LOWER_SHELF_COMPATIBLE_MODEL_ID = 'mdl-coffee';
-const LOWER_SHELF_COMPATIBLE_LEG_ID = 'leg-sample-04';
-const LOWER_SHELF_TOOLTIP = 'Select Squared legs to enable';
-const HIDDEN_ADDON_GROUP_TITLES = new Set(['installation']);
+const HIDDEN_ADDON_GROUP_TITLES = new Set(['expedited production', 'installation']);
 
 function reorderAddonGroupsForModel(groups = [], modelId = '') {
   const visibleGroups = groups.filter(group => {
@@ -277,7 +407,7 @@ function reorderAddonGroupsForModel(groups = [], modelId = '') {
     moveAfter('Glass Top', 'Tech');
     moveAfter('Waterfall Edge', 'Glass Top');
   } else if (modelId === 'mdl-dining') {
-    moveToIndex('Custom River Design', 1); // Keep expedited at the top.
+    moveToIndex('Custom River Design', 1);
   }
 
   return ordered;
@@ -293,6 +423,7 @@ function buildAddonIntro(group = {}) {
     image.className = 'addons-dropdown-intro-image';
     image.src = group.image || DEFAULT_ADDON_INTRO_IMAGE;
     image.alt = group.title ? `Preview of ${group.title}` : 'Addon preview';
+    image.draggable = false;
     introWrapper.appendChild(image);
   }
 
@@ -333,7 +464,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
   orderedGroups.forEach(group => {
     const hasLowerShelfOption = Array.isArray(group.options) && group.options.some(option => option && option.id === LOWER_SHELF_ADDON_ID);
-    if (hasLowerShelfOption && currentModel !== LOWER_SHELF_COMPATIBLE_MODEL_ID) {
+    if (hasLowerShelfOption && !isLowerShelfCompatibleModel(currentModel)) {
       return;
     }
     if (group.options && group.options.length && group.options.every(option => hiddenAddonIds.has(option.id))) {
@@ -354,6 +485,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     const headerMain = document.createElement('div');
     headerMain.className = 'addons-dropdown-header-main';
 
+    const chevron = document.createElement('svg');
+    chevron.className = 'addons-dropdown-chevron';
+    chevron.setAttribute('fill', 'none');
+    chevron.setAttribute('viewBox', '0 0 24 24');
+    chevron.setAttribute('stroke', 'currentColor');
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />';
+
     const title = document.createElement('div');
     title.className = 'addons-dropdown-title';
     title.textContent = group.title;
@@ -370,19 +509,11 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
     headerMeta.appendChild(price);
     headerMeta.appendChild(indicator);
 
+    headerMain.appendChild(chevron);
     headerMain.appendChild(title);
     headerMain.appendChild(headerMeta);
 
-    // Chevron icon
-    const chevron = document.createElement('svg');
-    chevron.className = 'addons-dropdown-chevron';
-    chevron.setAttribute('fill', 'none');
-    chevron.setAttribute('viewBox', '0 0 24 24');
-    chevron.setAttribute('stroke', 'currentColor');
-    chevron.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />';
-
     header.appendChild(headerMain);
-    header.appendChild(chevron);
 
     // Content (expandable)
     const content = document.createElement('div');
@@ -429,6 +560,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           // Render as tiles (buttons)
           const tilesContainer = document.createElement('div');
           tilesContainer.className = 'addons-tiles-container';
+          if (group.title === 'Edge Profiles') {
+            tilesContainer.classList.add('addons-edge-profile-tiles');
+          }
           if (subsection.layout === 'scroll') {
             tilesContainer.classList.add('addons-tiles-scroll');
           }
@@ -448,16 +582,16 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
               (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
-            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+            const isConfiguredDisabled = group.disabled || subsection.disabled || option.disabled;
+            const isDisabled = isConfiguredDisabled || isIncompatible;
 
             if (isDisabled) {
-              btn.disabled = true;
-              btn.classList.add('disabled');
               let tooltip = resolveTooltip(option, subsection);
               if (isInnerlightingIncompatible) {
                 tooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
               }
-              if (tooltip) btn.setAttribute('data-tooltip', tooltip);
+              if (isConfiguredDisabled) setHardDisabled(btn, tooltip || '');
+              else setSoftDisabled(btn, tooltip || '', 'design-compatibility');
             }
 
             if (option.image) {
@@ -465,6 +599,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
               img.className = 'addons-tile-image';
               img.src = option.image;
               img.alt = option.title ? `Preview of ${option.title}` : 'Tech option';
+              img.draggable = false;
               btn.appendChild(img);
             }
 
@@ -478,6 +613,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
             btn.appendChild(label);
             btn.appendChild(price);
+            applyTestingDisabledState(btn, option);
             tilesContainer.appendChild(btn);
 
           });
@@ -489,10 +625,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const groupId = subsection.groupId || subsection.title;
           select.setAttribute('data-addon-group', groupId);
           if (group.disabled || subsection.disabled) {
-            select.disabled = true;
-            select.classList.add('disabled');
             const tooltip = resolveTooltip({}, subsection);
-            if (tooltip) select.setAttribute('data-tooltip', tooltip);
+            setHardDisabled(select, tooltip || '');
           }
 
           subsection.options.forEach(option => {
@@ -507,11 +641,14 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
             const isInnerlightingIncompatible = option.id.startsWith('addon-lighting-') && option.id !== 'addon-lighting-none' &&
               (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
             const isIncompatible = isInnerlightingIncompatible;
-            const isDisabled = group.disabled || subsection.disabled || option.disabled || isIncompatible;
+            const isConfiguredDisabled = group.disabled || subsection.disabled || option.disabled;
+            const isDisabled = isConfiguredDisabled || isIncompatible;
 
             if (isDisabled) {
-              opt.disabled = true;
+              if (isConfiguredDisabled) setHardDisabled(opt);
+              else setSoftDisabled(opt, '', 'design-compatibility');
             }
+            applyTestingDisabledState(opt, option, { overlay: false });
             select.appendChild(opt);
           });
 
@@ -521,6 +658,80 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
         content.appendChild(subContainer);
       });
+    } else if (group.type === 'tile') {
+      const tilesContainer = document.createElement('div');
+      tilesContainer.className = 'addons-tiles-container';
+      if (group.title === 'Edge Profiles') {
+        tilesContainer.classList.add('addons-edge-profile-tiles');
+      }
+      if (group.layout === 'scroll') {
+        tilesContainer.classList.add('addons-tiles-scroll');
+      }
+
+      if (group.options) {
+        group.options.forEach(option => {
+          if (hiddenAddonIds.has(option.id)) return;
+          const tooltip = resolveTooltip(option);
+          const btn = document.createElement('button');
+          btn.className = 'addons-tile';
+          btn.setAttribute('data-addon-id', option.id);
+          btn.setAttribute('aria-pressed', 'false');
+          btn.setAttribute('data-price', option.price || 0);
+
+          const currentAddons = currentState.selections.options && currentState.selections.options.addon ? currentState.selections.options.addon : [];
+          const hasSquoval = currentAddons.includes('addon-squoval');
+          const hasLiveEdge = currentAddons.includes('addon-live-edge');
+          const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
+          const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
+          const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge'));
+          const isSquovalIncompatible = option.id === 'addon-squoval' &&
+            (hasLiveEdge || hasWaterfall);
+          const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible;
+          const isConfiguredDisabled = group.disabled || option.disabled;
+          const isDisabled = isConfiguredDisabled || isIncompatible;
+
+          if (isDisabled) {
+            let incompatibilityTooltip = tooltip;
+            let disabledBySource = 'edge-profile-base';
+            if (isRoundedCornersIncompatible || isAngledCornersIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
+            } else if (isChamferedEdgesIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
+            } else if (isSquovalIncompatible) {
+              incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
+              disabledBySource = 'edge-profile';
+            }
+            if (isConfiguredDisabled) setHardDisabled(btn, incompatibilityTooltip || '');
+            else setSoftDisabled(btn, incompatibilityTooltip || '', disabledBySource);
+          }
+
+          const img = document.createElement('img');
+          img.className = 'addons-tile-image';
+          img.src = option.image || group.image || DEFAULT_ADDON_INTRO_IMAGE;
+          img.alt = option.title ? `Preview of ${option.title}` : 'Customization option';
+          img.draggable = false;
+          btn.appendChild(img);
+
+          const label = document.createElement('div');
+          label.className = 'addons-tile-label';
+          label.textContent = option.title;
+
+          const optionPrice = document.createElement('div');
+          optionPrice.className = 'addons-tile-price';
+          optionPrice.textContent = formatPriceLabel(option.price);
+
+          btn.appendChild(label);
+          btn.appendChild(optionPrice);
+          applyTestingDisabledState(btn, option);
+          tilesContainer.appendChild(btn);
+        });
+      }
+
+      content.appendChild(tilesContainer);
     } else {
       // Original logic for non-tech groups
       const options = document.createElement('div');
@@ -548,54 +759,71 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           const hasLiveEdge = currentAddons.includes('addon-live-edge');
           const hasWaterfall = currentAddons.includes('addon-waterfall-single') || currentAddons.includes('addon-waterfall-second');
           const isRoundedCornersIncompatible = option.id === 'addon-rounded-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-angled-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
           const isAngledCornersIncompatible = option.id === 'addon-angled-corners' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-rounded-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round');
           const isCustomRiverIncompatible = option.id === 'addon-custom-river' &&
             (currentDesign === 'des-slab' || currentDesign === 'des-encasement' || currentDesign === 'des-encased-slab' || currentDesign === 'des-cookie');
           const isChamferedEdgesIncompatible = option.id === 'addon-chamfered-edges' &&
-            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-squoval') || currentAddons.includes('addon-live-edge') || currentAddons.includes('addon-angled-corners'));
+            (currentDesign === 'des-cookie' || currentDesign === 'des-round' || currentAddons.includes('addon-live-edge'));
           const isSquovalIncompatible = option.id === 'addon-squoval' &&
-            (currentAddons.includes('addon-chamfered-edges') || currentAddons.includes('addon-rounded-corners') || currentAddons.includes('addon-angled-corners') || hasLiveEdge || hasWaterfall);
+            (hasLiveEdge || hasWaterfall);
           const isLiveEdgeIncompatible = option.id === 'addon-live-edge' && hasSquoval;
-          const isWaterfallIncompatible = (option.id === 'addon-waterfall-single' || option.id === 'addon-waterfall-second') && hasSquoval;
-          const requiresWaterfallSingle = option.id === 'addon-waterfall-second' && !currentAddons.includes('addon-waterfall-single');
+          const isWaterfallIncompatible = (
+            option.id === 'addon-waterfall-single'
+            || option.id === 'addon-waterfall-second'
+            || option.id === 'addon-waterfall-art'
+          ) && hasSquoval;
+          const requiresWaterfallSingle = (
+            option.id === 'addon-waterfall-second'
+            || option.id === 'addon-waterfall-art'
+          ) && !currentAddons.includes('addon-waterfall-single');
           const isLiveEdgeRequired = option.id === 'addon-live-edge' && currentDesign === 'des-slab';
           const isLowerShelfLegIncompatible = option.id === LOWER_SHELF_ADDON_ID &&
-            currentModel === LOWER_SHELF_COMPATIBLE_MODEL_ID &&
-            currentLeg !== LOWER_SHELF_COMPATIBLE_LEG_ID;
+            isLowerShelfCompatibleModel(currentModel) &&
+            !isLowerShelfCompatibleContext({ modelId: currentModel, legId: currentLeg });
           const isIncompatible = isRoundedCornersIncompatible || isAngledCornersIncompatible || isCustomRiverIncompatible || isChamferedEdgesIncompatible || isSquovalIncompatible || isLiveEdgeIncompatible || isWaterfallIncompatible || requiresWaterfallSingle || isLowerShelfLegIncompatible;
-          const isDisabled = group.disabled || option.disabled || isIncompatible || isLiveEdgeRequired;
+          const isConfiguredDisabled = group.disabled || option.disabled;
+          const isDisabled = isConfiguredDisabled || isIncompatible || isLiveEdgeRequired;
 
           if (isDisabled) {
-            checkbox.disabled = true;
-            optionDiv.classList.add('disabled');
-            optionDiv.setAttribute('aria-disabled', 'true');
             let incompatibilityTooltip = tooltip;
+            let disabledBySource = 'addon-compatibility';
             if (requiresWaterfallSingle) {
               incompatibilityTooltip = 'Select Single Waterfall to enable';
+              disabledBySource = 'waterfall';
               checkbox.setAttribute('data-disabled-by', 'waterfall');
               optionDiv.setAttribute('data-disabled-by', 'waterfall');
             } else if (isRoundedCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Angled Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isAngledCornersIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Chamfered Edges, Squoval, or Rounded Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs';
             } else if (isCustomRiverIncompatible) {
               incompatibilityTooltip = 'Not compatible with Slab, Encasement, or Cookie designs';
             } else if (isChamferedEdgesIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Cookie or Round designs, Rounded Corners, Squoval, Live Edge, or Angled Corners';
+              incompatibilityTooltip = 'Not compatible with Cookie or Round designs or Live Edge';
             } else if (isSquovalIncompatible) {
-              incompatibilityTooltip = 'Not compatible with Chamfered Edges, Rounded Corners, Angled Corners, Live Edge, or Waterfall Edge';
+              incompatibilityTooltip = 'Not compatible with Live Edge or Waterfall Edge';
+              disabledBySource = 'edge-profile-base';
             } else if (isLiveEdgeIncompatible || isWaterfallIncompatible) {
               incompatibilityTooltip = 'Not compatible with Squoval';
+              disabledBySource = 'squoval';
             } else if (isLowerShelfLegIncompatible) {
-              incompatibilityTooltip = LOWER_SHELF_TOOLTIP;
+              incompatibilityTooltip = getLowerShelfCompatibilityTooltip();
+              disabledBySource = 'lower-shelf';
               checkbox.setAttribute('data-disabled-by', 'lower-shelf');
               optionDiv.setAttribute('data-disabled-by', 'lower-shelf');
             } else if (isLiveEdgeRequired) {
               incompatibilityTooltip = 'Included with Slab design';
+              disabledBySource = 'included-with-design';
             }
-            if (incompatibilityTooltip) optionDiv.setAttribute('data-tooltip', incompatibilityTooltip);
+            if (isConfiguredDisabled) {
+              setHardDisabled(checkbox);
+              setHardDisabled(optionDiv, incompatibilityTooltip || '');
+            } else {
+              setSoftDisabled(checkbox, '', disabledBySource);
+              setSoftDisabled(optionDiv, incompatibilityTooltip || '', disabledBySource);
+            }
           }
 
           const label = document.createElement('div');
@@ -609,6 +837,8 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
           optionDiv.appendChild(checkbox);
           optionDiv.appendChild(label);
           optionDiv.appendChild(optionPrice);
+          applyTestingDisabledState(optionDiv, option);
+          applyTestingDisabledState(checkbox, option, { overlay: false });
 
           options.appendChild(optionDiv);
         });
@@ -619,7 +849,7 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
     // Handle disabled state
     if (group.disabled) {
-      content.querySelectorAll('input, button, select').forEach(el => el.disabled = true);
+      content.querySelectorAll('input, button, select').forEach(el => setHardDisabled(el));
       if (group.tooltip) {
         tile.setAttribute('data-tooltip', group.tooltip);
       }
@@ -645,6 +875,9 @@ export function renderAddonsDropdown(container, data = [], currentState = {}) {
 
       tile.classList.toggle('expanded');
       header.setAttribute('aria-expanded', !isExpanded);
+      if (!isExpanded) {
+        requestAnimationFrame(() => scrollElementToTop(tile));
+      }
     });
 
     tile.appendChild(header);
@@ -660,7 +893,7 @@ export function renderSheenSlider(container, data = []) {
   if (!Array.isArray(data) || data.length === 0) return;
 
   const tilesContainer = document.createElement('div');
-  tilesContainer.className = 'sheen-tiles-container';
+  tilesContainer.className = 'sheen-tiles-container stage-options-grid';
   tilesContainer.setAttribute('aria-live', 'polite');
   tilesContainer.setAttribute('aria-atomic', 'true');
 
@@ -679,20 +912,18 @@ export function renderSheenSlider(container, data = []) {
       img.src = item.image;
       img.alt = item.alt || item.title || 'placeholder';
       img.className = 'viewer-placeholder-img';
+      img.draggable = false;
       tile.appendChild(img);
     }
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-price-row';
     const t = document.createElement('div');
     t.className = 'title';
     t.textContent = item.title || item.id;
     const p = document.createElement('div');
     p.className = 'price-delta';
     p.textContent = formatPriceLabel(item.price);
-    titleRow.appendChild(t);
-    titleRow.appendChild(p);
-    tile.appendChild(titleRow);
+    tile.appendChild(t);
+    tile.appendChild(p);
 
     if (item.description) {
       const d = document.createElement('div');
@@ -701,6 +932,8 @@ export function renderSheenSlider(container, data = []) {
       tile.appendChild(d);
     }
 
+    if (item.disabled) setHardDisabled(tile, item.tooltip || '');
+    applyTestingDisabledState(tile, item);
     tilesContainer.appendChild(tile);
     tileElements.push(tile);
   });
@@ -743,6 +976,7 @@ export function renderSheenSlider(container, data = []) {
   tilesContainer.addEventListener('click', (event) => {
     const tile = event.target.closest('.sheen-tile');
     if (!tile) return;
+    if (tile.hasAttribute('disabled')) return;
     const selectedIndex = tileElements.indexOf(tile);
     if (selectedIndex !== -1) {
       selectIndex(selectedIndex);
@@ -759,5 +993,6 @@ export default {
   renderAddonsDropdown,
   renderSheenSlider,
   enhanceOptionCardsWithInfo,
-  initOptionCardInfoFlips
+  initOptionCardInfoDialogs,
+  applyTestingDisabledState
 };

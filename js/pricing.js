@@ -134,6 +134,23 @@ function calculateDimensionPrice(state, dimensionsData) {
 }
 
 const WATERFALL_EDGE_ADDONS = ['addon-waterfall-single', 'addon-waterfall-second'];
+const CENTER_LEG_LENGTH_THRESHOLD = 130;
+const CUSTOM_DESIGN_ID = 'des-custom';
+const QUOTED_SEPARATELY_LABEL = 'Quoted separately';
+
+function getModelBasePrice(designsData, modelId) {
+  if (!Array.isArray(designsData) || !modelId) return 0;
+  const customDesign = designsData.find(item => item && item.id === CUSTOM_DESIGN_ID);
+  const customPrice = normalizeNumericPrice(customDesign && customDesign.prices ? customDesign.prices[modelId] : 0);
+  if (customPrice > 0) return customPrice;
+
+  let lowestPrice = Infinity;
+  designsData.forEach((item) => {
+    const candidate = normalizeNumericPrice(item && item.prices ? item.prices[modelId] : 0);
+    if (candidate > 0 && candidate < lowestPrice) lowestPrice = candidate;
+  });
+  return Number.isFinite(lowestPrice) ? lowestPrice : 0;
+}
 
 export function getWaterfallEdgeCount(appState) {
   const addons = appState && appState.selections && appState.selections.options
@@ -143,15 +160,23 @@ export function getWaterfallEdgeCount(appState) {
   return WATERFALL_EDGE_ADDONS.filter(id => addons.includes(id)).length;
 }
 
-export function getLegPriceMultiplier(appState) {
+export function requiresCenterLeg(appState) {
   const length = appState && appState.selections && appState.selections.dimensionsDetail
     ? appState.selections.dimensionsDetail.length
     : null;
-  const lengthMultiplier = (typeof length === 'number' && length > 130) ? 1.5 : 1;
+  return typeof length === 'number' && length > CENTER_LEG_LENGTH_THRESHOLD;
+}
+
+export function getVisibleLegCount(appState) {
+  const baseLegCount = requiresCenterLeg(appState) ? 3 : 2;
   const waterfallCount = getWaterfallEdgeCount(appState);
-  if (waterfallCount >= 2) return 0;
-  if (waterfallCount === 1) return lengthMultiplier * 0.5;
-  return lengthMultiplier;
+  if (waterfallCount >= 2) return baseLegCount > 2 ? 1 : 0;
+  if (waterfallCount === 1) return Math.max(0, baseLegCount - 1);
+  return baseLegCount;
+}
+
+export function getLegPriceMultiplier(appState) {
+  return getVisibleLegCount(appState) / 2;
 }
 
 // Central pricing helper
@@ -183,25 +208,46 @@ export async function computePrice(state) {
 
     const dimensionsData = await _loadDataOnce('data/dimensions.json');
 
-    // Base design price: lookup from designs.json using model ID and design ID
-    // If design is selected, use its price; otherwise base is 0
-    if (state.selections && state.selections.design && state.selections.model) {
-      const designId = state.selections.design;
+    // Resolve the base price from the selected model/design combination.
+    if (state.selections && state.selections.model) {
       const modelId = state.selections.model;
+      const modelsData = await _loadDataOnce('data/models.json');
+      const modelEntry = Array.isArray(modelsData) ? modelsData.find(x => x && x.id === modelId) : null;
+      const modelLabel = (modelEntry && modelEntry.title) || modelId;
       const designsData = await _loadDataOnce('data/designs.json');
-      let p = 0;
-      let designLabel = designId;
-      if (designsData && Array.isArray(designsData)) {
-        const d = designsData.find(x => x.id === designId);
-        if (d && d.prices && d.prices[modelId]) {
-          p = normalizeNumericPrice(d.prices[modelId]);
+
+      if (state.selections.design) {
+        const designId = state.selections.design;
+        let p = 0;
+        let designLabel = designId;
+        if (designsData && Array.isArray(designsData)) {
+          const d = designsData.find(x => x.id === designId);
+          if (d && d.prices && d.prices[modelId]) {
+            p = normalizeNumericPrice(d.prices[modelId]);
+          }
+          if (d && d.title) designLabel = d.title;
         }
-        if (d && d.title) designLabel = d.title;
+
+        if (designId === CUSTOM_DESIGN_ID) {
+          const modelBasePrice = getModelBasePrice(designsData, modelId);
+          if (modelBasePrice > 0) {
+            base = modelBasePrice;
+            breakdown.push({ id: modelId, type: 'model', price: base, label: modelLabel, isBase: true });
+          }
+          breakdown.push({
+            id: designId,
+            type: 'design',
+            price: 0,
+            label: designLabel,
+            priceLabel: QUOTED_SEPARATELY_LABEL
+          });
+        } else {
+          if (typeof p === 'number' && p > 0) base = p;
+          breakdown.push({ id: designId, type: 'design', price: base, label: designLabel, isBase: true });
+        }
+      } else if (base > 0) {
+        breakdown.push({ id: modelId, type: 'model', price: base, label: modelLabel, isBase: true });
       }
-      if (typeof p === 'number' && p > 0) base = p;
-      breakdown.push({ id: designId, type: 'design', price: base, label: designLabel, isBase: true });
-    } else if (base > 0) {
-      breakdown.push({ id: 'base', type: 'design', price: base, label: 'Base design', isBase: true });
     }
 
     // Single-choice categories to include in breakdown

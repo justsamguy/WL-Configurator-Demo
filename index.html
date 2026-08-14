@@ -55,8 +55,8 @@
   <!-- Loading screen shown below the navigation bar until app init completes -->
   <div id="app-loading" class="app-loading" role="status" aria-live="polite" aria-atomic="true">
     <div class="app-loading-inner">
-      <img src="assets/images/Generated%20Placeholder%20Table.png" alt="Generated table placeholder" width="200" height="200" />
-      <p class="app-loading-text">Loading configurator...</p>
+      <div class="viewer-loading-spinner" aria-hidden="true"></div>
+      <span class="sr-only">Loading configurator</span>
     </div>
   </div>
 
@@ -76,7 +76,7 @@
 
   <!-- Scripts -->
   <!-- Favicon (official logo) -->
-  <link rel="icon" href="https://www.google.com/s2/favicons?sz=64&domain=woodlab.co" type="image/x-icon">
+  <link rel="icon" href="assets/brand/icons/Woodlab%20icon.ico" type="image/x-icon">
   <!-- Three.js: load as ES modules in module scripts (viewer handles imports). Remove legacy UMD example scripts to avoid deprecation warnings. -->
   <!-- jsPDF and html2canvas (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';document.head.appendChild(s);"></script>

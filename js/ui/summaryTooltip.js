@@ -69,15 +69,16 @@ async function renderTooltip() {
       const price = Number(item.price) || 0;
       const hasPriceLabel = typeof item.priceLabel === 'string' && item.priceLabel.trim();
       if (!hasPriceLabel && price === 0) return;
-      const priceText = hasPriceLabel ? item.priceLabel : formatSigned(price);
-      // Show the base/design price as an absolute value, other items as signed additions.
-      if (item.isBase || item.type === 'design') {
-        const baseLabel = label || 'Base design';
-        const baseText = hasPriceLabel ? item.priceLabel : formatCurrencyShort(price);
+      const isAbsoluteRow = item.isBase || item.type === 'design';
+      const priceText = hasPriceLabel
+        ? item.priceLabel
+        : (isAbsoluteRow ? formatCurrencyShort(price) : formatSigned(price));
+      if (isAbsoluteRow) {
+        const typeLabel = item.type === 'model' ? 'Model price' : 'Design';
         rows.push(`
           <div class="summary-tooltip-row is-base">
-            <span class="summary-tooltip-label"><span class="summary-tooltip-type">Base design:</span> ${baseLabel}</span>
-            <span class="summary-tooltip-price">${baseText}</span>
+            <span class="summary-tooltip-label"><span class="summary-tooltip-type">${typeLabel}:</span> ${label}</span>
+            <span class="summary-tooltip-price">${priceText}</span>
           </div>
         `);
       } else {
