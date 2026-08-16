@@ -2600,6 +2600,11 @@ body.show-model-tiles #stage-bar {
     z-index: 80;
   }
 
+  body.mobile-menu-open #app-header,
+  body.show-model-tiles.mobile-menu-open #app-header {
+    z-index: 220;
+  }
+
   #app-header .flex.justify-center.items-center {
     grid-column: 2;
     width: 100%;
@@ -2863,9 +2868,12 @@ body.show-model-tiles #stage-bar {
   body.show-model-tiles #app-main.viewer-container,
   body.show-model-tiles #app-main.viewer-panel {
     grid-row: 2 / 3;
-    height: auto;
-    padding: 0.75rem;
+    height: calc(100dvh - var(--header-height, 3.75rem));
+    max-height: calc(100dvh - var(--header-height, 3.75rem));
+    padding: 0.75rem 0.75rem calc(var(--footer-height) + env(safe-area-inset-bottom, 0px) + 0.75rem);
     overflow-y: auto;
+    scroll-padding-top: 0.75rem;
+    scroll-padding-bottom: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 
   body.show-model-tiles #app-sidebar,
@@ -2889,7 +2897,7 @@ body.show-model-tiles #stage-bar {
   body.mobile-viewer-open #app-main.viewer-container,
   body.mobile-viewer-open #app-main.viewer-panel {
     position: fixed;
-    inset: var(--header-height, 3.75rem) 0 var(--footer-reserved-height, 0px) 0;
+    inset: var(--header-height, 3.75rem) 0 0 0;
     z-index: 70;
     display: flex;
     height: auto;
@@ -2897,6 +2905,12 @@ body.show-model-tiles #stage-bar {
     max-height: none;
     padding: 0.5rem;
     background: #f8fafc;
+  }
+
+  body.mobile-viewer-open {
+    --footer-reserved-height: 0px;
+    --footer-scroll-padding: 0px;
+    --viewer-safe-bottom: 18px;
   }
 
   body.mobile-viewer-open #app-sidebar {
@@ -2990,6 +3004,12 @@ body.show-model-tiles #stage-bar {
     display: flex;
   }
 
+  body.stage-0,
+  body.stage-1:not(.has-design) {
+    --footer-reserved-height: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px));
+    --footer-scroll-padding: calc(var(--footer-height) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
   body.stage-1:not(.has-design) #app-footer,
   body.stage-7 #app-footer {
     display: flex !important;
@@ -2998,6 +3018,13 @@ body.show-model-tiles #stage-bar {
   body.stage-0 .footer-price-row,
   body.stage-1:not(.has-design) .footer-price-row {
     display: none;
+  }
+
+  body.mobile-viewer-open #app-footer {
+    display: none !important;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
