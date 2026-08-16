@@ -924,6 +924,13 @@ async function setStage(index, options = {}) {
   } catch (e) {
     // ignore if stage info root not present
   }
+
+  document.dispatchEvent(new CustomEvent('stage-changed', {
+    detail: {
+      index: managerState.current,
+      label: STAGES[managerState.current]
+    }
+  }));
   
   // After entering a stage, check if pre-selected options make it complete
   // This ensures stages with defaults (like Finish) are properly marked as complete
@@ -1089,4 +1096,4 @@ export function initStageManager() {
 // expose for debugging
 window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
 
-export default { initStageManager, state: managerState, setStage, getCurrentStage };
+export default { initStageManager, state: managerState, setStage, nextStage, prevStage, getCurrentStage };

@@ -163,6 +163,119 @@ function initThemeToggle() {
   button.dataset.listenerBound = 'true';
 }
 
+function setMobileMenuOpen(open) {
+  const isOpen = open === true;
+  const body = document.body;
+  const menu = document.getElementById('mobile-stage-menu');
+  const backdrop = document.getElementById('mobile-menu-backdrop');
+  const toggleButtons = [
+    document.getElementById('mobile-menu-toggle'),
+    document.getElementById('mobile-footer-menu-btn')
+  ].filter(Boolean);
+
+  if (body) body.classList.toggle('mobile-menu-open', isOpen);
+  if (menu) menu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  if (backdrop) backdrop.hidden = !isOpen;
+  toggleButtons.forEach((button) => {
+    button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  if (isOpen) {
+    requestAnimationFrame(() => {
+      const closeButton = document.getElementById('mobile-menu-close');
+      const menuToggle = document.getElementById('mobile-menu-toggle');
+      const focusTarget = closeButton && closeButton.offsetParent !== null ? closeButton : menuToggle;
+      if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({ preventScroll: true });
+    });
+  }
+}
+
+function updateMobileBackButton() {
+  const backButton = document.getElementById('mobile-back-btn');
+  if (!backButton) return;
+  const currentStage = window.stageManager && typeof window.stageManager.getCurrentStage === 'function'
+    ? window.stageManager.getCurrentStage()
+    : 0;
+  const disabled = currentStage <= 0;
+  backButton.disabled = disabled;
+  backButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
+function initMobileNavigation() {
+  const menuToggle = document.getElementById('mobile-menu-toggle');
+  const footerMenuButton = document.getElementById('mobile-footer-menu-btn');
+  const closeButton = document.getElementById('mobile-menu-close');
+  const backdrop = document.getElementById('mobile-menu-backdrop');
+  const backButton = document.getElementById('mobile-back-btn');
+  const menu = document.getElementById('mobile-stage-menu');
+
+  if (menuToggle && menuToggle.dataset.mobileNavBound !== 'true') {
+    menuToggle.addEventListener('click', () => setMobileMenuOpen(!document.body.classList.contains('mobile-menu-open')));
+    menuToggle.dataset.mobileNavBound = 'true';
+  }
+
+  if (footerMenuButton && footerMenuButton.dataset.mobileNavBound !== 'true') {
+    footerMenuButton.addEventListener('click', () => setMobileMenuOpen(true));
+    footerMenuButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (closeButton && closeButton.dataset.mobileNavBound !== 'true') {
+    closeButton.addEventListener('click', () => setMobileMenuOpen(false));
+    closeButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (backdrop && backdrop.dataset.mobileNavBound !== 'true') {
+    backdrop.addEventListener('click', () => setMobileMenuOpen(false));
+    backdrop.dataset.mobileNavBound = 'true';
+  }
+
+  if (backButton && backButton.dataset.mobileNavBound !== 'true') {
+    backButton.addEventListener('click', () => {
+      if (backButton.disabled) return;
+      const stageManager = window.stageManager || null;
+      if (stageManager && typeof stageManager.prevStage === 'function') stageManager.prevStage();
+    });
+    backButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (menu && menu.dataset.mobileSwipeBound !== 'true') {
+    let touchStartX = null;
+    let touchStartY = null;
+    menu.addEventListener('touchstart', (event) => {
+      const touch = event.touches && event.touches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+    menu.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches && event.changedTouches[0];
+      if (!touch || touchStartX === null || touchStartY === null) return;
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+      if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.25) setMobileMenuOpen(false);
+    }, { passive: true });
+    menu.dataset.mobileSwipeBound = 'true';
+  }
+
+  if (document.body && document.body.dataset.mobileNavGlobalBound !== 'true') {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
+        setMobileMenuOpen(false);
+      }
+    });
+    document.addEventListener('stage-changed', () => {
+      setMobileMenuOpen(false);
+      updateMobileBackButton();
+    });
+    document.body.dataset.mobileNavGlobalBound = 'true';
+  }
+
+  setMobileMenuOpen(false);
+  updateMobileBackButton();
+}
+
 function parseRgbColor(value) {
   if (!value || typeof value !== 'string') return null;
   const channels = value.match(/[\d.]+/g);
@@ -1558,6 +1671,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadComponent('app-footer', 'components/Footer.html');
   initFooterLayoutVars();
   initThemeToggle();
+  initMobileNavigation();
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
 
@@ -1732,6 +1846,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     stageManager.initStageManager();
   // expose for other modules (summary/restart) to programmatically change stage
   window.stageManager = stageManager;
+    initMobileNavigation();
     log.info('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
@@ -1779,7 +1894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-06-02 17:03');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 735');
+console.log('Edit ver: 737');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
