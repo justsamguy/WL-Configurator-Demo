@@ -35,8 +35,10 @@ This repo maintains multiple rule files for different tools/agents. Keep shared 
 - **Edit version rule:** After app edits, increment the `Edit ver:` line immediately after it by 1.
 - **Accessibility:** WCAG 2.2 AA; keyboard navigable; use `:focus-visible` and `[aria-live="polite"][aria-atomic="true"]` where needed; do not remove focus outlines.
 - **UI styling:** For JS-generated UI, prefer class names defined in `css/configurator.css` over ad-hoc Tailwind utility strings; avoid inline styles for layout/typography.
-- Because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default. Do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
+- Because the app is primarily real-time visual/interactive, the user owns final runtime visual acceptance by default. For VSCode/Copilot/Cline-style agents that do not have an explicit runtime-testing instruction, do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
+- OpenClaw/Omni exception: when the OpenClaw/Omni operator is assigned UI, layout, viewer, or interaction work, local runtime/browser verification is expected before reporting the work ready for review. Use a local live server plus browser automation/screenshot inspection; do not use `file://`.
 - For runtime verification, prefer a live server environment or GitHub Pages instead of opening `index.html` via `file://`.
+- **Release branch setup:** when explicitly asked to prepare the next release branches after a merge/release, sync `main`, create the version branch from `main` (for example `v1.2`), then create the datecoded development branch from the version branch using `dev-YYYYMMDD` (for example `dev-20260814`). Push both and leave the worktree on the datecoded branch unless asked otherwise.
 
 ## Provenance
 

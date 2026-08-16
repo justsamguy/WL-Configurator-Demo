@@ -120,9 +120,10 @@ If repeated attempts don’t resolve an issue:
 - You may run **file operation** commands needed for the task (read, list, edit, move/rename) without prompting.
 - If you suggest a command the user did not request (especially non-file ops), **explain what it does** and **ask before running it**.
 - Local app loading over `file://` is not a valid runtime verification path for this project: the current setup relies on ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
-- Because this app is primarily real-time visual/interactive, the **user owns runtime visual verification** by default. Do not run, suggest, or substitute local visual/runtime testing unless the user explicitly requests it; instead, keep validation to static inspection or requested commands and state what was not runtime-verified.
+- Because this app is primarily real-time visual/interactive, the **user owns final runtime visual acceptance** by default. For VSCode/Copilot/Cline-style agents that do not have an explicit runtime-testing instruction, do not run, suggest, or substitute local visual/runtime testing unless the user explicitly requests it; instead, keep validation to static inspection or requested commands and state what was not runtime-verified.
+- **OpenClaw/Omni exception:** When the OpenClaw/Omni operator is assigned UI, layout, viewer, or interaction work, local runtime/browser verification is expected before reporting the work ready for review. Use a local live server plus browser automation/screenshot inspection; do not use `file://`.
 
-> Note: Avoid running local verify/test/build commands unless the user explicitly requests them.
+> Note: For VSCode/Copilot/Cline-style agents, avoid running local verify/test/build commands unless the user explicitly requests them.
 > Note: When runtime validation is needed, use a live server environment or GitHub Pages rather than opening `index.html` directly via `file://`.
 
 ---
@@ -139,6 +140,15 @@ Typical flow:
 3. User commits.
 4. User syncs/pushes to GitHub.
 5. User verifies via live deployment (GitHub Pages) and provides feedback.
+
+### Release branch setup
+When the user explicitly asks an agent to prepare the next release branches after a merge/release:
+1. Sync the local `main` branch to the updated remote `main`.
+2. Create the release branch from `main` using the simple version name, e.g. `v1.2`.
+3. Create the active development branch from that release branch using the repo datecode format `dev-YYYYMMDD`, e.g. `dev-20260814`.
+4. Push both branches and leave the working tree on the datecoded development branch unless the user asks otherwise.
+
+The datecoded branch should branch from the version branch, not directly from `main`; at creation time all three refs may point at the same commit if no release work has started yet.
 
 ---
 

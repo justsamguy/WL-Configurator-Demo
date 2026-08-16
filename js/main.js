@@ -168,10 +168,15 @@ function setMobileMenuOpen(open) {
   const body = document.body;
   const menu = document.getElementById('mobile-stage-menu');
   const backdrop = document.getElementById('mobile-menu-backdrop');
+  const menuToggle = document.getElementById('mobile-menu-toggle');
   const toggleButtons = [
-    document.getElementById('mobile-menu-toggle'),
+    menuToggle,
     document.getElementById('mobile-footer-menu-btn')
   ].filter(Boolean);
+
+  if (!isOpen && menu && menu.contains(document.activeElement) && menuToggle) {
+    menuToggle.focus({ preventScroll: true });
+  }
 
   if (body) body.classList.toggle('mobile-menu-open', isOpen);
   if (menu) menu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
@@ -183,7 +188,6 @@ function setMobileMenuOpen(open) {
   if (isOpen) {
     requestAnimationFrame(() => {
       const closeButton = document.getElementById('mobile-menu-close');
-      const menuToggle = document.getElementById('mobile-menu-toggle');
       const focusTarget = closeButton && closeButton.offsetParent !== null ? closeButton : menuToggle;
       if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({ preventScroll: true });
     });
@@ -1960,9 +1964,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-08-16 08:17');
+console.log('Last updated: 2026-08-16 08:42');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 744');
+console.log('Edit ver: 745');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

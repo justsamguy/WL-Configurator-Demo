@@ -13,6 +13,7 @@ alwaysApply: true
   - Edit project files: `index.html`, `css/*.css`, `js/**/*.js`, `components/*.html`, `pages/*.html`, `data/*.json`, and any assets in `assets/`.
   - Use only the locked tech stack: Vanilla JS, Tailwind CSS 3.4.1 (CDN), Three.js 0.160.0 (CDN), jsPDF 2.5.1, html2canvas 1.5.1, Heroicons. **No other frameworks**.
   - All logic must run in the browser; no server code. No external APIs for business data/services unless explicitly approved.
+  - Release branch setup, when explicitly requested after a merge/release: sync `main`, create the simple version branch from `main` (for example `v1.2`), then create the datecoded development branch from the version branch using `dev-YYYYMMDD` (for example `dev-20260814`). Push both and leave the worktree on the datecoded branch unless asked otherwise.
   - **IMPORTANT:** After finishing edits to the app, update the `Last updated:` timestamp in `js/main.js` (the console.log line after "WoodLab Configurator loaded successfully") in format `YYYY-MM-DD HH:MM` using the current local time from the system clock, then increment the `Edit ver:` line immediately after it by 1.
   - Track placeholder-backed image fields in root `placeholder_image_fields.txt`: add entries when a new image field uses a placeholder image, and remove entries when a placeholder is replaced with a final image.
   - Strictly follow the canonical file/folder layout:
@@ -36,9 +37,10 @@ alwaysApply: true
   - Note: Testing must occur in a live server environment due to CDN dependencies.
   - Note: Opening `index.html` via `file://` is not a valid runtime check for this project; the current setup uses ES modules, local `fetch()` calls, and CDN-hosted assets that browsers partially block or degrade under `file://` because of module/CORS/origin restrictions.
   - Recommendation: Commit changes and deploy to verify functionality.
-  - Because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default. Do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
+  - Because the app is primarily real-time visual/interactive, the user owns final runtime visual acceptance by default. For VSCode/Copilot/Cline-style agents, do not run, suggest, or substitute local visual/runtime testing unless explicitly requested; use static inspection or requested commands and state what was not runtime-verified.
+  - OpenClaw/Omni exception: when Omni is assigned UI, layout, viewer, or interaction work, local runtime/browser verification is expected before reporting ready for review. Use a local live server plus browser automation/screenshot inspection; do not use `file://`.
   - Next steps: User verifies accessibility, responsiveness, and runtime visual behavior on deployment and provides feedback.
-  - **Important:** Do not suggest or run local testing commands unless explicitly requested. All testing and verification must be done via GitHub Pages deployment.
+  - **Important for VSCode/Copilot/Cline-style agents:** Do not suggest or run local testing commands unless explicitly requested. Omni's OpenClaw workflow is different: use local runtime/browser checks for UI work, then leave final visual acceptance to the user.
   - Test: Stage, commit, and sync to GitHub. User to provide feedback on live deployment.
 
 
@@ -72,7 +74,7 @@ alwaysApply: true
 
 - **Definition of Done**
   - All checklist items in the guidelines are complete.
-  - User performs final runtime visual verification unless explicit testing is requested.
+  - User performs final runtime visual acceptance. Omni-performed local browser checks are still expected for Omni UI/layout/viewer/interaction edits before review.
   - This workflow file and the guidelines are committed to the repo.
 
 ---
