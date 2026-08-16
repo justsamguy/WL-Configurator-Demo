@@ -103,6 +103,7 @@ body {
 .mobile-menu-close,
 .mobile-menu-backdrop,
 .mobile-stage-menu-header,
+.mobile-viewer-menu-btn,
 .footer-mobile-nav {
   display: none;
 }
@@ -2576,7 +2577,7 @@ body.show-model-tiles #stage-bar {
 
   body.app-root {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(15rem, 38vh) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     height: 100dvh;
     min-height: 100vh;
     overflow: hidden;
@@ -2779,6 +2780,35 @@ body.show-model-tiles #stage-bar {
     margin-left: 0;
   }
 
+  .mobile-viewer-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 2.9rem;
+    margin-top: 0.25rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.45rem;
+    background-color: #1f2937;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .mobile-viewer-menu-btn:not([disabled]):hover,
+  .mobile-viewer-menu-btn[aria-pressed="true"] {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .mobile-viewer-menu-btn[disabled] {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   #top-stepper {
     display: none;
   }
@@ -2795,7 +2825,7 @@ body.show-model-tiles #stage-bar {
 
   #app-sidebar {
     grid-column: 1 / -1;
-    grid-row: 3 / 4;
+    grid-row: 2 / 3;
     display: flex;
     width: 100%;
     min-height: 0;
@@ -2818,7 +2848,7 @@ body.show-model-tiles #stage-bar {
 
   body.show-model-tiles #app-main.viewer-container,
   body.show-model-tiles #app-main.viewer-panel {
-    grid-row: 2 / 4;
+    grid-row: 2 / 3;
     height: auto;
     padding: 0.75rem;
     overflow-y: auto;
@@ -2826,17 +2856,42 @@ body.show-model-tiles #stage-bar {
 
   body.show-model-tiles #app-sidebar,
   body.stage-0 #viewer-frame,
-  body.stage-1 #viewer-frame {
+  body.stage-1 #viewer-frame,
+  body.stage-2 #app-main.viewer-container,
+  body.stage-2 #app-main.viewer-panel,
+  body.stage-3 #app-main.viewer-container,
+  body.stage-3 #app-main.viewer-panel,
+  body.stage-4 #app-main.viewer-container,
+  body.stage-4 #app-main.viewer-panel,
+  body.stage-5 #app-main.viewer-container,
+  body.stage-5 #app-main.viewer-panel,
+  body.stage-6 #app-main.viewer-container,
+  body.stage-6 #app-main.viewer-panel,
+  body.stage-7 #app-main.viewer-container,
+  body.stage-7 #app-main.viewer-panel {
     display: none;
   }
 
-  body.stage-2 #viewer-frame,
-  body.stage-3 #viewer-frame,
-  body.stage-4 #viewer-frame,
-  body.stage-5 #viewer-frame,
-  body.stage-6 #viewer-frame,
-  body.stage-7 #viewer-frame {
+  body.mobile-viewer-open #app-main.viewer-container,
+  body.mobile-viewer-open #app-main.viewer-panel {
+    position: fixed;
+    inset: var(--header-height, 3.75rem) 0 var(--footer-reserved-height, 0px) 0;
+    z-index: 70;
     display: flex;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    padding: 0.5rem;
+    background: #f8fafc;
+  }
+
+  body.mobile-viewer-open #app-sidebar {
+    display: none;
+  }
+
+  body.mobile-viewer-open #viewer-frame {
+    display: flex;
+    width: 100%;
   }
 
   #viewer,
@@ -2851,8 +2906,14 @@ body.show-model-tiles #stage-bar {
     height: 100%;
   }
 
-  .viewer-footer {
+  .viewer-footer,
+  #viewer-controls-container {
     display: none;
+  }
+
+  body.mobile-viewer-open .viewer-footer,
+  body.mobile-viewer-open #viewer-controls-container {
+    display: flex;
   }
 
   #app-footer {
@@ -2863,15 +2924,19 @@ body.show-model-tiles #stage-bar {
     z-index: 75;
     padding: 0;
     pointer-events: none;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -1px 0 rgba(148, 163, 184, 0.25);
   }
 
   .footer-bar {
     width: 100%;
-    padding: 0.55rem 0.75rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
+    min-height: 3.5rem;
+    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
     border-radius: 0;
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .footer-price-row {
@@ -6651,6 +6716,22 @@ body[data-resolved-theme="dark"] .footer-mobile-btn:disabled {
   color: #64748b;
 }
 
+body[data-resolved-theme="dark"] .mobile-viewer-menu-btn {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+body[data-resolved-theme="dark"] .mobile-viewer-menu-btn:not([disabled]):hover,
+body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[aria-pressed="true"] {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
+  background-color: #0f172a;
+  color: #64748b;
+}
+
 @media (max-width: 767px) {
   #stage-bar {
     --stage-slant: 0px;
@@ -6679,14 +6760,75 @@ body[data-resolved-theme="dark"] .footer-mobile-btn:disabled {
     display: none;
   }
 
-  body.stage-2 #viewer-frame,
-  body.stage-3 #viewer-frame,
-  body.stage-4 #viewer-frame,
-  body.stage-5 #viewer-frame,
-  body.stage-6 #viewer-frame,
-  body.stage-7 #viewer-frame {
+  body.mobile-viewer-open .viewer-footer,
+  body.mobile-viewer-open #viewer-controls-container {
+    display: flex;
+  }
+
+  body.mobile-viewer-open #viewer-frame {
     display: flex;
     min-height: 0;
+  }
+
+  body.stage-2 #viewer-error-state.viewer-overlay,
+  body.stage-3 #viewer-error-state.viewer-overlay,
+  body.stage-4 #viewer-error-state.viewer-overlay,
+  body.stage-5 #viewer-error-state.viewer-overlay,
+  body.stage-6 #viewer-error-state.viewer-overlay,
+  body.stage-7 #viewer-error-state.viewer-overlay {
+    padding: 0.45rem;
+  }
+
+  body.stage-2 #viewer-error-state .viewer-overlay-card,
+  body.stage-3 #viewer-error-state .viewer-overlay-card,
+  body.stage-4 #viewer-error-state .viewer-overlay-card,
+  body.stage-5 #viewer-error-state .viewer-overlay-card,
+  body.stage-6 #viewer-error-state .viewer-overlay-card,
+  body.stage-7 #viewer-error-state .viewer-overlay-card {
+    gap: 0.25rem;
+    width: 100%;
+    max-height: 100%;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  body.stage-2 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-3 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-4 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-5 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-6 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-7 #viewer-error-state .viewer-overlay-eyebrow,
+  body.stage-2 #viewer-error-state .viewer-retry-button,
+  body.stage-3 #viewer-error-state .viewer-retry-button,
+  body.stage-4 #viewer-error-state .viewer-retry-button,
+  body.stage-5 #viewer-error-state .viewer-retry-button,
+  body.stage-6 #viewer-error-state .viewer-retry-button,
+  body.stage-7 #viewer-error-state .viewer-retry-button {
+    display: none;
+  }
+
+  body.stage-2 #viewer-error-state .viewer-overlay-title,
+  body.stage-3 #viewer-error-state .viewer-overlay-title,
+  body.stage-4 #viewer-error-state .viewer-overlay-title,
+  body.stage-5 #viewer-error-state .viewer-overlay-title,
+  body.stage-6 #viewer-error-state .viewer-overlay-title,
+  body.stage-7 #viewer-error-state .viewer-overlay-title {
+    font-size: 0.95rem;
+    line-height: 1.15;
+  }
+
+  body.stage-2 #viewer-error-state .viewer-overlay-copy,
+  body.stage-3 #viewer-error-state .viewer-overlay-copy,
+  body.stage-4 #viewer-error-state .viewer-overlay-copy,
+  body.stage-5 #viewer-error-state .viewer-overlay-copy,
+  body.stage-6 #viewer-error-state .viewer-overlay-copy,
+  body.stage-7 #viewer-error-state .viewer-overlay-copy {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 0.78rem;
+    line-height: 1.2;
   }
 
   .mobile-stage-menu {

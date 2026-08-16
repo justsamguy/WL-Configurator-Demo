@@ -767,11 +767,21 @@ async function setStage(index, options = {}) {
           placeholderId
         });
         await loadComponent(placeholderId, componentPath);
+        if (managerState.current === 0 && typeof window.__wlRenderModelOptions === 'function') {
+          await window.__wlRenderModelOptions();
+        } else if (managerState.current === 1 && typeof window.__wlRenderDesignOptions === 'function') {
+          await window.__wlRenderDesignOptions(appState.selections && appState.selections.model);
+        }
       } else if (placeholder) {
         log.info('Selection component already present for stage', {
           stage: managerState.current,
           placeholderId
         });
+        if (managerState.current === 0 && typeof window.__wlRenderModelOptions === 'function') {
+          await window.__wlRenderModelOptions();
+        } else if (managerState.current === 1 && typeof window.__wlRenderDesignOptions === 'function') {
+          await window.__wlRenderDesignOptions(appState.selections && appState.selections.model);
+        }
       } else {
         log.warn('Could not find or create stage placeholder', {
           stage: managerState.current,

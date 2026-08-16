@@ -6,7 +6,7 @@
 - Mobile Website (new branch + sub branches for dev)
  - Review what triggers the mobile site (viewport width, browser agent, etc).
  - Ensure all triggers are dynamic.
- - Keep configuration preview unavailable through Models and Designs. Preview becomes available once the user is past the Design stage, matching desktop behavior.
+ - Keep configuration preview unavailable through Models and Designs. On mobile, keep the 3D viewer hidden from normal stage views and make it available only as its own `3D Preview` view from the menu after a design is selected.
  - Use only Back/Menu behavior for the mobile navigation controls.
  - Make the footer from the desktop permanent and add Back/Menu controls. Keep the effect, but keep it to the bottom of the screen instead of slightly above.
  - Move the nav bar into a hamburger menu icon in the top left in a persistent header that shares space with the WoodLab logo. Make it look spatially balanced horizontally, keep the logo size contained by the header size, and move the Light/Dark/System toggle to the bottom of the menu. The menu will come onto the screen from the left side and fill the whole screen; the hamburger icon animates and turns into an X icon in the top right of the menu while it fully opens. Tapping the X, swiping left, or selecting a stage will close the menu, except Models, where the menu only closes if the user picks "Yes" in the dialog.

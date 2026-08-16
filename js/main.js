@@ -190,13 +190,45 @@ function setMobileMenuOpen(open) {
   }
 }
 
+function setMobileViewerOpen(open) {
+  const isOpen = open === true;
+  const body = document.body;
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
+  const viewerSurface = document.getElementById('viewer');
+
+  if (body) body.classList.toggle('mobile-viewer-open', isOpen);
+  if (viewerButton) viewerButton.setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+
+  if (isOpen) {
+    setMobileMenuOpen(false);
+    requestAnimationFrame(() => {
+      resizeViewer();
+      if (viewerSurface && typeof viewerSurface.focus === 'function') {
+        viewerSurface.focus({ preventScroll: true });
+      }
+    });
+  }
+}
+
+function updateMobileViewerButton() {
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
+  if (!viewerButton) return;
+  const hasDesign = !!(state && state.selections && state.selections.design);
+  viewerButton.disabled = !hasDesign;
+  viewerButton.setAttribute('aria-disabled', hasDesign ? 'false' : 'true');
+  if (!hasDesign && document.body && document.body.classList.contains('mobile-viewer-open')) {
+    setMobileViewerOpen(false);
+  }
+}
+
 function updateMobileBackButton() {
   const backButton = document.getElementById('mobile-back-btn');
   if (!backButton) return;
   const currentStage = window.stageManager && typeof window.stageManager.getCurrentStage === 'function'
     ? window.stageManager.getCurrentStage()
     : 0;
-  const disabled = currentStage <= 0;
+  const mobileViewerOpen = !!(document.body && document.body.classList.contains('mobile-viewer-open'));
+  const disabled = !mobileViewerOpen && currentStage <= 0;
   backButton.disabled = disabled;
   backButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
 }
@@ -207,6 +239,7 @@ function initMobileNavigation() {
   const closeButton = document.getElementById('mobile-menu-close');
   const backdrop = document.getElementById('mobile-menu-backdrop');
   const backButton = document.getElementById('mobile-back-btn');
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
   const menu = document.getElementById('mobile-stage-menu');
 
   if (menuToggle && menuToggle.dataset.mobileNavBound !== 'true') {
@@ -232,10 +265,24 @@ function initMobileNavigation() {
   if (backButton && backButton.dataset.mobileNavBound !== 'true') {
     backButton.addEventListener('click', () => {
       if (backButton.disabled) return;
+      if (document.body && document.body.classList.contains('mobile-viewer-open')) {
+        setMobileViewerOpen(false);
+        updateMobileBackButton();
+        return;
+      }
       const stageManager = window.stageManager || null;
       if (stageManager && typeof stageManager.prevStage === 'function') stageManager.prevStage();
     });
     backButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (viewerButton && viewerButton.dataset.mobileNavBound !== 'true') {
+    viewerButton.addEventListener('click', () => {
+      if (viewerButton.disabled) return;
+      setMobileViewerOpen(true);
+      updateMobileBackButton();
+    });
+    viewerButton.dataset.mobileNavBound = 'true';
   }
 
   if (menu && menu.dataset.mobileSwipeBound !== 'true') {
@@ -261,19 +308,25 @@ function initMobileNavigation() {
 
   if (document.body && document.body.dataset.mobileNavGlobalBound !== 'true') {
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
+      if (event.key === 'Escape' && document.body.classList.contains('mobile-viewer-open')) {
+        setMobileViewerOpen(false);
+        updateMobileBackButton();
+      } else if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
         setMobileMenuOpen(false);
       }
     });
     document.addEventListener('stage-changed', () => {
       setMobileMenuOpen(false);
+      setMobileViewerOpen(false);
       updateMobileBackButton();
     });
     document.body.dataset.mobileNavGlobalBound = 'true';
   }
 
   setMobileMenuOpen(false);
+  setMobileViewerOpen(false);
   updateMobileBackButton();
+  updateMobileViewerButton();
 }
 
 function parseRgbColor(value) {
@@ -722,6 +775,16 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
   }
 }
 
+async function renderModelOptions() {
+  const modelGrid = document.querySelector('#models-stage-section .model-row-grid');
+  if (!modelGrid) return;
+
+  const { loadData } = await import('./dataLoader.js');
+  const { renderOptionCards } = await import('./stageRenderer.js');
+  const models = await loadData('data/models.json');
+  if (models) renderOptionCards(modelGrid, models, { category: null, showPrice: false });
+}
+
 async function applyDesignPreset(presetId, selectedDesignId = null) {
   if (!presetId) return;
 
@@ -801,6 +864,7 @@ async function applyDesignPreset(presetId, selectedDesignId = null) {
 
 if (typeof window !== 'undefined') {
   window.__wlRenderDesignOptions = renderDesignOptionsForModel;
+  window.__wlRenderModelOptions = renderModelOptions;
 }
 
 import { populateSummaryPanel } from './stages/summary.js';
@@ -815,6 +879,7 @@ document.addEventListener('statechange', (ev) => {
   // ev.detail.state contains the latest state object.
   const hasDesign = !!(ev.detail.state.selections && ev.detail.state.selections.design);
   document.body.classList.toggle('has-design', hasDesign);
+  updateMobileViewerButton();
   // If the summary page is active, refresh its contents
   try {
     const summaryRoot = document.getElementById('summary-panel');
@@ -1675,10 +1740,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
 
-  // Initialize viewer and controls after MainContent is loaded
-  await initViewer();
-  initViewerControls();
-  resizeViewer(); // Ensure viewer is sized correctly on load
+  // Initialize viewer and controls after MainContent is loaded; keep the UI usable if WebGL is unavailable.
+  try {
+    await initViewer();
+    initViewerControls();
+    resizeViewer(); // Ensure viewer is sized correctly on load
+  } catch (e) {
+    log.warn('Viewer initialization failed; continuing without 3D preview', e);
+    const viewerSurface = document.getElementById('viewer');
+    const emptyState = document.getElementById('viewer-empty-state');
+    const errorState = document.getElementById('viewer-error-state');
+    const errorCopy = document.getElementById('viewer-error-copy');
+    if (viewerSurface) viewerSurface.dataset.viewerState = 'error';
+    if (emptyState) emptyState.hidden = true;
+    if (errorState) errorState.hidden = false;
+    if (errorCopy) errorCopy.textContent = 'The configurator is still available, but this browser could not start the 3D preview.';
+  }
 
   // Compute and set accurate header height so main content doesn't tuck under it
   const setHeaderVars = () => {
@@ -1736,16 +1813,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { loadData } = await import('./dataLoader.js');
     const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoDialogs } = await import('./stageRenderer.js');
     initOptionCardInfoDialogs(document.body);
-    const modelsRoot = document.getElementById('stage-0-placeholder');
-    if (modelsRoot) {
-      const models = await loadData('data/models.json');
-      // The ModelSelection component expects a deeper container; try to find model-row-grid(s)
-      const modelGrids = document.querySelectorAll('.model-row-grid');
-      if (modelGrids && modelGrids.length && models) {
-        // distribute models across the first grid for simplicity
-        renderOptionCards(modelGrids[0], models, { category: null, showPrice: false });
-      }
-    }
+    if (typeof window.__wlRenderModelOptions === 'function') await window.__wlRenderModelOptions();
 
     const materialsOptionsRoot = document.getElementById('materials-options');
     if (materialsOptionsRoot) {
@@ -1892,9 +1960,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-06-02 17:03');
+console.log('Last updated: 2026-08-16 08:17');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 737');
+console.log('Edit ver: 744');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
