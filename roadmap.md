@@ -10,6 +10,7 @@
  - Use only Back/Menu behavior for the mobile navigation controls.
  - Make the footer from the desktop permanent and add Back/Menu controls. Keep the effect, but keep it to the bottom of the screen instead of slightly above.
  - Move the nav bar into a hamburger menu icon in the top left in a persistent header that shares space with the WoodLab logo. Make it look spatially balanced horizontally, keep the logo size contained by the header size, and move the Light/Dark/System toggle to the bottom of the menu. The menu will come onto the screen from the left side and fill the whole screen; the hamburger icon animates and turns into an X icon in the top right of the menu while it fully opens. Tapping the X, swiping left, or selecting a stage will close the menu, except Models, where the menu only closes if the user picks "Yes" in the dialog.
+ - Make mobile imagery easier to load on slow connections. Audit large stage/card assets and add an image-loading strategy such as smaller responsive variants, better lazy-loading, placeholders/skeletons, and preload only for the next likely stage.
  - Add URL modifiers # using numbers to allow for link sharing in the config app and use this to replace the copy/paste button action in the Summary page (plan before implementing).
  - Decide whether to keep, replace, or remove the html2canvas self-screenshot flow for adding an example image to the PDF (currently not in use).
 
