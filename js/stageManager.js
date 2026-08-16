@@ -287,10 +287,19 @@ function showValidationPrompt(requirement) {
   if (highlightEl) highlightEl.classList.add(VALIDATION_ERROR_CLASS);
 
   const scrollTarget = requirement.scrollEl || requirement.dropdownEl || requirement.highlightEl || requirement.anchorEl;
-  if (scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
+  const validationEvent = new CustomEvent('stage-validation-shown', {
+    cancelable: true,
+    detail: {
+      scrollTarget,
+      focusTarget: requirement.focusEl || scrollTarget
+    }
+  });
+  document.dispatchEvent(validationEvent);
+
+  if (!validationEvent.defaultPrevented && scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  focusValidationTarget(requirement.focusEl || scrollTarget);
+  if (!validationEvent.defaultPrevented) focusValidationTarget(requirement.focusEl || scrollTarget);
 
   activeValidationPrompt = {
     stageIndex: managerState.current,

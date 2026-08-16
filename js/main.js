@@ -225,6 +225,30 @@ function updateMobileViewerButton() {
   }
 }
 
+function isMobileViewport() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 767px)').matches;
+}
+
+function scrollToValidationTarget(scrollTarget, focusTarget = scrollTarget) {
+  const target = scrollTarget && typeof scrollTarget.scrollIntoView === 'function'
+    ? scrollTarget
+    : null;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        try {
+          focusTarget.focus({ preventScroll: true });
+        } catch (e) {
+          focusTarget.focus();
+        }
+      }
+    });
+  });
+}
+
 function updateMobileBackButton() {
   const backButton = document.getElementById('mobile-back-btn');
   if (!backButton) return;
@@ -322,6 +346,16 @@ function initMobileNavigation() {
     document.addEventListener('stage-changed', () => {
       setMobileMenuOpen(false);
       setMobileViewerOpen(false);
+      updateMobileBackButton();
+    });
+    document.addEventListener('stage-validation-shown', (event) => {
+      const menuWasOpen = document.body.classList.contains('mobile-menu-open');
+      if (!menuWasOpen && !isMobileViewport()) return;
+
+      event.preventDefault();
+      setMobileMenuOpen(false);
+      setMobileViewerOpen(false);
+      scrollToValidationTarget(event.detail && event.detail.scrollTarget, event.detail && event.detail.focusTarget);
       updateMobileBackButton();
     });
     document.body.dataset.mobileNavGlobalBound = 'true';
@@ -1964,9 +1998,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-08-16 08:42');
+console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 745');
+console.log('Edit ver: 746');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
