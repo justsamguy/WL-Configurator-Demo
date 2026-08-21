@@ -197,11 +197,22 @@ function syncMobileViewerDisplay(open) {
   const viewerFrame = document.getElementById('viewer-frame');
   const viewer = document.getElementById('viewer');
   const viewerControls = document.getElementById('viewer-controls-container');
+  const shouldHideForStage = !!(document.body && (
+    document.body.classList.contains('stage-0') ||
+    document.body.classList.contains('stage-1')
+  ));
 
-  if (open === true) {
+  if (open === true && isMobileViewport()) {
     if (viewerFrame) viewerFrame.style.display = 'flex';
     if (viewer) viewer.style.display = 'block';
     if (viewerControls) viewerControls.style.display = 'flex';
+    return;
+  }
+
+  if (shouldHideForStage) {
+    if (viewerFrame) viewerFrame.style.display = 'none';
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
     return;
   }
 
@@ -211,7 +222,7 @@ function syncMobileViewerDisplay(open) {
 }
 
 function setMobileViewerOpen(open) {
-  const isOpen = open === true;
+  const isOpen = open === true && isMobileViewport();
   const body = document.body;
   const viewerButton = document.getElementById('mobile-viewer-menu-btn');
   const viewerSurface = document.getElementById('viewer');
@@ -229,6 +240,20 @@ function setMobileViewerOpen(open) {
       }
     });
   }
+}
+
+function handleMobileViewportChange() {
+  if (!isMobileViewport()) {
+    setMobileMenuOpen(false);
+    setMobileViewerOpen(false);
+    return;
+  }
+
+  const mobileViewerOpen = !!(document.body && document.body.classList.contains('mobile-viewer-open'));
+  syncMobileViewerDisplay(mobileViewerOpen);
+  updateMobileBackButton();
+  updateMobileNextButton();
+  updateMobileViewerButton();
 }
 
 function updateMobileViewerButton() {
@@ -392,6 +417,7 @@ function initMobileNavigation() {
       updateMobileBackButton();
       updateMobileNextButton();
     });
+    window.addEventListener('resize', handleMobileViewportChange, { passive: true });
     document.body.dataset.mobileNavGlobalBound = 'true';
   }
 
@@ -2035,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 748');
+console.log('Edit ver: 752');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

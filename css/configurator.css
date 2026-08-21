@@ -2296,6 +2296,13 @@ body.stage-1 #app-main {
   padding-top: 0.25rem;
 }
 
+/* Models and Designs use #main-stage-host, so the persistent viewer chrome must
+   stay hidden even if mobile viewer cleanup runs after stage changes. */
+body.stage-0 #viewer-frame,
+body.stage-1 #viewer-frame {
+  display: none;
+}
+
 /* When the Select Model panel is moved into #app-main it should not add any
    extra top margin that could cause the content to be cropped inside the
    scrollable container. */
@@ -2602,7 +2609,8 @@ body.show-model-tiles #stage-bar {
 
   body.mobile-menu-open #app-header,
   body.show-model-tiles.mobile-menu-open #app-header {
-    z-index: 220;
+    z-index: 1000;
+    overflow: visible;
   }
 
   #app-header .flex.justify-center.items-center {
@@ -2649,7 +2657,7 @@ body.show-model-tiles #stage-bar {
     position: fixed;
     top: 0.65rem;
     left: 0.75rem;
-    z-index: 190;
+    z-index: 1020;
     border-color: transparent;
     background: transparent;
     box-shadow: none;
@@ -2668,24 +2676,17 @@ body.show-model-tiles #stage-bar {
   }
 
   .header-theme-slot {
-    display: none;
-  }
-
-  body.mobile-menu-open .header-theme-slot {
-    position: fixed;
-    top: auto;
-    left: 1rem;
-    right: 1rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 2.75rem);
-    z-index: 190;
     display: flex;
-    justify-content: center;
+    position: static;
+    z-index: auto;
+    flex: 0 0 auto;
+    align-items: center;
   }
 
   .mobile-menu-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 88;
+    z-index: 980;
     display: block;
     background: rgba(15, 23, 42, 0.38);
     opacity: 0;
@@ -2705,15 +2706,15 @@ body.show-model-tiles #stage-bar {
   .mobile-stage-menu {
     position: fixed;
     inset: 0;
-    z-index: 180;
+    z-index: 1010;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
     width: 100%;
     max-width: 100vw;
-    min-height: 100dvh;
-    height: 100dvh;
-    max-height: 100dvh;
+    min-height: 0;
+    height: auto;
+    max-height: none;
     padding: calc(env(safe-area-inset-top, 0px) + 0.85rem) 1rem calc(env(safe-area-inset-bottom, 0px) + 1rem);
     overflow: hidden;
     background: #ffffff;
@@ -2731,12 +2732,13 @@ body.show-model-tiles #stage-bar {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    gap: 0.75rem;
     min-height: 2.75rem;
     margin-bottom: 1rem;
   }
 
   .mobile-stage-menu-title {
-    margin-left: auto;
+    margin-left: 0;
     text-align: right;
     color: #111827;
     font-size: 1rem;
@@ -2764,7 +2766,8 @@ body.show-model-tiles #stage-bar {
 
   #stage-bar {
     position: static;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2773,7 +2776,8 @@ body.show-model-tiles #stage-bar {
     width: 100%;
     height: auto;
     margin: 0;
-    overflow: visible;
+    overflow-y: auto;
+    padding-bottom: 0.25rem;
   }
 
   #stage-bar .stage-btn,
@@ -3013,6 +3017,11 @@ body.show-model-tiles #stage-bar {
   body.stage-1:not(.has-design) #app-footer,
   body.stage-7 #app-footer {
     display: flex !important;
+  }
+
+  body.mobile-menu-open #app-footer {
+    z-index: 40 !important;
+    pointer-events: none;
   }
 
   body.stage-0 .footer-price-row,
@@ -4769,7 +4778,7 @@ body.stage-1 #designs-stage-section {
   justify-content: flex-start;
   gap: var(--designs-section-gap);
   overflow-y: auto;
-  padding: 0.75rem 1rem 1rem;
+  padding: 0.5rem clamp(0.45rem, 1.4vw, 1rem) 0.75rem;
   position: relative;
   background: var(--designs-section-surface);
 }
@@ -4794,6 +4803,7 @@ body.stage-1 #stage-panel-1 > .flex {
   display: flex;
   flex-direction: column;
   gap: var(--designs-section-gap);
+  width: 100%;
 }
 
 .designs-stage-header {
@@ -4996,12 +5006,13 @@ body.stage-1 #stage-panel-1 > .flex {
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid {
-  justify-items: center;
-  padding: 0.35rem 0.1rem 0.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  justify-items: stretch;
+  padding: 0.25rem 0 0.15rem;
 }
 
 body.stage-1 #designs-stage-section .stage-options-grid .option-card {
-  width: min(100%, 22rem);
+  width: 100%;
   min-height: 0;
   align-items: center;
   text-align: center;
@@ -6879,7 +6890,7 @@ body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
 
   .mobile-stage-menu {
     width: 100vw;
-    height: 100dvh;
+    height: auto;
   }
 
   #app-sidebar,
