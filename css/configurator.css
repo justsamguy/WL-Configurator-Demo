@@ -3,6 +3,7 @@
 html {
   height: 100%;
   font-size: calc(16px + 2pt);
+  overflow-x: hidden;
 }
 
 /*
@@ -25,6 +26,8 @@ body {
   display: grid; /* Ensure body is a grid container */
   height: 100vh; /* Force body to exactly match viewport height so grid sizing (1fr) works predictably */
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden; /* Hide page-level overflow; internal panels will scroll instead */
 }
 
@@ -64,6 +67,8 @@ body {
 /* Make the root grid fill the viewport and avoid causing the overall page to scroll. */
 .app-root {
   height: 100vh;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden; /* let internal regions manage their own scrolling */
 }
 
@@ -78,6 +83,10 @@ body {
 #app-header {
   grid-column: 1 / -1;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 /* Make header visually separate and reserve space so it doesn't overlap content */
@@ -990,6 +999,8 @@ header .flex.justify-center.items-center {
   pointer-events: none;
   box-sizing: border-box;
   max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .footer-bar {
@@ -1817,6 +1828,8 @@ body.show-model-tiles #stage-panel-0 #model-options,
   position: fixed;
   z-index: 85;
   width: min(560px, calc(100vw - 24px));
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
