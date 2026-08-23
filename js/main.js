@@ -261,6 +261,19 @@ document.addEventListener('click', (ev) => {
   document.dispatchEvent(new CustomEvent('request-mobile-viewer-preview'));
 });
 
+document.addEventListener('click', (ev) => {
+  const exitButton = ev.target && ev.target.closest ? ev.target.closest('#mobile-viewer-exit') : null;
+  if (!exitButton) return;
+  ev.preventDefault();
+  setMobileViewerOpen(false);
+  setMobileMenuOpen(true);
+  updateMobileBackButton();
+});
+
+document.addEventListener('stage-changed', () => {
+  requestAnimationFrame(() => updateStageSubsectionSummaries(document));
+});
+
 function handleMobileViewportChange() {
   if (!isMobileViewport()) {
     setMobileMenuOpen(false);
@@ -695,6 +708,76 @@ function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
     content.removeEventListener('transitionend', onCollapseTransitionEnd);
   };
   content.addEventListener('transitionend', onCollapseTransitionEnd);
+  updateStageSubsectionSummary(dropdown);
+}
+
+function ensureStageSubsectionSummary(dropdown) {
+  const headerMain = dropdown && dropdown.querySelector('.stage-subsection-header-main');
+  if (!headerMain) return null;
+  let summary = headerMain.querySelector('.stage-subsection-selection-summary');
+  if (summary) return summary;
+
+  summary = document.createElement('div');
+  summary.className = 'stage-subsection-selection-summary is-empty';
+  summary.setAttribute('aria-hidden', 'true');
+
+  const thumb = document.createElement('span');
+  thumb.className = 'stage-subsection-selection-thumb';
+
+  const title = document.createElement('span');
+  title.className = 'stage-subsection-selection-title';
+  title.textContent = 'No selection';
+
+  summary.appendChild(thumb);
+  summary.appendChild(title);
+  headerMain.appendChild(summary);
+  return summary;
+}
+
+function getSelectedStageSubsectionCard(dropdown) {
+  if (!dropdown) return null;
+  return dropdown.querySelector('.option-card[aria-pressed="true"], .sheen-tile[aria-pressed="true"]');
+}
+
+function getStageSubsectionSelectionTitle(card) {
+  const titleEl = card && card.querySelector('.title, .addons-tile-label');
+  return (titleEl && titleEl.textContent.trim()) || (card && card.getAttribute('data-id')) || 'Selected';
+}
+
+function applyStageSubsectionThumb(summary, card) {
+  const thumb = summary && summary.querySelector('.stage-subsection-selection-thumb');
+  if (!thumb) return;
+  thumb.style.removeProperty('background-image');
+  thumb.style.removeProperty('background-color');
+
+  const img = card && card.querySelector('img');
+  if (img && img.getAttribute('src')) {
+    thumb.style.backgroundImage = `url("${img.getAttribute('src')}")`;
+    return;
+  }
+
+  const swatch = card && card.querySelector('.color-gradient-preview');
+  if (swatch) {
+    const styles = window.getComputedStyle(swatch);
+    thumb.style.backgroundImage = styles.backgroundImage;
+    thumb.style.backgroundColor = styles.backgroundColor;
+  }
+}
+
+function updateStageSubsectionSummary(dropdown) {
+  const summary = ensureStageSubsectionSummary(dropdown);
+  if (!summary) return;
+  const title = summary.querySelector('.stage-subsection-selection-title');
+  const selectedCard = getSelectedStageSubsectionCard(dropdown);
+
+  summary.classList.toggle('is-empty', !selectedCard);
+  if (title) title.textContent = selectedCard ? getStageSubsectionSelectionTitle(selectedCard) : 'No selection';
+  applyStageSubsectionThumb(summary, selectedCard);
+}
+
+function updateStageSubsectionSummaries(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('.stage-subsection-dropdown').forEach(updateStageSubsectionSummary);
 }
 
 function initStageSubsectionDropdowns(root = document) {
@@ -712,6 +795,7 @@ function initStageSubsectionDropdowns(root = document) {
 
     const startExpanded = dropdown.dataset.defaultExpanded === 'true';
     setStageSubsectionExpanded(dropdown, startExpanded, { animate: false });
+    updateStageSubsectionSummary(dropdown);
 
     header.addEventListener('click', () => {
       const shouldExpand = !dropdown.classList.contains('expanded');
@@ -1005,6 +1089,7 @@ document.addEventListener('statechange', (ev) => {
   } catch (e) {
     // ignore
   }
+  requestAnimationFrame(() => updateStageSubsectionSummaries(document));
 });
 
 // Price animation helper used by the UI when updating the price display
@@ -1024,7 +1109,29 @@ function animatePrice(from, to, duration = 400, onUpdate) {
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;
-  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
+  const value = document.createElement('span');
+  value.className = 'footer-price-value';
+  value.textContent = `$${total.toLocaleString()}`;
+
+  const currency = document.createElement('span');
+  currency.className = 'footer-price-currency';
+  currency.textContent = 'USD';
+
+  el.replaceChildren(value, currency);
+  syncFooterCurrencyVisibility();
+}
+
+function syncFooterCurrencyVisibility() {
+  const price = document.getElementById('price-bar');
+  const currency = price && price.querySelector('.footer-price-currency');
+  const row = price && price.closest('.footer-price-row');
+  if (!price || !currency || !row) return;
+
+  currency.hidden = false;
+  requestAnimationFrame(() => {
+    const isTooTight = price.scrollWidth > price.clientWidth || row.scrollWidth > row.clientWidth;
+    currency.hidden = isTooTight;
+  });
 }
 
 function isQuotedLabel(value) {
@@ -1900,6 +2007,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setHeaderVars();
   window.addEventListener('resize', setHeaderVars);
   window.addEventListener('resize', syncFooterLayoutVars, { passive: true });
+  window.addEventListener('resize', syncFooterCurrencyVisibility, { passive: true });
 
   // Load icons after all components are in the DOM
   const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
@@ -2019,6 +2127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateWaterfallAddonAvailability(state);
       updateLowerShelfAddonAvailability(state);
     }
+    updateStageSubsectionSummaries(document);
   } catch (e) {
     log.warn('Failed to render stage data from JSON files', e);
   }
@@ -2080,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 757');
+console.log('Edit ver: 758');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

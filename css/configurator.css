@@ -1173,9 +1173,33 @@ header .flex.justify-center.items-center {
 }
 
 .footer-price-amount {
-  font-size: 1.05rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.22rem;
+  min-width: 0;
+  max-width: 100%;
+  font-size: calc(1.05rem + 2pt);
   font-weight: 600;
   color: #111827;
+}
+
+.footer-price-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-price-currency {
+  flex: 0 0 auto;
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.footer-price-currency[hidden] {
+  display: none !important;
 }
 
 /* Keep the price from growing too large and forcing siblings onto new lines */
@@ -1906,6 +1930,19 @@ body.show-model-tiles #stage-panel-0 #model-options,
 @media (max-width: 640px) {
   .stage-options-grid { grid-template-columns: 1fr; gap: 8px; }
 }
+
+@media (min-width: 768px) {
+  body.stage-2 #materials-root .stage-options-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.stage-5 #legs-options,
+  body.stage-5 #tube-size-options,
+  body.stage-5 #leg-finish-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .stage-options-grid .option-card {
   padding: 12px;
   min-height: 140px;
@@ -2874,6 +2911,11 @@ body.show-model-tiles #stage-bar {
     pointer-events: none;
   }
 
+  body.mobile-viewer-open .mobile-viewer-menu-btn {
+    background-color: #2563eb;
+    color: #ffffff;
+  }
+
   #top-stepper {
     display: none;
   }
@@ -3554,6 +3596,14 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   background-color: rgba(255, 255, 255, 0.92);
 }
 
+.viewer-exit-btn {
+  display: none !important;
+}
+
+.viewer-exit-btn span {
+  line-height: 1;
+}
+
 .viewer-retry-button {
   width: auto;
   min-width: 9rem;
@@ -3606,6 +3656,18 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
 
   #viewer-controls {
     gap: 0.85rem 1.15rem;
+  }
+
+  body.mobile-viewer-open .viewer-exit-btn {
+    display: inline-flex !important;
+    width: auto;
+    min-width: 4.5rem;
+    padding: 0 0.8rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #111827;
   }
 
   .viewer-control-group {
@@ -4038,6 +4100,13 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   font-weight: 600;
   border-bottom-color: transparent;
   z-index: 4;
+}
+
+body.mobile-viewer-open #stage-bar .stage-btn[aria-current="step"] {
+  background-color: #1f2937;
+  color: #ffffff;
+  font-weight: 500;
+  z-index: 2;
 }
 
 /* Clickable stages (usually previous stages): dark base, blue hover. */
@@ -5282,12 +5351,53 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
   align-items: center;
   gap: 0.75rem;
   flex: 1;
+  min-width: 0;
 }
 
 .stage-subsection-title {
+  flex: 0 0 auto;
   font-weight: 600;
   font-size: 0.9375rem;
   color: #111827;
+}
+
+.stage-subsection-selection-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+  color: #6b7280;
+}
+
+.stage-subsection-dropdown.expanded .stage-subsection-selection-summary {
+  display: none;
+}
+
+.stage-subsection-selection-thumb {
+  flex: 0 0 1.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.25rem;
+  background-color: #e5e7eb;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.stage-subsection-selection-summary.is-empty .stage-subsection-selection-thumb {
+  background-image: none !important;
+  background-color: #f3f4f6;
+}
+
+.stage-subsection-selection-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .stage-subsection-chevron {
@@ -6321,6 +6431,7 @@ body[data-resolved-theme="dark"] .summary-price-amount,
 body[data-resolved-theme="dark"] .summary-tooltip-empty,
 body[data-resolved-theme="dark"] .summary-tooltip-label,
 body[data-resolved-theme="dark"] .footer-price-label,
+body[data-resolved-theme="dark"] .footer-price-currency,
 body[data-resolved-theme="dark"] .control-label p,
 body[data-resolved-theme="dark"] .control-unit,
 body[data-resolved-theme="dark"] .reset-button,
@@ -6463,6 +6574,19 @@ body[data-resolved-theme="dark"] .addons-dropdown-option:hover {
 body[data-resolved-theme="dark"] .addons-dropdown-chevron,
 body[data-resolved-theme="dark"] .stage-subsection-chevron {
   color: #94a3b8;
+}
+
+body[data-resolved-theme="dark"] .stage-subsection-selection-title {
+  color: #94a3b8;
+}
+
+body[data-resolved-theme="dark"] .stage-subsection-selection-thumb {
+  background-color: #334155;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.28);
+}
+
+body[data-resolved-theme="dark"] .stage-subsection-selection-summary.is-empty .stage-subsection-selection-thumb {
+  background-color: #1e293b;
 }
 
 body[data-resolved-theme="dark"] .option-card-info-trigger {

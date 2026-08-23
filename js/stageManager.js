@@ -123,6 +123,23 @@ function formatPrice(centsOrUnits) {
   return `$${Number(centsOrUnits).toLocaleString()}`;
 }
 
+function setFooterPriceText(el, value) {
+  if (!el) return;
+  const amount = document.createElement('span');
+  amount.className = 'footer-price-value';
+  amount.textContent = formatPrice(value);
+
+  const currency = document.createElement('span');
+  currency.className = 'footer-price-currency';
+  currency.textContent = 'USD';
+
+  el.replaceChildren(amount, currency);
+  requestAnimationFrame(() => {
+    const row = el.closest('.footer-price-row');
+    currency.hidden = !!(row && (el.scrollWidth > el.clientWidth || row.scrollWidth > row.clientWidth));
+  });
+}
+
 function isStageCompleteForNav(index) {
   if (OPTIONAL_STAGES.includes(index)) return true;
   if (index === DIMENSIONS_STAGE_INDEX) return hasSelectedDimensions(appState);
@@ -569,11 +586,11 @@ async function updateLivePrice() {
     // compute authoritative price using shared state where possible
     try {
       const p = await computePrice(appState);
-      footerPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      setFooterPriceText(footerPrice, p.total || (managerState.config.price || 0));
       return;
     } catch (e) {
       // fallback
-      footerPrice.textContent = formatPrice(managerState.config.price || 0);
+      setFooterPriceText(footerPrice, managerState.config.price || 0);
       return;
     }
     return;
@@ -583,9 +600,27 @@ async function updateLivePrice() {
   elAmount.textContent = formatPrice(managerState.config.price || 0);
 }
 
+function isMobileViewport() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 767px)').matches;
+}
+
+function resetDesktopStageScroll() {
+  if (isMobileViewport()) return;
+  [
+    document.querySelector('#app-sidebar .sidebar-scroll'),
+    document.getElementById('app-sidebar'),
+    document.getElementById('app-main')
+  ].filter(Boolean).forEach((element) => {
+    element.scrollTop = 0;
+  });
+}
+
 async function setStage(index, options = {}) {
   // options: { allowSkip: boolean, skipConfirm: boolean }
   if (index < 0 || index >= STAGES.length) return;
+  const previousStage = managerState.current;
 
   // If the configurator was reset (no model selected), clear unlocked/completed progress.
   if (index === 0 && !(appState && appState.selections && appState.selections.model)) {
@@ -950,6 +985,9 @@ async function setStage(index, options = {}) {
       label: STAGES[managerState.current]
     }
   }));
+  if (previousStage !== managerState.current) {
+    requestAnimationFrame(resetDesktopStageScroll);
+  }
   
   // After entering a stage, check if pre-selected options make it complete
   // This ensures stages with defaults (like Finish) are properly marked as complete
