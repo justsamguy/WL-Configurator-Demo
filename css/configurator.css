@@ -1958,6 +1958,36 @@ body.show-model-tiles #stage-panel-0 #model-options,
   body.stage-5 #leg-finish-options {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  body.stage-5 #legs-options .option-card,
+  body.stage-5 #tube-size-options .option-card,
+  body.stage-5 #leg-finish-options .option-card {
+    align-items: center;
+    text-align: center;
+  }
+
+  body.stage-5 #legs-options .option-card .title,
+  body.stage-5 #tube-size-options .option-card .title,
+  body.stage-5 #leg-finish-options .option-card .title,
+  body.stage-5 #legs-options .option-card .price-delta,
+  body.stage-5 #tube-size-options .option-card .price-delta,
+  body.stage-5 #leg-finish-options .option-card .price-delta {
+    width: 100%;
+    text-align: center;
+  }
+
+  body.stage-5 #legs-options .option-card-info-enabled .title,
+  body.stage-5 #tube-size-options .option-card-info-enabled .title,
+  body.stage-5 #leg-finish-options .option-card-info-enabled .title,
+  body.stage-5 #legs-options .option-card-info-enabled .title-price-row,
+  body.stage-5 #tube-size-options .option-card-info-enabled .title-price-row,
+  body.stage-5 #leg-finish-options .option-card-info-enabled .title-price-row,
+  body.stage-5 #legs-options .option-card-info-enabled .price-delta,
+  body.stage-5 #tube-size-options .option-card-info-enabled .price-delta,
+  body.stage-5 #leg-finish-options .option-card-info-enabled .price-delta {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
 }
 
 .stage-options-grid .option-card {
@@ -3112,6 +3142,19 @@ body.show-model-tiles #stage-bar {
     color: #ffffff;
   }
 
+  .footer-mobile-btn.footer-save-btn {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+  }
+
+  .footer-mobile-btn.footer-save-btn:not(:disabled):hover,
+  .footer-mobile-btn.footer-save-btn:not(:disabled):focus-visible {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+  }
+
   .footer-mobile-btn:disabled {
     background: #f3f4f6;
     color: #9ca3af;
@@ -3150,6 +3193,18 @@ body.show-model-tiles #stage-bar {
   body.stage-1:not(.has-design) .footer-price-row,
   body.stage-7 .footer-price-row {
     display: none;
+  }
+
+  body.stage-0 .footer-bar,
+  body.stage-1:not(.has-design) .footer-bar,
+  body.stage-7 .footer-bar {
+    justify-content: flex-start;
+  }
+
+  body.stage-0 .footer-mobile-nav,
+  body.stage-1:not(.has-design) .footer-mobile-nav,
+  body.stage-7 .footer-mobile-nav {
+    margin-left: 0;
   }
 
   body.mobile-viewer-open #app-footer {
@@ -6982,6 +7037,12 @@ body[data-resolved-theme="dark"] #app-footer .footer-next-btn:not([disabled]):ho
 body[data-resolved-theme="dark"] .footer-mobile-btn {
   background-color: #334155;
   color: #f8fafc;
+}
+
+body[data-resolved-theme="dark"] .footer-mobile-btn.footer-save-btn {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 body[data-resolved-theme="dark"] .footer-mobile-btn:disabled {

@@ -264,6 +264,7 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('click', (ev) => {
   const exitButton = ev.target && ev.target.closest ? ev.target.closest('#mobile-viewer-exit') : null;
   if (!exitButton) return;
+  if (!isMobileViewport()) return;
   ev.preventDefault();
   setMobileViewerOpen(false);
   setMobileMenuOpen(true);
@@ -407,8 +408,9 @@ function updateMobileNextButton() {
   nextButton.disabled = disabled;
   nextButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
   nextButton.setAttribute('aria-label', isSummary ? 'Save summary PDF' : 'Go to next step');
+  nextButton.classList.toggle('footer-save-btn', isSummary);
   if (label) label.textContent = isSummary ? 'Save' : 'Next';
-  if (icon) icon.className = isSummary ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-arrow-right';
+  if (icon) icon.className = isSummary ? 'fa-solid fa-download' : 'fa-solid fa-arrow-right';
 }
 
 function triggerSummaryExport() {
@@ -2266,7 +2268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 759');
+console.log('Edit ver: 760');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
