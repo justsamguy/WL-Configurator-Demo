@@ -251,12 +251,13 @@ header .flex.justify-center.items-center {
   /* Ensure tooltip sits above the sticky header (header z-index: 60) and most UI chrome */
   z-index: 120;
   background: var(--summary-tooltip-bg, #ffffff);
-  border: 1px solid var(--summary-tooltip-border, rgba(16,24,40,0.08));
+  border: 2px solid var(--summary-tooltip-border, rgba(16,24,40,0.08));
   box-shadow: 0 6px 18px var(--summary-tooltip-shadow, rgba(16,24,40,0.08));
   border-radius: 8px;
   padding: 12px;
   width: 320px;
   max-width: calc(100vw - 24px);
+  box-sizing: border-box;
   line-height: 1.4;
 }
 .summary-tooltip.hidden { display: none; }
@@ -573,6 +574,24 @@ header .flex.justify-center.items-center {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.summary-preview-btn {
+  background-color: #1f2937;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.summary-preview-btn:hover {
+  background-color: #111827;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.summary-preview-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 
@@ -2605,6 +2624,11 @@ body.show-model-tiles #stage-bar {
     --viewer-safe-bottom: calc(var(--footer-height) + var(--footer-floating-gap) + 0.75rem);
   }
 
+  .summary-tooltip {
+    width: min(96vw, 100%);
+    max-width: min(96vw, calc(100vw - 0.5rem));
+  }
+
   body.app-root {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
@@ -3032,6 +3056,11 @@ body.show-model-tiles #stage-bar {
   body.stage-1:not(.has-design) {
     --footer-reserved-height: calc(var(--footer-height) + var(--footer-floating-gap));
     --footer-scroll-padding: calc(var(--footer-height) + var(--footer-floating-gap) + 0.75rem);
+  }
+
+  body.stage-7 {
+    --footer-reserved-height: calc(var(--footer-height) + var(--footer-floating-gap));
+    --footer-scroll-padding: calc(var(--footer-height) + var(--footer-floating-gap) + env(safe-area-inset-bottom, 0px) + 1.25rem);
   }
 
   body.stage-1:not(.has-design) #app-footer,
@@ -6967,6 +6996,15 @@ body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
 
   body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-card-pill {
     display: none;
+  }
+
+  body.stage-3 #stage-panel-3,
+  body.stage-4 #stage-panel-4,
+  body.stage-5 #stage-panel-5,
+  body.stage-6 #stage-panel-6,
+  body.stage-7 #stage-panel-7 {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
   }
 
   body.stage-2 #viewer-error-state.viewer-overlay,

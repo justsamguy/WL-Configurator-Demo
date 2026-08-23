@@ -106,6 +106,17 @@ let anchorButton = null;
 function positionTooltip() {
   const tip = document.getElementById('summary-tooltip');
   if (!tip || !anchorButton) return;
+  const mobileViewport = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+  const footer = document.getElementById('app-footer');
+  const footerVisible = footer && window.getComputedStyle(footer).display !== 'none';
+  if (mobileViewport && footerVisible) {
+    const footerRect = footer.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const left = Math.max(0, (viewportWidth - tip.offsetWidth) / 2);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${Math.max(8, footerRect.top - tip.offsetHeight - 1)}px`;
+    return;
+  }
   const rect = anchorButton.getBoundingClientRect();
   // place tooltip relative to the viewport (fixed positioning)
   // default: below the button with a small offset, aligned so the tooltip's right edge

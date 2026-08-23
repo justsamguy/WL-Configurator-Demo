@@ -242,6 +242,25 @@ function setMobileViewerOpen(open) {
   }
 }
 
+document.addEventListener('request-mobile-viewer-preview', () => {
+  if (isMobileViewport()) {
+    setMobileViewerOpen(true);
+    updateMobileBackButton();
+    return;
+  }
+  const viewerSurface = document.getElementById('viewer');
+  if (viewerSurface && typeof viewerSurface.scrollIntoView === 'function') {
+    viewerSurface.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+document.addEventListener('click', (ev) => {
+  const previewButton = ev.target && ev.target.closest ? ev.target.closest('#preview-config') : null;
+  if (!previewButton) return;
+  ev.preventDefault();
+  document.dispatchEvent(new CustomEvent('request-mobile-viewer-preview'));
+});
+
 function handleMobileViewportChange() {
   if (!isMobileViewport()) {
     setMobileMenuOpen(false);
@@ -2061,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 756');
+console.log('Edit ver: 757');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
