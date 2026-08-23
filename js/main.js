@@ -2061,7 +2061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 753');
+console.log('Edit ver: 754');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

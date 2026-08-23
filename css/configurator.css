@@ -24,6 +24,7 @@ body {
   font-family: 'Assistant', system-ui, sans-serif;
   display: grid; /* Ensure body is a grid container */
   height: 100vh; /* Force body to exactly match viewport height so grid sizing (1fr) works predictably */
+  margin: 0;
   overflow: hidden; /* Hide page-level overflow; internal panels will scroll instead */
 }
 
@@ -6796,6 +6797,10 @@ body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
 }
 
 @media (max-width: 767px) {
+  .viewer-stage-shell {
+    padding-bottom: 0;
+  }
+
   #stage-bar {
     --stage-slant: 0px;
     gap: 0.55rem;
@@ -6831,6 +6836,128 @@ body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
   body.mobile-viewer-open #viewer-frame {
     display: flex;
     min-height: 0;
+  }
+
+  body.stage-1 #designs-stage-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.stage-1 #app-main.viewer-container,
+  body.stage-1 #app-main.viewer-panel {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.stage-1 #stage-panel-1 {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.stage-1 .model-selection-shell,
+  body.stage-1 #designs-stage-section {
+    width: 100%;
+  }
+
+  body.stage-1 .designs-stage-shell {
+    align-items: center;
+  }
+
+  body.stage-1 .designs-stage-header,
+  body.stage-1 .designs-stage-panels {
+    width: min(96vw, 100%);
+  }
+
+  body.stage-1 .designs-stage-header {
+    padding: 0.2rem;
+    border-radius: 0.85rem;
+  }
+
+  body.stage-1 .designs-stage-group {
+    padding: 0.4rem;
+    border-radius: 0.85rem;
+  }
+
+  body.stage-1 .designs-stage-tablist {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  body.stage-1 .designs-stage-tab {
+    min-height: 3.45rem;
+    padding: 0.75rem 0.95rem;
+    border-radius: 0.7rem;
+  }
+
+  body.stage-1 .designs-stage-heading-text {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  body.stage-1 .designs-stage-tab-caption {
+    font-size: 0.72rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card {
+    display: grid;
+    grid-template-columns: clamp(5rem, 24vw, 6.25rem) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: 0.85rem;
+    row-gap: 0.15rem;
+    align-items: center;
+    min-height: 0;
+    padding: 0.7rem 0.78rem;
+    text-align: left;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .viewer-placeholder-img {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    width: clamp(5rem, 24vw, 6.25rem);
+    height: clamp(5rem, 24vw, 6.25rem);
+    aspect-ratio: 1 / 1;
+    margin: 0;
+    border-radius: 0.55rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .title,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .price-delta,
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .description {
+    grid-column: 2;
+    min-width: 0;
+    text-align: left;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .title {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .price-delta {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .description {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.82rem;
+  }
+
+  body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-card-pill {
+    top: 0.45rem;
+    right: 0.45rem;
+    min-height: 1.25rem;
+    padding: 0.16rem 0.45rem;
+    font-size: 0.54rem;
   }
 
   body.stage-2 #viewer-error-state.viewer-overlay,
