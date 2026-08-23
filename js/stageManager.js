@@ -537,8 +537,10 @@ function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
   const isLastStage = managerState.current >= STAGES.length - 1;
-  nextBtn.disabled = isLastStage;
-  nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
+  nextBtn.disabled = false;
+  nextBtn.setAttribute('aria-disabled', 'false');
+  nextBtn.textContent = isLastStage ? 'Save' : 'Next →';
+  nextBtn.setAttribute('aria-label', isLastStage ? 'Save summary PDF' : 'Go to next stage');
 }
 
 function syncTrackedStageCompletion(source = appState) {
@@ -1013,6 +1015,10 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
+  if (managerState.current >= STAGES.length - 1) {
+    document.dispatchEvent(new CustomEvent('request-summary-export'));
+    return;
+  }
   // If current stage isn't completed (and isn't optional), block advancing
   if (!isStageCompleteForNav(managerState.current)) {
     revealFirstMissingRequiredSelection();

@@ -294,6 +294,13 @@ header .flex.justify-center.items-center {
   font-size: 0.85rem;
   color: var(--summary-tooltip-text, #374151);
 }
+.summary-tooltip-row[data-stage-index] {
+  cursor: pointer;
+}
+.summary-tooltip-row[data-stage-index]:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-radius: 0.3rem;
+}
 .summary-tooltip-row + .summary-tooltip-row {
   border-top: 1px solid rgba(16,24,40,0.06);
   padding-top: 6px;
@@ -1178,7 +1185,7 @@ header .flex.justify-center.items-center {
   gap: 0.22rem;
   min-width: 0;
   max-width: 100%;
-  font-size: calc(1.05rem + 2pt);
+  font-size: 1.05rem;
   font-weight: 600;
   color: #111827;
 }
@@ -1191,6 +1198,7 @@ header .flex.justify-center.items-center {
 }
 
 .footer-price-currency {
+  display: none;
   flex: 0 0 auto;
   font-size: 0.62em;
   font-weight: 500;
@@ -1257,7 +1265,8 @@ body.stage-1:not(.has-design) #app-footer {
 }
 
 body.stage-0 .footer-price-row,
-body.stage-1:not(.has-design) .footer-price-row {
+body.stage-1:not(.has-design) .footer-price-row,
+body.stage-7 .footer-price-row {
   display: none;
 }
 
@@ -1931,7 +1940,15 @@ body.show-model-tiles #stage-panel-0 #model-options,
   .stage-options-grid { grid-template-columns: 1fr; gap: 8px; }
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
+  .footer-price-amount {
+    font-size: calc(1.05rem + 2pt);
+  }
+
+  .footer-price-currency:not([hidden]) {
+    display: inline;
+  }
+
   body.stage-2 #materials-root .stage-options-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2073,6 +2090,20 @@ body.show-model-tiles #stage-panel-0 #model-options,
   border-width: 4px;
   border-color: #2563eb;
 }
+
+.option-focus-flash {
+  animation: option-focus-flash 1.25s ease-out;
+}
+
+@keyframes option-focus-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.62), 0 0 0 4px rgba(37, 99, 235, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0), 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
 .stage-options-grid .option-card.selected .title {
   font-weight: 700;
 }
@@ -3116,7 +3147,8 @@ body.show-model-tiles #stage-bar {
   }
 
   body.stage-0 .footer-price-row,
-  body.stage-1:not(.has-design) .footer-price-row {
+  body.stage-1:not(.has-design) .footer-price-row,
+  body.stage-7 .footer-price-row {
     display: none;
   }
 
@@ -3596,12 +3628,8 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   background-color: rgba(255, 255, 255, 0.92);
 }
 
-.viewer-exit-btn {
+.viewer-exit-group {
   display: none !important;
-}
-
-.viewer-exit-btn span {
-  line-height: 1;
 }
 
 .viewer-retry-button {
@@ -3658,15 +3686,11 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
     gap: 0.85rem 1.15rem;
   }
 
+  body.mobile-viewer-open .viewer-exit-group {
+    display: flex !important;
+  }
+
   body.mobile-viewer-open .viewer-exit-btn {
-    display: inline-flex !important;
-    width: auto;
-    min-width: 4.5rem;
-    padding: 0 0.8rem;
-    border-radius: 999px;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
     color: #111827;
   }
 
@@ -5362,11 +5386,17 @@ body.stage-1 #designs-stage-section .stage-options-grid .option-card .option-car
 }
 
 .stage-subsection-selection-summary {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 0.38rem;
   min-width: 0;
   color: #6b7280;
+}
+
+@media (max-width: 767px) {
+  .stage-subsection-selection-summary {
+    display: inline-flex;
+  }
 }
 
 .stage-subsection-dropdown.expanded .stage-subsection-selection-summary {
@@ -6643,6 +6673,19 @@ body[data-resolved-theme="dark"] .sheen-tile.selected {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
+body[data-resolved-theme="dark"] .option-focus-flash {
+  animation-name: option-focus-flash-dark;
+}
+
+@keyframes option-focus-flash-dark {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.72), 0 0 0 4px rgba(147, 197, 253, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0), 0 0 0 0 rgba(147, 197, 253, 0);
+  }
+}
+
 body[data-resolved-theme="dark"] .stage-options-grid .option-card.selected::after,
 body[data-resolved-theme="dark"] .model-row .option-card.selected::after {
   background: #ffffff;
@@ -7127,6 +7170,11 @@ body[data-resolved-theme="dark"] .mobile-viewer-menu-btn[disabled] {
   body.stage-5 #stage-panel-5,
   body.stage-6 #stage-panel-6,
   body.stage-7 #stage-panel-7 {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  #stage-info-root {
     padding-left: 0.35rem;
     padding-right: 0.35rem;
   }

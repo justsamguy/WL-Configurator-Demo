@@ -46,6 +46,40 @@ function formatTypeLabel(type) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getStageIndexForTooltipItem(item = {}) {
+  const type = String(item.type || '').toLowerCase();
+  if (type === 'model') return 0;
+  if (type === 'design') return 1;
+  if (type === 'material' || type === 'color' || type === 'color-gradient') return 2;
+  if (type === 'finish-coating' || type === 'finish-sheen' || type === 'finish-tint') return 3;
+  if (type === 'dimensions') return 4;
+  if (type === 'legs' || type === 'tube-size' || type === 'leg-finish') return 5;
+  if (type === 'addon') return 6;
+  return null;
+}
+
+function buildTooltipRow(item, { isBase = false, typeLabel, label, priceText }) {
+  const stageIndex = getStageIndexForTooltipItem(item);
+  const dataAttrs = stageIndex === null
+    ? ''
+    : ` data-stage-index="${stageIndex}" data-option-id="${escapeHtml(item.id || '')}" data-option-type="${escapeHtml(item.type || '')}"`;
+  return `
+    <div class="summary-tooltip-row${isBase ? ' is-base' : ''}"${dataAttrs}>
+      <span class="summary-tooltip-label"><span class="summary-tooltip-type">${escapeHtml(typeLabel)}:</span> ${escapeHtml(label)}</span>
+      <span class="summary-tooltip-price">${escapeHtml(priceText)}</span>
+    </div>
+  `;
+}
+
 async function renderTooltip() {
   const tip = createTooltip();
   const content = document.getElementById('summary-tooltip-content');
@@ -75,20 +109,10 @@ async function renderTooltip() {
         : (isAbsoluteRow ? formatCurrencyShort(price) : formatSigned(price));
       if (isAbsoluteRow) {
         const typeLabel = item.type === 'model' ? 'Model price' : 'Design';
-        rows.push(`
-          <div class="summary-tooltip-row is-base">
-            <span class="summary-tooltip-label"><span class="summary-tooltip-type">${typeLabel}:</span> ${label}</span>
-            <span class="summary-tooltip-price">${priceText}</span>
-          </div>
-        `);
+        rows.push(buildTooltipRow(item, { isBase: true, typeLabel, label, priceText }));
       } else {
         const typeLabel = formatTypeLabel(item.type);
-        rows.push(`
-          <div class="summary-tooltip-row">
-            <span class="summary-tooltip-label"><span class="summary-tooltip-type">${typeLabel}:</span> ${label}</span>
-            <span class="summary-tooltip-price">${priceText}</span>
-          </div>
-        `);
+        rows.push(buildTooltipRow(item, { typeLabel, label, priceText }));
       }
     });
   }
@@ -102,6 +126,7 @@ async function renderTooltip() {
 }
 
 let anchorButton = null;
+let lastTooltipRowTap = { row: null, time: 0 };
 
 function positionTooltip() {
   const tip = document.getElementById('summary-tooltip');
@@ -149,6 +174,34 @@ function hideTooltip() {
   document.getElementById('summary-btn')?.setAttribute('aria-expanded', 'false');
 }
 
+function isStageAccessible(stageIndex) {
+  const btn = document.querySelector(`#stage-bar .stage-btn[data-stage-index="${stageIndex}"]`);
+  return !!(btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true');
+}
+
+function activateTooltipRow(row) {
+  if (!row) return;
+  const stageIndex = Number(row.getAttribute('data-stage-index'));
+  const optionId = row.getAttribute('data-option-id') || '';
+  const optionType = row.getAttribute('data-option-type') || '';
+  if (!Number.isInteger(stageIndex) || !optionId || !isStageAccessible(stageIndex)) return;
+
+  hideTooltip();
+  document.dispatchEvent(new CustomEvent('request-tooltip-option-focus', {
+    detail: { stageIndex, optionId, optionType }
+  }));
+}
+
+function handleTooltipRowTap(row) {
+  const now = Date.now();
+  if (lastTooltipRowTap.row === row && now - lastTooltipRowTap.time <= 420) {
+    lastTooltipRowTap = { row: null, time: 0 };
+    activateTooltipRow(row);
+    return;
+  }
+  lastTooltipRowTap = { row, time: now };
+}
+
 export function initSummaryTooltip(buttonEl) {
   anchorButton = buttonEl;
   if (!anchorButton) return;
@@ -167,9 +220,26 @@ export function initSummaryTooltip(buttonEl) {
     if (tip.contains(e.target)) return;
     hideTooltip();
   });
+  document.addEventListener('click', (e) => {
+    const tip = document.getElementById('summary-tooltip');
+    if (!tip || tip.classList.contains('hidden') || !tip.contains(e.target)) return;
+    const row = e.target.closest && e.target.closest('.summary-tooltip-row[data-stage-index][data-option-id]');
+    if (row) handleTooltipRowTap(row);
+  });
+  document.addEventListener('dblclick', (e) => {
+    const tip = document.getElementById('summary-tooltip');
+    if (!tip || tip.classList.contains('hidden') || !tip.contains(e.target)) return;
+    const row = e.target.closest && e.target.closest('.summary-tooltip-row[data-stage-index][data-option-id]');
+    if (row) activateTooltipRow(row);
+  });
   // Reposition on resize/scroll
   window.addEventListener('resize', positionTooltip);
-  window.addEventListener('scroll', positionTooltip, true);
+  window.addEventListener('scroll', (e) => {
+    const tip = document.getElementById('summary-tooltip');
+    if (!tip || tip.classList.contains('hidden')) return;
+    if (e.target && tip.contains(e.target)) return;
+    hideTooltip();
+  }, true);
   // Update contents when state changes (listeners rely on global state events)
   document.addEventListener('statechange', () => renderTooltip());
 }

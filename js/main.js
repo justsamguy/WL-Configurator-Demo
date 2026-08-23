@@ -274,6 +274,24 @@ document.addEventListener('stage-changed', () => {
   requestAnimationFrame(() => updateStageSubsectionSummaries(document));
 });
 
+document.addEventListener('request-tooltip-option-focus', async (ev) => {
+  const detail = ev.detail || {};
+  const stageIndex = Number(detail.stageIndex);
+  const optionId = detail.optionId || '';
+  if (!Number.isInteger(stageIndex) || !optionId) return;
+
+  const stageManager = window.stageManager || null;
+  if (stageManager && typeof stageManager.setStage === 'function') {
+    await stageManager.setStage(stageIndex, { allowSkip: true });
+  }
+
+  setTimeout(() => focusTooltipOptionTarget(optionId), 420);
+});
+
+document.addEventListener('request-summary-export', () => {
+  triggerSummaryExport();
+});
+
 function handleMobileViewportChange() {
   if (!isMobileViewport()) {
     setMobileMenuOpen(false);
@@ -303,6 +321,47 @@ function isMobileViewport() {
   return typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia('(max-width: 767px)').matches;
+}
+
+function cssEscape(value) {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(value);
+  return String(value).replace(/["\\]/g, '\\$&');
+}
+
+function findOptionTarget(optionId) {
+  const id = cssEscape(optionId);
+  return document.querySelector(`.option-card[data-id="${id}"], .sheen-tile[data-id="${id}"], [data-addon-id="${id}"], .option-card[data-preset-id="${id}"]`);
+}
+
+function expandOptionContainer(target) {
+  const subsection = target && target.closest('.stage-subsection-dropdown');
+  if (subsection) {
+    setStageSubsectionExpanded(subsection, true, { animate: false });
+    return;
+  }
+
+  const addonTile = target && target.closest('.addons-dropdown-tile');
+  if (!addonTile || addonTile.classList.contains('expanded')) return;
+  const header = addonTile.querySelector('.addons-dropdown-header');
+  if (header) header.click();
+}
+
+function flashOptionTarget(target) {
+  if (!target) return;
+  target.classList.remove('option-focus-flash');
+  void target.offsetWidth;
+  target.classList.add('option-focus-flash');
+  setTimeout(() => target.classList.remove('option-focus-flash'), 1500);
+}
+
+function focusTooltipOptionTarget(optionId) {
+  const target = findOptionTarget(optionId);
+  if (!target) return;
+  expandOptionContainer(target);
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    flashOptionTarget(target);
+  });
 }
 
 function scrollToValidationTarget(scrollTarget, focusTarget = scrollTarget) {
@@ -338,12 +397,23 @@ function updateMobileBackButton() {
 function updateMobileNextButton() {
   const nextButton = document.getElementById('mobile-footer-next-btn');
   if (!nextButton) return;
+  const label = nextButton.querySelector('span');
+  const icon = nextButton.querySelector('i');
   const currentStage = window.stageManager && typeof window.stageManager.getCurrentStage === 'function'
     ? window.stageManager.getCurrentStage()
     : 0;
-  const disabled = currentStage >= 7;
+  const isSummary = currentStage >= 7;
+  const disabled = false;
   nextButton.disabled = disabled;
   nextButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  nextButton.setAttribute('aria-label', isSummary ? 'Save summary PDF' : 'Go to next step');
+  if (label) label.textContent = isSummary ? 'Save' : 'Next';
+  if (icon) icon.className = isSummary ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-arrow-right';
+}
+
+function triggerSummaryExport() {
+  const exportButton = document.getElementById('export-pdf');
+  if (exportButton) exportButton.click();
 }
 
 function initMobileNavigation() {
@@ -364,6 +434,13 @@ function initMobileNavigation() {
     footerNextButton.addEventListener('click', () => {
       if (footerNextButton.disabled) return;
       const stageManager = window.stageManager || null;
+      const currentStage = stageManager && typeof stageManager.getCurrentStage === 'function'
+        ? stageManager.getCurrentStage()
+        : 0;
+      if (currentStage >= 7) {
+        triggerSummaryExport();
+        return;
+      }
       if (stageManager && typeof stageManager.nextStage === 'function') stageManager.nextStage();
     });
     footerNextButton.dataset.mobileNavBound = 'true';
@@ -2189,7 +2266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 758');
+console.log('Edit ver: 759');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
   console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
