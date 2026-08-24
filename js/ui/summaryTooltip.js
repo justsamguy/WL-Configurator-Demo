@@ -3,6 +3,7 @@
 import { state } from '../state.js';
 import { computePrice } from '../pricing.js';
 import { createLogger } from '../logger.js';
+import { isMobileViewport } from './breakpoints.js';
 
 const log = createLogger('SummaryTooltip');
 
@@ -131,10 +132,9 @@ let lastTooltipRowTap = { row: null, time: 0 };
 function positionTooltip() {
   const tip = document.getElementById('summary-tooltip');
   if (!tip || !anchorButton) return;
-  const mobileViewport = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
   const footer = document.getElementById('app-footer');
   const footerVisible = footer && window.getComputedStyle(footer).display !== 'none';
-  if (mobileViewport && footerVisible) {
+  if (isMobileViewport() && footerVisible) {
     const footerRect = footer.getBoundingClientRect();
     const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
     const left = Math.max(0, (viewportWidth - tip.offsetWidth) / 2);

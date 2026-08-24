@@ -17,6 +17,7 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
+import { isMobileViewport } from './ui/breakpoints.js';
 import { state as appState, setState } from './state.js';
 // helper from placeholders to recompute finish constraints when selections are set programmatically
 import { recomputeFinishConstraints } from './ui/placeholders.js';
@@ -600,12 +601,6 @@ async function updateLivePrice() {
   const elAmount = $('#live-price .price-amount');
   if (!elAmount) return;
   elAmount.textContent = formatPrice(managerState.config.price || 0);
-}
-
-function isMobileViewport() {
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(max-width: 767px)').matches;
 }
 
 function resetDesktopStageScroll() {

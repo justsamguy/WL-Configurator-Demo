@@ -4759,7 +4759,7 @@ body.mobile-viewer-open #stage-bar .stage-btn[aria-current="step"] {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .dimensions-panel-container {
     padding: 0.75rem;
   }

@@ -4,7 +4,7 @@
 import { loadComponent } from './app.js';
 import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
-import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
+import { isMobileViewport } from './ui/breakpoints.js';
 import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getVisibleLegCount, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
@@ -23,6 +23,8 @@ const THEME_MODES = ['system', 'light', 'dark'];
 let systemThemeMediaQuery = null;
 let systemThemeListenerBound = false;
 let footerMetricsObserver = null;
+let viewerModulePromise = null;
+let viewerReadyPromise = null;
 
 if (typeof window !== 'undefined' && typeof window.WL_LOG_LEVEL !== 'string') {
   // Reset any persisted debug logger state unless this page explicitly opts into another level.
@@ -76,6 +78,69 @@ function getThemeIconClass(mode) {
   if (mode === 'light') return 'fa-solid fa-sun';
   if (mode === 'dark') return 'fa-regular fa-moon';
   return 'fa-solid fa-computer';
+}
+
+function importViewerModule() {
+  if (!viewerModulePromise) {
+    viewerModulePromise = import('./viewer.js').catch((error) => {
+      viewerModulePromise = null;
+      throw error;
+    });
+  }
+  return viewerModulePromise;
+}
+
+function showViewerInitializationError(error) {
+  log.warn('Viewer initialization failed; continuing without 3D preview', error);
+  const viewerSurface = document.getElementById('viewer');
+  const emptyState = document.getElementById('viewer-empty-state');
+  const errorState = document.getElementById('viewer-error-state');
+  const errorCopy = document.getElementById('viewer-error-copy');
+  if (viewerSurface) viewerSurface.dataset.viewerState = 'error';
+  if (emptyState) emptyState.hidden = true;
+  if (errorState) errorState.hidden = false;
+  if (errorCopy) errorCopy.textContent = 'The configurator is still available, but this browser could not start the 3D preview.';
+}
+
+async function ensureViewerReady() {
+  if (!viewerReadyPromise) {
+    viewerReadyPromise = (async () => {
+      try {
+        const viewer = await importViewerModule();
+        await viewer.initViewer();
+        viewer.initViewerControls();
+        viewer.resizeViewer();
+        return viewer;
+      } catch (error) {
+        viewerReadyPromise = null;
+        showViewerInitializationError(error);
+        throw error;
+      }
+    })();
+  }
+  return viewerReadyPromise;
+}
+
+function scheduleViewerLoadAfterAppReady() {
+  if (isMobileViewport()) return;
+  const loadViewer = () => {
+    void ensureViewerReady().catch(() => {});
+  };
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(loadViewer, { timeout: 1200 });
+  } else {
+    setTimeout(loadViewer, 0);
+  }
+}
+
+async function resizeViewerIfReady() {
+  if (!viewerModulePromise) return;
+  try {
+    const viewer = await viewerModulePromise;
+    viewer.resizeViewer();
+  } catch (error) {
+    log.warn('Viewer resize skipped because viewer module failed to load', error);
+  }
 }
 
 function updateThemeToggleUI(mode, resolvedTheme) {
@@ -221,7 +286,7 @@ function syncMobileViewerDisplay(open) {
   });
 }
 
-function setMobileViewerOpen(open) {
+async function setMobileViewerOpen(open) {
   const isOpen = open === true && isMobileViewport();
   const body = document.body;
   const viewerButton = document.getElementById('mobile-viewer-menu-btn');
@@ -233,8 +298,13 @@ function setMobileViewerOpen(open) {
 
   if (isOpen) {
     setMobileMenuOpen(false);
+    try {
+      await ensureViewerReady();
+    } catch (error) {
+      log.warn('Mobile viewer preview could not start', error);
+    }
     requestAnimationFrame(() => {
-      resizeViewer();
+      void resizeViewerIfReady();
       if (viewerSurface && typeof viewerSurface.focus === 'function') {
         viewerSurface.focus({ preventScroll: true });
       }
@@ -242,12 +312,13 @@ function setMobileViewerOpen(open) {
   }
 }
 
-document.addEventListener('request-mobile-viewer-preview', () => {
+document.addEventListener('request-mobile-viewer-preview', async () => {
   if (isMobileViewport()) {
-    setMobileViewerOpen(true);
+    await setMobileViewerOpen(true);
     updateMobileBackButton();
     return;
   }
+  await ensureViewerReady().catch(() => {});
   const viewerSurface = document.getElementById('viewer');
   if (viewerSurface && typeof viewerSurface.scrollIntoView === 'function') {
     viewerSurface.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -266,7 +337,7 @@ document.addEventListener('click', (ev) => {
   if (!exitButton) return;
   if (!isMobileViewport()) return;
   ev.preventDefault();
-  setMobileViewerOpen(false);
+  void setMobileViewerOpen(false);
   setMobileMenuOpen(true);
   updateMobileBackButton();
 });
@@ -316,12 +387,6 @@ function updateMobileViewerButton() {
   if (!hasDesign && document.body && document.body.classList.contains('mobile-viewer-open')) {
     setMobileViewerOpen(false);
   }
-}
-
-function isMobileViewport() {
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(max-width: 767px)').matches;
 }
 
 function cssEscape(value) {
@@ -462,7 +527,7 @@ function initMobileNavigation() {
     backButton.addEventListener('click', () => {
       if (backButton.disabled) return;
       if (document.body && document.body.classList.contains('mobile-viewer-open')) {
-        setMobileViewerOpen(false);
+        void setMobileViewerOpen(false);
         updateMobileBackButton();
         return;
       }
@@ -475,8 +540,7 @@ function initMobileNavigation() {
   if (viewerButton && viewerButton.dataset.mobileNavBound !== 'true') {
     viewerButton.addEventListener('click', () => {
       if (viewerButton.disabled) return;
-      setMobileViewerOpen(true);
-      updateMobileBackButton();
+      void setMobileViewerOpen(true).then(() => updateMobileBackButton());
     });
     viewerButton.dataset.mobileNavBound = 'true';
   }
@@ -505,7 +569,7 @@ function initMobileNavigation() {
   if (document.body && document.body.dataset.mobileNavGlobalBound !== 'true') {
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && document.body.classList.contains('mobile-viewer-open')) {
-        setMobileViewerOpen(false);
+        void setMobileViewerOpen(false);
         updateMobileBackButton();
       } else if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
         setMobileMenuOpen(false);
@@ -513,7 +577,7 @@ function initMobileNavigation() {
     });
     document.addEventListener('stage-changed', () => {
       setMobileMenuOpen(false);
-      setMobileViewerOpen(false);
+      void setMobileViewerOpen(false);
       updateMobileBackButton();
       updateMobileNextButton();
     });
@@ -523,7 +587,7 @@ function initMobileNavigation() {
 
       event.preventDefault();
       setMobileMenuOpen(false);
-      setMobileViewerOpen(false);
+      void setMobileViewerOpen(false);
       scrollToValidationTarget(event.detail && event.detail.scrollTarget, event.detail && event.detail.focusTarget);
       updateMobileBackButton();
       updateMobileNextButton();
@@ -533,7 +597,7 @@ function initMobileNavigation() {
   }
 
   setMobileMenuOpen(false);
-  setMobileViewerOpen(false);
+  void setMobileViewerOpen(false);
   updateMobileBackButton();
   updateMobileNextButton();
   updateMobileViewerButton();
@@ -2044,23 +2108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
 
-  // Initialize viewer and controls after MainContent is loaded; keep the UI usable if WebGL is unavailable.
-  try {
-    await initViewer();
-    initViewerControls();
-    resizeViewer(); // Ensure viewer is sized correctly on load
-  } catch (e) {
-    log.warn('Viewer initialization failed; continuing without 3D preview', e);
-    const viewerSurface = document.getElementById('viewer');
-    const emptyState = document.getElementById('viewer-empty-state');
-    const errorState = document.getElementById('viewer-error-state');
-    const errorCopy = document.getElementById('viewer-error-copy');
-    if (viewerSurface) viewerSurface.dataset.viewerState = 'error';
-    if (emptyState) emptyState.hidden = true;
-    if (errorState) errorState.hidden = false;
-    if (errorCopy) errorCopy.textContent = 'The configurator is still available, but this browser could not start the 3D preview.';
-  }
-
   // Compute and set accurate header height so main content doesn't tuck under it
   const setHeaderVars = () => {
     try {
@@ -2248,6 +2295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadingScreen.classList.add('hidden');
     loadingScreen.setAttribute('aria-hidden', 'true');
   }
+  scheduleViewerLoadAfterAppReady();
 
   // Set up beforeunload warning for unsaved customizations
   window.addEventListener('beforeunload', (event) => {
@@ -2268,7 +2316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
 console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 761');
+console.log('Edit ver: 762');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
-  console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
+  console.log('Viewer debug: after 3D preview loads, run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });
