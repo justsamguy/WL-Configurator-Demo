@@ -17,6 +17,7 @@ const STAGES = [
 ];
 
 import { loadComponent } from './app.js';
+import { isMobileViewport } from './ui/breakpoints.js';
 import { state as appState, setState } from './state.js';
 // helper from placeholders to recompute finish constraints when selections are set programmatically
 import { recomputeFinishConstraints } from './ui/placeholders.js';
@@ -121,6 +122,23 @@ function bindSummaryStageButtonLabelHandlers() {
 function formatPrice(centsOrUnits) {
   // Input is USD in whole units in this repo; keep simple formatting
   return `$${Number(centsOrUnits).toLocaleString()}`;
+}
+
+function setFooterPriceText(el, value) {
+  if (!el) return;
+  const amount = document.createElement('span');
+  amount.className = 'footer-price-value';
+  amount.textContent = formatPrice(value);
+
+  const currency = document.createElement('span');
+  currency.className = 'footer-price-currency';
+  currency.textContent = 'USD';
+
+  el.replaceChildren(amount, currency);
+  requestAnimationFrame(() => {
+    const row = el.closest('.footer-price-row');
+    currency.hidden = !!(row && (el.scrollWidth > el.clientWidth || row.scrollWidth > row.clientWidth));
+  });
 }
 
 function isStageCompleteForNav(index) {
@@ -287,10 +305,19 @@ function showValidationPrompt(requirement) {
   if (highlightEl) highlightEl.classList.add(VALIDATION_ERROR_CLASS);
 
   const scrollTarget = requirement.scrollEl || requirement.dropdownEl || requirement.highlightEl || requirement.anchorEl;
-  if (scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
+  const validationEvent = new CustomEvent('stage-validation-shown', {
+    cancelable: true,
+    detail: {
+      scrollTarget,
+      focusTarget: requirement.focusEl || scrollTarget
+    }
+  });
+  document.dispatchEvent(validationEvent);
+
+  if (!validationEvent.defaultPrevented && scrollTarget && typeof scrollTarget.scrollIntoView === 'function') {
     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  focusValidationTarget(requirement.focusEl || scrollTarget);
+  if (!validationEvent.defaultPrevented) focusValidationTarget(requirement.focusEl || scrollTarget);
 
   activeValidationPrompt = {
     stageIndex: managerState.current,
@@ -511,8 +538,10 @@ function updateNextButton() {
   const nextBtn = document.getElementById('next-stage-btn');
   if (!nextBtn) return;
   const isLastStage = managerState.current >= STAGES.length - 1;
-  nextBtn.disabled = isLastStage;
-  nextBtn.setAttribute('aria-disabled', isLastStage ? 'true' : 'false');
+  nextBtn.disabled = false;
+  nextBtn.setAttribute('aria-disabled', 'false');
+  nextBtn.textContent = isLastStage ? 'Save' : 'Next →';
+  nextBtn.setAttribute('aria-label', isLastStage ? 'Save summary PDF' : 'Go to next stage');
 }
 
 function syncTrackedStageCompletion(source = appState) {
@@ -560,11 +589,11 @@ async function updateLivePrice() {
     // compute authoritative price using shared state where possible
     try {
       const p = await computePrice(appState);
-      footerPrice.textContent = formatPrice(p.total || (managerState.config.price || 0));
+      setFooterPriceText(footerPrice, p.total || (managerState.config.price || 0));
       return;
     } catch (e) {
       // fallback
-      footerPrice.textContent = formatPrice(managerState.config.price || 0);
+      setFooterPriceText(footerPrice, managerState.config.price || 0);
       return;
     }
     return;
@@ -574,9 +603,21 @@ async function updateLivePrice() {
   elAmount.textContent = formatPrice(managerState.config.price || 0);
 }
 
+function resetDesktopStageScroll() {
+  if (isMobileViewport()) return;
+  [
+    document.querySelector('#app-sidebar .sidebar-scroll'),
+    document.getElementById('app-sidebar'),
+    document.getElementById('app-main')
+  ].filter(Boolean).forEach((element) => {
+    element.scrollTop = 0;
+  });
+}
+
 async function setStage(index, options = {}) {
   // options: { allowSkip: boolean, skipConfirm: boolean }
   if (index < 0 || index >= STAGES.length) return;
+  const previousStage = managerState.current;
 
   // If the configurator was reset (no model selected), clear unlocked/completed progress.
   if (index === 0 && !(appState && appState.selections && appState.selections.model)) {
@@ -767,11 +808,21 @@ async function setStage(index, options = {}) {
           placeholderId
         });
         await loadComponent(placeholderId, componentPath);
+        if (managerState.current === 0 && typeof window.__wlRenderModelOptions === 'function') {
+          await window.__wlRenderModelOptions();
+        } else if (managerState.current === 1 && typeof window.__wlRenderDesignOptions === 'function') {
+          await window.__wlRenderDesignOptions(appState.selections && appState.selections.model);
+        }
       } else if (placeholder) {
         log.info('Selection component already present for stage', {
           stage: managerState.current,
           placeholderId
         });
+        if (managerState.current === 0 && typeof window.__wlRenderModelOptions === 'function') {
+          await window.__wlRenderModelOptions();
+        } else if (managerState.current === 1 && typeof window.__wlRenderDesignOptions === 'function') {
+          await window.__wlRenderDesignOptions(appState.selections && appState.selections.model);
+        }
       } else {
         log.warn('Could not find or create stage placeholder', {
           stage: managerState.current,
@@ -924,6 +975,16 @@ async function setStage(index, options = {}) {
   } catch (e) {
     // ignore if stage info root not present
   }
+
+  document.dispatchEvent(new CustomEvent('stage-changed', {
+    detail: {
+      index: managerState.current,
+      label: STAGES[managerState.current]
+    }
+  }));
+  if (previousStage !== managerState.current) {
+    requestAnimationFrame(resetDesktopStageScroll);
+  }
   
   // After entering a stage, check if pre-selected options make it complete
   // This ensures stages with defaults (like Finish) are properly marked as complete
@@ -949,6 +1010,10 @@ async function setStage(index, options = {}) {
 }
 
 function nextStage() {
+  if (managerState.current >= STAGES.length - 1) {
+    document.dispatchEvent(new CustomEvent('request-summary-export'));
+    return;
+  }
   // If current stage isn't completed (and isn't optional), block advancing
   if (!isStageCompleteForNav(managerState.current)) {
     revealFirstMissingRequiredSelection();
@@ -1089,4 +1154,4 @@ export function initStageManager() {
 // expose for debugging
 window.__wlStage = { state: managerState, setStage, nextStage, prevStage, initStageManager };
 
-export default { initStageManager, state: managerState, setStage, getCurrentStage };
+export default { initStageManager, state: managerState, setStage, nextStage, prevStage, getCurrentStage };

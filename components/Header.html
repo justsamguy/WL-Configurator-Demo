@@ -1,27 +1,45 @@
 <!-- App Header (fragment injected into #app-header) -->
-<div class="header-theme-slot">
-  <button id="theme-cycle-toggle" class="theme-cycle-toggle" type="button" data-theme-mode="system" aria-label="Theme mode: System. Activate to switch to Light." aria-describedby="theme-toggle-status">
-    <i id="theme-cycle-icon" class="fa-solid fa-computer theme-cycle-icon-glyph" aria-hidden="true"></i>
-    <span id="theme-cycle-label" class="sr-only">System</span>
-  </button>
-  <span id="theme-toggle-status" class="sr-only" aria-live="polite" aria-atomic="true"></span>
-</div>
+<button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-controls="mobile-stage-menu" aria-expanded="false">
+  <span class="mobile-menu-toggle-line" aria-hidden="true"></span>
+  <span class="mobile-menu-toggle-line" aria-hidden="true"></span>
+  <span class="mobile-menu-toggle-line" aria-hidden="true"></span>
+</button>
+<div id="mobile-menu-backdrop" class="mobile-menu-backdrop" hidden></div>
 <!-- Logo Section -->
 <div class="flex justify-center items-center mb-4 w-full">
   <!-- Use official brand asset from assets/brand/icons for logo (icons are the source of web-ready PNGs) -->
   <img src="assets/brand/icons/WoodLab_logo_-_official.png" alt="WoodLab Logo" title="WoodLab" class="h-8 w-auto object-contain site-logo" />
 </div>
 <!-- Navigation Section -->
-<nav id="stage-bar" class="flex flex-row items-center justify-center">
-  <!-- Eight stages: Models, Designs, Tabletop, Finish, Dimensions, Legs, Customizations, Summary & Export -->
-  <button class="stage-btn btn-tertiary" data-stage-index="0" aria-current="step">Models</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="1" disabled>Designs</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="2" disabled>Tabletop</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="3" disabled>Finish</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="4" disabled>Dimensions</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="5" disabled>Legs</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="6" disabled>Customizations</button>
-  <button class="stage-btn btn-tertiary" data-stage-index="7" disabled>Summary & Export</button>
-</nav>
+<div id="mobile-stage-menu" class="mobile-stage-menu" aria-label="Configurator menu">
+  <div class="mobile-stage-menu-header">
+    <span class="mobile-stage-menu-title">Menu</span>
+    <div class="header-theme-slot">
+      <button id="theme-cycle-toggle" class="theme-cycle-toggle" type="button" data-theme-mode="system" aria-label="Theme mode: System. Activate to switch to Light." aria-describedby="theme-toggle-status">
+        <i id="theme-cycle-icon" class="fa-solid fa-computer theme-cycle-icon-glyph" aria-hidden="true"></i>
+        <span id="theme-cycle-label" class="sr-only">System</span>
+      </button>
+      <span id="theme-toggle-status" class="sr-only" aria-live="polite" aria-atomic="true"></span>
+    </div>
+    <button id="mobile-menu-close" class="mobile-menu-close" type="button" aria-label="Close menu">
+      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+    </button>
+  </div>
+  <nav id="stage-bar" class="flex flex-row items-center justify-center">
+    <!-- Eight stages: Models, Designs, Tabletop, Finish, Dimensions, Legs, Customizations, Summary & Export -->
+    <button class="stage-btn btn-tertiary" data-stage-index="0" aria-current="step">Models</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="1" disabled>Designs</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="2" disabled>Tabletop</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="3" disabled>Finish</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="4" disabled>Dimensions</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="5" disabled>Legs</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="6" disabled>Customizations</button>
+    <button class="stage-btn btn-tertiary" data-stage-index="7" disabled>Summary & Export</button>
+    <button id="mobile-viewer-menu-btn" class="mobile-viewer-menu-btn btn-tertiary" type="button" disabled aria-disabled="true" aria-pressed="false">
+      <i class="fa-solid fa-cube" aria-hidden="true"></i>
+      <span>3D Preview</span>
+    </button>
+  </nav>
+</div>
 <!-- Price indicator moved out of navbar; right-aligned below -->
 <!-- Header price removed (redundant). Sidebar contains the single live price element. -->

@@ -35,4 +35,6 @@ All rules in this folder are project-specific and must align with the WoodLab Co
 
 Shared workflow reminder: keep placeholder-backed image fields tracked in the root `placeholder_image_fields.txt` file (add on placeholder use, remove when replaced).
 
-Shared testing reminder: because the app is primarily real-time visual/interactive, the user owns runtime visual verification by default; do not run or suggest local visual/runtime testing unless explicitly requested.
+Shared testing reminder: because the app is primarily real-time visual/interactive, the user owns final runtime visual acceptance by default. For VSCode/Copilot/Cline-style agents, do not run or suggest local visual/runtime testing unless explicitly requested. OpenClaw/Omni is the exception: when assigned UI, layout, viewer, or interaction work, Omni should use a local live server plus browser automation/screenshot inspection before reporting ready for review.
+
+Shared branching reminder: when explicitly asked to prepare the next release branches after a merge/release, sync `main`, create the version branch from `main` (for example `v1.2`), then create the datecoded development branch from the version branch using `dev-YYYYMMDD` (for example `dev-20260814`). Push both and leave the worktree on the datecoded branch unless asked otherwise.

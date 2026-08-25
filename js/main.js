@@ -4,7 +4,7 @@
 import { loadComponent } from './app.js';
 import { loadIcon } from './ui/icon.js';
 import { initPlaceholderInteractions } from './ui/placeholders.js';
-import { initViewer, initViewerControls, resizeViewer } from './viewer.js'; // Import viewer functions
+import { isMobileViewport } from './ui/breakpoints.js';
 import { state, setState } from './state.js';
 import { computePrice, getLegPriceMultiplier, getVisibleLegCount, getWaterfallEdgeCount, requiresCenterLeg } from './pricing.js';
 import * as dataLoader from './dataLoader.js';
@@ -23,6 +23,8 @@ const THEME_MODES = ['system', 'light', 'dark'];
 let systemThemeMediaQuery = null;
 let systemThemeListenerBound = false;
 let footerMetricsObserver = null;
+let viewerModulePromise = null;
+let viewerReadyPromise = null;
 
 if (typeof window !== 'undefined' && typeof window.WL_LOG_LEVEL !== 'string') {
   // Reset any persisted debug logger state unless this page explicitly opts into another level.
@@ -76,6 +78,69 @@ function getThemeIconClass(mode) {
   if (mode === 'light') return 'fa-solid fa-sun';
   if (mode === 'dark') return 'fa-regular fa-moon';
   return 'fa-solid fa-computer';
+}
+
+function importViewerModule() {
+  if (!viewerModulePromise) {
+    viewerModulePromise = import('./viewer.js').catch((error) => {
+      viewerModulePromise = null;
+      throw error;
+    });
+  }
+  return viewerModulePromise;
+}
+
+function showViewerInitializationError(error) {
+  log.warn('Viewer initialization failed; continuing without 3D preview', error);
+  const viewerSurface = document.getElementById('viewer');
+  const emptyState = document.getElementById('viewer-empty-state');
+  const errorState = document.getElementById('viewer-error-state');
+  const errorCopy = document.getElementById('viewer-error-copy');
+  if (viewerSurface) viewerSurface.dataset.viewerState = 'error';
+  if (emptyState) emptyState.hidden = true;
+  if (errorState) errorState.hidden = false;
+  if (errorCopy) errorCopy.textContent = 'The configurator is still available, but this browser could not start the 3D preview.';
+}
+
+async function ensureViewerReady() {
+  if (!viewerReadyPromise) {
+    viewerReadyPromise = (async () => {
+      try {
+        const viewer = await importViewerModule();
+        await viewer.initViewer();
+        viewer.initViewerControls();
+        viewer.resizeViewer();
+        return viewer;
+      } catch (error) {
+        viewerReadyPromise = null;
+        showViewerInitializationError(error);
+        throw error;
+      }
+    })();
+  }
+  return viewerReadyPromise;
+}
+
+function scheduleViewerLoadAfterAppReady() {
+  if (isMobileViewport()) return;
+  const loadViewer = () => {
+    void ensureViewerReady().catch(() => {});
+  };
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(loadViewer, { timeout: 1200 });
+  } else {
+    setTimeout(loadViewer, 0);
+  }
+}
+
+async function resizeViewerIfReady() {
+  if (!viewerModulePromise) return;
+  try {
+    const viewer = await viewerModulePromise;
+    viewer.resizeViewer();
+  } catch (error) {
+    log.warn('Viewer resize skipped because viewer module failed to load', error);
+  }
 }
 
 function updateThemeToggleUI(mode, resolvedTheme) {
@@ -161,6 +226,381 @@ function initThemeToggle() {
     applyThemeMode(nextMode, { persist: true, announce: true });
   });
   button.dataset.listenerBound = 'true';
+}
+
+function setMobileMenuOpen(open) {
+  const isOpen = open === true;
+  const body = document.body;
+  const menu = document.getElementById('mobile-stage-menu');
+  const backdrop = document.getElementById('mobile-menu-backdrop');
+  const menuToggle = document.getElementById('mobile-menu-toggle');
+  const toggleButtons = [
+    menuToggle
+  ].filter(Boolean);
+
+  if (!isOpen && menu && menu.contains(document.activeElement) && menuToggle) {
+    menuToggle.focus({ preventScroll: true });
+  }
+
+  if (body) body.classList.toggle('mobile-menu-open', isOpen);
+  if (menu) menu.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  if (backdrop) backdrop.hidden = !isOpen;
+  toggleButtons.forEach((button) => {
+    button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  if (isOpen) {
+    requestAnimationFrame(() => {
+      const closeButton = document.getElementById('mobile-menu-close');
+      const focusTarget = closeButton && closeButton.offsetParent !== null ? closeButton : menuToggle;
+      if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus({ preventScroll: true });
+    });
+  }
+}
+
+function syncMobileViewerDisplay(open) {
+  const viewerFrame = document.getElementById('viewer-frame');
+  const viewer = document.getElementById('viewer');
+  const viewerControls = document.getElementById('viewer-controls-container');
+  const shouldHideForStage = !!(document.body && (
+    document.body.classList.contains('stage-0') ||
+    document.body.classList.contains('stage-1')
+  ));
+
+  if (open === true && isMobileViewport()) {
+    if (viewerFrame) viewerFrame.style.display = 'flex';
+    if (viewer) viewer.style.display = 'block';
+    if (viewerControls) viewerControls.style.display = 'flex';
+    return;
+  }
+
+  if (shouldHideForStage) {
+    if (viewerFrame) viewerFrame.style.display = 'none';
+    if (viewer) viewer.style.display = 'none';
+    if (viewerControls) viewerControls.style.display = 'none';
+    return;
+  }
+
+  [viewerFrame, viewer, viewerControls].forEach((element) => {
+    if (element) element.style.removeProperty('display');
+  });
+}
+
+async function setMobileViewerOpen(open) {
+  const isOpen = open === true && isMobileViewport();
+  const body = document.body;
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
+  const viewerSurface = document.getElementById('viewer');
+
+  if (body) body.classList.toggle('mobile-viewer-open', isOpen);
+  if (viewerButton) viewerButton.setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+  syncMobileViewerDisplay(isOpen);
+
+  if (isOpen) {
+    setMobileMenuOpen(false);
+    try {
+      await ensureViewerReady();
+    } catch (error) {
+      log.warn('Mobile viewer preview could not start', error);
+    }
+    requestAnimationFrame(() => {
+      void resizeViewerIfReady();
+      if (viewerSurface && typeof viewerSurface.focus === 'function') {
+        viewerSurface.focus({ preventScroll: true });
+      }
+    });
+  }
+}
+
+document.addEventListener('request-mobile-viewer-preview', async () => {
+  if (isMobileViewport()) {
+    await setMobileViewerOpen(true);
+    updateMobileBackButton();
+    return;
+  }
+  await ensureViewerReady().catch(() => {});
+  const viewerSurface = document.getElementById('viewer');
+  if (viewerSurface && typeof viewerSurface.scrollIntoView === 'function') {
+    viewerSurface.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+document.addEventListener('click', (ev) => {
+  const previewButton = ev.target && ev.target.closest ? ev.target.closest('#preview-config') : null;
+  if (!previewButton) return;
+  ev.preventDefault();
+  document.dispatchEvent(new CustomEvent('request-mobile-viewer-preview'));
+});
+
+document.addEventListener('click', (ev) => {
+  const exitButton = ev.target && ev.target.closest ? ev.target.closest('#mobile-viewer-exit') : null;
+  if (!exitButton) return;
+  if (!isMobileViewport()) return;
+  ev.preventDefault();
+  void setMobileViewerOpen(false);
+  setMobileMenuOpen(true);
+  updateMobileBackButton();
+});
+
+document.addEventListener('stage-changed', () => {
+  requestAnimationFrame(() => updateStageSubsectionSummaries(document));
+});
+
+document.addEventListener('request-tooltip-option-focus', async (ev) => {
+  const detail = ev.detail || {};
+  const stageIndex = Number(detail.stageIndex);
+  const optionId = detail.optionId || '';
+  if (!Number.isInteger(stageIndex) || !optionId) return;
+
+  const stageManager = window.stageManager || null;
+  if (stageManager && typeof stageManager.setStage === 'function') {
+    await stageManager.setStage(stageIndex, { allowSkip: true });
+  }
+
+  setTimeout(() => focusTooltipOptionTarget(optionId), 420);
+});
+
+document.addEventListener('request-summary-export', () => {
+  triggerSummaryExport();
+});
+
+function handleMobileViewportChange() {
+  if (!isMobileViewport()) {
+    setMobileMenuOpen(false);
+    setMobileViewerOpen(false);
+    return;
+  }
+
+  const mobileViewerOpen = !!(document.body && document.body.classList.contains('mobile-viewer-open'));
+  syncMobileViewerDisplay(mobileViewerOpen);
+  updateMobileBackButton();
+  updateMobileNextButton();
+  updateMobileViewerButton();
+}
+
+function updateMobileViewerButton() {
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
+  if (!viewerButton) return;
+  const hasDesign = !!(state && state.selections && state.selections.design);
+  viewerButton.disabled = !hasDesign;
+  viewerButton.setAttribute('aria-disabled', hasDesign ? 'false' : 'true');
+  if (!hasDesign && document.body && document.body.classList.contains('mobile-viewer-open')) {
+    setMobileViewerOpen(false);
+  }
+}
+
+function cssEscape(value) {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(value);
+  return String(value).replace(/["\\]/g, '\\$&');
+}
+
+function findOptionTarget(optionId) {
+  const id = cssEscape(optionId);
+  return document.querySelector(`.option-card[data-id="${id}"], .sheen-tile[data-id="${id}"], [data-addon-id="${id}"], .option-card[data-preset-id="${id}"]`);
+}
+
+function expandOptionContainer(target) {
+  const subsection = target && target.closest('.stage-subsection-dropdown');
+  if (subsection) {
+    setStageSubsectionExpanded(subsection, true, { animate: false });
+    return;
+  }
+
+  const addonTile = target && target.closest('.addons-dropdown-tile');
+  if (!addonTile || addonTile.classList.contains('expanded')) return;
+  const header = addonTile.querySelector('.addons-dropdown-header');
+  if (header) header.click();
+}
+
+function flashOptionTarget(target) {
+  if (!target) return;
+  target.classList.remove('option-focus-flash');
+  void target.offsetWidth;
+  target.classList.add('option-focus-flash');
+  setTimeout(() => target.classList.remove('option-focus-flash'), 1500);
+}
+
+function focusTooltipOptionTarget(optionId) {
+  const target = findOptionTarget(optionId);
+  if (!target) return;
+  expandOptionContainer(target);
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    flashOptionTarget(target);
+  });
+}
+
+function scrollToValidationTarget(scrollTarget, focusTarget = scrollTarget) {
+  const target = scrollTarget && typeof scrollTarget.scrollIntoView === 'function'
+    ? scrollTarget
+    : null;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        try {
+          focusTarget.focus({ preventScroll: true });
+        } catch (e) {
+          focusTarget.focus();
+        }
+      }
+    });
+  });
+}
+
+function updateMobileBackButton() {
+  const backButton = document.getElementById('mobile-back-btn');
+  if (!backButton) return;
+  const currentStage = window.stageManager && typeof window.stageManager.getCurrentStage === 'function'
+    ? window.stageManager.getCurrentStage()
+    : 0;
+  const mobileViewerOpen = !!(document.body && document.body.classList.contains('mobile-viewer-open'));
+  const disabled = !mobileViewerOpen && currentStage <= 0;
+  backButton.disabled = disabled;
+  backButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+}
+
+function updateMobileNextButton() {
+  const nextButton = document.getElementById('mobile-footer-next-btn');
+  if (!nextButton) return;
+  const label = nextButton.querySelector('span');
+  const icon = nextButton.querySelector('i');
+  const currentStage = window.stageManager && typeof window.stageManager.getCurrentStage === 'function'
+    ? window.stageManager.getCurrentStage()
+    : 0;
+  const isSummary = currentStage >= 7;
+  const disabled = false;
+  nextButton.disabled = disabled;
+  nextButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  nextButton.setAttribute('aria-label', isSummary ? 'Save summary PDF' : 'Go to next step');
+  nextButton.classList.toggle('footer-save-btn', isSummary);
+  if (label) label.textContent = isSummary ? 'Save' : 'Next';
+  if (icon) icon.className = isSummary ? 'fa-solid fa-download' : 'fa-solid fa-arrow-right';
+}
+
+function triggerSummaryExport() {
+  const exportButton = document.getElementById('export-pdf');
+  if (exportButton) exportButton.click();
+}
+
+function initMobileNavigation() {
+  const menuToggle = document.getElementById('mobile-menu-toggle');
+  const footerNextButton = document.getElementById('mobile-footer-next-btn');
+  const closeButton = document.getElementById('mobile-menu-close');
+  const backdrop = document.getElementById('mobile-menu-backdrop');
+  const backButton = document.getElementById('mobile-back-btn');
+  const viewerButton = document.getElementById('mobile-viewer-menu-btn');
+  const menu = document.getElementById('mobile-stage-menu');
+
+  if (menuToggle && menuToggle.dataset.mobileNavBound !== 'true') {
+    menuToggle.addEventListener('click', () => setMobileMenuOpen(!document.body.classList.contains('mobile-menu-open')));
+    menuToggle.dataset.mobileNavBound = 'true';
+  }
+
+  if (footerNextButton && footerNextButton.dataset.mobileNavBound !== 'true') {
+    footerNextButton.addEventListener('click', () => {
+      if (footerNextButton.disabled) return;
+      const stageManager = window.stageManager || null;
+      const currentStage = stageManager && typeof stageManager.getCurrentStage === 'function'
+        ? stageManager.getCurrentStage()
+        : 0;
+      if (currentStage >= 7) {
+        triggerSummaryExport();
+        return;
+      }
+      if (stageManager && typeof stageManager.nextStage === 'function') stageManager.nextStage();
+    });
+    footerNextButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (closeButton && closeButton.dataset.mobileNavBound !== 'true') {
+    closeButton.addEventListener('click', () => setMobileMenuOpen(false));
+    closeButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (backdrop && backdrop.dataset.mobileNavBound !== 'true') {
+    backdrop.addEventListener('click', () => setMobileMenuOpen(false));
+    backdrop.dataset.mobileNavBound = 'true';
+  }
+
+  if (backButton && backButton.dataset.mobileNavBound !== 'true') {
+    backButton.addEventListener('click', () => {
+      if (backButton.disabled) return;
+      if (document.body && document.body.classList.contains('mobile-viewer-open')) {
+        void setMobileViewerOpen(false);
+        updateMobileBackButton();
+        return;
+      }
+      const stageManager = window.stageManager || null;
+      if (stageManager && typeof stageManager.prevStage === 'function') stageManager.prevStage();
+    });
+    backButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (viewerButton && viewerButton.dataset.mobileNavBound !== 'true') {
+    viewerButton.addEventListener('click', () => {
+      if (viewerButton.disabled) return;
+      void setMobileViewerOpen(true).then(() => updateMobileBackButton());
+    });
+    viewerButton.dataset.mobileNavBound = 'true';
+  }
+
+  if (menu && menu.dataset.mobileSwipeBound !== 'true') {
+    let touchStartX = null;
+    let touchStartY = null;
+    menu.addEventListener('touchstart', (event) => {
+      const touch = event.touches && event.touches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+    menu.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches && event.changedTouches[0];
+      if (!touch || touchStartX === null || touchStartY === null) return;
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+      touchStartX = null;
+      touchStartY = null;
+      if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.25) setMobileMenuOpen(false);
+    }, { passive: true });
+    menu.dataset.mobileSwipeBound = 'true';
+  }
+
+  if (document.body && document.body.dataset.mobileNavGlobalBound !== 'true') {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.body.classList.contains('mobile-viewer-open')) {
+        void setMobileViewerOpen(false);
+        updateMobileBackButton();
+      } else if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
+        setMobileMenuOpen(false);
+      }
+    });
+    document.addEventListener('stage-changed', () => {
+      setMobileMenuOpen(false);
+      void setMobileViewerOpen(false);
+      updateMobileBackButton();
+      updateMobileNextButton();
+    });
+    document.addEventListener('stage-validation-shown', (event) => {
+      const menuWasOpen = document.body.classList.contains('mobile-menu-open');
+      if (!menuWasOpen && !isMobileViewport()) return;
+
+      event.preventDefault();
+      setMobileMenuOpen(false);
+      void setMobileViewerOpen(false);
+      scrollToValidationTarget(event.detail && event.detail.scrollTarget, event.detail && event.detail.focusTarget);
+      updateMobileBackButton();
+      updateMobileNextButton();
+    });
+    window.addEventListener('resize', handleMobileViewportChange, { passive: true });
+    document.body.dataset.mobileNavGlobalBound = 'true';
+  }
+
+  setMobileMenuOpen(false);
+  void setMobileViewerOpen(false);
+  updateMobileBackButton();
+  updateMobileNextButton();
+  updateMobileViewerButton();
 }
 
 function parseRgbColor(value) {
@@ -411,6 +851,76 @@ function setStageSubsectionExpanded(dropdown, shouldExpand, opts = {}) {
     content.removeEventListener('transitionend', onCollapseTransitionEnd);
   };
   content.addEventListener('transitionend', onCollapseTransitionEnd);
+  updateStageSubsectionSummary(dropdown);
+}
+
+function ensureStageSubsectionSummary(dropdown) {
+  const headerMain = dropdown && dropdown.querySelector('.stage-subsection-header-main');
+  if (!headerMain) return null;
+  let summary = headerMain.querySelector('.stage-subsection-selection-summary');
+  if (summary) return summary;
+
+  summary = document.createElement('div');
+  summary.className = 'stage-subsection-selection-summary is-empty';
+  summary.setAttribute('aria-hidden', 'true');
+
+  const thumb = document.createElement('span');
+  thumb.className = 'stage-subsection-selection-thumb';
+
+  const title = document.createElement('span');
+  title.className = 'stage-subsection-selection-title';
+  title.textContent = 'No selection';
+
+  summary.appendChild(thumb);
+  summary.appendChild(title);
+  headerMain.appendChild(summary);
+  return summary;
+}
+
+function getSelectedStageSubsectionCard(dropdown) {
+  if (!dropdown) return null;
+  return dropdown.querySelector('.option-card[aria-pressed="true"], .sheen-tile[aria-pressed="true"]');
+}
+
+function getStageSubsectionSelectionTitle(card) {
+  const titleEl = card && card.querySelector('.title, .addons-tile-label');
+  return (titleEl && titleEl.textContent.trim()) || (card && card.getAttribute('data-id')) || 'Selected';
+}
+
+function applyStageSubsectionThumb(summary, card) {
+  const thumb = summary && summary.querySelector('.stage-subsection-selection-thumb');
+  if (!thumb) return;
+  thumb.style.removeProperty('background-image');
+  thumb.style.removeProperty('background-color');
+
+  const img = card && card.querySelector('img');
+  if (img && img.getAttribute('src')) {
+    thumb.style.backgroundImage = `url("${img.getAttribute('src')}")`;
+    return;
+  }
+
+  const swatch = card && card.querySelector('.color-gradient-preview');
+  if (swatch) {
+    const styles = window.getComputedStyle(swatch);
+    thumb.style.backgroundImage = styles.backgroundImage;
+    thumb.style.backgroundColor = styles.backgroundColor;
+  }
+}
+
+function updateStageSubsectionSummary(dropdown) {
+  const summary = ensureStageSubsectionSummary(dropdown);
+  if (!summary) return;
+  const title = summary.querySelector('.stage-subsection-selection-title');
+  const selectedCard = getSelectedStageSubsectionCard(dropdown);
+
+  summary.classList.toggle('is-empty', !selectedCard);
+  if (title) title.textContent = selectedCard ? getStageSubsectionSelectionTitle(selectedCard) : 'No selection';
+  applyStageSubsectionThumb(summary, selectedCard);
+}
+
+function updateStageSubsectionSummaries(root = document) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll('.stage-subsection-dropdown').forEach(updateStageSubsectionSummary);
 }
 
 function initStageSubsectionDropdowns(root = document) {
@@ -428,6 +938,7 @@ function initStageSubsectionDropdowns(root = document) {
 
     const startExpanded = dropdown.dataset.defaultExpanded === 'true';
     setStageSubsectionExpanded(dropdown, startExpanded, { animate: false });
+    updateStageSubsectionSummary(dropdown);
 
     header.addEventListener('click', () => {
       const shouldExpand = !dropdown.classList.contains('expanded');
@@ -609,6 +1120,16 @@ async function renderDesignOptionsForModel(modelId = (state.selections && state.
   }
 }
 
+async function renderModelOptions() {
+  const modelGrid = document.querySelector('#models-stage-section .model-row-grid');
+  if (!modelGrid) return;
+
+  const { loadData } = await import('./dataLoader.js');
+  const { renderOptionCards } = await import('./stageRenderer.js');
+  const models = await loadData('data/models.json');
+  if (models) renderOptionCards(modelGrid, models, { category: null, showPrice: false });
+}
+
 async function applyDesignPreset(presetId, selectedDesignId = null) {
   if (!presetId) return;
 
@@ -688,6 +1209,7 @@ async function applyDesignPreset(presetId, selectedDesignId = null) {
 
 if (typeof window !== 'undefined') {
   window.__wlRenderDesignOptions = renderDesignOptionsForModel;
+  window.__wlRenderModelOptions = renderModelOptions;
 }
 
 import { populateSummaryPanel } from './stages/summary.js';
@@ -702,6 +1224,7 @@ document.addEventListener('statechange', (ev) => {
   // ev.detail.state contains the latest state object.
   const hasDesign = !!(ev.detail.state.selections && ev.detail.state.selections.design);
   document.body.classList.toggle('has-design', hasDesign);
+  updateMobileViewerButton();
   // If the summary page is active, refresh its contents
   try {
     const summaryRoot = document.getElementById('summary-panel');
@@ -709,6 +1232,7 @@ document.addEventListener('statechange', (ev) => {
   } catch (e) {
     // ignore
   }
+  requestAnimationFrame(() => updateStageSubsectionSummaries(document));
 });
 
 // Price animation helper used by the UI when updating the price display
@@ -728,7 +1252,29 @@ function animatePrice(from, to, duration = 400, onUpdate) {
 function updatePriceUI(total) {
   const el = document.getElementById('price-bar');
   if (!el) return;
-  el.innerHTML = `$${total.toLocaleString()} <span class="text-xs font-normal">USD</span>`;
+  const value = document.createElement('span');
+  value.className = 'footer-price-value';
+  value.textContent = `$${total.toLocaleString()}`;
+
+  const currency = document.createElement('span');
+  currency.className = 'footer-price-currency';
+  currency.textContent = 'USD';
+
+  el.replaceChildren(value, currency);
+  syncFooterCurrencyVisibility();
+}
+
+function syncFooterCurrencyVisibility() {
+  const price = document.getElementById('price-bar');
+  const currency = price && price.querySelector('.footer-price-currency');
+  const row = price && price.closest('.footer-price-row');
+  if (!price || !currency || !row) return;
+
+  currency.hidden = false;
+  requestAnimationFrame(() => {
+    const isTooTight = price.scrollWidth > price.clientWidth || row.scrollWidth > row.clientWidth;
+    currency.hidden = isTooTight;
+  });
 }
 
 function isQuotedLabel(value) {
@@ -1558,13 +2104,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadComponent('app-footer', 'components/Footer.html');
   initFooterLayoutVars();
   initThemeToggle();
+  initMobileNavigation();
   initFooterLiquidGlass();
   initStageSubsectionDropdowns(document);
-
-  // Initialize viewer and controls after MainContent is loaded
-  await initViewer();
-  initViewerControls();
-  resizeViewer(); // Ensure viewer is sized correctly on load
 
   // Compute and set accurate header height so main content doesn't tuck under it
   const setHeaderVars = () => {
@@ -1591,6 +2133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setHeaderVars();
   window.addEventListener('resize', setHeaderVars);
   window.addEventListener('resize', syncFooterLayoutVars, { passive: true });
+  window.addEventListener('resize', syncFooterCurrencyVisibility, { passive: true });
 
   // Load icons after all components are in the DOM
   const iconPlaceholders = document.querySelectorAll('.icon-placeholder[data-icon]');
@@ -1622,16 +2165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { loadData } = await import('./dataLoader.js');
     const { renderOptionCards, renderAddonsDropdown, initOptionCardInfoDialogs } = await import('./stageRenderer.js');
     initOptionCardInfoDialogs(document.body);
-    const modelsRoot = document.getElementById('stage-0-placeholder');
-    if (modelsRoot) {
-      const models = await loadData('data/models.json');
-      // The ModelSelection component expects a deeper container; try to find model-row-grid(s)
-      const modelGrids = document.querySelectorAll('.model-row-grid');
-      if (modelGrids && modelGrids.length && models) {
-        // distribute models across the first grid for simplicity
-        renderOptionCards(modelGrids[0], models, { category: null, showPrice: false });
-      }
-    }
+    if (typeof window.__wlRenderModelOptions === 'function') await window.__wlRenderModelOptions();
 
     const materialsOptionsRoot = document.getElementById('materials-options');
     if (materialsOptionsRoot) {
@@ -1719,6 +2253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateWaterfallAddonAvailability(state);
       updateLowerShelfAddonAvailability(state);
     }
+    updateStageSubsectionSummaries(document);
   } catch (e) {
     log.warn('Failed to render stage data from JSON files', e);
   }
@@ -1732,6 +2267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     stageManager.initStageManager();
   // expose for other modules (summary/restart) to programmatically change stage
   window.stageManager = stageManager;
+    initMobileNavigation();
     log.info('Stage manager initialized from main.js');
     // header height may change when stage changes sticky/static; recalc on next frame
     setTimeout(setHeaderVars, 0);
@@ -1759,6 +2295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadingScreen.classList.add('hidden');
     loadingScreen.setAttribute('aria-hidden', 'true');
   }
+  scheduleViewerLoadAfterAppReady();
 
   // Set up beforeunload warning for unsaved customizations
   window.addEventListener('beforeunload', (event) => {
@@ -1777,9 +2314,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Log successful app load with timestamp
 console.log('%c✓ WoodLab Configurator loaded successfully', 'color: #10b981; font-weight: bold; font-size: 12px;');
-console.log('Last updated: 2026-06-02 17:03');
+console.log('Last updated: 2026-08-16 08:56');
 console.log('App ver: 1.0.3');
-console.log('Edit ver: 735');
+console.log('Edit ver: 762');
   console.log('Config export: run exportConfig() in the console to print JSON for copy/paste.');
-  console.log('Viewer debug: run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
+  console.log('Viewer debug: after 3D preview loads, run WLViewerDebug.enable() // WLViewerDebug.disable() to toggle debug mode.');
 });

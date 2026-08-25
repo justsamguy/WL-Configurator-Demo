@@ -1,7 +1,6 @@
 import { state } from '../state.js';
 import { loadData } from '../dataLoader.js';
 import { computePrice, getWaterfallEdgeCount } from '../pricing.js';
-import { showConfirmDialog } from '../ui/confirmDialog.js';
 import { buildExportMarkdown } from '../export.js';
 import { createLogger } from '../logger.js';
 import {
@@ -1846,18 +1845,6 @@ async function exportPdf() {
   console.log('[PDF Export] Export complete');
 }
 
-async function restartConfig() {
-  // Do not mutate global state here. Request a restart and let main.js handle
-  // the canonical state reset and stage navigation.
-  const confirmed = await showConfirmDialog(
-    'Are you sure you want to discard all customizations and start a new project?',
-    'Cancel',
-    'Start Over'
-  );
-  if (!confirmed) return;
-  document.dispatchEvent(new CustomEvent('request-restart'));
-}
-
 function initShippingControls() {
   const section = document.getElementById('summary-shipping-section');
   if (!section || section.dataset.wlBound === 'true') return;
@@ -2127,7 +2114,6 @@ function initShippingControls() {
 export function initSummaryActions() {
   const cap = document.getElementById('copy-config');
   const exp = document.getElementById('export-pdf');
-  const rst = document.getElementById('restart-config');
   if (cap && cap.dataset.wlBound !== 'true') {
     cap.dataset.wlBound = 'true';
     cap.addEventListener('click', async (ev) => { ev.preventDefault(); await copyConfigMarkdown(); });
@@ -2135,10 +2121,6 @@ export function initSummaryActions() {
   if (exp && exp.dataset.wlBound !== 'true') {
     exp.dataset.wlBound = 'true';
     exp.addEventListener('click', async (ev) => { ev.preventDefault(); await exportPdf(); });
-  }
-  if (rst && rst.dataset.wlBound !== 'true') {
-    rst.dataset.wlBound = 'true';
-    rst.addEventListener('click', async (ev) => { ev.preventDefault(); await restartConfig(); });
   }
   initShippingControls();
 }
