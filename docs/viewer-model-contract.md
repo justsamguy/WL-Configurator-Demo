@@ -1,0 +1,63 @@
+# Viewer Model Contract
+
+This document defines the first-pass contract between exported GLB assets and the browser viewer. The goal is to make the viewer interpret model files intentionally instead of guessing from arbitrary mesh topology.
+
+## Current Runtime Shape
+
+- `data/viewer-models.json` remains the runtime manifest.
+- `data/viewer-model-inventory.json` tracks active, runtime-code, and legacy-candidate assets.
+- `scripts/validate-viewer-models.mjs` validates manifest and inventory consistency.
+- Edge-profile geometry is currently disabled. Selected edge profiles still show the existing viewer support notice.
+
+## Current Asset Audit Notes
+
+- `Walnut tabletop.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
+- `live-edge-walnut-river-tabletop.glb` has one node/mesh named `Tabletop`, one material, and no embedded images/textures.
+- `epoxy-edited-multi-grey.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
+- Because the tabletop and epoxy assets are finished single-mesh visual pieces, the viewer cannot safely infer separate slab pieces, island pieces, resin fill, or editable boundary loops from the GLBs alone.
+- The leg assets are more naturally separated into named bars/plates and are less risky for the current scaling/placement model.
+
+## Required Tabletop Contract
+
+Runtime tabletop assets should resolve to these logical parts:
+
+- `tabletop`: wood tabletop source.
+- `tabletop-epoxy`: epoxy preview/fill source.
+- `tabletop-glass`: generated viewer part when the glass add-on is selected.
+- `tabletop-waterfall`: generated viewer part when waterfall add-ons are selected.
+
+The contract assumes this coordinate basis:
+
+- X axis: tabletop width.
+- Y axis: height/thickness.
+- Z axis: tabletop length.
+- Origin: centered horizontally, bottom aligned after viewer import normalization.
+- Units: source dimensions are recorded in inches and converted by `dimensionRules.unitsPerInch`.
+
+## Texture And Layout Rules
+
+- Preserve top-surface UVs for wood.
+- Preserve top-surface UVs and interior layout for epoxy.
+- Do not remap the tabletop top face as part of edge shaping.
+- Do not use runtime geometry replacement for the whole tabletop unless the exported source asset is designed for it.
+- Future edge operations may affect only the outer tabletop boundary.
+
+## Edge Editing Rules
+
+The current contract records edge intent but does not yet model it. Before enabling edge geometry again, the source assets need one of these supported paths:
+
+- Clean separated tabletop regions with known rectangular source bounds and stable UVs.
+- A known outer-boundary loop or exported metadata that identifies the editable perimeter.
+- Purpose-built edge/side-band geometry that can follow the selected outline without changing the top surface.
+
+The browser should act as a geometry finisher, not as the table designer. The river layout, islands, wood grain basis, material assignment, and source dimensions should come from the model/export data.
+
+## Export Expectations
+
+For future GLB exports:
+
+- Use stable node/material names.
+- Keep wood, epoxy, glass, and base/legs logically separate.
+- Apply transforms before export unless a viewer rule explicitly needs an unapplied transform.
+- Keep tabletop source bounds documented in the manifest.
+- Re-run `node scripts/validate-viewer-models.mjs` before committing asset or manifest changes.

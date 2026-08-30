@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-30",
+  "notes": [
+    "Inventory records runtime viewer assets only. Do not delete legacy candidates until the v1.2 model review confirms they are unused outside the viewer.",
+    "Source Blender paths are local source candidates observed on Sam's workstation; exact export lineage still needs review for tabletop files."
+  ],
+  "activeAssets": [
+    {
+      "assetPath": "assets/models/Walnut tabletop.glb",
+      "role": "tabletop-wood-source",
+      "usedBy": ["viewer-models.defaults.parts.tabletop", "addon-live-edge.materialSourceAssetPath"],
+      "matchingLocalGlbs": [
+        "Dropbox/Table Design Models/Tabletops/Walnut Tabletop.glb",
+        "Documents/Table Design Models/Walnut Tabletop.glb"
+      ],
+      "sourceBlendCandidates": [
+        "Dropbox/Table Design Models/Tabletops/model-fix-2.blend",
+        "Documents/Table Design Models/model fix 2.blend"
+      ],
+      "sourceStatus": "candidate-needs-confirmation"
+    },
+    {
+      "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
+      "role": "tabletop-live-edge-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop.addonAssetPaths.addon-live-edge"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Tabletops/live-edge-walnut-river-tabletop.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Tabletops/live-edge-walnut-river-tabletop.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+      "role": "tabletop-epoxy-preview",
+      "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy"],
+      "matchingLocalGlbs": [
+        "Dropbox/Table Design Models/Tabletops/Multi-Grey Epoxy.glb",
+        "Documents/Table Design Models/Multi-Grey Epoxy.glb"
+      ],
+      "sourceBlendCandidates": [
+        "Dropbox/Table Design Models/Tabletops/Epoxy.blend",
+        "Documents/Table Design Models/Epoxy.blend"
+      ],
+      "sourceStatus": "candidate-needs-confirmation"
+    },
+    {
+      "assetPath": "assets/models/table-leg-cube-base-custom-14Hx22W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-02"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-cube-base-custom-14Hx22W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-cube-base-custom-14Hx22W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/14x14x14 cube base 1x1 tube.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-02"],
+      "matchingLocalGlbs": ["Dropbox/WL/Table Leg Samples/14x14x14 cube base 1x1 tube.glb"],
+      "sourceBlendCandidates": ["Dropbox/WL/Table Leg Samples/14x14x14 cube base.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-hourglass-1x3-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-03"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-hourglass-1x3-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-hourglass-1x3-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-hourglass-2x4-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-03"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-hourglass-2x4-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-hourglass-2x4-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-squared-coffee-3x1-16Hx18W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-04"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-squared-coffee-3x1-16Hx18W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-squared-coffee-3x1-16Hx18W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-squared-dining-3x1-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-04"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-squared-dining-3x1-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-squared-dining-3x1-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-tapered-coffee-3x1-16Hx20W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-05"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-tapered-coffee-3x1-16Hx20W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-tapered-coffee-3x1-16Hx20W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-tapered-dining-3x1-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-05"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-tapered-dining-3x1-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-tapered-dining-3x1-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-x-style-3x1-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-06"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-x-style-3x1-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-x-style-3x1-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-x-style-2x4-28Hx28W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-06"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-x-style-2x4-28Hx28W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-x-style-2x4-28Hx28W.blend"],
+      "sourceStatus": "candidate"
+    },
+    {
+      "assetPath": "assets/models/table-leg-tripod-dining-3x1-28Hx38W.glb",
+      "role": "leg-base",
+      "usedBy": ["viewer-models.defaults.legAssets.leg-sample-08"],
+      "matchingLocalGlbs": ["Dropbox/Table Design Models/Leg Models/GLB/table-leg-tripod-dining-3x1-28Hx38W.glb"],
+      "sourceBlendCandidates": ["Dropbox/Table Design Models/Leg Models/BLEND/table-leg-tripod-dining-3x1-28Hx38W.blend"],
+      "sourceStatus": "candidate"
+    }
+  ],
+  "runtimeCodeAssets": [
+    {
+      "assetPath": "assets/models/3x1 U-Channel.glb",
+      "role": "u-channel-hardware",
+      "usedBy": ["js/viewer.js U_CHANNEL_ASSET_PATH"],
+      "matchingLocalGlbs": ["Dropbox/3x1 U-Channel.glb"],
+      "sourceBlendCandidates": ["Dropbox/3x1_ U-Channel.blend"],
+      "sourceStatus": "candidate"
+    }
+  ],
+  "legacyCandidates": [
+    {
+      "assetPath": "assets/models/2x4_ Hourglass 28x28.glb",
+      "reason": "Not referenced by data/viewer-models.json. Similar to active table-leg-hourglass-2x4-28Hx28W.glb but hash does not match."
+    },
+    {
+      "assetPath": "assets/models/3D Cube Placeholder.glb",
+      "reason": "Not referenced by data/viewer-models.json. Keep only if another non-viewer path still uses the placeholder."
+    },
+    {
+      "assetPath": "assets/models/Solid Wood Top.glb",
+      "reason": "Not referenced by data/viewer-models.json. Source blend exists, but current viewer uses Walnut tabletop.glb."
+    }
+  ]
+}
