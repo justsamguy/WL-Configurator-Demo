@@ -167,12 +167,12 @@
         }
       },
       "edgeEditing": {
-        "status": "contract-ready-not-implemented",
+        "status": "material-mask-preview",
         "editablePartNames": ["tabletop", "tabletop-epoxy", "tabletop-glass", "tabletop-waterfall"],
         "allowedOperation": "outer-boundary-only",
         "preserveInteriorLayout": true,
         "preserveTopSurfaceUvs": true,
-        "supportedAddonIds": []
+        "supportedAddonIds": ["addon-squoval", "addon-rounded-corners", "addon-angled-corners"]
       }
     },
     "dimensionRules": {

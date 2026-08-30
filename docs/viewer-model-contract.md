@@ -7,7 +7,7 @@ This document defines the first-pass contract between exported GLB assets and th
 - `data/viewer-models.json` remains the runtime manifest.
 - `data/viewer-model-inventory.json` tracks active, runtime-code, and legacy-candidate assets.
 - `scripts/validate-viewer-models.mjs` validates manifest and inventory consistency.
-- Edge-profile geometry is currently disabled. Selected edge profiles still show the existing viewer support notice.
+- Rounded, angled, and squoval edge profiles use a material mask preview. Chamfered edges still show the existing viewer support notice.
 - Contract tabletop implementation files live in `assets/models/contract/`.
 - Original tabletop GLBs are copied to `assets/models/reference-originals/` for comparison.
 
@@ -47,7 +47,9 @@ The contract assumes this coordinate basis:
 
 ## Edge Editing Rules
 
-The current contract records edge intent but does not yet model it. Before enabling edge geometry again, the source assets need one of these supported paths:
+The current contract uses material-space clipping for rounded, angled, and squoval previews. This preserves the existing mesh vertices and UV layout, so wood and epoxy texture placement should not move when an edge profile is selected.
+
+Before enabling true cut-face/side-wall geometry, the source assets need one of these supported paths:
 
 - Clean separated tabletop regions with known rectangular source bounds and stable UVs.
 - A known outer-boundary loop or exported metadata that identifies the editable perimeter.

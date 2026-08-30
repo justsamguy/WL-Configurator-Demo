@@ -158,6 +158,16 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
 });
 const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
+const EDGE_PROFILE_MASK_ADDON_IDS = new Set(['addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
+const EDGE_PROFILE_MASK_MODES = Object.freeze({
+  'rounded-corners': 1,
+  'angled-corners': 2,
+  squoval: 3
+});
+const EDGE_PROFILE_ROUNDED_RADIUS_IN = 4;
+const EDGE_PROFILE_ANGLED_CUT_IN = 4;
+const EDGE_PROFILE_SQUOVAL_RADIUS_RATIO = 0.22;
+const EDGE_PROFILE_SQUOVAL_MAX_RADIUS_IN = 14;
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -283,6 +293,14 @@ function getSelectedAddons() {
 
 function hasSelectedAddon(addonId) {
   return typeof addonId === 'string' && getSelectedAddons().includes(addonId);
+}
+
+function getSelectedEdgeProfileMask() {
+  const selectedAddons = getSelectedAddons();
+  if (selectedAddons.includes('addon-squoval')) return 'squoval';
+  if (selectedAddons.includes('addon-rounded-corners')) return 'rounded-corners';
+  if (selectedAddons.includes('addon-angled-corners')) return 'angled-corners';
+  return null;
 }
 
 function getCurrentViewerSelectionContext(modelId, config = {}) {
@@ -905,6 +923,163 @@ function getPartConfig(partRoot) {
 function getPartSpan(metrics, axis) {
   if (!metrics || !metrics.min || !metrics.max || !AXIS_COMPONENTS.includes(axis)) return null;
   return metrics.max[axis] - metrics.min[axis];
+}
+
+function getEdgeProfileRadius(profile, width, length, unitsPerInch) {
+  const smallerSpan = Math.min(width, length);
+  if (!Number.isFinite(smallerSpan) || smallerSpan <= 0) return 0;
+
+  if (profile === 'squoval') {
+    const maxRadius = EDGE_PROFILE_SQUOVAL_MAX_RADIUS_IN * unitsPerInch;
+    return THREE.MathUtils.clamp(smallerSpan * EDGE_PROFILE_SQUOVAL_RADIUS_RATIO, 0, Math.min(smallerSpan / 2, maxRadius));
+  }
+
+  if (profile === 'rounded-corners') {
+    return THREE.MathUtils.clamp(EDGE_PROFILE_ROUNDED_RADIUS_IN * unitsPerInch, 0, smallerSpan / 2);
+  }
+
+  return 0;
+}
+
+function getEdgeProfileCut(profile, width, length, unitsPerInch) {
+  if (profile !== 'angled-corners') return 0;
+  const smallerSpan = Math.min(width, length);
+  if (!Number.isFinite(smallerSpan) || smallerSpan <= 0) return 0;
+  return THREE.MathUtils.clamp(EDGE_PROFILE_ANGLED_CUT_IN * unitsPerInch, 0, smallerSpan / 2);
+}
+
+function augmentMaterialProgramCacheKey(material, cacheKeyPart) {
+  const previousCustomProgramCacheKey = typeof material.customProgramCacheKey === 'function'
+    ? material.customProgramCacheKey.bind(material)
+    : null;
+  material.customProgramCacheKey = () => [
+    previousCustomProgramCacheKey ? previousCustomProgramCacheKey() : '',
+    cacheKeyPart
+  ].join(':');
+}
+
+function ensureEdgeProfileClipMaterial(material) {
+  if (!material || material.userData?.edgeProfileClipMaterial) return material;
+
+  const previousOnBeforeCompile = material.onBeforeCompile;
+  const uniforms = {
+    enabled: { value: 0 },
+    mode: { value: 0 },
+    center: { value: new THREE.Vector2() },
+    halfSize: { value: new THREE.Vector2(1, 1) },
+    radius: { value: 0 },
+    cut: { value: 0 }
+  };
+
+  material.userData = {
+    ...(material.userData || {}),
+    edgeProfileClipMaterial: true,
+    edgeProfileClipUniforms: uniforms
+  };
+  material.onBeforeCompile = (shader, rendererInstance) => {
+    if (typeof previousOnBeforeCompile === 'function') previousOnBeforeCompile.call(material, shader, rendererInstance);
+    shader.uniforms.wlEdgeClipEnabled = uniforms.enabled;
+    shader.uniforms.wlEdgeClipMode = uniforms.mode;
+    shader.uniforms.wlEdgeClipCenter = uniforms.center;
+    shader.uniforms.wlEdgeClipHalfSize = uniforms.halfSize;
+    shader.uniforms.wlEdgeClipRadius = uniforms.radius;
+    shader.uniforms.wlEdgeClipCut = uniforms.cut;
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        varying vec3 wlEdgeClipWorldPosition;`
+      )
+      .replace(
+        '#include <worldpos_vertex>',
+        `#include <worldpos_vertex>
+        wlEdgeClipWorldPosition = worldPosition.xyz;`
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        varying vec3 wlEdgeClipWorldPosition;
+        uniform float wlEdgeClipEnabled;
+        uniform int wlEdgeClipMode;
+        uniform vec2 wlEdgeClipCenter;
+        uniform vec2 wlEdgeClipHalfSize;
+        uniform float wlEdgeClipRadius;
+        uniform float wlEdgeClipCut;`
+      )
+      .replace(
+        '#include <clipping_planes_fragment>',
+        `#include <clipping_planes_fragment>
+        if (wlEdgeClipEnabled > 0.5) {
+          vec2 edgePoint = abs(wlEdgeClipWorldPosition.xz - wlEdgeClipCenter);
+          if (edgePoint.x > wlEdgeClipHalfSize.x || edgePoint.y > wlEdgeClipHalfSize.y) discard;
+          if (wlEdgeClipMode == 1 || wlEdgeClipMode == 3) {
+            vec2 cornerCenter = wlEdgeClipHalfSize - vec2(wlEdgeClipRadius);
+            if (edgePoint.x > cornerCenter.x && edgePoint.y > cornerCenter.y && distance(edgePoint, cornerCenter) > wlEdgeClipRadius) discard;
+          } else if (wlEdgeClipMode == 2) {
+            vec2 cutStart = wlEdgeClipHalfSize - vec2(wlEdgeClipCut);
+            if (edgePoint.x > cutStart.x && edgePoint.y > cutStart.y && (edgePoint.x - cutStart.x) + (edgePoint.y - cutStart.y) > wlEdgeClipCut) discard;
+          }
+        }`
+      );
+  };
+  augmentMaterialProgramCacheKey(material, 'wl-edge-profile-clip-v1');
+  material.needsUpdate = true;
+  return material;
+}
+
+function setEdgeProfileUniforms(material, clipState = null) {
+  const uniforms = material && material.userData ? material.userData.edgeProfileClipUniforms : null;
+  if (!uniforms) return;
+
+  if (!clipState || !clipState.enabled) {
+    uniforms.enabled.value = 0;
+    uniforms.mode.value = 0;
+    return;
+  }
+
+  uniforms.enabled.value = 1;
+  uniforms.mode.value = clipState.mode;
+  uniforms.center.value.copy(clipState.center);
+  uniforms.halfSize.value.copy(clipState.halfSize);
+  uniforms.radius.value = clipState.radius;
+  uniforms.cut.value = clipState.cut;
+}
+
+function setEdgeProfileClipForPart(partRoot, clipState = null) {
+  if (!partRoot) return;
+  partRoot.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      ensureEdgeProfileClipMaterial(material);
+      setEdgeProfileUniforms(material, clipState);
+    });
+  });
+}
+
+function applyEdgeProfileClipping(renderRoot, tabletopMetrics, unitsPerInch) {
+  if (!renderRoot) return;
+
+  const edgeProfile = !hasSelectedAddon(LIVE_EDGE_ADDON_ID) ? getSelectedEdgeProfileMask() : null;
+  const width = tabletopMetrics ? getPartSpan(tabletopMetrics, 'x') : null;
+  const length = tabletopMetrics ? getPartSpan(tabletopMetrics, 'z') : null;
+  const mode = EDGE_PROFILE_MASK_MODES[edgeProfile] || 0;
+  const enabled = !!edgeProfile && mode > 0 && Number.isFinite(width) && Number.isFinite(length);
+  const clipState = enabled
+    ? {
+      enabled: true,
+      mode,
+      center: new THREE.Vector2(tabletopMetrics.center.x, tabletopMetrics.center.z),
+      halfSize: new THREE.Vector2(width / 2, length / 2),
+      radius: getEdgeProfileRadius(edgeProfile, width, length, unitsPerInch),
+      cut: getEdgeProfileCut(edgeProfile, width, length, unitsPerInch)
+    }
+    : null;
+
+  [renderRoot.getObjectByName('tabletop'), renderRoot.getObjectByName(EPOXY_PREVIEW_PART_NAME)]
+    .forEach((partRoot) => setEdgeProfileClipForPart(partRoot, clipState));
 }
 
 function getLiveEdgeTopSurfaceTriangles(tabletopRoot, tabletopMetrics) {
@@ -2191,6 +2366,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     partRoot.position.z += baseState.metrics.center.z - metrics.center.z;
   });
 
+  applyEdgeProfileClipping(renderRoot, tabletopMetrics, unitsPerInch);
   computeUChannelTransforms(renderRoot, basePartStates, scaleMap, unitsPerInch, tabletopMetrics, selectedUndersideY);
   computeGlassTopTransform(renderRoot, unitsPerInch);
   computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletopRoot);
@@ -3463,9 +3639,13 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
     );
   }
-  if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
+  const unmodeledEdgeProfileIds = selectedAddons.filter((addonId) => (
+    EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId)
+    && !EDGE_PROFILE_MASK_ADDON_IDS.has(addonId)
+  ));
+  if (unmodeledEdgeProfileIds.length) {
     const edgeProfileNames = selectedAddons
-      .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
+      .filter((addonId) => unmodeledEdgeProfileIds.includes(addonId))
       .map((addonId) => getOptionDisplayName('addon', addonId, 'Edge profile'));
     pushViewerNotice(
       notices,
