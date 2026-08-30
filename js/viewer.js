@@ -109,7 +109,6 @@ const GLASS_TOP_LIVE_EDGE_SAMPLE_SPACING_IN = 2;
 const GLASS_TOP_LIVE_EDGE_MIN_SAMPLE_COUNT = 24;
 const GLASS_TOP_LIVE_EDGE_MAX_SAMPLE_COUNT = 72;
 const GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE = 0.0005;
-const EDGE_PROFILE_GENERATED_PART_NAME = 'generated-edge-profile';
 const EDGE_PROFILE_ROUNDED_RADIUS_IN = 4;
 const EDGE_PROFILE_ANGLED_CUT_IN = 4;
 const EDGE_PROFILE_SQUOVAL_RADIUS_RATIO = 0.22;
@@ -1122,18 +1121,6 @@ function createEdgeProfileBoxGeometry(width, length, thickness, profile, unitsPe
   return geometry;
 }
 
-function getFirstVisibleMeshMaterial(root) {
-  if (!root) return null;
-  let material = null;
-  root.traverse((child) => {
-    if (material || !child.isMesh || child.userData?.generatedEdgeProfile || !child.material) return;
-    material = Array.isArray(child.material)
-      ? child.material.find(Boolean)
-      : child.material;
-  });
-  return material || null;
-}
-
 function setOriginalPartMeshesVisible(root, visible) {
   if (!root) return;
   root.traverse((child) => {
@@ -1157,7 +1144,111 @@ function clearGeneratedEdgeProfileGeometry(root) {
 
 function resetProceduralEdgeProfileGeometry(renderRoot) {
   if (!renderRoot) return;
-  renderRoot.children.forEach((partRoot) => clearGeneratedEdgeProfileGeometry(partRoot));
+  renderRoot.children.forEach((partRoot) => {
+    clearGeneratedEdgeProfileGeometry(partRoot);
+    resetEdgeProfileGeometry(partRoot);
+  });
+}
+
+function getEdgeProfileGeometryState(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!geometry || !positionAttribute) return null;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  const expectedPositionLength = positionAttribute.count * 3;
+  const expectedNormalLength = normalAttribute ? normalAttribute.count * 3 : 0;
+  const userData = mesh.userData || (mesh.userData = {});
+  const currentState = userData.edgeProfileBaseState || {};
+  const shouldCapturePositions = !currentState.positions || currentState.positions.length !== expectedPositionLength;
+  const shouldCaptureNormals = normalAttribute
+    && (!currentState.normals || currentState.normals.length !== expectedNormalLength);
+
+  if (shouldCapturePositions || shouldCaptureNormals || (!normalAttribute && currentState.normals)) {
+    userData.edgeProfileBaseState = {
+      positions: shouldCapturePositions
+        ? cloneVector3AttributeValues(positionAttribute)
+        : currentState.positions,
+      normals: normalAttribute
+        ? (shouldCaptureNormals ? cloneVector3AttributeValues(normalAttribute) : currentState.normals)
+        : null
+    };
+  }
+
+  return userData.edgeProfileBaseState;
+}
+
+function resetMeshEdgeProfileGeometry(mesh) {
+  const geometry = mesh && mesh.geometry;
+  const state = mesh && mesh.userData ? mesh.userData.edgeProfileBaseState : null;
+  if (!geometry || !state || !state.positions) return false;
+
+  const positionAttribute = geometry.getAttribute('position');
+  if (!restoreVector3AttributeValues(positionAttribute, state.positions)) return false;
+
+  const normalAttribute = geometry.getAttribute('normal');
+  if (state.normals && normalAttribute) restoreVector3AttributeValues(normalAttribute, state.normals);
+  else if (typeof geometry.computeVertexNormals === 'function') geometry.computeVertexNormals();
+
+  refreshGeometryBounds(geometry);
+  return true;
+}
+
+function resetEdgeProfileGeometry(root) {
+  if (!root) return;
+  root.traverse((child) => {
+    if (!child || !child.isMesh) return;
+    resetMeshEdgeProfileGeometry(child);
+  });
+}
+
+function projectPointToEdgeProfile(point, metrics, profile, unitsPerInch) {
+  const halfWidth = getPartSpan(metrics, 'x') / 2;
+  const halfLength = getPartSpan(metrics, 'z') / 2;
+  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || halfWidth <= 0 || halfLength <= 0) return false;
+
+  const localX = point.x - metrics.center.x;
+  const localZ = point.z - metrics.center.z;
+  const signX = localX < 0 ? -1 : 1;
+  const signZ = localZ < 0 ? -1 : 1;
+  let absX = Math.abs(localX);
+  let absZ = Math.abs(localZ);
+  let changed = false;
+
+  if (profile === 'angled-corners') {
+    const cut = THREE.MathUtils.clamp(
+      EDGE_PROFILE_ANGLED_CUT_IN * unitsPerInch,
+      0,
+      Math.min(halfWidth, halfLength)
+    );
+    const limit = halfWidth + halfLength - cut;
+    if (cut > 0 && absX + absZ > limit) {
+      const offset = (absX + absZ - limit) / 2;
+      absX = Math.max(0, absX - offset);
+      absZ = Math.max(0, absZ - offset);
+      changed = true;
+    }
+  } else {
+    const radius = getEdgeProfileRadius(profile, halfWidth * 2, halfLength * 2, unitsPerInch);
+    const cornerCenterX = halfWidth - radius;
+    const cornerCenterZ = halfLength - radius;
+    if (radius > 0 && absX > cornerCenterX && absZ > cornerCenterZ) {
+      const dx = absX - cornerCenterX;
+      const dz = absZ - cornerCenterZ;
+      const distance = Math.hypot(dx, dz);
+      if (distance > radius) {
+        const scale = radius / distance;
+        absX = cornerCenterX + (dx * scale);
+        absZ = cornerCenterZ + (dz * scale);
+        changed = true;
+      }
+    }
+  }
+
+  if (!changed) return false;
+  point.x = metrics.center.x + (absX * signX);
+  point.z = metrics.center.z + (absZ * signZ);
+  return true;
 }
 
 function applyProceduralEdgeProfileGeometry(partRoot, metrics, profile, unitsPerInch) {
@@ -1165,39 +1256,40 @@ function applyProceduralEdgeProfileGeometry(partRoot, metrics, profile, unitsPer
   if (!partRoot || !metrics || !profile) return null;
 
   partRoot.updateWorldMatrix(true, true);
-  const width = getPartSpan(metrics, 'x');
-  const length = getPartSpan(metrics, 'z');
-  const thickness = getPartSpan(metrics, 'y');
-  if (!Number.isFinite(width) || !Number.isFinite(length) || !Number.isFinite(thickness)) return null;
+  const localPoint = new THREE.Vector3();
+  const worldPoint = new THREE.Vector3();
+  const worldToLocal = new THREE.Matrix4();
+  let anyChanged = false;
 
-  const geometry = createEdgeProfileBoxGeometry(width, length, thickness, profile, unitsPerInch);
-  if (!geometry) return null;
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
 
-  const material = getFirstVisibleMeshMaterial(partRoot);
-  if (!material) {
-    geometry.dispose();
-    return null;
-  }
+    const geometryState = getEdgeProfileGeometryState(child);
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!geometryState || !positionAttribute) return;
 
-  const mesh = new THREE.Mesh(geometry, cloneReusableMaterial(material));
-  mesh.name = `${EDGE_PROFILE_GENERATED_PART_NAME}-${partRoot.name || 'part'}`;
-  mesh.userData.generatedEdgeProfile = true;
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.frustumCulled = false;
+    resetMeshEdgeProfileGeometry(child);
+    worldToLocal.copy(child.matrixWorld).invert();
 
-  const localCenter = partRoot.worldToLocal(metrics.center.clone());
-  mesh.position.copy(localCenter);
-  const parentWorldScale = partRoot.getWorldScale(new THREE.Vector3());
-  mesh.scale.set(
-    parentWorldScale.x ? 1 / parentWorldScale.x : 1,
-    parentWorldScale.y ? 1 / parentWorldScale.y : 1,
-    parentWorldScale.z ? 1 / parentWorldScale.z : 1
-  );
+    let changed = false;
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      localPoint.fromBufferAttribute(positionAttribute, index);
+      worldPoint.copy(localPoint).applyMatrix4(child.matrixWorld);
+      if (!projectPointToEdgeProfile(worldPoint, metrics, profile, unitsPerInch)) continue;
 
-  setOriginalPartMeshesVisible(partRoot, false);
-  partRoot.add(mesh);
-  return getObjectMetrics(partRoot);
+      localPoint.copy(worldPoint).applyMatrix4(worldToLocal);
+      positionAttribute.setXYZ(index, localPoint.x, localPoint.y, localPoint.z);
+      changed = true;
+    }
+
+    if (!changed) return;
+    positionAttribute.needsUpdate = true;
+    if (typeof child.geometry.computeVertexNormals === 'function') child.geometry.computeVertexNormals();
+    refreshGeometryBounds(child.geometry);
+    anyChanged = true;
+  });
+
+  return anyChanged ? getObjectMetrics(partRoot) : null;
 }
 
 function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, perimeterInset, unitsPerInch) {
