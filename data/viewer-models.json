@@ -122,6 +122,59 @@
       "minDistanceMultiplier": 0.9,
       "maxDistanceMultiplier": 5.8
     },
+    "modelContract": {
+      "schemaVersion": 1,
+      "units": "inches",
+      "sourceBounds": {
+        "length": 96,
+        "width": 42,
+        "height": 30,
+        "tabletopThickness": 2
+      },
+      "coordinateSystem": {
+        "widthAxis": "x",
+        "heightAxis": "y",
+        "lengthAxis": "z",
+        "origin": "center-bottom"
+      },
+      "partRoles": {
+        "tabletop": {
+          "requiredPartNames": ["tabletop"],
+          "runtimeRole": "tabletop",
+          "scalesWithDimensions": ["length", "width", "height"],
+          "preserveTopSurfaceUvs": true
+        },
+        "epoxy": {
+          "requiredPartNames": ["tabletop-epoxy"],
+          "runtimeRole": "tabletop",
+          "scalesWithDimensions": ["length", "width", "height"],
+          "preserveTopSurfaceUvs": true,
+          "preserveInteriorLayout": true
+        },
+        "glass": {
+          "generatedPartName": "tabletop-glass",
+          "runtimeRole": "glass",
+          "followsTabletopFootprint": true
+        },
+        "waterfall": {
+          "generatedPartName": "tabletop-waterfall",
+          "runtimeRole": "waterfall",
+          "followsTabletopFootprint": true
+        },
+        "legs": {
+          "runtimeRole": "leg",
+          "source": "legAssets"
+        }
+      },
+      "edgeEditing": {
+        "status": "contract-ready-not-implemented",
+        "editablePartNames": ["tabletop", "tabletop-epoxy", "tabletop-glass", "tabletop-waterfall"],
+        "allowedOperation": "outer-boundary-only",
+        "preserveInteriorLayout": true,
+        "preserveTopSurfaceUvs": true,
+        "supportedAddonIds": []
+      }
+    },
     "dimensionRules": {
       "unitsPerInch": 0.0254,
       "roundScaleMode": "uniform-length",

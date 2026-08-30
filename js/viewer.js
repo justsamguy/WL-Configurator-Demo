@@ -109,10 +109,6 @@ const GLASS_TOP_LIVE_EDGE_SAMPLE_SPACING_IN = 2;
 const GLASS_TOP_LIVE_EDGE_MIN_SAMPLE_COUNT = 24;
 const GLASS_TOP_LIVE_EDGE_MAX_SAMPLE_COUNT = 72;
 const GLASS_TOP_LIVE_EDGE_POINT_TOLERANCE = 0.0005;
-const EDGE_PROFILE_ROUNDED_RADIUS_IN = 4;
-const EDGE_PROFILE_ANGLED_CUT_IN = 4;
-const EDGE_PROFILE_SQUOVAL_RADIUS_RATIO = 0.22;
-const EDGE_PROFILE_SQUOVAL_MAX_RADIUS_IN = 14;
 const RESIN_VIEWER_TINTS = Object.freeze({
   'color-01': '#1a1a1c',
   'color-02': '#5f87c4',
@@ -162,7 +158,6 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
 });
 const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
-const PROCEDURAL_EDGE_PROFILE_ADDON_IDS = new Set(['addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -290,14 +285,6 @@ function hasSelectedAddon(addonId) {
   return typeof addonId === 'string' && getSelectedAddons().includes(addonId);
 }
 
-function getSelectedProceduralEdgeProfile() {
-  const selectedAddons = getSelectedAddons();
-  if (selectedAddons.includes('addon-squoval')) return 'squoval';
-  if (selectedAddons.includes('addon-rounded-corners')) return 'rounded-corners';
-  if (selectedAddons.includes('addon-angled-corners')) return 'angled-corners';
-  return null;
-}
-
 function getCurrentViewerSelectionContext(modelId, config = {}) {
   const selections = getSelections();
   const detail = selections && selections.dimensionsDetail && typeof selections.dimensionsDetail === 'object'
@@ -417,6 +404,91 @@ function getTubeFallbackScale(baseTubeId, selectedTubeId) {
 function matchesVariantScope(scopeIds, selectedId) {
   if (!Array.isArray(scopeIds) || !scopeIds.length) return true;
   return !!selectedId && scopeIds.includes(selectedId);
+}
+
+function clonePlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...value }
+    : {};
+}
+
+function normalizeStringArray(value) {
+  return Array.isArray(value)
+    ? value.filter((entry) => typeof entry === 'string' && entry.trim()).map((entry) => entry.trim())
+    : [];
+}
+
+function mergeModelContract(defaultContract = {}, modelContract = {}, dimensionRules = {}) {
+  const merged = {
+    ...clonePlainObject(defaultContract),
+    ...clonePlainObject(modelContract)
+  };
+  const defaultSourceBounds = clonePlainObject(defaultContract.sourceBounds);
+  const modelSourceBounds = clonePlainObject(modelContract.sourceBounds);
+  const sourceDimensions = clonePlainObject(dimensionRules.sourceDimensions);
+
+  merged.sourceBounds = {
+    length: Number.isFinite(Number(defaultSourceBounds.length)) ? Number(defaultSourceBounds.length) : Number(sourceDimensions.length),
+    width: Number.isFinite(Number(defaultSourceBounds.width)) ? Number(defaultSourceBounds.width) : Number(sourceDimensions.width),
+    height: Number.isFinite(Number(defaultSourceBounds.height)) ? Number(defaultSourceBounds.height) : Number(sourceDimensions.height),
+    ...defaultSourceBounds,
+    ...modelSourceBounds
+  };
+  merged.coordinateSystem = {
+    ...clonePlainObject(defaultContract.coordinateSystem),
+    ...clonePlainObject(modelContract.coordinateSystem)
+  };
+  merged.partRoles = {
+    ...clonePlainObject(defaultContract.partRoles),
+    ...clonePlainObject(modelContract.partRoles)
+  };
+  merged.edgeEditing = {
+    ...clonePlainObject(defaultContract.edgeEditing),
+    ...clonePlainObject(modelContract.edgeEditing)
+  };
+
+  return merged;
+}
+
+function getModelContractWarnings(config = {}) {
+  const contract = config.modelContract && typeof config.modelContract === 'object'
+    ? config.modelContract
+    : null;
+  if (!contract) return [];
+
+  const warnings = [];
+  const partNames = new Set(getRenderableParts(config).map((partConfig) => partConfig.name));
+  const partRoles = contract.partRoles && typeof contract.partRoles === 'object'
+    ? contract.partRoles
+    : {};
+
+  Object.entries(partRoles).forEach(([contractRole, roleConfig]) => {
+    if (!roleConfig || typeof roleConfig !== 'object') return;
+    normalizeStringArray(roleConfig.requiredPartNames).forEach((partName) => {
+      if (!partNames.has(partName)) {
+        warnings.push(`Model contract role "${contractRole}" requires missing part "${partName}".`);
+      }
+    });
+  });
+
+  const edgeEditing = contract.edgeEditing && typeof contract.edgeEditing === 'object'
+    ? contract.edgeEditing
+    : {};
+  normalizeStringArray(edgeEditing.editablePartNames).forEach((partName) => {
+    const isGeneratedOptional = partName === GLASS_TOP_PART_NAME || partName === WATERFALL_PART_NAME;
+    if (!partNames.has(partName) && !isGeneratedOptional) {
+      warnings.push(`Model contract marks "${partName}" as edge-editable, but no matching renderable part exists.`);
+    }
+  });
+
+  return warnings;
+}
+
+function reportModelContractWarnings(config = {}) {
+  if (!isDebugModeEnabled()) return [];
+  const warnings = getModelContractWarnings(config);
+  if (warnings.length) console.warn('[ViewerModelContract]', warnings);
+  return warnings;
 }
 
 function resolveLegVariant(definition = {}, selectionContext = {}) {
@@ -1040,258 +1112,6 @@ function ensureGlassBoxGeometry(glassMesh) {
   replaceGlassMeshGeometry(glassMesh, new THREE.BoxGeometry(1, 1, 1), 'box');
 }
 
-function getEdgeProfileRadius(profile, width, length, unitsPerInch) {
-  const smallerSpan = Math.min(width, length);
-  if (!Number.isFinite(smallerSpan) || smallerSpan <= 0) return 0;
-
-  if (profile === 'squoval') {
-    const maxRadius = EDGE_PROFILE_SQUOVAL_MAX_RADIUS_IN * unitsPerInch;
-    return THREE.MathUtils.clamp(smallerSpan * EDGE_PROFILE_SQUOVAL_RADIUS_RATIO, 0, Math.min(smallerSpan / 2, maxRadius));
-  }
-
-  if (profile === 'rounded-corners') {
-    return THREE.MathUtils.clamp(EDGE_PROFILE_ROUNDED_RADIUS_IN * unitsPerInch, 0, smallerSpan / 2);
-  }
-
-  return 0;
-}
-
-function createEdgeProfileShape(width, length, profile, unitsPerInch) {
-  if (!Number.isFinite(width) || !Number.isFinite(length) || width <= 0 || length <= 0) return null;
-
-  const halfWidth = width / 2;
-  const halfLength = length / 2;
-  const shape = new THREE.Shape();
-
-  if (profile === 'angled-corners') {
-    const cut = THREE.MathUtils.clamp(
-      EDGE_PROFILE_ANGLED_CUT_IN * unitsPerInch,
-      0,
-      Math.min(halfWidth, halfLength)
-    );
-    if (cut <= 0) return null;
-
-    shape.moveTo(-halfWidth + cut, -halfLength);
-    shape.lineTo(halfWidth - cut, -halfLength);
-    shape.lineTo(halfWidth, -halfLength + cut);
-    shape.lineTo(halfWidth, halfLength - cut);
-    shape.lineTo(halfWidth - cut, halfLength);
-    shape.lineTo(-halfWidth + cut, halfLength);
-    shape.lineTo(-halfWidth, halfLength - cut);
-    shape.lineTo(-halfWidth, -halfLength + cut);
-    shape.closePath();
-    return shape;
-  }
-
-  const radius = getEdgeProfileRadius(profile, width, length, unitsPerInch);
-  if (radius <= 0) return null;
-
-  shape.moveTo(-halfWidth + radius, -halfLength);
-  shape.lineTo(halfWidth - radius, -halfLength);
-  shape.quadraticCurveTo(halfWidth, -halfLength, halfWidth, -halfLength + radius);
-  shape.lineTo(halfWidth, halfLength - radius);
-  shape.quadraticCurveTo(halfWidth, halfLength, halfWidth - radius, halfLength);
-  shape.lineTo(-halfWidth + radius, halfLength);
-  shape.quadraticCurveTo(-halfWidth, halfLength, -halfWidth, halfLength - radius);
-  shape.lineTo(-halfWidth, -halfLength + radius);
-  shape.quadraticCurveTo(-halfWidth, -halfLength, -halfWidth + radius, -halfLength);
-  shape.closePath();
-  return shape;
-}
-
-function createEdgeProfileBoxGeometry(width, length, thickness, profile, unitsPerInch) {
-  if (!Number.isFinite(thickness) || thickness <= 0) return null;
-
-  const shape = createEdgeProfileShape(width, length, profile, unitsPerInch);
-  if (!shape) return null;
-
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: thickness,
-    bevelEnabled: false,
-    curveSegments: profile === 'squoval' ? 18 : 12,
-    steps: 1
-  });
-
-  // The shape is built in tabletop X/Z footprint space; rotate extrusion depth into Y thickness.
-  geometry.rotateX(-Math.PI / 2);
-  geometry.translate(0, -thickness / 2, 0);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-function setOriginalPartMeshesVisible(root, visible) {
-  if (!root) return;
-  root.traverse((child) => {
-    if (!child.isMesh || child.userData?.generatedEdgeProfile) return;
-    child.visible = visible;
-  });
-}
-
-function clearGeneratedEdgeProfileGeometry(root) {
-  if (!root) return;
-  const generatedChildren = [];
-  root.traverse((child) => {
-    if (child.userData?.generatedEdgeProfile) generatedChildren.push(child);
-  });
-  generatedChildren.forEach((child) => {
-    if (child.parent) child.parent.remove(child);
-    disposeObject3D(child);
-  });
-  setOriginalPartMeshesVisible(root, true);
-}
-
-function resetProceduralEdgeProfileGeometry(renderRoot) {
-  if (!renderRoot) return;
-  renderRoot.children.forEach((partRoot) => {
-    clearGeneratedEdgeProfileGeometry(partRoot);
-    resetEdgeProfileGeometry(partRoot);
-  });
-}
-
-function getEdgeProfileGeometryState(mesh) {
-  const geometry = mesh && mesh.geometry;
-  const positionAttribute = geometry && geometry.getAttribute('position');
-  if (!geometry || !positionAttribute) return null;
-
-  const normalAttribute = geometry.getAttribute('normal');
-  const expectedPositionLength = positionAttribute.count * 3;
-  const expectedNormalLength = normalAttribute ? normalAttribute.count * 3 : 0;
-  const userData = mesh.userData || (mesh.userData = {});
-  const currentState = userData.edgeProfileBaseState || {};
-  const shouldCapturePositions = !currentState.positions || currentState.positions.length !== expectedPositionLength;
-  const shouldCaptureNormals = normalAttribute
-    && (!currentState.normals || currentState.normals.length !== expectedNormalLength);
-
-  if (shouldCapturePositions || shouldCaptureNormals || (!normalAttribute && currentState.normals)) {
-    userData.edgeProfileBaseState = {
-      positions: shouldCapturePositions
-        ? cloneVector3AttributeValues(positionAttribute)
-        : currentState.positions,
-      normals: normalAttribute
-        ? (shouldCaptureNormals ? cloneVector3AttributeValues(normalAttribute) : currentState.normals)
-        : null
-    };
-  }
-
-  return userData.edgeProfileBaseState;
-}
-
-function resetMeshEdgeProfileGeometry(mesh) {
-  const geometry = mesh && mesh.geometry;
-  const state = mesh && mesh.userData ? mesh.userData.edgeProfileBaseState : null;
-  if (!geometry || !state || !state.positions) return false;
-
-  const positionAttribute = geometry.getAttribute('position');
-  if (!restoreVector3AttributeValues(positionAttribute, state.positions)) return false;
-
-  const normalAttribute = geometry.getAttribute('normal');
-  if (state.normals && normalAttribute) restoreVector3AttributeValues(normalAttribute, state.normals);
-  else if (typeof geometry.computeVertexNormals === 'function') geometry.computeVertexNormals();
-
-  refreshGeometryBounds(geometry);
-  return true;
-}
-
-function resetEdgeProfileGeometry(root) {
-  if (!root) return;
-  root.traverse((child) => {
-    if (!child || !child.isMesh) return;
-    resetMeshEdgeProfileGeometry(child);
-  });
-}
-
-function projectPointToEdgeProfile(point, metrics, profile, unitsPerInch) {
-  const halfWidth = getPartSpan(metrics, 'x') / 2;
-  const halfLength = getPartSpan(metrics, 'z') / 2;
-  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || halfWidth <= 0 || halfLength <= 0) return false;
-
-  const localX = point.x - metrics.center.x;
-  const localZ = point.z - metrics.center.z;
-  const signX = localX < 0 ? -1 : 1;
-  const signZ = localZ < 0 ? -1 : 1;
-  let absX = Math.abs(localX);
-  let absZ = Math.abs(localZ);
-  let changed = false;
-
-  if (profile === 'angled-corners') {
-    const cut = THREE.MathUtils.clamp(
-      EDGE_PROFILE_ANGLED_CUT_IN * unitsPerInch,
-      0,
-      Math.min(halfWidth, halfLength)
-    );
-    const limit = halfWidth + halfLength - cut;
-    if (cut > 0 && absX + absZ > limit) {
-      const offset = (absX + absZ - limit) / 2;
-      absX = Math.max(0, absX - offset);
-      absZ = Math.max(0, absZ - offset);
-      changed = true;
-    }
-  } else {
-    const radius = getEdgeProfileRadius(profile, halfWidth * 2, halfLength * 2, unitsPerInch);
-    const cornerCenterX = halfWidth - radius;
-    const cornerCenterZ = halfLength - radius;
-    if (radius > 0 && absX > cornerCenterX && absZ > cornerCenterZ) {
-      const dx = absX - cornerCenterX;
-      const dz = absZ - cornerCenterZ;
-      const distance = Math.hypot(dx, dz);
-      if (distance > radius) {
-        const scale = radius / distance;
-        absX = cornerCenterX + (dx * scale);
-        absZ = cornerCenterZ + (dz * scale);
-        changed = true;
-      }
-    }
-  }
-
-  if (!changed) return false;
-  point.x = metrics.center.x + (absX * signX);
-  point.z = metrics.center.z + (absZ * signZ);
-  return true;
-}
-
-function applyProceduralEdgeProfileGeometry(partRoot, metrics, profile, unitsPerInch) {
-  clearGeneratedEdgeProfileGeometry(partRoot);
-  if (!partRoot || !metrics || !profile) return null;
-
-  partRoot.updateWorldMatrix(true, true);
-  const localPoint = new THREE.Vector3();
-  const worldPoint = new THREE.Vector3();
-  const worldToLocal = new THREE.Matrix4();
-  let anyChanged = false;
-
-  partRoot.traverse((child) => {
-    if (!child || !child.isMesh || !child.geometry) return;
-
-    const geometryState = getEdgeProfileGeometryState(child);
-    const positionAttribute = child.geometry.getAttribute('position');
-    if (!geometryState || !positionAttribute) return;
-
-    resetMeshEdgeProfileGeometry(child);
-    worldToLocal.copy(child.matrixWorld).invert();
-
-    let changed = false;
-    for (let index = 0; index < positionAttribute.count; index += 1) {
-      localPoint.fromBufferAttribute(positionAttribute, index);
-      worldPoint.copy(localPoint).applyMatrix4(child.matrixWorld);
-      if (!projectPointToEdgeProfile(worldPoint, metrics, profile, unitsPerInch)) continue;
-
-      localPoint.copy(worldPoint).applyMatrix4(worldToLocal);
-      positionAttribute.setXYZ(index, localPoint.x, localPoint.y, localPoint.z);
-      changed = true;
-    }
-
-    if (!changed) return;
-    positionAttribute.needsUpdate = true;
-    if (typeof child.geometry.computeVertexNormals === 'function') child.geometry.computeVertexNormals();
-    refreshGeometryBounds(child.geometry);
-    anyChanged = true;
-  });
-
-  return anyChanged ? getObjectMetrics(partRoot) : null;
-}
-
 function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, perimeterInset, unitsPerInch) {
   if (!tabletopRoot || !tabletopMetrics || !Number.isFinite(thickness) || thickness <= 0) return null;
 
@@ -1634,12 +1454,6 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
   const liveEdgeGlassGeometry = hasSelectedAddon(LIVE_EDGE_ADDON_ID)
     ? createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, perimeterInset, unitsPerInch)
     : null;
-  const edgeProfile = !hasSelectedAddon(LIVE_EDGE_ADDON_ID)
-    ? getSelectedProceduralEdgeProfile()
-    : null;
-  const edgeProfileGlassGeometry = !liveEdgeGlassGeometry && edgeProfile
-    ? createEdgeProfileBoxGeometry(glassWidth, glassLength, thickness, edgeProfile, unitsPerInch)
-    : null;
 
   glassRoot.visible = true;
   glassRoot.scale.set(1, 1, 1);
@@ -1648,8 +1462,6 @@ function computeGlassTopTransform(renderRoot, unitsPerInch) {
 
   if (liveEdgeGlassGeometry) {
     replaceGlassMeshGeometry(glassMesh, liveEdgeGlassGeometry, 'live-edge');
-  } else if (edgeProfileGlassGeometry) {
-    replaceGlassMeshGeometry(glassMesh, edgeProfileGlassGeometry, `edge-profile:${edgeProfile}`);
   } else {
     ensureGlassBoxGeometry(glassMesh);
     glassRoot.scale.set(glassWidth, thickness, glassLength);
@@ -2315,7 +2127,6 @@ function computeLowerShelfTransform(renderRoot, scaleMap, unitsPerInch, tabletop
 function applyConfiguredPartTransforms(renderRoot, config = {}) {
   if (!renderRoot) return null;
   if (!renderRoot.userData.basePartStates) captureRenderRootBaseState(renderRoot);
-  resetProceduralEdgeProfileGeometry(renderRoot);
   resetWaterfallMiterGeometry(renderRoot);
 
   const basePartStates = renderRoot.userData.basePartStates || {};
@@ -2338,9 +2149,6 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   let tabletopMetrics = null;
   let epoxyMetrics = null;
   let tabletopRoot = null;
-  const edgeProfile = !hasSelectedAddon(LIVE_EDGE_ADDON_ID)
-    ? getSelectedProceduralEdgeProfile()
-    : null;
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -2366,9 +2174,6 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
       if (partName === 'tabletop') {
         tabletopRoot = partRoot;
         tabletopMetrics = getObjectMetrics(partRoot);
-        if (edgeProfile && tabletopMetrics) {
-          tabletopMetrics = applyProceduralEdgeProfileGeometry(partRoot, tabletopMetrics, edgeProfile, unitsPerInch) || tabletopMetrics;
-        }
       }
       return;
     }
@@ -3377,7 +3182,19 @@ function installViewerDebugConsoleApi() {
     enable: () => setViewerDebugMode(true),
     disable: () => setViewerDebugMode(false),
     toggle: () => setViewerDebugMode(!viewerDebugEnabled),
-    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled()
+    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled(),
+    getModelContract: async (modelId = null) => {
+      const manifest = await loadManifest();
+      const selectedModelId = modelId || (state && state.selections ? state.selections.model : null);
+      const config = resolveViewerConfig(manifest, selectedModelId);
+      return config ? config.modelContract || null : null;
+    },
+    auditModelContract: async (modelId = null) => {
+      const manifest = await loadManifest();
+      const selectedModelId = modelId || (state && state.selections ? state.selections.model : null);
+      const config = resolveViewerConfig(manifest, selectedModelId);
+      return config ? getModelContractWarnings(config) : ['No viewer config found for selected model.'];
+    }
   };
 }
 
@@ -3646,13 +3463,9 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
     );
   }
-  const unmodeledEdgeProfileIds = selectedAddons.filter((addonId) => (
-    EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId)
-    && !PROCEDURAL_EDGE_PROFILE_ADDON_IDS.has(addonId)
-  ));
-  if (unmodeledEdgeProfileIds.length) {
+  if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
     const edgeProfileNames = selectedAddons
-      .filter((addonId) => unmodeledEdgeProfileIds.includes(addonId))
+      .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
       .map((addonId) => getOptionDisplayName('addon', addonId, 'Edge profile'));
     pushViewerNotice(
       notices,
@@ -3969,8 +3782,9 @@ function resolveViewerConfig(manifest, modelId) {
     }
   };
   const selectionContext = getCurrentViewerSelectionContext(modelId, { dimensionRules });
+  const modelContract = mergeModelContract(defaults.modelContract, modelEntry.modelContract, dimensionRules);
 
-  return {
+  const resolvedConfig = {
     ...defaults,
     ...modelEntry,
     parts: [
@@ -3979,8 +3793,11 @@ function resolveViewerConfig(manifest, modelId) {
       ...buildUChannelRenderableParts(selectionContext)
     ],
     camera,
-    dimensionRules
+    dimensionRules,
+    modelContract
   };
+  reportModelContractWarnings(resolvedConfig);
+  return resolvedConfig;
 }
 
 async function buildRenderAsset(partConfig, index = 0) {

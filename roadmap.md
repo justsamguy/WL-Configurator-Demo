@@ -15,6 +15,7 @@
  - Decide whether to keep, replace, or remove the html2canvas self-screenshot flow for adding an example image to the PDF (currently not in use).
 
 - Add a way to display edge customizations in the viewer (edge_profile_3d_preview_plan.md).
+- Review active vs legacy 3D model assets for this version: identify which app GLBs are still needed, which source Blender files own them, and which files should be removed or re-exported before model-contract edge work continues.
 - Add Chair models.
 - Add the option to toggle tabletop legs and chairs in the 3D viewer (separate toggles for each and put the controls in the viewer controls section):
 When un-selected, give the legs 80% transparency instead of fully hiding them. Make chairs fully hidden.
