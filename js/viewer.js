@@ -2266,9 +2266,6 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
       computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
       epoxyMetrics = getObjectMetrics(partRoot);
-      if (edgeProfile && epoxyMetrics) {
-        epoxyMetrics = applyProceduralEdgeProfileGeometry(partRoot, epoxyMetrics, edgeProfile, unitsPerInch) || epoxyMetrics;
-      }
       return;
     }
 
