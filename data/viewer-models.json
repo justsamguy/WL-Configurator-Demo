@@ -4,11 +4,11 @@
       {
         "name": "tabletop",
         "role": "tabletop",
-        "assetPath": "assets/models/Walnut%20tabletop.glb",
+        "assetPath": "assets/models/contract/tabletop-wood-source.glb",
         "addonAssetPaths": {
           "addon-live-edge": {
-            "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
-            "materialSourceAssetPath": "assets/models/Walnut%20tabletop.glb",
+            "assetPath": "assets/models/contract/tabletop-live-edge-source.glb",
+            "materialSourceAssetPath": "assets/models/contract/tabletop-wood-source.glb",
             "scale": [0.918, 1, 1]
           }
         },
@@ -17,7 +17,7 @@
       {
         "name": "tabletop-epoxy",
         "role": "tabletop",
-        "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+        "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
         "surfaceInsetScale": [0.9972, 0.998, 0.9972],
@@ -129,7 +129,7 @@
         "length": 96,
         "width": 42,
         "height": 30,
-        "tabletopThickness": 2
+        "tabletopThickness": 2.633
       },
       "coordinateSystem": {
         "widthAxis": "x",

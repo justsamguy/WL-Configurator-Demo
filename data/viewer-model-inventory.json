@@ -7,9 +7,10 @@
   ],
   "activeAssets": [
     {
-      "assetPath": "assets/models/Walnut tabletop.glb",
+      "assetPath": "assets/models/contract/tabletop-wood-source.glb",
       "role": "tabletop-wood-source",
       "usedBy": ["viewer-models.defaults.parts.tabletop", "addon-live-edge.materialSourceAssetPath"],
+      "referenceOriginalAssetPath": "assets/models/reference-originals/Walnut tabletop.original.glb",
       "matchingLocalGlbs": [
         "Dropbox/Table Design Models/Tabletops/Walnut Tabletop.glb",
         "Documents/Table Design Models/Walnut Tabletop.glb"
@@ -21,17 +22,19 @@
       "sourceStatus": "candidate-needs-confirmation"
     },
     {
-      "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
+      "assetPath": "assets/models/contract/tabletop-live-edge-source.glb",
       "role": "tabletop-live-edge-override",
       "usedBy": ["viewer-models.defaults.parts.tabletop.addonAssetPaths.addon-live-edge"],
+      "referenceOriginalAssetPath": "assets/models/reference-originals/live-edge-walnut-river-tabletop.original.glb",
       "matchingLocalGlbs": ["Dropbox/Table Design Models/Tabletops/live-edge-walnut-river-tabletop.glb"],
       "sourceBlendCandidates": ["Dropbox/Table Design Models/Tabletops/live-edge-walnut-river-tabletop.blend"],
       "sourceStatus": "candidate"
     },
     {
-      "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+      "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
       "role": "tabletop-epoxy-preview",
       "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy"],
+      "referenceOriginalAssetPath": "assets/models/reference-originals/epoxy-edited-multi-grey.original.glb",
       "matchingLocalGlbs": [
         "Dropbox/Table Design Models/Tabletops/Multi-Grey Epoxy.glb",
         "Documents/Table Design Models/Multi-Grey Epoxy.glb"
@@ -141,7 +144,36 @@
       "sourceStatus": "candidate"
     }
   ],
+  "referenceAssets": [
+    {
+      "assetPath": "assets/models/reference-originals/Walnut tabletop.original.glb",
+      "sourceAssetPath": "assets/models/Walnut tabletop.glb",
+      "role": "reference-original"
+    },
+    {
+      "assetPath": "assets/models/reference-originals/live-edge-walnut-river-tabletop.original.glb",
+      "sourceAssetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
+      "role": "reference-original"
+    },
+    {
+      "assetPath": "assets/models/reference-originals/epoxy-edited-multi-grey.original.glb",
+      "sourceAssetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+      "role": "reference-original"
+    }
+  ],
   "legacyCandidates": [
+    {
+      "assetPath": "assets/models/Walnut tabletop.glb",
+      "reason": "Superseded by assets/models/contract/tabletop-wood-source.glb. Kept for visual/reference comparison."
+    },
+    {
+      "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
+      "reason": "Superseded by assets/models/contract/tabletop-live-edge-source.glb. Kept for visual/reference comparison."
+    },
+    {
+      "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+      "reason": "Superseded by assets/models/contract/tabletop-epoxy-source.glb. Kept for visual/reference comparison."
+    },
     {
       "assetPath": "assets/models/2x4_ Hourglass 28x28.glb",
       "reason": "Not referenced by data/viewer-models.json. Similar to active table-leg-hourglass-2x4-28Hx28W.glb but hash does not match."

@@ -112,6 +112,7 @@ function main() {
   const manifestAssets = collectManifestAssetPaths(manifest);
   const activeAssets = normalizeInventoryAssets(inventory, 'activeAssets');
   const runtimeCodeAssets = normalizeInventoryAssets(inventory, 'runtimeCodeAssets');
+  const referenceAssets = normalizeInventoryAssets(inventory, 'referenceAssets');
   const legacyCandidates = normalizeInventoryAssets(inventory, 'legacyCandidates');
   const activeInventoryPaths = new Set(activeAssets.map((entry) => entry.assetPath));
 
@@ -130,6 +131,7 @@ function main() {
   });
 
   runtimeCodeAssets.forEach((entry) => assertAssetExists(entry.assetPath, errors));
+  referenceAssets.forEach((entry) => assertAssetExists(entry.assetPath, errors));
 
   legacyCandidates.forEach((entry) => {
     assertAssetExists(entry.assetPath, errors);
@@ -146,7 +148,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Viewer model validation passed: ${manifestAssets.size} manifest assets, ${runtimeCodeAssets.length} runtime-code assets, ${legacyCandidates.length} legacy candidates.`);
+  console.log(`Viewer model validation passed: ${manifestAssets.size} manifest assets, ${runtimeCodeAssets.length} runtime-code assets, ${referenceAssets.length} reference assets, ${legacyCandidates.length} legacy candidates.`);
 }
 
 main();

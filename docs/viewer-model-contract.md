@@ -8,12 +8,15 @@ This document defines the first-pass contract between exported GLB assets and th
 - `data/viewer-model-inventory.json` tracks active, runtime-code, and legacy-candidate assets.
 - `scripts/validate-viewer-models.mjs` validates manifest and inventory consistency.
 - Edge-profile geometry is currently disabled. Selected edge profiles still show the existing viewer support notice.
+- Contract tabletop implementation files live in `assets/models/contract/`.
+- Original tabletop GLBs are copied to `assets/models/reference-originals/` for comparison.
 
 ## Current Asset Audit Notes
 
-- `Walnut tabletop.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
-- `live-edge-walnut-river-tabletop.glb` has one node/mesh named `Tabletop`, one material, and no embedded images/textures.
-- `epoxy-edited-multi-grey.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
+- Original `Walnut tabletop.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
+- Original `live-edge-walnut-river-tabletop.glb` has one node/mesh named `Tabletop`, one material, and no embedded images/textures.
+- Original `epoxy-edited-multi-grey.glb` has one node/mesh named `Tabletop`, one material, one embedded image, and one texture.
+- The current contract GLBs preserve that geometry/material content but normalize Blender node transforms and rename the mesh/object/materials to stable contract names.
 - Because the tabletop and epoxy assets are finished single-mesh visual pieces, the viewer cannot safely infer separate slab pieces, island pieces, resin fill, or editable boundary loops from the GLBs alone.
 - The leg assets are more naturally separated into named bars/plates and are less risky for the current scaling/placement model.
 
