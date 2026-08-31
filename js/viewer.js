@@ -157,7 +157,25 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
   default: 1.2
 });
 const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
-const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
+const ROUNDED_CORNER_RADIUS_IN = 4;
+const ANGLED_CORNER_CUT_IN = 6;
+const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
+const CHAMFERED_EDGE_SIZE_IN = 0.25;
+const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
+const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
+const SQUOVAL_REFERENCE_WIDTH_RATIOS = Object.freeze([
+  [0, 1],
+  [0.1, 0.997],
+  [0.2, 0.991],
+  [0.3, 0.983],
+  [0.4, 0.97],
+  [0.5, 0.952],
+  [0.6, 0.926],
+  [0.7, 0.901],
+  [0.8, 0.872],
+  [0.9, 0.812],
+  [1, 0.26]
+]);
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -226,6 +244,7 @@ let legFinishDataPromise = null;
 let colorDataPromise = null;
 let finishDataPromise = null;
 let viewerDebugEnabled = false;
+let edgeProfileDebugStats = [];
 let debugAxisContainer = null;
 let debugAxisRenderer = null;
 let debugAxisScene = null;
@@ -1009,6 +1028,246 @@ function addUniqueShapePoint(points, x, y, tolerance = GLASS_TOP_LIVE_EDGE_POINT
   points.push(nextPoint);
 }
 
+function getSelectedCornerProfileAddon() {
+  const selectedAddons = getSelectedAddons();
+  if (selectedAddons.includes('addon-squoval')) return 'addon-squoval';
+  if (selectedAddons.includes('addon-rounded-corners')) return 'addon-rounded-corners';
+  if (selectedAddons.includes('addon-angled-corners')) return 'addon-angled-corners';
+  return null;
+}
+
+function hasSelectedChamferedEdgeProfile() {
+  return hasSelectedAddon(CHAMFERED_EDGE_ADDON_ID);
+}
+
+function interpolateSquovalWidthRatio(edgeProgress) {
+  const progress = THREE.MathUtils.clamp(Number(edgeProgress) || 0, 0, 1);
+  for (let index = 1; index < SQUOVAL_REFERENCE_WIDTH_RATIOS.length; index += 1) {
+    const [currentProgress, currentRatio] = SQUOVAL_REFERENCE_WIDTH_RATIOS[index];
+    const [previousProgress, previousRatio] = SQUOVAL_REFERENCE_WIDTH_RATIOS[index - 1];
+    if (progress > currentProgress) continue;
+    const range = currentProgress - previousProgress;
+    const interpolation = range > 0 ? (progress - previousProgress) / range : 0;
+    return THREE.MathUtils.lerp(previousRatio, currentRatio, interpolation);
+  }
+  return SQUOVAL_REFERENCE_WIDTH_RATIOS[SQUOVAL_REFERENCE_WIDTH_RATIOS.length - 1][1];
+}
+
+function getProfileMaxAbsX(profileAddonId, absZ, halfWidth, halfLength, unitsPerInch, scale) {
+  if (!profileAddonId || !Number.isFinite(absZ) || !Number.isFinite(halfWidth) || !Number.isFinite(halfLength)) return halfWidth;
+  if (halfWidth <= 0 || halfLength <= 0) return halfWidth;
+
+  if (profileAddonId === 'addon-squoval') {
+    const edgeProgress = THREE.MathUtils.clamp(absZ / halfLength, 0, 1);
+    return Math.max(halfWidth * interpolateSquovalWidthRatio(edgeProgress), halfWidth * 0.12);
+  }
+
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const radiusUnits = (profileAddonId === 'addon-rounded-corners' ? ROUNDED_CORNER_RADIUS_IN : ANGLED_CORNER_CUT_IN)
+    * unitsPerInch;
+  const radiusX = THREE.MathUtils.clamp(radiusUnits / scaleX, 0, halfWidth);
+  const radiusZ = THREE.MathUtils.clamp(radiusUnits / scaleZ, 0, halfLength);
+  const cornerStartZ = halfLength - radiusZ;
+  if (absZ <= cornerStartZ) return halfWidth;
+
+  const cornerProgressZ = absZ - cornerStartZ;
+  if (profileAddonId === 'addon-angled-corners') {
+    const progress = radiusZ > 0 ? THREE.MathUtils.clamp(cornerProgressZ / radiusZ, 0, 1) : 1;
+    return Math.max(halfWidth - (radiusX * progress), 0);
+  }
+
+  if (radiusX <= 0 || radiusZ <= 0) return halfWidth;
+  const normalizedZ = THREE.MathUtils.clamp(cornerProgressZ / radiusZ, 0, 1);
+  return Math.max(halfWidth - radiusX + (radiusX * Math.sqrt(Math.max(0, 1 - (normalizedZ * normalizedZ)))), 0);
+}
+
+function captureEdgeProfileMeshState(mesh, partRoot) {
+  const geometry = mesh && mesh.geometry;
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!mesh || !partRoot || !geometry || !positionAttribute) return null;
+
+  const expectedPositionLength = positionAttribute.count * 3;
+  const existingState = mesh.userData && mesh.userData.edgeProfileBaseState;
+  if (existingState && existingState.positions && existingState.positions.length === expectedPositionLength) return existingState;
+
+  partRoot.updateWorldMatrix(true, true);
+  mesh.updateWorldMatrix(true, false);
+  const meshToPartMatrix = partRoot.matrixWorld.clone().invert().multiply(mesh.matrixWorld);
+  const partToMeshMatrix = mesh.matrixWorld.clone().invert().multiply(partRoot.matrixWorld);
+  const meshPosition = new THREE.Vector3();
+  const partPosition = new THREE.Vector3();
+  const positions = cloneVector3AttributeValues(positionAttribute);
+  const partPositions = new Float32Array(expectedPositionLength);
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    meshPosition.fromBufferAttribute(positionAttribute, index);
+    partPosition.copy(meshPosition).applyMatrix4(meshToPartMatrix);
+    const offset = index * 3;
+    partPositions[offset] = partPosition.x;
+    partPositions[offset + 1] = partPosition.y;
+    partPositions[offset + 2] = partPosition.z;
+  }
+
+  mesh.userData.edgeProfileBaseState = {
+    positions,
+    partPositions,
+    partToMeshMatrix: partToMeshMatrix.clone()
+  };
+  return mesh.userData.edgeProfileBaseState;
+}
+
+function restoreEdgeProfileMeshState(mesh) {
+  const stateData = mesh && mesh.userData && mesh.userData.edgeProfileBaseState;
+  const positionAttribute = mesh && mesh.geometry && mesh.geometry.getAttribute('position');
+  if (!stateData || !positionAttribute) return false;
+  const restored = restoreVector3AttributeValues(positionAttribute, stateData.positions);
+  if (restored) {
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+    if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
+  }
+  return restored;
+}
+
+function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
+  if (!partRoot || !baseState || !baseState.metrics) return;
+
+  const profileAddonId = getSelectedCornerProfileAddon();
+  const hasChamferedEdgeProfile = hasSelectedChamferedEdgeProfile();
+  const debugStat = {
+    partName: partRoot.name || '',
+    profile: `${profileAddonId || 'standard'}+${hasChamferedEdgeProfile ? 'chamfered' : 'square'}`,
+    meshCount: 0,
+    changedVertices: 0
+  };
+  const meshStates = [];
+  const localBounds = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minY: Infinity,
+    maxY: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity
+  };
+
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!positionAttribute) return;
+
+    const baseMeshState = captureEdgeProfileMeshState(child, partRoot);
+    if (!baseMeshState) return;
+    restoreEdgeProfileMeshState(child);
+    meshStates.push({ mesh: child, baseMeshState, positionAttribute });
+    debugStat.meshCount += 1;
+
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      const offset = index * 3;
+      const baseX = baseMeshState.partPositions[offset];
+      const baseY = baseMeshState.partPositions[offset + 1];
+      const baseZ = baseMeshState.partPositions[offset + 2];
+      localBounds.minX = Math.min(localBounds.minX, baseX);
+      localBounds.maxX = Math.max(localBounds.maxX, baseX);
+      localBounds.minY = Math.min(localBounds.minY, baseY);
+      localBounds.maxY = Math.max(localBounds.maxY, baseY);
+      localBounds.minZ = Math.min(localBounds.minZ, baseZ);
+      localBounds.maxZ = Math.max(localBounds.maxZ, baseZ);
+    }
+  });
+
+  if ((!profileAddonId && !hasChamferedEdgeProfile) || !meshStates.length) {
+    edgeProfileDebugStats.push(debugStat);
+    return;
+  }
+
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || halfWidth <= 0 || halfLength <= 0) return;
+
+  const meshPosition = new THREE.Vector3();
+  const adjustedPartPosition = new THREE.Vector3();
+  const scaleX = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleY = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.y) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const chamferInsetX = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleX : 0;
+  const chamferInsetY = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleY : 0;
+  const chamferInsetZ = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleZ : 0;
+  let changed = false;
+
+  meshStates.forEach(({ mesh, baseMeshState, positionAttribute }) => {
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      const offset = index * 3;
+      const baseX = baseMeshState.partPositions[offset];
+      const baseY = baseMeshState.partPositions[offset + 1];
+      const baseZ = baseMeshState.partPositions[offset + 2];
+      let adjustedX = baseX;
+      let adjustedY = baseY;
+      let adjustedZ = baseZ;
+      let relativeX = adjustedX - centerX;
+      let relativeZ = adjustedZ - centerZ;
+
+      if (profileAddonId) {
+        const sideProgress = halfWidth > 0 ? Math.abs(relativeX) / halfWidth : 0;
+        if (sideProgress >= EDGE_PROFILE_SIDE_VERTEX_THRESHOLD) {
+          const maxAbsX = getProfileMaxAbsX(profileAddonId, Math.abs(relativeZ), halfWidth, halfLength, unitsPerInch, partRoot.scale);
+          if (Number.isFinite(maxAbsX) && Math.abs(relativeX) > maxAbsX) {
+            adjustedX = centerX + (Math.sign(relativeX || 1) * maxAbsX);
+            relativeX = adjustedX - centerX;
+          }
+        }
+      }
+
+      if (hasChamferedEdgeProfile && chamferInsetY > 0) {
+        const topDistance = localBounds.maxY - baseY;
+        const topFactor = THREE.MathUtils.clamp(1 - (topDistance / chamferInsetY), 0, 1);
+        if (topFactor > 0) {
+          const maxAbsX = getProfileMaxAbsX(profileAddonId, Math.abs(relativeZ), halfWidth, halfLength, unitsPerInch, partRoot.scale);
+          const sideDistance = Number.isFinite(maxAbsX) ? maxAbsX - Math.abs(relativeX) : Infinity;
+          const endDistance = halfLength - Math.abs(relativeZ);
+          const sideFactor = chamferInsetX > 0
+            ? THREE.MathUtils.clamp(1 - (sideDistance / chamferInsetX), 0, 1)
+            : 0;
+          const endFactor = chamferInsetZ > 0
+            ? THREE.MathUtils.clamp(1 - (endDistance / chamferInsetZ), 0, 1)
+            : 0;
+
+          if (sideFactor > 0 && Math.abs(relativeX) > EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+            adjustedX -= Math.sign(relativeX) * chamferInsetX * sideFactor * topFactor;
+          }
+          if (endFactor > 0 && Math.abs(relativeZ) > EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+            adjustedZ -= Math.sign(relativeZ) * chamferInsetZ * endFactor * topFactor;
+          }
+        }
+      }
+
+      if (
+        Math.abs(adjustedX - baseX) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE &&
+        Math.abs(adjustedY - baseY) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE &&
+        Math.abs(adjustedZ - baseZ) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE
+      ) {
+        continue;
+      }
+
+      adjustedPartPosition.set(adjustedX, adjustedY, adjustedZ);
+      meshPosition.copy(adjustedPartPosition).applyMatrix4(baseMeshState.partToMeshMatrix);
+      positionAttribute.setXYZ(index, meshPosition.x, meshPosition.y, meshPosition.z);
+      debugStat.changedVertices += 1;
+      changed = true;
+    }
+
+    positionAttribute.needsUpdate = true;
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+    if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
+  });
+
+  if (changed) partRoot.updateWorldMatrix(true, true);
+  edgeProfileDebugStats.push(debugStat);
+}
+
 function replaceGlassMeshGeometry(glassMesh, nextGeometry, geometryMode) {
   if (!glassMesh || !nextGeometry) return;
 
@@ -1114,11 +1373,12 @@ function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, p
   return glassGeometry;
 }
 
-function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY) {
+function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics) return;
 
   partRoot.scale.x = baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
   partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
+  applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch);
 
   const metrics = getObjectMetrics(partRoot);
   if (!metrics) return;
@@ -1132,7 +1392,7 @@ function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersi
   partRoot.position.y += desiredUnderside - metrics.min.y;
 }
 
-function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot) {
+function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics || !tabletopMetrics) return;
 
   const liveEdgeResinFit = getLiveEdgeResinFit(tabletopRoot, tabletopMetrics);
@@ -1145,6 +1405,7 @@ function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, t
     ? baseState.scale.x * (targetEpoxyWidth / epoxyBaseWidth)
     : baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
   partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
+  applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch);
 
   const tabletopThickness = getPartSpan(tabletopMetrics, 'y');
   const epoxyBaseThickness = getPartSpan(baseState.metrics, 'y');
@@ -2064,6 +2325,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   let tabletopMetrics = null;
   let epoxyMetrics = null;
   let tabletopRoot = null;
+  edgeProfileDebugStats = [];
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -2079,13 +2341,13 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     if (role === 'waterfall' || partName === WATERFALL_PART_NAME) return;
 
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
-      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
+      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot, unitsPerInch);
       epoxyMetrics = getObjectMetrics(partRoot);
       return;
     }
 
-    if (role === 'tabletop' || partName.startsWith('tabletop')) {
-      computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY);
+    if (role === 'tabletop' || partName === 'tabletop') {
+      computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY, unitsPerInch);
       if (partName === 'tabletop') {
         tabletopRoot = partRoot;
         tabletopMetrics = getObjectMetrics(partRoot);
@@ -3097,7 +3359,8 @@ function installViewerDebugConsoleApi() {
     enable: () => setViewerDebugMode(true),
     disable: () => setViewerDebugMode(false),
     toggle: () => setViewerDebugMode(!viewerDebugEnabled),
-    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled()
+    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled(),
+    getEdgeProfileStats: () => edgeProfileDebugStats.map((entry) => ({ ...entry }))
   };
 }
 
@@ -3364,17 +3627,6 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       'Waterfall art',
       'Waterfall art is quoted to spec and is not shown in the standard viewer.',
       getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
-    );
-  }
-  if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
-    const edgeProfileNames = selectedAddons
-      .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
-      .map((addonId) => getOptionDisplayName('addon', addonId, 'Edge profile'));
-    pushViewerNotice(
-      notices,
-      'Edge profile',
-      'Edge profile changes are not modeled in the local viewer yet.',
-      edgeProfileNames
     );
   }
   if (

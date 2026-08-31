@@ -1633,7 +1633,9 @@ async function exportPdf() {
   addTechRow('Estimated Total Weight', formatWeight(estimatedTotalWeight));
   addTechRow('Tabletop Thickness', tabletopThicknessLabel);
   addTechRow('Edge Roundness', '<1/16" (1.5mm)');
+  if (addons.includes('addon-chamfered-edges')) addTechRow('Chamfered Edges', '0.25 in at 45 degrees');
   if (addons.includes('addon-rounded-corners')) addTechRow('Rounded Corners', '4 in radius');
+  if (addons.includes('addon-squoval')) addTechRow('Squoval Profile', '36 in x 60 in reference-proportioned tapered squoval, scaled to selected tabletop dimensions');
   if (addons.includes('addon-angled-corners')) addTechRow('Angled Corners', 'TBD');
   if (waterfallCount > 0) {
     const dropLabel = Number.isFinite(height) ? formatInches(height) : 'TBD';
