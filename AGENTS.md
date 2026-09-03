@@ -156,6 +156,7 @@ The datecoded branch should branch from the version branch, not directly from `m
 
 After completing any requested edit to the app:
 - Increment the `Edit ver:` number in the console.log line immediately after the timestamp by **1**.
+- Treat `Edit ver:` numbers as local to the current branch. Do not try to reconcile, renumber, or keep them monotonic across separate release/dev branches; use them only to track what changed on the branch being edited.
 - If you are a CLINE agent, update the `Last updated:` timestamp in `js/main.js` (the console.log line after “WoodLab Configurator loaded successfully”) in format `YYYY-MM-DD HH:MM` using the current local time from the system clock. If not, don't modify the timestamp. (this rule applies to cline rules, not github copilot or other agennts) 
 
 ---
