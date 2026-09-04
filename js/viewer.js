@@ -163,19 +163,8 @@ const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
 const CHAMFERED_EDGE_SIZE_IN = 0.25;
 const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
 const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
-const SQUOVAL_REFERENCE_WIDTH_RATIOS = Object.freeze([
-  [0, 1],
-  [0.1, 0.997],
-  [0.2, 0.991],
-  [0.3, 0.983],
-  [0.4, 0.97],
-  [0.5, 0.952],
-  [0.6, 0.926],
-  [0.7, 0.901],
-  [0.8, 0.872],
-  [0.9, 0.812],
-  [1, 0.26]
-]);
+const CHAMFER_PREVIEW_MESH_NAME = 'tabletop-chamfer-preview';
+const CHAMFER_PREVIEW_MIN_THICKNESS = 0.0001;
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -1115,7 +1104,6 @@ function addUniqueShapePoint(points, x, y, tolerance = GLASS_TOP_LIVE_EDGE_POINT
 
 function getSelectedCornerProfileAddon() {
   const selectedAddons = getSelectedAddons();
-  if (selectedAddons.includes('addon-squoval')) return 'addon-squoval';
   if (selectedAddons.includes('addon-rounded-corners')) return 'addon-rounded-corners';
   if (selectedAddons.includes('addon-angled-corners')) return 'addon-angled-corners';
   return null;
@@ -1125,27 +1113,13 @@ function hasSelectedChamferedEdgeProfile() {
   return hasSelectedAddon(CHAMFERED_EDGE_ADDON_ID);
 }
 
-function interpolateSquovalWidthRatio(edgeProgress) {
-  const progress = THREE.MathUtils.clamp(Number(edgeProgress) || 0, 0, 1);
-  for (let index = 1; index < SQUOVAL_REFERENCE_WIDTH_RATIOS.length; index += 1) {
-    const [currentProgress, currentRatio] = SQUOVAL_REFERENCE_WIDTH_RATIOS[index];
-    const [previousProgress, previousRatio] = SQUOVAL_REFERENCE_WIDTH_RATIOS[index - 1];
-    if (progress > currentProgress) continue;
-    const range = currentProgress - previousProgress;
-    const interpolation = range > 0 ? (progress - previousProgress) / range : 0;
-    return THREE.MathUtils.lerp(previousRatio, currentRatio, interpolation);
-  }
-  return SQUOVAL_REFERENCE_WIDTH_RATIOS[SQUOVAL_REFERENCE_WIDTH_RATIOS.length - 1][1];
+function isChamferEditablePart(partRoot) {
+  return partRoot && partRoot.name === 'tabletop';
 }
 
 function getProfileMaxAbsX(profileAddonId, absZ, halfWidth, halfLength, unitsPerInch, scale) {
   if (!profileAddonId || !Number.isFinite(absZ) || !Number.isFinite(halfWidth) || !Number.isFinite(halfLength)) return halfWidth;
   if (halfWidth <= 0 || halfLength <= 0) return halfWidth;
-
-  if (profileAddonId === 'addon-squoval') {
-    const edgeProgress = THREE.MathUtils.clamp(absZ / halfLength, 0, 1);
-    return Math.max(halfWidth * interpolateSquovalWidthRatio(edgeProgress), halfWidth * 0.12);
-  }
 
   const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
   const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
@@ -1165,6 +1139,125 @@ function getProfileMaxAbsX(profileAddonId, absZ, halfWidth, halfLength, unitsPer
   if (radiusX <= 0 || radiusZ <= 0) return halfWidth;
   const normalizedZ = THREE.MathUtils.clamp(cornerProgressZ / radiusZ, 0, 1);
   return Math.max(halfWidth - radiusX + (radiusX * Math.sqrt(Math.max(0, 1 - (normalizedZ * normalizedZ)))), 0);
+}
+
+function removeChamferPreviewMesh(partRoot) {
+  if (!partRoot) return;
+  const previewMesh = partRoot.getObjectByName(CHAMFER_PREVIEW_MESH_NAME);
+  if (!previewMesh) return;
+  partRoot.remove(previewMesh);
+  if (previewMesh.geometry && typeof previewMesh.geometry.dispose === 'function') previewMesh.geometry.dispose();
+  if (previewMesh.material && previewMesh.material.userData?.edgeProfileChamferPreview) disposeMaterial(previewMesh.material);
+}
+
+function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  if (profileAddonId === 'addon-angled-corners') {
+    const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+    const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+    const cutX = THREE.MathUtils.clamp((ANGLED_CORNER_CUT_IN * unitsPerInch) / scaleX, 0, halfWidth);
+    const cutZ = THREE.MathUtils.clamp((ANGLED_CORNER_CUT_IN * unitsPerInch) / scaleZ, 0, halfLength);
+    return [
+      { x: halfWidth - cutX, z: -halfLength },
+      { x: halfWidth, z: -halfLength + cutZ },
+      { x: halfWidth, z: halfLength - cutZ },
+      { x: halfWidth - cutX, z: halfLength },
+      { x: -halfWidth + cutX, z: halfLength },
+      { x: -halfWidth, z: halfLength - cutZ },
+      { x: -halfWidth, z: -halfLength + cutZ },
+      { x: -halfWidth + cutX, z: -halfLength }
+    ];
+  }
+
+  return [
+    { x: halfWidth, z: -halfLength },
+    { x: halfWidth, z: halfLength },
+    { x: -halfWidth, z: halfLength },
+    { x: -halfWidth, z: -halfLength }
+  ];
+}
+
+function insetChamferFootprintPoint(point, insetX, insetZ) {
+  return {
+    x: point.x - (Math.sign(point.x || 1) * insetX),
+    z: point.z - (Math.sign(point.z || 1) * insetZ)
+  };
+}
+
+function pushChamferQuad(vertices, firstTop, secondTop, secondLower, firstLower) {
+  [
+    firstTop, secondTop, secondLower,
+    firstTop, secondLower, firstLower
+  ].forEach((point) => {
+    vertices.push(point.x, point.y, point.z);
+  });
+}
+
+function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch, scale) {
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  const thickness = localBounds.maxY - localBounds.minY;
+  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || !Number.isFinite(thickness)) return null;
+  if (halfWidth <= 0 || halfLength <= 0 || thickness <= CHAMFER_PREVIEW_MIN_THICKNESS) return null;
+
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleY = Math.max(Math.abs(Number(scale && scale.y) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const insetX = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleX, 0, halfWidth * 0.18);
+  const insetY = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleY, CHAMFER_PREVIEW_MIN_THICKNESS, thickness * 0.45);
+  const insetZ = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleZ, 0, halfLength * 0.18);
+  if (insetX <= 0 && insetZ <= 0) return null;
+
+  const outerPoints = getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+  const innerPoints = outerPoints.map((point) => insetChamferFootprintPoint(point, insetX, insetZ));
+  const vertices = [];
+  const topY = localBounds.maxY;
+  const lowerY = Math.max(localBounds.minY, localBounds.maxY - insetY);
+
+  outerPoints.forEach((outerPoint, index) => {
+    const nextIndex = (index + 1) % outerPoints.length;
+    const nextOuterPoint = outerPoints[nextIndex];
+    const innerPoint = innerPoints[index];
+    const nextInnerPoint = innerPoints[nextIndex];
+    pushChamferQuad(
+      vertices,
+      { x: centerX + innerPoint.x, y: topY, z: centerZ + innerPoint.z },
+      { x: centerX + nextInnerPoint.x, y: topY, z: centerZ + nextInnerPoint.z },
+      { x: centerX + nextOuterPoint.x, y: lowerY, z: centerZ + nextOuterPoint.z },
+      { x: centerX + outerPoint.x, y: lowerY, z: centerZ + outerPoint.z }
+    );
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch) {
+  if (!partRoot || !localBounds) return false;
+  const geometry = createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch, partRoot.scale);
+  if (!geometry) return false;
+  const sourceMaterial = getFirstMeshMaterial(partRoot);
+  const material = sourceMaterial && typeof sourceMaterial.clone === 'function'
+    ? cloneReusableMaterial(sourceMaterial)
+    : new THREE.MeshStandardMaterial({ color: 0x8b5a36, roughness: 0.62 });
+  material.userData = {
+    ...(material.userData || {}),
+    edgeProfileChamferPreview: true
+  };
+  if ('side' in material) material.side = THREE.DoubleSide;
+  material.needsUpdate = true;
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = CHAMFER_PREVIEW_MESH_NAME;
+  mesh.renderOrder = 2;
+  mesh.userData.edgeProfileChamferPreview = true;
+  partRoot.add(mesh);
+  return true;
 }
 
 function captureEdgeProfileMeshState(mesh, partRoot) {
@@ -1217,9 +1310,10 @@ function restoreEdgeProfileMeshState(mesh) {
 
 function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics) return;
+  removeChamferPreviewMesh(partRoot);
 
   const profileAddonId = getSelectedCornerProfileAddon();
-  const hasChamferedEdgeProfile = hasSelectedChamferedEdgeProfile();
+  const hasChamferedEdgeProfile = hasSelectedChamferedEdgeProfile() && isChamferEditablePart(partRoot);
   const debugStat = {
     partName: partRoot.name || '',
     profile: `${profileAddonId || 'standard'}+${hasChamferedEdgeProfile ? 'chamfered' : 'square'}`,
@@ -1349,7 +1443,11 @@ function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
     if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
   });
 
-  if (changed) partRoot.updateWorldMatrix(true, true);
+  if (hasChamferedEdgeProfile && addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch)) {
+    debugStat.chamferPreview = true;
+  }
+
+  if (changed || debugStat.chamferPreview) partRoot.updateWorldMatrix(true, true);
   edgeProfileDebugStats.push(debugStat);
 }
 
@@ -3718,6 +3816,14 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
+  if (selectedAddons.includes('addon-squoval')) {
+    pushViewerNotice(
+      notices,
+      'Squoval design',
+      'Squoval changes the tabletop footprint and needs a dedicated tabletop source model before it can be shown accurately.',
+      getOptionDisplayName('addon', 'addon-squoval', 'Squoval')
+    );
+  }
   if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
     pushViewerNotice(
       notices,

@@ -7,7 +7,7 @@ This document defines the first-pass contract between exported GLB assets and th
 - `data/viewer-models.json` remains the runtime manifest.
 - `data/viewer-model-inventory.json` tracks active, runtime-code, and legacy-candidate assets.
 - `scripts/validate-viewer-models.mjs` validates manifest and inventory consistency.
-- Rounded, angled, and squoval edge profiles use a material mask preview. Chamfered edges still show the existing viewer support notice.
+- Rounded and angled edge profiles use a material mask preview. Chamfered edges use an exterior tabletop bevel preview. Squoval is tracked as a future design/model path.
 - Contract tabletop implementation files live in `assets/models/contract/`.
 - Original tabletop GLBs are copied to `assets/models/reference-originals/` for comparison.
 
@@ -47,7 +47,9 @@ The contract assumes this coordinate basis:
 
 ## Edge Editing Rules
 
-The current contract uses material-space clipping for rounded, angled, and squoval previews. This preserves the existing mesh vertices and UV layout, so wood and epoxy texture placement should not move when an edge profile is selected.
+The current contract uses material-space clipping for rounded and angled previews. Chamfered edges may add exterior bevel preview geometry to the wood tabletop, but must not replace the tabletop source meshes or edit the epoxy river's interior boundaries.
+
+TODO: Move Squoval out of runtime edge modifiers and into a dedicated design/model path with its own tabletop source asset or exported footprint metadata. Squoval changes the 2D tabletop silhouette, so it should not be implemented as a small edge treatment on the standard slab.
 
 Before enabling true cut-face/side-wall geometry, the source assets need one of these supported paths:
 

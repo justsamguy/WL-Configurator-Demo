@@ -167,12 +167,12 @@
         }
       },
       "edgeEditing": {
-        "status": "material-mask-preview",
+        "status": "outer-boundary-preview",
         "editablePartNames": ["tabletop", "tabletop-epoxy", "tabletop-glass", "tabletop-waterfall"],
         "allowedOperation": "outer-boundary-only",
         "preserveInteriorLayout": true,
         "preserveTopSurfaceUvs": true,
-        "supportedAddonIds": ["addon-squoval", "addon-rounded-corners", "addon-angled-corners"]
+        "supportedAddonIds": ["addon-chamfered-edges", "addon-rounded-corners", "addon-angled-corners"]
       }
     },
     "dimensionRules": {
