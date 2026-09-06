@@ -84,6 +84,7 @@ const CUBE_EDGE_SETBACK_IN = 0.25;
 const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
 const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
 const EPOXY_VERTICAL_INSET = 0.0015;
+const EDGE_PROFILE_RESIN_SURFACE_LIFT = 0.002;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const WATERFALL_PART_NAME = 'tabletop-waterfall';
@@ -1128,6 +1129,10 @@ function hasSelectedChamferedEdgeProfile() {
   return hasSelectedAddon(CHAMFERED_EDGE_ADDON_ID);
 }
 
+function hasSelectedTabletopEdgeProfile() {
+  return Boolean(getSelectedCornerProfileAddon() || hasSelectedChamferedEdgeProfile());
+}
+
 function isChamferEditablePart(partRoot) {
   return partRoot && partRoot.name === 'tabletop';
 }
@@ -1255,13 +1260,35 @@ function insetChamferFootprintPoint(point, insetX, insetZ) {
   };
 }
 
-function pushChamferQuad(vertices, firstTop, secondTop, secondLower, firstLower) {
+function getEdgeProfileUv(point, localBounds) {
+  const spanX = Math.max(localBounds.maxX - localBounds.minX, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const spanY = Math.max(localBounds.maxY - localBounds.minY, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const spanZ = Math.max(localBounds.maxZ - localBounds.minZ, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  return {
+    x: (point.x - localBounds.minX) / spanX,
+    y: (point.y - localBounds.minY) / spanY,
+    z: (point.z - localBounds.minZ) / spanZ
+  };
+}
+
+function pushEdgeProfileVertex(vertices, uvs, point, uv) {
+  vertices.push(point.x, point.y, point.z);
+  uvs.push(uv.u, uv.v);
+}
+
+function pushChamferQuad(vertices, uvs, localBounds, firstTop, secondTop, secondLower, firstLower) {
+  const firstTopUv = getEdgeProfileUv(firstTop, localBounds);
+  const secondTopUv = getEdgeProfileUv(secondTop, localBounds);
+  const secondLowerUv = getEdgeProfileUv(secondLower, localBounds);
+  const firstLowerUv = getEdgeProfileUv(firstLower, localBounds);
   [
-    firstTop, secondTop, secondLower,
-    firstTop, secondLower, firstLower
-  ].forEach((point) => {
-    vertices.push(point.x, point.y, point.z);
-  });
+    { point: firstTop, uv: { u: firstTopUv.x, v: firstTopUv.z } },
+    { point: secondTop, uv: { u: secondTopUv.x, v: secondTopUv.z } },
+    { point: secondLower, uv: { u: secondLowerUv.x, v: secondLowerUv.z } },
+    { point: firstTop, uv: { u: firstTopUv.x, v: firstTopUv.z } },
+    { point: secondLower, uv: { u: secondLowerUv.x, v: secondLowerUv.z } },
+    { point: firstLower, uv: { u: firstLowerUv.x, v: firstLowerUv.z } }
+  ].forEach(({ point, uv }) => pushEdgeProfileVertex(vertices, uvs, point, uv));
 }
 
 function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch, scale) {
@@ -1284,6 +1311,7 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
   const outerPoints = getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
   const innerPoints = outerPoints.map((point) => insetChamferFootprintPoint(point, insetX, insetZ));
   const vertices = [];
+  const uvs = [];
   const topY = localBounds.maxY;
   const lowerY = Math.max(localBounds.minY, localBounds.maxY - insetY);
 
@@ -1294,6 +1322,8 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
     const nextInnerPoint = innerPoints[nextIndex];
     pushChamferQuad(
       vertices,
+      uvs,
+      localBounds,
       { x: centerX + innerPoint.x, y: topY, z: centerZ + innerPoint.z },
       { x: centerX + nextInnerPoint.x, y: topY, z: centerZ + nextInnerPoint.z },
       { x: centerX + nextOuterPoint.x, y: lowerY, z: centerZ + nextOuterPoint.z },
@@ -1303,6 +1333,7 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -1324,6 +1355,7 @@ function createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerI
   const topY = localBounds.maxY;
   const bottomY = localBounds.minY;
   const vertices = [];
+  const uvs = [];
   const topCenter = { x: centerX, y: topY, z: centerZ };
   const bottomCenter = { x: centerX, y: bottomY, z: centerZ };
   const points = footprintPoints.map((point) => ({
@@ -1333,24 +1365,46 @@ function createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerI
 
   points.forEach((point, index) => {
     const nextPoint = points[(index + 1) % points.length];
-    vertices.push(topCenter.x, topCenter.y, topCenter.z);
-    vertices.push(point.x, topY, point.z);
-    vertices.push(nextPoint.x, topY, nextPoint.z);
+    const topPoint = { x: point.x, y: topY, z: point.z };
+    const nextTopPoint = { x: nextPoint.x, y: topY, z: nextPoint.z };
+    const bottomPoint = { x: point.x, y: bottomY, z: point.z };
+    const nextBottomPoint = { x: nextPoint.x, y: bottomY, z: nextPoint.z };
+    const topCenterUv = getEdgeProfileUv(topCenter, localBounds);
+    const bottomCenterUv = getEdgeProfileUv(bottomCenter, localBounds);
+    const topPointUv = getEdgeProfileUv(topPoint, localBounds);
+    const nextTopPointUv = getEdgeProfileUv(nextTopPoint, localBounds);
+    const bottomPointUv = getEdgeProfileUv(bottomPoint, localBounds);
+    const nextBottomPointUv = getEdgeProfileUv(nextBottomPoint, localBounds);
 
-    vertices.push(bottomCenter.x, bottomCenter.y, bottomCenter.z);
-    vertices.push(nextPoint.x, bottomY, nextPoint.z);
-    vertices.push(point.x, bottomY, point.z);
+    pushEdgeProfileVertex(vertices, uvs, topCenter, { u: topCenterUv.x, v: topCenterUv.z });
+    pushEdgeProfileVertex(vertices, uvs, topPoint, { u: topPointUv.x, v: topPointUv.z });
+    pushEdgeProfileVertex(vertices, uvs, nextTopPoint, { u: nextTopPointUv.x, v: nextTopPointUv.z });
 
-    vertices.push(point.x, topY, point.z);
-    vertices.push(point.x, bottomY, point.z);
-    vertices.push(nextPoint.x, bottomY, nextPoint.z);
-    vertices.push(point.x, topY, point.z);
-    vertices.push(nextPoint.x, bottomY, nextPoint.z);
-    vertices.push(nextPoint.x, topY, nextPoint.z);
+    pushEdgeProfileVertex(vertices, uvs, bottomCenter, { u: bottomCenterUv.x, v: bottomCenterUv.z });
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, { u: nextBottomPointUv.x, v: nextBottomPointUv.z });
+    pushEdgeProfileVertex(vertices, uvs, bottomPoint, { u: bottomPointUv.x, v: bottomPointUv.z });
+
+    const sideUv = Math.abs(nextPoint.x - point.x) >= Math.abs(nextPoint.z - point.z)
+      ? (sidePoint) => {
+        const pointUv = getEdgeProfileUv(sidePoint, localBounds);
+        return { u: pointUv.x, v: pointUv.y };
+      }
+      : (sidePoint) => {
+        const pointUv = getEdgeProfileUv(sidePoint, localBounds);
+        return { u: pointUv.z, v: pointUv.y };
+      };
+
+    pushEdgeProfileVertex(vertices, uvs, topPoint, sideUv(topPoint));
+    pushEdgeProfileVertex(vertices, uvs, bottomPoint, sideUv(bottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, sideUv(nextBottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, topPoint, sideUv(topPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, sideUv(nextBottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextTopPoint, sideUv(nextTopPoint));
   });
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -1381,7 +1435,6 @@ function addEdgeProfilePreviewMesh(partRoot, localBounds, profileAddonId, unitsP
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = EDGE_PROFILE_PREVIEW_MESH_NAME;
-  mesh.renderOrder = 1;
   mesh.userData.edgeProfilePreview = true;
   partRoot.add(mesh);
   return true;
@@ -1404,7 +1457,6 @@ function addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerIn
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = CHAMFER_PREVIEW_MESH_NAME;
-  mesh.renderOrder = 2;
   mesh.userData.edgeProfileChamferPreview = true;
   partRoot.add(mesh);
   return true;
@@ -1763,6 +1815,9 @@ function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, t
     : tabletopMetrics.center.x - metrics.center.x;
   partRoot.position.z += tabletopMetrics.center.z - metrics.center.z;
   partRoot.position.y += (tabletopMetrics.min.y + EPOXY_VERTICAL_INSET) - metrics.min.y;
+  if (hasSelectedTabletopEdgeProfile()) {
+    partRoot.position.y += EDGE_PROFILE_RESIN_SURFACE_LIFT;
+  }
 }
 
 function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId = '') {
