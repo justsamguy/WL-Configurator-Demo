@@ -160,11 +160,13 @@ const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const ROUNDED_CORNER_RADIUS_IN = 4;
 const ANGLED_CORNER_CUT_IN = 6;
 const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
-const CHAMFERED_EDGE_SIZE_IN = 0.25;
+const CHAMFERED_EDGE_SIZE_IN = 0.5;
 const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
 const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
+const EDGE_PROFILE_PREVIEW_MESH_NAME = 'tabletop-edge-profile-preview';
 const CHAMFER_PREVIEW_MESH_NAME = 'tabletop-chamfer-preview';
 const CHAMFER_PREVIEW_MIN_THICKNESS = 0.0001;
+const ROUNDED_CORNER_SEGMENTS = 12;
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -805,8 +807,21 @@ function isVisibilityRuleSatisfied(scaleMap, visibilityRule) {
 
 function getObjectMetrics(root) {
   if (!root) return null;
-  const bounds = new THREE.Box3().setFromObject(root);
-  if (bounds.isEmpty()) return null;
+  const profilePreviewMesh = root.getObjectByName && root.getObjectByName(EDGE_PROFILE_PREVIEW_MESH_NAME);
+  let bounds = null;
+  if (profilePreviewMesh) {
+    root.updateWorldMatrix(true, true);
+    root.traverse((child) => {
+      if (!child || !child.isMesh || child.userData?.edgeProfilePreviewHidden) return;
+      const childBounds = new THREE.Box3().setFromObject(child);
+      if (childBounds.isEmpty()) return;
+      if (!bounds) bounds = childBounds.clone();
+      else bounds.union(childBounds);
+    });
+  } else {
+    bounds = new THREE.Box3().setFromObject(root);
+  }
+  if (!bounds || bounds.isEmpty()) return null;
   return {
     bounds,
     min: bounds.min.clone(),
@@ -1150,12 +1165,44 @@ function removeChamferPreviewMesh(partRoot) {
   if (previewMesh.material && previewMesh.material.userData?.edgeProfileChamferPreview) disposeMaterial(previewMesh.material);
 }
 
-function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
-  if (profileAddonId === 'addon-angled-corners') {
-    const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
-    const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
-    const cutX = THREE.MathUtils.clamp((ANGLED_CORNER_CUT_IN * unitsPerInch) / scaleX, 0, halfWidth);
-    const cutZ = THREE.MathUtils.clamp((ANGLED_CORNER_CUT_IN * unitsPerInch) / scaleZ, 0, halfLength);
+function restoreEdgeProfilePreviewHiddenMeshes(partRoot) {
+  if (!partRoot) return;
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.userData || !child.userData.edgeProfilePreviewHidden) return;
+    child.visible = child.userData.edgeProfilePreviewBaseVisible !== false;
+    delete child.userData.edgeProfilePreviewHidden;
+    delete child.userData.edgeProfilePreviewBaseVisible;
+  });
+}
+
+function removeEdgeProfilePreviewMesh(partRoot) {
+  if (!partRoot) return;
+  const previewMesh = partRoot.getObjectByName(EDGE_PROFILE_PREVIEW_MESH_NAME);
+  if (previewMesh) {
+    partRoot.remove(previewMesh);
+    if (previewMesh.geometry && typeof previewMesh.geometry.dispose === 'function') previewMesh.geometry.dispose();
+    if (previewMesh.material && previewMesh.material.userData?.edgeProfilePreview) disposeMaterial(previewMesh.material);
+  }
+  restoreEdgeProfilePreviewHiddenMeshes(partRoot);
+}
+
+function getCornerProfileInset(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  if (!profileAddonId) return null;
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const sizeInches = profileAddonId === 'addon-rounded-corners' ? ROUNDED_CORNER_RADIUS_IN : ANGLED_CORNER_CUT_IN;
+  return {
+    x: THREE.MathUtils.clamp((sizeInches * unitsPerInch) / scaleX, 0, halfWidth),
+    z: THREE.MathUtils.clamp((sizeInches * unitsPerInch) / scaleZ, 0, halfLength)
+  };
+}
+
+function getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  const inset = getCornerProfileInset(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+
+  if (profileAddonId === 'addon-angled-corners' && inset) {
+    const cutX = inset.x;
+    const cutZ = inset.z;
     return [
       { x: halfWidth - cutX, z: -halfLength },
       { x: halfWidth, z: -halfLength + cutZ },
@@ -1168,12 +1215,37 @@ function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsP
     ];
   }
 
+  if (profileAddonId === 'addon-rounded-corners' && inset && inset.x > 0 && inset.z > 0) {
+    const points = [];
+    const corners = [
+      { centerX: halfWidth - inset.x, centerZ: -halfLength + inset.z, start: -Math.PI / 2, end: 0 },
+      { centerX: halfWidth - inset.x, centerZ: halfLength - inset.z, start: 0, end: Math.PI / 2 },
+      { centerX: -halfWidth + inset.x, centerZ: halfLength - inset.z, start: Math.PI / 2, end: Math.PI },
+      { centerX: -halfWidth + inset.x, centerZ: -halfLength + inset.z, start: Math.PI, end: Math.PI * 1.5 }
+    ];
+    corners.forEach((corner) => {
+      for (let index = 0; index <= ROUNDED_CORNER_SEGMENTS; index += 1) {
+        const progress = index / ROUNDED_CORNER_SEGMENTS;
+        const angle = corner.start + ((corner.end - corner.start) * progress);
+        points.push({
+          x: corner.centerX + (Math.cos(angle) * inset.x),
+          z: corner.centerZ + (Math.sin(angle) * inset.z)
+        });
+      }
+    });
+    return points;
+  }
+
   return [
     { x: halfWidth, z: -halfLength },
     { x: halfWidth, z: halfLength },
     { x: -halfWidth, z: halfLength },
     { x: -halfWidth, z: -halfLength }
   ];
+}
+
+function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  return getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
 }
 
 function insetChamferFootprintPoint(point, insetX, insetZ) {
@@ -1235,6 +1307,84 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+function createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerInch, scale) {
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  const thickness = localBounds.maxY - localBounds.minY;
+  if (!profileAddonId || !Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || !Number.isFinite(thickness)) return null;
+  if (halfWidth <= 0 || halfLength <= 0 || thickness <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) return null;
+
+  const footprintPoints = getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+  if (!Array.isArray(footprintPoints) || footprintPoints.length < 3) return null;
+
+  const topY = localBounds.maxY;
+  const bottomY = localBounds.minY;
+  const vertices = [];
+  const topCenter = { x: centerX, y: topY, z: centerZ };
+  const bottomCenter = { x: centerX, y: bottomY, z: centerZ };
+  const points = footprintPoints.map((point) => ({
+    x: centerX + point.x,
+    z: centerZ + point.z
+  }));
+
+  points.forEach((point, index) => {
+    const nextPoint = points[(index + 1) % points.length];
+    vertices.push(topCenter.x, topCenter.y, topCenter.z);
+    vertices.push(point.x, topY, point.z);
+    vertices.push(nextPoint.x, topY, nextPoint.z);
+
+    vertices.push(bottomCenter.x, bottomCenter.y, bottomCenter.z);
+    vertices.push(nextPoint.x, bottomY, nextPoint.z);
+    vertices.push(point.x, bottomY, point.z);
+
+    vertices.push(point.x, topY, point.z);
+    vertices.push(point.x, bottomY, point.z);
+    vertices.push(nextPoint.x, bottomY, nextPoint.z);
+    vertices.push(point.x, topY, point.z);
+    vertices.push(nextPoint.x, bottomY, nextPoint.z);
+    vertices.push(nextPoint.x, topY, nextPoint.z);
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function addEdgeProfilePreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch) {
+  if (!partRoot || !localBounds || !profileAddonId) return false;
+  const geometry = createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerInch, partRoot.scale);
+  if (!geometry) return false;
+  const sourceMaterial = getFirstMeshMaterial(partRoot);
+  const material = sourceMaterial && typeof sourceMaterial.clone === 'function'
+    ? cloneReusableMaterial(sourceMaterial)
+    : new THREE.MeshStandardMaterial({ color: 0x8b5a36, roughness: 0.62 });
+  material.userData = {
+    ...(material.userData || {}),
+    edgeProfilePreview: true
+  };
+  if ('side' in material) material.side = THREE.DoubleSide;
+  material.needsUpdate = true;
+
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || child.name === EDGE_PROFILE_PREVIEW_MESH_NAME || child.name === CHAMFER_PREVIEW_MESH_NAME) return;
+    child.userData.edgeProfilePreviewHidden = true;
+    child.userData.edgeProfilePreviewBaseVisible = child.visible !== false;
+    child.visible = false;
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = EDGE_PROFILE_PREVIEW_MESH_NAME;
+  mesh.renderOrder = 1;
+  mesh.userData.edgeProfilePreview = true;
+  partRoot.add(mesh);
+  return true;
 }
 
 function addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch) {
@@ -1311,9 +1461,11 @@ function restoreEdgeProfileMeshState(mesh) {
 function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics) return;
   removeChamferPreviewMesh(partRoot);
+  removeEdgeProfilePreviewMesh(partRoot);
 
   const profileAddonId = getSelectedCornerProfileAddon();
   const hasChamferedEdgeProfile = hasSelectedChamferedEdgeProfile() && isChamferEditablePart(partRoot);
+  const usesGeneratedCornerProfile = Boolean(profileAddonId);
   const debugStat = {
     partName: partRoot.name || '',
     profile: `${profileAddonId || 'standard'}+${hasChamferedEdgeProfile ? 'chamfered' : 'square'}`,
@@ -1388,7 +1540,7 @@ function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
       let relativeX = adjustedX - centerX;
       let relativeZ = adjustedZ - centerZ;
 
-      if (profileAddonId) {
+      if (profileAddonId && !usesGeneratedCornerProfile) {
         const sideProgress = halfWidth > 0 ? Math.abs(relativeX) / halfWidth : 0;
         if (sideProgress >= EDGE_PROFILE_SIDE_VERTEX_THRESHOLD) {
           const maxAbsX = getProfileMaxAbsX(profileAddonId, Math.abs(relativeZ), halfWidth, halfLength, unitsPerInch, partRoot.scale);
@@ -1399,7 +1551,7 @@ function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
         }
       }
 
-      if (hasChamferedEdgeProfile && chamferInsetY > 0) {
+      if (hasChamferedEdgeProfile && !usesGeneratedCornerProfile && chamferInsetY > 0) {
         const topDistance = localBounds.maxY - baseY;
         const topFactor = THREE.MathUtils.clamp(1 - (topDistance / chamferInsetY), 0, 1);
         if (topFactor > 0) {
@@ -1442,6 +1594,10 @@ function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
     mesh.geometry.computeBoundingSphere();
     if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
   });
+
+  if (usesGeneratedCornerProfile && addEdgeProfilePreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch)) {
+    debugStat.edgeProfilePreview = true;
+  }
 
   if (hasChamferedEdgeProfile && addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch)) {
     debugStat.chamferPreview = true;
