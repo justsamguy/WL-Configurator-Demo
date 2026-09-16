@@ -6,6 +6,9 @@
         "role": "tabletop",
         "assetPath": "assets/models/contract/tabletop-wood-source.glb",
         "addonAssetPaths": {
+          "addon-chamfered-edges": "assets/models/contract/tabletop-wood-chamfered-source.glb",
+          "addon-rounded-corners": "assets/models/contract/tabletop-wood-rounded-corners-source.glb",
+          "addon-angled-corners": "assets/models/contract/tabletop-wood-angled-corners-source.glb",
           "addon-live-edge": {
             "assetPath": "assets/models/contract/tabletop-live-edge-source.glb",
             "materialSourceAssetPath": "assets/models/contract/tabletop-wood-source.glb",
@@ -167,12 +170,12 @@
         }
       },
       "edgeEditing": {
-        "status": "outer-boundary-preview",
-        "editablePartNames": ["tabletop", "tabletop-epoxy", "tabletop-glass", "tabletop-waterfall"],
-        "allowedOperation": "outer-boundary-only",
+        "status": "authored-geometry-only",
+        "editablePartNames": [],
+        "allowedOperation": "none",
         "preserveInteriorLayout": true,
         "preserveTopSurfaceUvs": true,
-        "supportedAddonIds": ["addon-chamfered-edges", "addon-rounded-corners", "addon-angled-corners"]
+        "supportedAddonIds": []
       }
     },
     "dimensionRules": {

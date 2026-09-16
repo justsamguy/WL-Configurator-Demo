@@ -98,11 +98,14 @@ function validateModelContract(manifest, errors) {
   const editablePartNames = Array.isArray(edgeEditing.editablePartNames)
     ? edgeEditing.editablePartNames
     : [];
-  ['tabletop', 'tabletop-epoxy'].forEach((partName) => {
-    if (!editablePartNames.includes(partName)) {
-      errors.push(`Contract edgeEditing.editablePartNames should include "${partName}"`);
-    }
-  });
+  const edgeEditingStatus = typeof edgeEditing.status === 'string' ? edgeEditing.status : '';
+  if (edgeEditingStatus !== 'authored-geometry-only') {
+    ['tabletop', 'tabletop-epoxy'].forEach((partName) => {
+      if (!editablePartNames.includes(partName)) {
+        errors.push(`Contract edgeEditing.editablePartNames should include "${partName}"`);
+      }
+    });
+  }
 }
 
 function main() {

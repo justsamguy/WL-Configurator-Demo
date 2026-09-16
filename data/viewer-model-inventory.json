@@ -31,6 +31,27 @@
       "sourceStatus": "candidate"
     },
     {
+      "assetPath": "assets/models/contract/tabletop-wood-chamfered-source.glb",
+      "role": "tabletop-chamfered-edge-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop.addonAssetPaths.addon-chamfered-edges"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
+      "assetPath": "assets/models/contract/tabletop-wood-rounded-corners-source.glb",
+      "role": "tabletop-rounded-corners-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop.addonAssetPaths.addon-rounded-corners"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
+      "assetPath": "assets/models/contract/tabletop-wood-angled-corners-source.glb",
+      "role": "tabletop-angled-corners-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop.addonAssetPaths.addon-angled-corners"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
       "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
       "role": "tabletop-epoxy-preview",
       "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy"],

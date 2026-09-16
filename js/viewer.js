@@ -84,7 +84,6 @@ const CUBE_EDGE_SETBACK_IN = 0.25;
 const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
 const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
 const EPOXY_VERTICAL_INSET = 0.0015;
-const EDGE_PROFILE_RESIN_SURFACE_LIFT = 0.002;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const WATERFALL_PART_NAME = 'tabletop-waterfall';
@@ -161,9 +160,10 @@ const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const ROUNDED_CORNER_RADIUS_IN = 4;
 const ANGLED_CORNER_CUT_IN = 6;
 const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
-const CHAMFERED_EDGE_SIZE_IN = 0.5;
+const CHAMFERED_EDGE_SIZE_IN = 1;
 const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
 const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
+const EDGE_PROFILE_RUNTIME_GEOMETRY_ENABLED = false;
 const EDGE_PROFILE_PREVIEW_MESH_NAME = 'tabletop-edge-profile-preview';
 const CHAMFER_PREVIEW_MESH_NAME = 'tabletop-chamfer-preview';
 const CHAMFER_PREVIEW_MIN_THICKNESS = 0.0001;
@@ -1253,10 +1253,28 @@ function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsP
   return getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
 }
 
-function insetChamferFootprintPoint(point, insetX, insetZ) {
+function getInsetChamferEdgePoints(firstPoint, secondPoint, insetX, insetZ) {
+  const deltaX = secondPoint.x - firstPoint.x;
+  const deltaZ = secondPoint.z - firstPoint.z;
+  const length = Math.hypot(deltaX, deltaZ);
+  if (!Number.isFinite(length) || length <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+    return {
+      first: { ...firstPoint },
+      second: { ...secondPoint }
+    };
+  }
+
+  const inwardX = -deltaZ / length;
+  const inwardZ = deltaX / length;
   return {
-    x: point.x - (Math.sign(point.x || 1) * insetX),
-    z: point.z - (Math.sign(point.z || 1) * insetZ)
+    first: {
+      x: firstPoint.x + (inwardX * insetX),
+      z: firstPoint.z + (inwardZ * insetZ)
+    },
+    second: {
+      x: secondPoint.x + (inwardX * insetX),
+      z: secondPoint.z + (inwardZ * insetZ)
+    }
   };
 }
 
@@ -1309,7 +1327,6 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
   if (insetX <= 0 && insetZ <= 0) return null;
 
   const outerPoints = getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
-  const innerPoints = outerPoints.map((point) => insetChamferFootprintPoint(point, insetX, insetZ));
   const vertices = [];
   const uvs = [];
   const topY = localBounds.maxY;
@@ -1318,8 +1335,12 @@ function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch,
   outerPoints.forEach((outerPoint, index) => {
     const nextIndex = (index + 1) % outerPoints.length;
     const nextOuterPoint = outerPoints[nextIndex];
-    const innerPoint = innerPoints[index];
-    const nextInnerPoint = innerPoints[nextIndex];
+    const { first: innerPoint, second: nextInnerPoint } = getInsetChamferEdgePoints(
+      outerPoint,
+      nextOuterPoint,
+      insetX,
+      insetZ
+    );
     pushChamferQuad(
       vertices,
       uvs,
@@ -1510,6 +1531,16 @@ function restoreEdgeProfileMeshState(mesh) {
   return restored;
 }
 
+function restoreEdgeProfileMeshStates(partRoot) {
+  if (!partRoot) return false;
+  let restored = false;
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh) return;
+    restored = restoreEdgeProfileMeshState(child) || restored;
+  });
+  return restored;
+}
+
 function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics) return;
   removeChamferPreviewMesh(partRoot);
@@ -1524,6 +1555,16 @@ function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
     meshCount: 0,
     changedVertices: 0
   };
+
+  if (!EDGE_PROFILE_RUNTIME_GEOMETRY_ENABLED) {
+    debugStat.skipped = hasSelectedTabletopEdgeProfile()
+      ? 'authored-river-geometry-preserved'
+      : 'no-edge-profile-selected';
+    if (restoreEdgeProfileMeshStates(partRoot)) partRoot.updateWorldMatrix(true, true);
+    edgeProfileDebugStats.push(debugStat);
+    return;
+  }
+
   const meshStates = [];
   const localBounds = {
     minX: Infinity,
@@ -1796,7 +1837,6 @@ function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, t
     ? baseState.scale.x * (targetEpoxyWidth / epoxyBaseWidth)
     : baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
   partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
-  applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch);
 
   const tabletopThickness = getPartSpan(tabletopMetrics, 'y');
   const epoxyBaseThickness = getPartSpan(baseState.metrics, 'y');
@@ -1815,9 +1855,6 @@ function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, t
     : tabletopMetrics.center.x - metrics.center.x;
   partRoot.position.z += tabletopMetrics.center.z - metrics.center.z;
   partRoot.position.y += (tabletopMetrics.min.y + EPOXY_VERTICAL_INSET) - metrics.min.y;
-  if (hasSelectedTabletopEdgeProfile()) {
-    partRoot.position.y += EDGE_PROFILE_RESIN_SURFACE_LIFT;
-  }
 }
 
 function getLegTransformTargets(partConfig = {}, selectedDimensions = {}, legId = '') {
