@@ -298,16 +298,88 @@ def boolean_clip_to_footprint(obj, points):
     return obj
 
 
+def apply_weighted_normals(obj, name="weighted_profile_normals"):
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    normals = obj.modifiers.new(name, "WEIGHTED_NORMAL")
+    normals.keep_sharp = True
+    bpy.ops.object.modifier_apply(modifier=normals.name)
+    obj.select_set(False)
+    return obj
+
+
+def reshape_rounded_corners(obj, radius):
+    bounds = bounds_for(obj)
+    radius = min(radius, (bounds["max_x"] - bounds["min_x"]) * 0.49, (bounds["max_y"] - bounds["min_y"]) * 0.49)
+    corners = [
+        (bounds["min_x"] + radius, bounds["min_y"] + radius, -1, -1),
+        (bounds["max_x"] - radius, bounds["min_y"] + radius, 1, -1),
+        (bounds["max_x"] - radius, bounds["max_y"] - radius, 1, 1),
+        (bounds["min_x"] + radius, bounds["max_y"] - radius, -1, 1)
+    ]
+    changed = 0
+
+    for vertex in obj.data.vertices:
+        for center_x, center_y, sign_x, sign_y in corners:
+            if (vertex.co.x - center_x) * sign_x < 0 or (vertex.co.y - center_y) * sign_y < 0:
+                continue
+            offset_x = vertex.co.x - center_x
+            offset_y = vertex.co.y - center_y
+            distance = math.hypot(offset_x, offset_y)
+            if distance <= radius or distance <= 0:
+                continue
+            vertex.co.x = center_x + (offset_x / distance * radius)
+            vertex.co.y = center_y + (offset_y / distance * radius)
+            changed += 1
+            break
+
+    obj.data.update()
+    return changed
+
+
+def reshape_angled_corners(obj, cut):
+    bounds = bounds_for(obj)
+    cut = min(cut, (bounds["max_x"] - bounds["min_x"]) * 0.49, (bounds["max_y"] - bounds["min_y"]) * 0.49)
+    corners = [
+        (bounds["min_x"], bounds["min_y"], 1, 1),
+        (bounds["max_x"], bounds["min_y"], -1, 1),
+        (bounds["max_x"], bounds["max_y"], -1, -1),
+        (bounds["min_x"], bounds["max_y"], 1, -1)
+    ]
+    changed = 0
+
+    for vertex in obj.data.vertices:
+        for corner_x, corner_y, sign_x, sign_y in corners:
+            local_x = (vertex.co.x - corner_x) * sign_x
+            local_y = (vertex.co.y - corner_y) * sign_y
+            if local_x < 0 or local_y < 0 or local_x > cut or local_y > cut:
+                continue
+            if local_x + local_y >= cut:
+                continue
+            push = (cut - local_x - local_y) * 0.5
+            vertex.co.x += sign_x * push
+            vertex.co.y += sign_y * push
+            changed += 1
+            break
+
+    obj.data.update()
+    return changed
+
+
 def create_rounded(source=SOURCE):
     obj = import_source(source)
-    points = rounded_rect_points(bounds_for(obj), 4 * UNITS_PER_INCH)
-    return boolean_clip_to_footprint(obj, points)
+    changed = reshape_rounded_corners(obj, 4 * UNITS_PER_INCH)
+    if changed == 0:
+        raise RuntimeError("Could not find corner vertices for rounded corners")
+    return apply_weighted_normals(obj)
 
 
 def create_angled(source=SOURCE):
     obj = import_source(source)
-    points = angled_rect_points(bounds_for(obj), 6 * UNITS_PER_INCH)
-    return boolean_clip_to_footprint(obj, points)
+    changed = reshape_angled_corners(obj, 6 * UNITS_PER_INCH)
+    if changed == 0:
+        raise RuntimeError("Could not find corner vertices for angled corners")
+    return apply_weighted_normals(obj)
 
 
 def setup_review_scene(obj, label):
