@@ -3,6 +3,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+UNITS_PER_INCH = 0.0254
+TABLETOP_THICKNESS_IN = 2
 
 ASSETS = [
     {
@@ -34,6 +36,30 @@ def clear_scene():
     bpy.ops.object.delete()
 
 
+def bounds_for(obj):
+    obj.update_from_editmode()
+    obj.update_tag()
+    coords = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+    return {
+        "min_z": min(coord.z for coord in coords),
+        "max_z": max(coord.z for coord in coords)
+    }
+
+
+def normalize_thickness_to_two_inches(obj):
+    bounds = bounds_for(obj)
+    current_thickness = bounds["max_z"] - bounds["min_z"]
+    target_thickness = TABLETOP_THICKNESS_IN * UNITS_PER_INCH
+    if current_thickness <= 0:
+        raise RuntimeError(f"Cannot normalize zero-thickness asset {obj.name}")
+
+    for vertex in obj.data.vertices:
+        distance_from_top = bounds["max_z"] - vertex.co.z
+        vertex.co.z = bounds["max_z"] - ((distance_from_top / current_thickness) * target_thickness)
+
+    obj.data.update()
+
+
 def normalize_imported_asset(spec):
     clear_scene()
     bpy.ops.import_scene.gltf(filepath=str(spec["source"]))
@@ -49,6 +75,7 @@ def normalize_imported_asset(spec):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        normalize_thickness_to_two_inches(obj)
         obj.select_set(False)
 
         for material_index, material in enumerate(obj.data.materials):
