@@ -10,6 +10,7 @@ SOURCE = ROOT / "assets/models/contract/tabletop-wood-source.glb"
 OUTPUT_DIR = ROOT / "assets/models/contract"
 REVIEW_DIR = ROOT / "output/edge-profile-review"
 UNITS_PER_INCH = 0.0254
+CHAMFER_WIDTH_IN = 0.5
 
 VARIANTS = {
     "chamfered": {
@@ -184,7 +185,7 @@ def bevel_top_exterior_edges(obj, width):
 def create_chamfered():
     obj = import_source()
     bounds = bounds_for(obj)
-    width = min(UNITS_PER_INCH, (bounds["max_z"] - bounds["min_z"]) * 0.5)
+    width = min(CHAMFER_WIDTH_IN * UNITS_PER_INCH, (bounds["max_z"] - bounds["min_z"]) * 0.5)
     changed = replace_outer_roundover_with_chamfer(obj, width)
     if changed == 0:
         raise RuntimeError("Could not find top exterior vertices for chamfer")
