@@ -7,6 +7,7 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets/models/contract/tabletop-wood-source.glb"
+EPOXY_SOURCE = ROOT / "assets/models/contract/tabletop-epoxy-source.glb"
 OUTPUT_DIR = ROOT / "assets/models/contract"
 REVIEW_DIR = ROOT / "output/edge-profile-review"
 UNITS_PER_INCH = 0.0254
@@ -39,18 +40,39 @@ VARIANTS = {
     }
 }
 
+EPOXY_VARIANTS = {
+    "chamfered": {
+        "target": OUTPUT_DIR / "tabletop-epoxy-chamfered-source.glb",
+        "object": "tabletop_epoxy_chamfered_source",
+        "mesh": "tabletop_epoxy_chamfered_source_mesh",
+        "material": "tabletop_epoxy_chamfered_material"
+    },
+    "rounded": {
+        "target": OUTPUT_DIR / "tabletop-epoxy-rounded-corners-source.glb",
+        "object": "tabletop_epoxy_rounded_corners_source",
+        "mesh": "tabletop_epoxy_rounded_corners_source_mesh",
+        "material": "tabletop_epoxy_rounded_corners_material"
+    },
+    "angled": {
+        "target": OUTPUT_DIR / "tabletop-epoxy-angled-corners-source.glb",
+        "object": "tabletop_epoxy_angled_corners_source",
+        "mesh": "tabletop_epoxy_angled_corners_source_mesh",
+        "material": "tabletop_epoxy_angled_corners_material"
+    }
+}
+
 
 def clear_scene():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete()
 
 
-def import_source():
+def import_source(source=SOURCE):
     clear_scene()
-    bpy.ops.import_scene.gltf(filepath=str(SOURCE))
+    bpy.ops.import_scene.gltf(filepath=str(source))
     mesh_objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     if len(mesh_objects) != 1:
-        raise RuntimeError(f"Expected one tabletop mesh in {SOURCE}, found {len(mesh_objects)}")
+        raise RuntimeError(f"Expected one tabletop mesh in {source}, found {len(mesh_objects)}")
     obj = mesh_objects[0]
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
@@ -182,8 +204,8 @@ def bevel_top_exterior_edges(obj, width):
     return selected_count
 
 
-def create_chamfered():
-    obj = import_source()
+def create_chamfered(source=SOURCE):
+    obj = import_source(source)
     bounds = bounds_for(obj)
     width = min(CHAMFER_WIDTH_IN * UNITS_PER_INCH, (bounds["max_z"] - bounds["min_z"]) * 0.5)
     changed = replace_outer_roundover_with_chamfer(obj, width)
@@ -276,14 +298,14 @@ def boolean_clip_to_footprint(obj, points):
     return obj
 
 
-def create_rounded():
-    obj = import_source()
+def create_rounded(source=SOURCE):
+    obj = import_source(source)
     points = rounded_rect_points(bounds_for(obj), 4 * UNITS_PER_INCH)
     return boolean_clip_to_footprint(obj, points)
 
 
-def create_angled():
-    obj = import_source()
+def create_angled(source=SOURCE):
+    obj = import_source(source)
     points = angled_rect_points(bounds_for(obj), 6 * UNITS_PER_INCH)
     return boolean_clip_to_footprint(obj, points)
 
@@ -349,12 +371,17 @@ def main():
         "angled": create_angled
     }
     for key, creator in creators.items():
-        obj = creator()
+        obj = creator(SOURCE)
         spec = VARIANTS[key]
         export_asset(obj, spec)
         render_preview(spec)
         print(f"Wrote {spec['target'].relative_to(ROOT)}")
         print(f"Wrote {spec['preview'].relative_to(ROOT)}")
+    for key, creator in creators.items():
+        obj = creator(EPOXY_SOURCE)
+        spec = EPOXY_VARIANTS[key]
+        export_asset(obj, spec)
+        print(f"Wrote {spec['target'].relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

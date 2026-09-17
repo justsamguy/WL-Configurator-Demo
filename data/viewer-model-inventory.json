@@ -67,6 +67,27 @@
       "sourceStatus": "candidate-needs-confirmation"
     },
     {
+      "assetPath": "assets/models/contract/tabletop-epoxy-chamfered-source.glb",
+      "role": "tabletop-epoxy-chamfered-edge-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy.addonAssetPaths.addon-chamfered-edges"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
+      "assetPath": "assets/models/contract/tabletop-epoxy-rounded-corners-source.glb",
+      "role": "tabletop-epoxy-rounded-corners-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy.addonAssetPaths.addon-rounded-corners"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
+      "assetPath": "assets/models/contract/tabletop-epoxy-angled-corners-source.glb",
+      "role": "tabletop-epoxy-angled-corners-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy.addonAssetPaths.addon-angled-corners"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
       "assetPath": "assets/models/table-leg-cube-base-custom-14Hx22W.glb",
       "role": "leg-base",
       "usedBy": ["viewer-models.defaults.legAssets.leg-sample-02"],

@@ -21,6 +21,11 @@
         "name": "tabletop-epoxy",
         "role": "tabletop",
         "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
+        "addonAssetPaths": {
+          "addon-chamfered-edges": "assets/models/contract/tabletop-epoxy-chamfered-source.glb",
+          "addon-rounded-corners": "assets/models/contract/tabletop-epoxy-rounded-corners-source.glb",
+          "addon-angled-corners": "assets/models/contract/tabletop-epoxy-angled-corners-source.glb"
+        },
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
         "surfaceInsetScale": [0.9972, 0.998, 0.9972],
