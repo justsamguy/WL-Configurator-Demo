@@ -12,6 +12,8 @@ OUTPUT_DIR = ROOT / "assets/models/contract"
 REVIEW_DIR = ROOT / "output/edge-profile-review"
 UNITS_PER_INCH = 0.0254
 CHAMFER_WIDTH_IN = 0.5
+ROUNDED_CORNER_RADIUS_IN = 5
+ANGLED_CORNER_CUT_IN = 8
 
 VARIANTS = {
     "chamfered": {
@@ -368,18 +370,16 @@ def reshape_angled_corners(obj, cut):
 
 def create_rounded(source=SOURCE):
     obj = import_source(source)
-    changed = reshape_rounded_corners(obj, 4 * UNITS_PER_INCH)
-    if changed == 0:
-        raise RuntimeError("Could not find corner vertices for rounded corners")
-    return apply_weighted_normals(obj)
+    bounds = bounds_for(obj)
+    points = rounded_rect_points(bounds, ROUNDED_CORNER_RADIUS_IN * UNITS_PER_INCH, segments=18)
+    return boolean_clip_to_footprint(obj, points)
 
 
 def create_angled(source=SOURCE):
     obj = import_source(source)
-    changed = reshape_angled_corners(obj, 6 * UNITS_PER_INCH)
-    if changed == 0:
-        raise RuntimeError("Could not find corner vertices for angled corners")
-    return apply_weighted_normals(obj)
+    bounds = bounds_for(obj)
+    points = angled_rect_points(bounds, ANGLED_CORNER_CUT_IN * UNITS_PER_INCH)
+    return boolean_clip_to_footprint(obj, points)
 
 
 def setup_review_scene(obj, label):
