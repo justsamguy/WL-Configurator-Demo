@@ -14,6 +14,7 @@ UNITS_PER_INCH = 0.0254
 CHAMFER_WIDTH_IN = 0.5
 ROUNDED_CORNER_RADIUS_IN = 5
 ANGLED_CORNER_CUT_IN = 8
+BOOLEAN_FOOTPRINT_OVERHANG = 0.001
 
 VARIANTS = {
     "chamfered": {
@@ -259,6 +260,28 @@ def angled_rect_points(bounds, cut):
     ]
 
 
+def overhang_footprint_bounds(points, bounds, amount=BOOLEAN_FOOTPRINT_OVERHANG):
+    min_x, max_x = bounds["min_x"], bounds["max_x"]
+    min_y, max_y = bounds["min_y"], bounds["max_y"]
+    tolerance = amount * 0.1
+    overhung = []
+
+    for x, y in points:
+        if abs(x - min_x) <= tolerance:
+            x = min_x - amount
+        elif abs(x - max_x) <= tolerance:
+            x = max_x + amount
+
+        if abs(y - min_y) <= tolerance:
+            y = min_y - amount
+        elif abs(y - max_y) <= tolerance:
+            y = max_y + amount
+
+        overhung.append((x, y))
+
+    return overhung
+
+
 def create_prism(name, points, min_z, max_z):
     verts = [(x, y, min_z) for x, y in points] + [(x, y, max_z) for x, y in points]
     count = len(points)
@@ -372,6 +395,7 @@ def create_rounded(source=SOURCE):
     obj = import_source(source)
     bounds = bounds_for(obj)
     points = rounded_rect_points(bounds, ROUNDED_CORNER_RADIUS_IN * UNITS_PER_INCH, segments=18)
+    points = overhang_footprint_bounds(points, bounds)
     return boolean_clip_to_footprint(obj, points)
 
 
@@ -379,6 +403,7 @@ def create_angled(source=SOURCE):
     obj = import_source(source)
     bounds = bounds_for(obj)
     points = angled_rect_points(bounds, ANGLED_CORNER_CUT_IN * UNITS_PER_INCH)
+    points = overhang_footprint_bounds(points, bounds)
     return boolean_clip_to_footprint(obj, points)
 
 
