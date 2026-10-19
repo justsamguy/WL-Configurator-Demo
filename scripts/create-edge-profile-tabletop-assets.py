@@ -40,6 +40,14 @@ VARIANTS = {
         "mesh": "tabletop_wood_angled_corners_source_mesh",
         "material": "tabletop_wood_angled_corners_material",
         "label": "Angled corners"
+    },
+    "angled-chamfered": {
+        "target": OUTPUT_DIR / "tabletop-wood-angled-corners-chamfered-source.glb",
+        "preview": REVIEW_DIR / "tabletop-wood-angled-corners-chamfered.png",
+        "object": "tabletop_wood_angled_corners_chamfered_source",
+        "mesh": "tabletop_wood_angled_corners_chamfered_source_mesh",
+        "material": "tabletop_wood_angled_corners_chamfered_material",
+        "label": "Angled corners with chamfered edges"
     }
 }
 
@@ -61,6 +69,12 @@ EPOXY_VARIANTS = {
         "object": "tabletop_epoxy_angled_corners_source",
         "mesh": "tabletop_epoxy_angled_corners_source_mesh",
         "material": "tabletop_epoxy_angled_corners_material"
+    },
+    "angled-chamfered": {
+        "target": OUTPUT_DIR / "tabletop-epoxy-angled-corners-chamfered-source.glb",
+        "object": "tabletop_epoxy_angled_corners_chamfered_source",
+        "mesh": "tabletop_epoxy_angled_corners_chamfered_source_mesh",
+        "material": "tabletop_epoxy_angled_corners_chamfered_material"
     }
 }
 
@@ -407,6 +421,14 @@ def create_angled(source=SOURCE):
     return boolean_clip_to_footprint(obj, points)
 
 
+def create_angled_chamfered(source=SOURCE):
+    obj = create_chamfered(source)
+    bounds = bounds_for(obj)
+    points = angled_rect_points(bounds, ANGLED_CORNER_CUT_IN * UNITS_PER_INCH)
+    points = overhang_footprint_bounds(points, bounds)
+    return boolean_clip_to_footprint(obj, points)
+
+
 def setup_review_scene(obj, label):
     REVIEW_DIR.mkdir(parents=True, exist_ok=True)
     set_origin_for_review(obj)
@@ -465,7 +487,8 @@ def main():
     creators = {
         "chamfered": create_chamfered,
         "rounded": create_rounded,
-        "angled": create_angled
+        "angled": create_angled,
+        "angled-chamfered": create_angled_chamfered
     }
     for key, creator in creators.items():
         obj = creator(SOURCE)

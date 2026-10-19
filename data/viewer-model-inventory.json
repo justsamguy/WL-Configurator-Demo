@@ -52,6 +52,13 @@
       "sourceStatus": "generated"
     },
     {
+      "assetPath": "assets/models/contract/tabletop-wood-angled-corners-chamfered-source.glb",
+      "role": "tabletop-wood-angled-corner-chamfer-combination-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop.combinationAssetPaths.addon-angled-corners+addon-chamfered-edges"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
       "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
       "role": "tabletop-epoxy-preview",
       "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy"],
@@ -84,6 +91,13 @@
       "assetPath": "assets/models/contract/tabletop-epoxy-angled-corners-source.glb",
       "role": "tabletop-epoxy-angled-corners-override",
       "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy.addonAssetPaths.addon-angled-corners"],
+      "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
+      "sourceStatus": "generated"
+    },
+    {
+      "assetPath": "assets/models/contract/tabletop-epoxy-angled-corners-chamfered-source.glb",
+      "role": "tabletop-epoxy-angled-corner-chamfer-combination-override",
+      "usedBy": ["viewer-models.defaults.parts.tabletop-epoxy.combinationAssetPaths.addon-angled-corners+addon-chamfered-edges"],
       "sourceScript": "scripts/create-edge-profile-tabletop-assets.py",
       "sourceStatus": "generated"
     },

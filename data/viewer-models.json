@@ -15,6 +15,9 @@
             "scale": [0.918, 1, 1]
           }
         },
+        "combinationAssetPaths": {
+          "addon-angled-corners+addon-chamfered-edges": "assets/models/contract/tabletop-wood-angled-corners-chamfered-source.glb"
+        },
         "positionOffset": [0, 0.707625, 0]
       },
       {
@@ -25,6 +28,9 @@
           "addon-chamfered-edges": "assets/models/contract/tabletop-epoxy-chamfered-source.glb",
           "addon-rounded-corners": "assets/models/contract/tabletop-epoxy-rounded-corners-source.glb",
           "addon-angled-corners": "assets/models/contract/tabletop-epoxy-angled-corners-source.glb"
+        },
+        "combinationAssetPaths": {
+          "addon-angled-corners+addon-chamfered-edges": "assets/models/contract/tabletop-epoxy-angled-corners-chamfered-source.glb"
         },
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
