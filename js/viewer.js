@@ -160,7 +160,6 @@ const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
 const ROUNDED_CORNER_RADIUS_IN = 5;
 const ANGLED_CORNER_CUT_IN = 8;
 const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
-const ANGLED_CHAMFERED_EDGE_COMBINATION_KEY = 'addon-angled-corners+addon-chamfered-edges';
 const CHAMFERED_EDGE_SIZE_IN = 0.5;
 const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
 const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
@@ -2835,17 +2834,13 @@ function getVectorTriplet(value, fallback = 0) {
 function resolvePartConfig(partConfig = {}) {
   const defaultAssetPath = typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '';
   const selectedAddons = getSelectedAddons();
-  const combinationAssetPaths = partConfig.combinationAssetPaths && typeof partConfig.combinationAssetPaths === 'object'
-    ? partConfig.combinationAssetPaths
-    : null;
-  const selectedCombinationOverride = selectedAddons.includes('addon-angled-corners')
+  if (
+    selectedAddons.includes('addon-angled-corners')
     && selectedAddons.includes(CHAMFERED_EDGE_ADDON_ID)
-    && combinationAssetPaths
-    && combinationAssetPaths[ANGLED_CHAMFERED_EDGE_COMBINATION_KEY];
-  if (typeof selectedCombinationOverride === 'string' && selectedCombinationOverride.trim()) {
+  ) {
     return {
       ...partConfig,
-      assetPath: selectedCombinationOverride.trim()
+      assetPath: defaultAssetPath
     };
   }
   const addonAssetPaths = partConfig.addonAssetPaths && typeof partConfig.addonAssetPaths === 'object'
@@ -4084,6 +4079,20 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       'Squoval design',
       'Squoval changes the tabletop footprint and needs a dedicated tabletop source model before it can be shown accurately.',
       getOptionDisplayName('addon', 'addon-squoval', 'Squoval')
+    );
+  }
+  if (
+    selectedAddons.includes('addon-angled-corners')
+    && selectedAddons.includes(CHAMFERED_EDGE_ADDON_ID)
+  ) {
+    pushViewerNotice(
+      notices,
+      'Angled corners with chamfered edges',
+      'This combined edge treatment is not shown in the local 3D viewer.',
+      [
+        getOptionDisplayName('addon', 'addon-angled-corners', 'Angled corners'),
+        getOptionDisplayName('addon', CHAMFERED_EDGE_ADDON_ID, 'Chamfered edges')
+      ]
     );
   }
   if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
