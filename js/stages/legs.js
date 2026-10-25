@@ -16,7 +16,7 @@ let lastKnownModel = null; // Track the model to detect changes
  * @returns {boolean} True if tube size is optional for this leg
  */
 function isTubeSizeOptional(legId) {
-  return legId === 'leg-sample-07' || legId === 'leg-signature'; // Custom/signature legs make tube size optional
+  return legId === 'leg-sample-07' || legId === 'leg-signature' || legId === 'leg-sit-stand'; // Custom, signature, and motorized bases have no selectable tube size
 }
 
 export function init() {

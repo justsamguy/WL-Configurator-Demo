@@ -66,6 +66,7 @@ const AXIS_COMPONENTS = ['x', 'y', 'z'];
 const LEG_NONE_ID = 'leg-none';
 const LEG_CUSTOM_ID = 'leg-sample-07';
 const LEG_SIGNATURE_ID = 'leg-signature';
+const LEG_SIT_STAND_ID = 'leg-sit-stand';
 const DESIGN_CUSTOM_ID = 'des-custom';
 const MATERIAL_CUSTOM_ID = 'mat-08';
 const MATERIAL_COOKIE_EXCLUSIVE_ID = 'mat-09';
@@ -3239,6 +3240,14 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'Signature base',
       reason: 'The signature base does not have a dedicated local 3D asset yet.',
+      selectionNames: [legTitle]
+    };
+  }
+
+  if (legId === LEG_SIT_STAND_ID) {
+    return {
+      title: 'Sit/stand base',
+      reason: 'The dedicated adjustable base is being modeled separately; this preview currently shows the tabletop only.',
       selectionNames: [legTitle]
     };
   }

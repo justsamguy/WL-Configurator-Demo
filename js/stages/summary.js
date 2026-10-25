@@ -198,7 +198,8 @@ function parseCurrencyValue(text) {
 const HEIGHT_PRESETS_BY_MODEL = {
   'mdl-coffee': { standard: 18, bar: 20 },
   'mdl-dining': { standard: 30, bar: 42 },
-  'mdl-conference': { standard: 30, bar: 36 }
+  'mdl-conference': { standard: 30, bar: 36 },
+  'mdl-desk': { standard: 30, bar: 42 }
 };
 
 const LEG_WEIGHT_RULES = {

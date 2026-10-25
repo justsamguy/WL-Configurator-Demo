@@ -10,7 +10,8 @@ export const LEG_COMPATIBILITY = {
   modelToLegs: {
     'mdl-coffee': ['leg-sample-02', 'leg-sample-04', 'leg-sample-05', 'leg-sample-08', 'leg-sample-07', 'leg-signature', 'leg-none'],
     'mdl-dining': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
-    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none']
+    'mdl-conference': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-08', 'leg-sample-07', 'leg-none'],
+    'mdl-desk': ['leg-sample-03', 'leg-sample-04', 'leg-sample-05', 'leg-sample-06', 'leg-sample-07', 'leg-sit-stand', 'leg-none']
   },
   // Tube size compatibility: which tube sizes are compatible with each leg design
   legToTubes: {
@@ -23,13 +24,15 @@ export const LEG_COMPATIBILITY = {
     'leg-sample-08': ['tube-1x3', 'tube-2x4'],   // Tripod
     'leg-sample-07': ['tube-1x0.5', 'tube-1x1', 'tube-1x3', 'tube-2x4'], // Custom
     'leg-signature': ['tube-2x4'], // Signature
+    'leg-sit-stand': [], // Motorized frame has no selectable tube size
     'leg-none': [] // No tubes needed for no legs
   },
   // Model tube restrictions: some models cannot use certain tube sizes
   modelToTubes: {
     'mdl-coffee': ['tube-1x0.5', 'tube-1x1', 'tube-1x3'],     // no 2x4
     'mdl-dining': ['tube-1x3', 'tube-2x4'],                   // only 1x3 and 2x4
-    'mdl-conference': ['tube-1x3', 'tube-2x4']                // only 1x3 and 2x4
+    'mdl-conference': ['tube-1x3', 'tube-2x4'],               // only 1x3 and 2x4
+    'mdl-desk': ['tube-1x3', 'tube-2x4']
   }
 };
 

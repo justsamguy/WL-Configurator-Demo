@@ -175,8 +175,9 @@ function getLegSelectionState(source = appState) {
   const isNoneLeg = legId === 'leg-none';
   const isCustomLeg = legId === 'leg-sample-07';
   const isSignatureLeg = legId === 'leg-signature';
+  const isSitStandLeg = legId === 'leg-sit-stand';
   const isSignatureDesign = designId === 'des-signature';
-  const tubeSizeRequired = !!legId && !isNoneLeg && !isCustomLeg && !isSignatureLeg && !isSignatureDesign;
+  const tubeSizeRequired = !!legId && !isNoneLeg && !isCustomLeg && !isSignatureLeg && !isSitStandLeg && !isSignatureDesign;
 
   return {
     legId,
@@ -191,7 +192,7 @@ function getLegSelectionState(source = appState) {
 function isLegStageComplete(source = appState) {
   const legState = getLegSelectionState(source);
   if (!legState.hasLegs) return false;
-  if (legState.isNoneLeg) return true;
+  if (legState.isNoneLeg || legState.legId === 'leg-sit-stand') return true;
   return (!legState.tubeSizeRequired || legState.hasTubeSize) && legState.hasLegFinish;
 }
 

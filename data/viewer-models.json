@@ -191,6 +191,22 @@
           "bar": 36
         }
       }
+    },
+    "mdl-desk": {
+      "title": "Desk",
+      "statusLabel": "Desk Preview",
+      "supportCopy": "Interactive tabletop and static-base preview for desk selections. The dedicated sit/stand base asset is in progress.",
+      "dimensionRules": {
+        "baseDimensions": {
+          "length": 60,
+          "width": 36,
+          "height": 30
+        },
+        "heightOptions": {
+          "standard": 30,
+          "bar": 42
+        }
+      }
     }
   }
 }

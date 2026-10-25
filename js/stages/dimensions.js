@@ -162,6 +162,11 @@ function getConstraints() {
       length: { min: 72, max: 200, step: 12, unit: "in" },
       width: { min: 36, max: 75, step: 6, unit: "in" },
       height: { min: 26, max: 42, standard: 30, bar: 36, unit: "in" }
+    },
+    'mdl-desk': {
+      length: { min: 60, max: 120, step: 12, unit: "in" },
+      width: { min: 24, max: 50, step: 6, unit: "in" },
+      height: { min: 26, max: 52, standard: 30, bar: 42, unit: "in" }
     }
   };
 
@@ -204,7 +209,7 @@ function getHeightOptionCards() {
   const barHeight = Number(heightConstraints.bar);
   const options = [{
     id: 'standard',
-    title: 'Standard',
+    title: selectedModel === 'mdl-desk' ? 'Sitting Height' : 'Standard',
     subtitle: Number.isFinite(standardHeight) ? `(${standardHeight}″)` : '',
     price: 0,
     image: 'assets/images/Generated Sitting Height.png'
@@ -217,7 +222,7 @@ function getHeightOptionCards() {
   ) {
     options.push({
       id: 'bar',
-      title: 'Bar Height',
+      title: selectedModel === 'mdl-desk' ? 'Standing Height' : 'Bar Height',
       subtitle: `(${barHeight}″)`,
       price: 120,
       image: 'assets/images/Generated Standing Height.png'
@@ -587,7 +592,8 @@ function filterPresetsByModel(presets) {
   // Model-specific preset exclusions
   const modelExclusions = {
     'mdl-coffee': ['dim-preset-01', 'dim-preset-02', 'dim-preset-03'], // Hide 4-6, 6-8, 8-10 seaters for coffee tables
-    'mdl-conference': ['dim-preset-01'] // Hide 4-6 seater for conference tables
+    'mdl-conference': ['dim-preset-01'], // Hide 4-6 seater for conference tables
+    'mdl-desk': dimensionsData.presets.filter((preset) => !Array.isArray(preset.modelScope) || !preset.modelScope.includes('mdl-desk')).map((preset) => preset.id)
   };
 
   const excludedIds = modelExclusions[selectedModel] || [];

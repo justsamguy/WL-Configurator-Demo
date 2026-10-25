@@ -26,7 +26,8 @@ const DIMENSION_TIER_STEPS = { length: 12, width: 6 };
 const DIMENSION_BASELINES = {
   'mdl-coffee': { length: 24, width: 48 },
   'mdl-dining': { length: 72, width: 36 },
-  'mdl-conference': { length: 72, width: 36 }
+  'mdl-conference': { length: 72, width: 36 },
+  'mdl-desk': { length: 60, width: 36 }
 };
 
 function getDimensionBaseline(modelId, detail) {
