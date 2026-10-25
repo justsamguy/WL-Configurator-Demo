@@ -4,11 +4,14 @@
       {
         "name": "tabletop",
         "role": "tabletop",
-        "assetPath": "assets/models/Walnut%20tabletop.glb",
+        "assetPath": "assets/models/contract/tabletop-wood-source.glb",
         "addonAssetPaths": {
+          "addon-chamfered-edges": "assets/models/contract/tabletop-wood-chamfered-source.glb",
+          "addon-rounded-corners": "assets/models/contract/tabletop-wood-rounded-corners-source.glb",
+          "addon-angled-corners": "assets/models/contract/tabletop-wood-angled-corners-source.glb",
           "addon-live-edge": {
-            "assetPath": "assets/models/live-edge-walnut-river-tabletop.glb",
-            "materialSourceAssetPath": "assets/models/Walnut%20tabletop.glb",
+            "assetPath": "assets/models/contract/tabletop-live-edge-source.glb",
+            "materialSourceAssetPath": "assets/models/contract/tabletop-wood-source.glb",
             "scale": [0.918, 1, 1]
           }
         },
@@ -17,12 +20,17 @@
       {
         "name": "tabletop-epoxy",
         "role": "tabletop",
-        "assetPath": "assets/models/textures/epoxy-edited-multi-grey.glb",
+        "assetPath": "assets/models/contract/tabletop-epoxy-source.glb",
+        "addonAssetPaths": {
+          "addon-chamfered-edges": "assets/models/contract/tabletop-epoxy-chamfered-source.glb",
+          "addon-rounded-corners": "assets/models/contract/tabletop-epoxy-rounded-corners-source.glb",
+          "addon-angled-corners": "assets/models/contract/tabletop-epoxy-angled-corners-source.glb"
+        },
         "positionOffset": [0, 0.706625, 0],
         "scale": 1,
         "surfaceInsetScale": [0.9972, 0.998, 0.9972],
         "surfaceInsetOffset": [0, -0.0015, 0],
-        "designNote": "Intentional by design: these epoxy thickness/inset settings keep the resin slightly inside the wood slab and waterfall clone, preventing wood/resin face z-fighting and letting resin show only through open channels."
+        "designNote": "Intentional by design: these epoxy thickness/inset settings keep the resin inside the wood slab and waterfall clone, preventing wood/resin face z-fighting and letting resin show only through open channels."
       }
     ],
     "legAssets": {
@@ -121,6 +129,59 @@
       "targetHeightRatio": 0.34,
       "minDistanceMultiplier": 0.9,
       "maxDistanceMultiplier": 5.8
+    },
+    "modelContract": {
+      "schemaVersion": 1,
+      "units": "inches",
+      "sourceBounds": {
+        "length": 96,
+        "width": 42,
+        "height": 30,
+        "tabletopThickness": 2
+      },
+      "coordinateSystem": {
+        "widthAxis": "x",
+        "heightAxis": "y",
+        "lengthAxis": "z",
+        "origin": "center-bottom"
+      },
+      "partRoles": {
+        "tabletop": {
+          "requiredPartNames": ["tabletop"],
+          "runtimeRole": "tabletop",
+          "scalesWithDimensions": ["length", "width", "height"],
+          "preserveTopSurfaceUvs": true
+        },
+        "epoxy": {
+          "requiredPartNames": ["tabletop-epoxy"],
+          "runtimeRole": "tabletop",
+          "scalesWithDimensions": ["length", "width", "height"],
+          "preserveTopSurfaceUvs": true,
+          "preserveInteriorLayout": true
+        },
+        "glass": {
+          "generatedPartName": "tabletop-glass",
+          "runtimeRole": "glass",
+          "followsTabletopFootprint": true
+        },
+        "waterfall": {
+          "generatedPartName": "tabletop-waterfall",
+          "runtimeRole": "waterfall",
+          "followsTabletopFootprint": true
+        },
+        "legs": {
+          "runtimeRole": "leg",
+          "source": "legAssets"
+        }
+      },
+      "edgeEditing": {
+        "status": "authored-geometry-only",
+        "editablePartNames": [],
+        "allowedOperation": "none",
+        "preserveInteriorLayout": true,
+        "preserveTopSurfaceUvs": true,
+        "supportedAddonIds": []
+      }
     },
     "dimensionRules": {
       "unitsPerInch": 0.0254,

@@ -35,9 +35,24 @@ import addonsStage from './stages/addons.js';
 import summaryStage from './stages/summary.js';
 import modelsStageModule from './stages/models.js';
 import designsStageModule from './stages/designs.js';
-import { createLogger } from './logger.js';
+import { isDebugModeEnabled } from './debugMode.js';
 
-const log = createLogger('StageManager');
+const log = {
+  debug: (message, data) => logStageManagerMessage('debug', message, data),
+  info: (message, data) => logStageManagerMessage('info', message, data),
+  warn: (message, data) => logStageManagerMessage('warn', message, data),
+  error: (message, data) => logStageManagerMessage('error', message, data)
+};
+
+function logStageManagerMessage(level, message, data) {
+  if (!isDebugModeEnabled()) return;
+  const method = level === 'debug'
+    ? console.debug
+    : (level === 'info' ? console.log : (level === 'warn' ? console.warn : console.error));
+  const text = message ? `[StageManager] ${message}` : '[StageManager]';
+  if (data !== undefined) method(text, data);
+  else method(text);
+}
 
 const managerState = {
   current: 0,

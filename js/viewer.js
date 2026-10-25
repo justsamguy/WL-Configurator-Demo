@@ -83,7 +83,7 @@ const TRIPOD_EDGE_SETBACK_IN = 13;
 const CUBE_EDGE_SETBACK_IN = 0.25;
 const DEFAULT_SURFACE_INSET_OFFSET = Object.freeze([0, 0, 0]);
 const DEFAULT_RESIN_VIEWER_TINT = '#d2d7df';
-const EPOXY_VERTICAL_INSET = 0.0015;
+const EPOXY_VERTICAL_INSET = 0.003;
 const GLASS_TOP_ADDON_ID = 'addon-glass-top';
 const GLASS_TOP_PART_NAME = 'tabletop-glass';
 const WATERFALL_PART_NAME = 'tabletop-waterfall';
@@ -157,7 +157,17 @@ const TABLETOP_GLARE_LIGHT_INTENSITY = Object.freeze({
   default: 1.2
 });
 const TABLETOP_GLARE_LIGHT_MIN_HEIGHT_RATIO = 0.82;
-const EDGE_PROFILE_VIEWER_ADDON_IDS = new Set(['addon-chamfered-edges', 'addon-squoval', 'addon-rounded-corners', 'addon-angled-corners']);
+const ROUNDED_CORNER_RADIUS_IN = 5;
+const ANGLED_CORNER_CUT_IN = 8;
+const CHAMFERED_EDGE_ADDON_ID = 'addon-chamfered-edges';
+const CHAMFERED_EDGE_SIZE_IN = 0.5;
+const EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE = 0.00001;
+const EDGE_PROFILE_SIDE_VERTEX_THRESHOLD = 0.72;
+const EDGE_PROFILE_RUNTIME_GEOMETRY_ENABLED = false;
+const EDGE_PROFILE_PREVIEW_MESH_NAME = 'tabletop-edge-profile-preview';
+const CHAMFER_PREVIEW_MESH_NAME = 'tabletop-chamfer-preview';
+const CHAMFER_PREVIEW_MIN_THICKNESS = 0.0001;
+const ROUNDED_CORNER_SEGMENTS = 12;
 const TECH_VIEWER_ADDON_IDS = new Set([
   'addon-power-ac',
   'addon-power-ac-usb',
@@ -226,6 +236,7 @@ let legFinishDataPromise = null;
 let colorDataPromise = null;
 let finishDataPromise = null;
 let viewerDebugEnabled = false;
+let edgeProfileDebugStats = [];
 let debugAxisContainer = null;
 let debugAxisRenderer = null;
 let debugAxisScene = null;
@@ -404,6 +415,91 @@ function getTubeFallbackScale(baseTubeId, selectedTubeId) {
 function matchesVariantScope(scopeIds, selectedId) {
   if (!Array.isArray(scopeIds) || !scopeIds.length) return true;
   return !!selectedId && scopeIds.includes(selectedId);
+}
+
+function clonePlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...value }
+    : {};
+}
+
+function normalizeStringArray(value) {
+  return Array.isArray(value)
+    ? value.filter((entry) => typeof entry === 'string' && entry.trim()).map((entry) => entry.trim())
+    : [];
+}
+
+function mergeModelContract(defaultContract = {}, modelContract = {}, dimensionRules = {}) {
+  const merged = {
+    ...clonePlainObject(defaultContract),
+    ...clonePlainObject(modelContract)
+  };
+  const defaultSourceBounds = clonePlainObject(defaultContract.sourceBounds);
+  const modelSourceBounds = clonePlainObject(modelContract.sourceBounds);
+  const sourceDimensions = clonePlainObject(dimensionRules.sourceDimensions);
+
+  merged.sourceBounds = {
+    length: Number.isFinite(Number(defaultSourceBounds.length)) ? Number(defaultSourceBounds.length) : Number(sourceDimensions.length),
+    width: Number.isFinite(Number(defaultSourceBounds.width)) ? Number(defaultSourceBounds.width) : Number(sourceDimensions.width),
+    height: Number.isFinite(Number(defaultSourceBounds.height)) ? Number(defaultSourceBounds.height) : Number(sourceDimensions.height),
+    ...defaultSourceBounds,
+    ...modelSourceBounds
+  };
+  merged.coordinateSystem = {
+    ...clonePlainObject(defaultContract.coordinateSystem),
+    ...clonePlainObject(modelContract.coordinateSystem)
+  };
+  merged.partRoles = {
+    ...clonePlainObject(defaultContract.partRoles),
+    ...clonePlainObject(modelContract.partRoles)
+  };
+  merged.edgeEditing = {
+    ...clonePlainObject(defaultContract.edgeEditing),
+    ...clonePlainObject(modelContract.edgeEditing)
+  };
+
+  return merged;
+}
+
+function getModelContractWarnings(config = {}) {
+  const contract = config.modelContract && typeof config.modelContract === 'object'
+    ? config.modelContract
+    : null;
+  if (!contract) return [];
+
+  const warnings = [];
+  const partNames = new Set(getRenderableParts(config).map((partConfig) => partConfig.name));
+  const partRoles = contract.partRoles && typeof contract.partRoles === 'object'
+    ? contract.partRoles
+    : {};
+
+  Object.entries(partRoles).forEach(([contractRole, roleConfig]) => {
+    if (!roleConfig || typeof roleConfig !== 'object') return;
+    normalizeStringArray(roleConfig.requiredPartNames).forEach((partName) => {
+      if (!partNames.has(partName)) {
+        warnings.push(`Model contract role "${contractRole}" requires missing part "${partName}".`);
+      }
+    });
+  });
+
+  const edgeEditing = contract.edgeEditing && typeof contract.edgeEditing === 'object'
+    ? contract.edgeEditing
+    : {};
+  normalizeStringArray(edgeEditing.editablePartNames).forEach((partName) => {
+    const isGeneratedOptional = partName === GLASS_TOP_PART_NAME || partName === WATERFALL_PART_NAME;
+    if (!partNames.has(partName) && !isGeneratedOptional) {
+      warnings.push(`Model contract marks "${partName}" as edge-editable, but no matching renderable part exists.`);
+    }
+  });
+
+  return warnings;
+}
+
+function reportModelContractWarnings(config = {}) {
+  if (!isDebugModeEnabled()) return [];
+  const warnings = getModelContractWarnings(config);
+  if (warnings.length) console.warn('[ViewerModelContract]', warnings);
+  return warnings;
 }
 
 function resolveLegVariant(definition = {}, selectionContext = {}) {
@@ -712,8 +808,21 @@ function isVisibilityRuleSatisfied(scaleMap, visibilityRule) {
 
 function getObjectMetrics(root) {
   if (!root) return null;
-  const bounds = new THREE.Box3().setFromObject(root);
-  if (bounds.isEmpty()) return null;
+  const profilePreviewMesh = root.getObjectByName && root.getObjectByName(EDGE_PROFILE_PREVIEW_MESH_NAME);
+  let bounds = null;
+  if (profilePreviewMesh) {
+    root.updateWorldMatrix(true, true);
+    root.traverse((child) => {
+      if (!child || !child.isMesh || child.userData?.edgeProfilePreviewHidden) return;
+      const childBounds = new THREE.Box3().setFromObject(child);
+      if (childBounds.isEmpty()) return;
+      if (!bounds) bounds = childBounds.clone();
+      else bounds.union(childBounds);
+    });
+  } else {
+    bounds = new THREE.Box3().setFromObject(root);
+  }
+  if (!bounds || bounds.isEmpty()) return null;
   return {
     bounds,
     min: bounds.min.clone(),
@@ -1009,6 +1118,588 @@ function addUniqueShapePoint(points, x, y, tolerance = GLASS_TOP_LIVE_EDGE_POINT
   points.push(nextPoint);
 }
 
+function getSelectedCornerProfileAddon() {
+  const selectedAddons = getSelectedAddons();
+  if (selectedAddons.includes('addon-rounded-corners')) return 'addon-rounded-corners';
+  if (selectedAddons.includes('addon-angled-corners')) return 'addon-angled-corners';
+  return null;
+}
+
+function hasSelectedChamferedEdgeProfile() {
+  return hasSelectedAddon(CHAMFERED_EDGE_ADDON_ID);
+}
+
+function hasSelectedTabletopEdgeProfile() {
+  return Boolean(getSelectedCornerProfileAddon() || hasSelectedChamferedEdgeProfile());
+}
+
+function isChamferEditablePart(partRoot) {
+  return partRoot && partRoot.name === 'tabletop';
+}
+
+function getProfileMaxAbsX(profileAddonId, absZ, halfWidth, halfLength, unitsPerInch, scale) {
+  if (!profileAddonId || !Number.isFinite(absZ) || !Number.isFinite(halfWidth) || !Number.isFinite(halfLength)) return halfWidth;
+  if (halfWidth <= 0 || halfLength <= 0) return halfWidth;
+
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const radiusUnits = (profileAddonId === 'addon-rounded-corners' ? ROUNDED_CORNER_RADIUS_IN : ANGLED_CORNER_CUT_IN)
+    * unitsPerInch;
+  const radiusX = THREE.MathUtils.clamp(radiusUnits / scaleX, 0, halfWidth);
+  const radiusZ = THREE.MathUtils.clamp(radiusUnits / scaleZ, 0, halfLength);
+  const cornerStartZ = halfLength - radiusZ;
+  if (absZ <= cornerStartZ) return halfWidth;
+
+  const cornerProgressZ = absZ - cornerStartZ;
+  if (profileAddonId === 'addon-angled-corners') {
+    const progress = radiusZ > 0 ? THREE.MathUtils.clamp(cornerProgressZ / radiusZ, 0, 1) : 1;
+    return Math.max(halfWidth - (radiusX * progress), 0);
+  }
+
+  if (radiusX <= 0 || radiusZ <= 0) return halfWidth;
+  const normalizedZ = THREE.MathUtils.clamp(cornerProgressZ / radiusZ, 0, 1);
+  return Math.max(halfWidth - radiusX + (radiusX * Math.sqrt(Math.max(0, 1 - (normalizedZ * normalizedZ)))), 0);
+}
+
+function removeChamferPreviewMesh(partRoot) {
+  if (!partRoot) return;
+  const previewMesh = partRoot.getObjectByName(CHAMFER_PREVIEW_MESH_NAME);
+  if (!previewMesh) return;
+  partRoot.remove(previewMesh);
+  if (previewMesh.geometry && typeof previewMesh.geometry.dispose === 'function') previewMesh.geometry.dispose();
+  if (previewMesh.material && previewMesh.material.userData?.edgeProfileChamferPreview) disposeMaterial(previewMesh.material);
+}
+
+function restoreEdgeProfilePreviewHiddenMeshes(partRoot) {
+  if (!partRoot) return;
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.userData || !child.userData.edgeProfilePreviewHidden) return;
+    child.visible = child.userData.edgeProfilePreviewBaseVisible !== false;
+    delete child.userData.edgeProfilePreviewHidden;
+    delete child.userData.edgeProfilePreviewBaseVisible;
+  });
+}
+
+function removeEdgeProfilePreviewMesh(partRoot) {
+  if (!partRoot) return;
+  const previewMesh = partRoot.getObjectByName(EDGE_PROFILE_PREVIEW_MESH_NAME);
+  if (previewMesh) {
+    partRoot.remove(previewMesh);
+    if (previewMesh.geometry && typeof previewMesh.geometry.dispose === 'function') previewMesh.geometry.dispose();
+    if (previewMesh.material && previewMesh.material.userData?.edgeProfilePreview) disposeMaterial(previewMesh.material);
+  }
+  restoreEdgeProfilePreviewHiddenMeshes(partRoot);
+}
+
+function getCornerProfileInset(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  if (!profileAddonId) return null;
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const sizeInches = profileAddonId === 'addon-rounded-corners' ? ROUNDED_CORNER_RADIUS_IN : ANGLED_CORNER_CUT_IN;
+  return {
+    x: THREE.MathUtils.clamp((sizeInches * unitsPerInch) / scaleX, 0, halfWidth),
+    z: THREE.MathUtils.clamp((sizeInches * unitsPerInch) / scaleZ, 0, halfLength)
+  };
+}
+
+function getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  const inset = getCornerProfileInset(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+
+  if (profileAddonId === 'addon-angled-corners' && inset) {
+    const cutX = inset.x;
+    const cutZ = inset.z;
+    return [
+      { x: halfWidth - cutX, z: -halfLength },
+      { x: halfWidth, z: -halfLength + cutZ },
+      { x: halfWidth, z: halfLength - cutZ },
+      { x: halfWidth - cutX, z: halfLength },
+      { x: -halfWidth + cutX, z: halfLength },
+      { x: -halfWidth, z: halfLength - cutZ },
+      { x: -halfWidth, z: -halfLength + cutZ },
+      { x: -halfWidth + cutX, z: -halfLength }
+    ];
+  }
+
+  if (profileAddonId === 'addon-rounded-corners' && inset && inset.x > 0 && inset.z > 0) {
+    const points = [];
+    const corners = [
+      { centerX: halfWidth - inset.x, centerZ: -halfLength + inset.z, start: -Math.PI / 2, end: 0 },
+      { centerX: halfWidth - inset.x, centerZ: halfLength - inset.z, start: 0, end: Math.PI / 2 },
+      { centerX: -halfWidth + inset.x, centerZ: halfLength - inset.z, start: Math.PI / 2, end: Math.PI },
+      { centerX: -halfWidth + inset.x, centerZ: -halfLength + inset.z, start: Math.PI, end: Math.PI * 1.5 }
+    ];
+    corners.forEach((corner) => {
+      for (let index = 0; index <= ROUNDED_CORNER_SEGMENTS; index += 1) {
+        const progress = index / ROUNDED_CORNER_SEGMENTS;
+        const angle = corner.start + ((corner.end - corner.start) * progress);
+        points.push({
+          x: corner.centerX + (Math.cos(angle) * inset.x),
+          z: corner.centerZ + (Math.sin(angle) * inset.z)
+        });
+      }
+    });
+    return points;
+  }
+
+  return [
+    { x: halfWidth, z: -halfLength },
+    { x: halfWidth, z: halfLength },
+    { x: -halfWidth, z: halfLength },
+    { x: -halfWidth, z: -halfLength }
+  ];
+}
+
+function getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale) {
+  return getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+}
+
+function getInsetChamferEdgePoints(firstPoint, secondPoint, insetX, insetZ) {
+  const deltaX = secondPoint.x - firstPoint.x;
+  const deltaZ = secondPoint.z - firstPoint.z;
+  const length = Math.hypot(deltaX, deltaZ);
+  if (!Number.isFinite(length) || length <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+    return {
+      first: { ...firstPoint },
+      second: { ...secondPoint }
+    };
+  }
+
+  const inwardX = -deltaZ / length;
+  const inwardZ = deltaX / length;
+  return {
+    first: {
+      x: firstPoint.x + (inwardX * insetX),
+      z: firstPoint.z + (inwardZ * insetZ)
+    },
+    second: {
+      x: secondPoint.x + (inwardX * insetX),
+      z: secondPoint.z + (inwardZ * insetZ)
+    }
+  };
+}
+
+function getEdgeProfileUv(point, localBounds) {
+  const spanX = Math.max(localBounds.maxX - localBounds.minX, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const spanY = Math.max(localBounds.maxY - localBounds.minY, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const spanZ = Math.max(localBounds.maxZ - localBounds.minZ, EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  return {
+    x: (point.x - localBounds.minX) / spanX,
+    y: (point.y - localBounds.minY) / spanY,
+    z: (point.z - localBounds.minZ) / spanZ
+  };
+}
+
+function pushEdgeProfileVertex(vertices, uvs, point, uv) {
+  vertices.push(point.x, point.y, point.z);
+  uvs.push(uv.u, uv.v);
+}
+
+function pushChamferQuad(vertices, uvs, localBounds, firstTop, secondTop, secondLower, firstLower) {
+  const firstTopUv = getEdgeProfileUv(firstTop, localBounds);
+  const secondTopUv = getEdgeProfileUv(secondTop, localBounds);
+  const secondLowerUv = getEdgeProfileUv(secondLower, localBounds);
+  const firstLowerUv = getEdgeProfileUv(firstLower, localBounds);
+  [
+    { point: firstTop, uv: { u: firstTopUv.x, v: firstTopUv.z } },
+    { point: secondTop, uv: { u: secondTopUv.x, v: secondTopUv.z } },
+    { point: secondLower, uv: { u: secondLowerUv.x, v: secondLowerUv.z } },
+    { point: firstTop, uv: { u: firstTopUv.x, v: firstTopUv.z } },
+    { point: secondLower, uv: { u: secondLowerUv.x, v: secondLowerUv.z } },
+    { point: firstLower, uv: { u: firstLowerUv.x, v: firstLowerUv.z } }
+  ].forEach(({ point, uv }) => pushEdgeProfileVertex(vertices, uvs, point, uv));
+}
+
+function createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch, scale) {
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  const thickness = localBounds.maxY - localBounds.minY;
+  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || !Number.isFinite(thickness)) return null;
+  if (halfWidth <= 0 || halfLength <= 0 || thickness <= CHAMFER_PREVIEW_MIN_THICKNESS) return null;
+
+  const scaleX = Math.max(Math.abs(Number(scale && scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleY = Math.max(Math.abs(Number(scale && scale.y) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(scale && scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const insetX = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleX, 0, halfWidth * 0.18);
+  const insetY = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleY, CHAMFER_PREVIEW_MIN_THICKNESS, thickness * 0.45);
+  const insetZ = THREE.MathUtils.clamp((CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleZ, 0, halfLength * 0.18);
+  if (insetX <= 0 && insetZ <= 0) return null;
+
+  const outerPoints = getChamferFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+  const vertices = [];
+  const uvs = [];
+  const topY = localBounds.maxY;
+  const lowerY = Math.max(localBounds.minY, localBounds.maxY - insetY);
+
+  outerPoints.forEach((outerPoint, index) => {
+    const nextIndex = (index + 1) % outerPoints.length;
+    const nextOuterPoint = outerPoints[nextIndex];
+    const { first: innerPoint, second: nextInnerPoint } = getInsetChamferEdgePoints(
+      outerPoint,
+      nextOuterPoint,
+      insetX,
+      insetZ
+    );
+    pushChamferQuad(
+      vertices,
+      uvs,
+      localBounds,
+      { x: centerX + innerPoint.x, y: topY, z: centerZ + innerPoint.z },
+      { x: centerX + nextInnerPoint.x, y: topY, z: centerZ + nextInnerPoint.z },
+      { x: centerX + nextOuterPoint.x, y: lowerY, z: centerZ + nextOuterPoint.z },
+      { x: centerX + outerPoint.x, y: lowerY, z: centerZ + outerPoint.z }
+    );
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerInch, scale) {
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  const thickness = localBounds.maxY - localBounds.minY;
+  if (!profileAddonId || !Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || !Number.isFinite(thickness)) return null;
+  if (halfWidth <= 0 || halfLength <= 0 || thickness <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) return null;
+
+  const footprintPoints = getEdgeProfileFootprintPoints(profileAddonId, halfWidth, halfLength, unitsPerInch, scale);
+  if (!Array.isArray(footprintPoints) || footprintPoints.length < 3) return null;
+
+  const topY = localBounds.maxY;
+  const bottomY = localBounds.minY;
+  const vertices = [];
+  const uvs = [];
+  const topCenter = { x: centerX, y: topY, z: centerZ };
+  const bottomCenter = { x: centerX, y: bottomY, z: centerZ };
+  const points = footprintPoints.map((point) => ({
+    x: centerX + point.x,
+    z: centerZ + point.z
+  }));
+
+  points.forEach((point, index) => {
+    const nextPoint = points[(index + 1) % points.length];
+    const topPoint = { x: point.x, y: topY, z: point.z };
+    const nextTopPoint = { x: nextPoint.x, y: topY, z: nextPoint.z };
+    const bottomPoint = { x: point.x, y: bottomY, z: point.z };
+    const nextBottomPoint = { x: nextPoint.x, y: bottomY, z: nextPoint.z };
+    const topCenterUv = getEdgeProfileUv(topCenter, localBounds);
+    const bottomCenterUv = getEdgeProfileUv(bottomCenter, localBounds);
+    const topPointUv = getEdgeProfileUv(topPoint, localBounds);
+    const nextTopPointUv = getEdgeProfileUv(nextTopPoint, localBounds);
+    const bottomPointUv = getEdgeProfileUv(bottomPoint, localBounds);
+    const nextBottomPointUv = getEdgeProfileUv(nextBottomPoint, localBounds);
+
+    pushEdgeProfileVertex(vertices, uvs, topCenter, { u: topCenterUv.x, v: topCenterUv.z });
+    pushEdgeProfileVertex(vertices, uvs, topPoint, { u: topPointUv.x, v: topPointUv.z });
+    pushEdgeProfileVertex(vertices, uvs, nextTopPoint, { u: nextTopPointUv.x, v: nextTopPointUv.z });
+
+    pushEdgeProfileVertex(vertices, uvs, bottomCenter, { u: bottomCenterUv.x, v: bottomCenterUv.z });
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, { u: nextBottomPointUv.x, v: nextBottomPointUv.z });
+    pushEdgeProfileVertex(vertices, uvs, bottomPoint, { u: bottomPointUv.x, v: bottomPointUv.z });
+
+    const sideUv = Math.abs(nextPoint.x - point.x) >= Math.abs(nextPoint.z - point.z)
+      ? (sidePoint) => {
+        const pointUv = getEdgeProfileUv(sidePoint, localBounds);
+        return { u: pointUv.x, v: pointUv.y };
+      }
+      : (sidePoint) => {
+        const pointUv = getEdgeProfileUv(sidePoint, localBounds);
+        return { u: pointUv.z, v: pointUv.y };
+      };
+
+    pushEdgeProfileVertex(vertices, uvs, topPoint, sideUv(topPoint));
+    pushEdgeProfileVertex(vertices, uvs, bottomPoint, sideUv(bottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, sideUv(nextBottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, topPoint, sideUv(topPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextBottomPoint, sideUv(nextBottomPoint));
+    pushEdgeProfileVertex(vertices, uvs, nextTopPoint, sideUv(nextTopPoint));
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function addEdgeProfilePreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch) {
+  if (!partRoot || !localBounds || !profileAddonId) return false;
+  const geometry = createEdgeProfilePreviewGeometry(profileAddonId, localBounds, unitsPerInch, partRoot.scale);
+  if (!geometry) return false;
+  const sourceMaterial = getFirstMeshMaterial(partRoot);
+  const material = sourceMaterial && typeof sourceMaterial.clone === 'function'
+    ? cloneReusableMaterial(sourceMaterial)
+    : new THREE.MeshStandardMaterial({ color: 0x8b5a36, roughness: 0.62 });
+  material.userData = {
+    ...(material.userData || {}),
+    edgeProfilePreview: true
+  };
+  if ('side' in material) material.side = THREE.DoubleSide;
+  material.needsUpdate = true;
+
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || child.name === EDGE_PROFILE_PREVIEW_MESH_NAME || child.name === CHAMFER_PREVIEW_MESH_NAME) return;
+    child.userData.edgeProfilePreviewHidden = true;
+    child.userData.edgeProfilePreviewBaseVisible = child.visible !== false;
+    child.visible = false;
+  });
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = EDGE_PROFILE_PREVIEW_MESH_NAME;
+  mesh.userData.edgeProfilePreview = true;
+  partRoot.add(mesh);
+  return true;
+}
+
+function addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch) {
+  if (!partRoot || !localBounds) return false;
+  const geometry = createChamferPreviewGeometry(profileAddonId, localBounds, unitsPerInch, partRoot.scale);
+  if (!geometry) return false;
+  const sourceMaterial = getFirstMeshMaterial(partRoot);
+  const material = sourceMaterial && typeof sourceMaterial.clone === 'function'
+    ? cloneReusableMaterial(sourceMaterial)
+    : new THREE.MeshStandardMaterial({ color: 0x8b5a36, roughness: 0.62 });
+  material.userData = {
+    ...(material.userData || {}),
+    edgeProfileChamferPreview: true
+  };
+  if ('side' in material) material.side = THREE.DoubleSide;
+  material.needsUpdate = true;
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = CHAMFER_PREVIEW_MESH_NAME;
+  mesh.userData.edgeProfileChamferPreview = true;
+  partRoot.add(mesh);
+  return true;
+}
+
+function captureEdgeProfileMeshState(mesh, partRoot) {
+  const geometry = mesh && mesh.geometry;
+  const positionAttribute = geometry && geometry.getAttribute('position');
+  if (!mesh || !partRoot || !geometry || !positionAttribute) return null;
+
+  const expectedPositionLength = positionAttribute.count * 3;
+  const existingState = mesh.userData && mesh.userData.edgeProfileBaseState;
+  if (existingState && existingState.positions && existingState.positions.length === expectedPositionLength) return existingState;
+
+  partRoot.updateWorldMatrix(true, true);
+  mesh.updateWorldMatrix(true, false);
+  const meshToPartMatrix = partRoot.matrixWorld.clone().invert().multiply(mesh.matrixWorld);
+  const partToMeshMatrix = mesh.matrixWorld.clone().invert().multiply(partRoot.matrixWorld);
+  const meshPosition = new THREE.Vector3();
+  const partPosition = new THREE.Vector3();
+  const positions = cloneVector3AttributeValues(positionAttribute);
+  const partPositions = new Float32Array(expectedPositionLength);
+
+  for (let index = 0; index < positionAttribute.count; index += 1) {
+    meshPosition.fromBufferAttribute(positionAttribute, index);
+    partPosition.copy(meshPosition).applyMatrix4(meshToPartMatrix);
+    const offset = index * 3;
+    partPositions[offset] = partPosition.x;
+    partPositions[offset + 1] = partPosition.y;
+    partPositions[offset + 2] = partPosition.z;
+  }
+
+  mesh.userData.edgeProfileBaseState = {
+    positions,
+    partPositions,
+    partToMeshMatrix: partToMeshMatrix.clone()
+  };
+  return mesh.userData.edgeProfileBaseState;
+}
+
+function restoreEdgeProfileMeshState(mesh) {
+  const stateData = mesh && mesh.userData && mesh.userData.edgeProfileBaseState;
+  const positionAttribute = mesh && mesh.geometry && mesh.geometry.getAttribute('position');
+  if (!stateData || !positionAttribute) return false;
+  const restored = restoreVector3AttributeValues(positionAttribute, stateData.positions);
+  if (restored) {
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+    if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
+  }
+  return restored;
+}
+
+function restoreEdgeProfileMeshStates(partRoot) {
+  if (!partRoot) return false;
+  let restored = false;
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh) return;
+    restored = restoreEdgeProfileMeshState(child) || restored;
+  });
+  return restored;
+}
+
+function applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch) {
+  if (!partRoot || !baseState || !baseState.metrics) return;
+  removeChamferPreviewMesh(partRoot);
+  removeEdgeProfilePreviewMesh(partRoot);
+
+  const profileAddonId = getSelectedCornerProfileAddon();
+  const hasChamferedEdgeProfile = hasSelectedChamferedEdgeProfile() && isChamferEditablePart(partRoot);
+  const usesGeneratedCornerProfile = Boolean(profileAddonId);
+  const debugStat = {
+    partName: partRoot.name || '',
+    profile: `${profileAddonId || 'standard'}+${hasChamferedEdgeProfile ? 'chamfered' : 'square'}`,
+    meshCount: 0,
+    changedVertices: 0
+  };
+
+  if (!EDGE_PROFILE_RUNTIME_GEOMETRY_ENABLED) {
+    debugStat.skipped = hasSelectedTabletopEdgeProfile()
+      ? 'authored-river-geometry-preserved'
+      : 'no-edge-profile-selected';
+    if (restoreEdgeProfileMeshStates(partRoot)) partRoot.updateWorldMatrix(true, true);
+    edgeProfileDebugStats.push(debugStat);
+    return;
+  }
+
+  const meshStates = [];
+  const localBounds = {
+    minX: Infinity,
+    maxX: -Infinity,
+    minY: Infinity,
+    maxY: -Infinity,
+    minZ: Infinity,
+    maxZ: -Infinity
+  };
+
+  partRoot.traverse((child) => {
+    if (!child || !child.isMesh || !child.geometry) return;
+    const positionAttribute = child.geometry.getAttribute('position');
+    if (!positionAttribute) return;
+
+    const baseMeshState = captureEdgeProfileMeshState(child, partRoot);
+    if (!baseMeshState) return;
+    restoreEdgeProfileMeshState(child);
+    meshStates.push({ mesh: child, baseMeshState, positionAttribute });
+    debugStat.meshCount += 1;
+
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      const offset = index * 3;
+      const baseX = baseMeshState.partPositions[offset];
+      const baseY = baseMeshState.partPositions[offset + 1];
+      const baseZ = baseMeshState.partPositions[offset + 2];
+      localBounds.minX = Math.min(localBounds.minX, baseX);
+      localBounds.maxX = Math.max(localBounds.maxX, baseX);
+      localBounds.minY = Math.min(localBounds.minY, baseY);
+      localBounds.maxY = Math.max(localBounds.maxY, baseY);
+      localBounds.minZ = Math.min(localBounds.minZ, baseZ);
+      localBounds.maxZ = Math.max(localBounds.maxZ, baseZ);
+    }
+  });
+
+  if ((!profileAddonId && !hasChamferedEdgeProfile) || !meshStates.length) {
+    edgeProfileDebugStats.push(debugStat);
+    return;
+  }
+
+  const halfWidth = (localBounds.maxX - localBounds.minX) / 2;
+  const halfLength = (localBounds.maxZ - localBounds.minZ) / 2;
+  const centerX = (localBounds.minX + localBounds.maxX) / 2;
+  const centerZ = (localBounds.minZ + localBounds.maxZ) / 2;
+  if (!Number.isFinite(halfWidth) || !Number.isFinite(halfLength) || halfWidth <= 0 || halfLength <= 0) return;
+
+  const meshPosition = new THREE.Vector3();
+  const adjustedPartPosition = new THREE.Vector3();
+  const scaleX = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.x) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleY = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.y) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const scaleZ = Math.max(Math.abs(Number(partRoot.scale && partRoot.scale.z) || 1), EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE);
+  const chamferInsetX = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleX : 0;
+  const chamferInsetY = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleY : 0;
+  const chamferInsetZ = hasChamferedEdgeProfile ? (CHAMFERED_EDGE_SIZE_IN * unitsPerInch) / scaleZ : 0;
+  let changed = false;
+
+  meshStates.forEach(({ mesh, baseMeshState, positionAttribute }) => {
+    for (let index = 0; index < positionAttribute.count; index += 1) {
+      const offset = index * 3;
+      const baseX = baseMeshState.partPositions[offset];
+      const baseY = baseMeshState.partPositions[offset + 1];
+      const baseZ = baseMeshState.partPositions[offset + 2];
+      let adjustedX = baseX;
+      let adjustedY = baseY;
+      let adjustedZ = baseZ;
+      let relativeX = adjustedX - centerX;
+      let relativeZ = adjustedZ - centerZ;
+
+      if (profileAddonId && !usesGeneratedCornerProfile) {
+        const sideProgress = halfWidth > 0 ? Math.abs(relativeX) / halfWidth : 0;
+        if (sideProgress >= EDGE_PROFILE_SIDE_VERTEX_THRESHOLD) {
+          const maxAbsX = getProfileMaxAbsX(profileAddonId, Math.abs(relativeZ), halfWidth, halfLength, unitsPerInch, partRoot.scale);
+          if (Number.isFinite(maxAbsX) && Math.abs(relativeX) > maxAbsX) {
+            adjustedX = centerX + (Math.sign(relativeX || 1) * maxAbsX);
+            relativeX = adjustedX - centerX;
+          }
+        }
+      }
+
+      if (hasChamferedEdgeProfile && !usesGeneratedCornerProfile && chamferInsetY > 0) {
+        const topDistance = localBounds.maxY - baseY;
+        const topFactor = THREE.MathUtils.clamp(1 - (topDistance / chamferInsetY), 0, 1);
+        if (topFactor > 0) {
+          const maxAbsX = getProfileMaxAbsX(profileAddonId, Math.abs(relativeZ), halfWidth, halfLength, unitsPerInch, partRoot.scale);
+          const sideDistance = Number.isFinite(maxAbsX) ? maxAbsX - Math.abs(relativeX) : Infinity;
+          const endDistance = halfLength - Math.abs(relativeZ);
+          const sideFactor = chamferInsetX > 0
+            ? THREE.MathUtils.clamp(1 - (sideDistance / chamferInsetX), 0, 1)
+            : 0;
+          const endFactor = chamferInsetZ > 0
+            ? THREE.MathUtils.clamp(1 - (endDistance / chamferInsetZ), 0, 1)
+            : 0;
+
+          if (sideFactor > 0 && Math.abs(relativeX) > EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+            adjustedX -= Math.sign(relativeX) * chamferInsetX * sideFactor * topFactor;
+          }
+          if (endFactor > 0 && Math.abs(relativeZ) > EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE) {
+            adjustedZ -= Math.sign(relativeZ) * chamferInsetZ * endFactor * topFactor;
+          }
+        }
+      }
+
+      if (
+        Math.abs(adjustedX - baseX) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE &&
+        Math.abs(adjustedY - baseY) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE &&
+        Math.abs(adjustedZ - baseZ) <= EDGE_PROFILE_TABLETOP_BOUNDS_TOLERANCE
+      ) {
+        continue;
+      }
+
+      adjustedPartPosition.set(adjustedX, adjustedY, adjustedZ);
+      meshPosition.copy(adjustedPartPosition).applyMatrix4(baseMeshState.partToMeshMatrix);
+      positionAttribute.setXYZ(index, meshPosition.x, meshPosition.y, meshPosition.z);
+      debugStat.changedVertices += 1;
+      changed = true;
+    }
+
+    positionAttribute.needsUpdate = true;
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+    if (typeof mesh.geometry.computeVertexNormals === 'function') mesh.geometry.computeVertexNormals();
+  });
+
+  if (usesGeneratedCornerProfile && addEdgeProfilePreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch)) {
+    debugStat.edgeProfilePreview = true;
+  }
+
+  if (hasChamferedEdgeProfile && addChamferPreviewMesh(partRoot, localBounds, profileAddonId, unitsPerInch)) {
+    debugStat.chamferPreview = true;
+  }
+
+  if (changed || debugStat.chamferPreview) partRoot.updateWorldMatrix(true, true);
+  edgeProfileDebugStats.push(debugStat);
+}
+
 function replaceGlassMeshGeometry(glassMesh, nextGeometry, geometryMode) {
   if (!glassMesh || !nextGeometry) return;
 
@@ -1114,11 +1805,12 @@ function createLiveEdgeGlassGeometry(tabletopRoot, tabletopMetrics, thickness, p
   return glassGeometry;
 }
 
-function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY) {
+function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics) return;
 
   partRoot.scale.x = baseState.scale.x * (Number.isFinite(scaleMap.width) ? scaleMap.width : 1);
   partRoot.scale.z = baseState.scale.z * (Number.isFinite(scaleMap.length) ? scaleMap.length : 1);
+  applyTabletopEdgeProfile(partRoot, baseState, unitsPerInch);
 
   const metrics = getObjectMetrics(partRoot);
   if (!metrics) return;
@@ -1132,7 +1824,7 @@ function computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersi
   partRoot.position.y += desiredUnderside - metrics.min.y;
 }
 
-function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot) {
+function computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot, unitsPerInch) {
   if (!partRoot || !baseState || !baseState.metrics || !tabletopMetrics) return;
 
   const liveEdgeResinFit = getLiveEdgeResinFit(tabletopRoot, tabletopMetrics);
@@ -2064,6 +2756,7 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
   let tabletopMetrics = null;
   let epoxyMetrics = null;
   let tabletopRoot = null;
+  edgeProfileDebugStats = [];
 
   Object.entries(basePartStates).forEach(([partName, baseState]) => {
     const partRoot = renderRoot.getObjectByName(partName);
@@ -2079,13 +2772,13 @@ function applyConfiguredPartTransforms(renderRoot, config = {}) {
     if (role === 'waterfall' || partName === WATERFALL_PART_NAME) return;
 
     if (partName === EPOXY_PREVIEW_PART_NAME && tabletopMetrics) {
-      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot);
+      computeEpoxyTransform(partRoot, baseState, scaleMap, tabletopMetrics, tabletopRoot, unitsPerInch);
       epoxyMetrics = getObjectMetrics(partRoot);
       return;
     }
 
-    if (role === 'tabletop' || partName.startsWith('tabletop')) {
-      computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY);
+    if (role === 'tabletop' || partName === 'tabletop') {
+      computeTabletopTransform(partRoot, baseState, scaleMap, selectedUndersideY, unitsPerInch);
       if (partName === 'tabletop') {
         tabletopRoot = partRoot;
         tabletopMetrics = getObjectMetrics(partRoot);
@@ -2140,12 +2833,21 @@ function getVectorTriplet(value, fallback = 0) {
 
 function resolvePartConfig(partConfig = {}) {
   const defaultAssetPath = typeof partConfig.assetPath === 'string' ? partConfig.assetPath.trim() : '';
+  const selectedAddons = getSelectedAddons();
+  if (
+    selectedAddons.includes('addon-angled-corners')
+    && selectedAddons.includes(CHAMFERED_EDGE_ADDON_ID)
+  ) {
+    return {
+      ...partConfig,
+      assetPath: defaultAssetPath
+    };
+  }
   const addonAssetPaths = partConfig.addonAssetPaths && typeof partConfig.addonAssetPaths === 'object'
     ? partConfig.addonAssetPaths
     : null;
   if (!addonAssetPaths) return { ...partConfig, assetPath: defaultAssetPath };
 
-  const selectedAddons = getSelectedAddons();
   const selectedAddonOverride = selectedAddons.find((addonId) => (
     typeof addonId === 'string'
     && addonAssetPaths[addonId]
@@ -3097,7 +3799,20 @@ function installViewerDebugConsoleApi() {
     enable: () => setViewerDebugMode(true),
     disable: () => setViewerDebugMode(false),
     toggle: () => setViewerDebugMode(!viewerDebugEnabled),
-    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled()
+    isEnabled: () => viewerDebugEnabled || isDebugModeEnabled(),
+    getModelContract: async (modelId = null) => {
+      const manifest = await loadManifest();
+      const selectedModelId = modelId || (state && state.selections ? state.selections.model : null);
+      const config = resolveViewerConfig(manifest, selectedModelId);
+      return config ? config.modelContract || null : null;
+    },
+    auditModelContract: async (modelId = null) => {
+      const manifest = await loadManifest();
+      const selectedModelId = modelId || (state && state.selections ? state.selections.model : null);
+      const config = resolveViewerConfig(manifest, selectedModelId);
+      return config ? getModelContractWarnings(config) : ['No viewer config found for selected model.'];
+    },
+    getEdgeProfileStats: () => edgeProfileDebugStats.map((entry) => ({ ...entry }))
   };
 }
 
@@ -3358,23 +4073,34 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
+  if (selectedAddons.includes('addon-squoval')) {
+    pushViewerNotice(
+      notices,
+      'Squoval design',
+      'Squoval changes the tabletop footprint and needs a dedicated tabletop source model before it can be shown accurately.',
+      getOptionDisplayName('addon', 'addon-squoval', 'Squoval')
+    );
+  }
+  if (
+    selectedAddons.includes('addon-angled-corners')
+    && selectedAddons.includes(CHAMFERED_EDGE_ADDON_ID)
+  ) {
+    pushViewerNotice(
+      notices,
+      'Angled corners with chamfered edges',
+      'This combined edge treatment is not shown in the local 3D viewer.',
+      [
+        getOptionDisplayName('addon', 'addon-angled-corners', 'Angled corners'),
+        getOptionDisplayName('addon', CHAMFERED_EDGE_ADDON_ID, 'Chamfered edges')
+      ]
+    );
+  }
   if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
     pushViewerNotice(
       notices,
       'Waterfall art',
       'Waterfall art is quoted to spec and is not shown in the standard viewer.',
       getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
-    );
-  }
-  if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
-    const edgeProfileNames = selectedAddons
-      .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
-      .map((addonId) => getOptionDisplayName('addon', addonId, 'Edge profile'));
-    pushViewerNotice(
-      notices,
-      'Edge profile',
-      'Edge profile changes are not modeled in the local viewer yet.',
-      edgeProfileNames
     );
   }
   if (
@@ -3685,8 +4411,9 @@ function resolveViewerConfig(manifest, modelId) {
     }
   };
   const selectionContext = getCurrentViewerSelectionContext(modelId, { dimensionRules });
+  const modelContract = mergeModelContract(defaults.modelContract, modelEntry.modelContract, dimensionRules);
 
-  return {
+  const resolvedConfig = {
     ...defaults,
     ...modelEntry,
     parts: [
@@ -3695,8 +4422,11 @@ function resolveViewerConfig(manifest, modelId) {
       ...buildUChannelRenderableParts(selectionContext)
     ],
     camera,
-    dimensionRules
+    dimensionRules,
+    modelContract
   };
+  reportModelContractWarnings(resolvedConfig);
+  return resolvedConfig;
 }
 
 async function buildRenderAsset(partConfig, index = 0) {

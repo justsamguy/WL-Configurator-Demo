@@ -14,7 +14,8 @@
  - Add URL modifiers # using numbers to allow for link sharing in the config app and use this to replace the copy/paste button action in the Summary page (plan before implementing).
  - Decide whether to keep, replace, or remove the html2canvas self-screenshot flow for adding an example image to the PDF (currently not in use).
 
-- Add a way to display edge customizations in the viewer (edge_profile_3d_preview_plan.md).
+- Edge customizations in the viewer — complete for supported individual profiles. Squoval and the angled-corners + chamfered-edges combination intentionally remain unmodeled and display a viewer notice.
+- Review active vs legacy 3D model assets for this version: identify which app GLBs are still needed, which source Blender files own them, and which files should be removed or re-exported before model-contract edge work continues.
 - Add Chair models.
 - Add the option to toggle tabletop legs and chairs in the 3D viewer (separate toggles for each and put the controls in the viewer controls section):
 When un-selected, give the legs 80% transparency instead of fully hiding them. Make chairs fully hidden.
