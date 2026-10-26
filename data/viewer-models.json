@@ -68,7 +68,7 @@
           },
           {
             "assetPath": "assets/models/table-leg-squared-dining-3x1-28Hx28W.glb",
-            "modelIds": ["mdl-dining", "mdl-conference"],
+            "modelIds": ["mdl-dining", "mdl-conference", "mdl-desk"],
             "tubeIds": ["tube-1x3"]
           }
         ]
@@ -85,7 +85,7 @@
           },
           {
             "assetPath": "assets/models/table-leg-tapered-dining-3x1-28Hx28W.glb",
-            "modelIds": ["mdl-dining", "mdl-conference"],
+            "modelIds": ["mdl-dining", "mdl-conference", "mdl-desk"],
             "tubeIds": ["tube-1x3"]
           }
         ]
@@ -112,6 +112,16 @@
           {
             "assetPath": "assets/models/table-leg-tripod-dining-3x1-28Hx38W.glb",
             "tubeIds": ["tube-1x3"]
+          }
+        ]
+      },
+      "leg-sit-stand": {
+        "layout": "single-center",
+        "allowThirdLeg": false,
+        "variants": [
+          {
+            "assetPath": "assets/models/sit-stand-desk-frame-72in.glb",
+            "modelIds": ["mdl-desk"]
           }
         ]
       }

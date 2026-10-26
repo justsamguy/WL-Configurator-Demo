@@ -308,6 +308,50 @@
     "addons": []
   },
   {
+    "id": "preset-desk-walnut-blue-sit-stand",
+    "title": "Walnut Blue River Sit/Stand Desk",
+    "description": "72 × 36 Black Walnut river desk with a sit/stand base.",
+    "image": "assets/images/Black Walnut Blue River Sit-Stand Desk.webp",
+    "modelId": "mdl-desk",
+    "designId": "des-river",
+    "selections": { "material": "mat-01", "color": "color-02", "color-gradient": "color-gradient-01", "finish-coating": "fin-coat-02", "finish-sheen": "fin-sheen-02", "finish-tint": "fin-tint-01", "dimensions": "dim-desk-72x36", "legs": "leg-sit-stand" },
+    "dimensionsDetail": { "length": 72, "width": 36, "height": "standard", "heightCustom": null, "presetId": "dim-desk-72x36" },
+    "addons": []
+  },
+  {
+    "id": "preset-desk-elm-grey-sit-stand",
+    "title": "Elm Grey River Sit/Stand Desk",
+    "description": "72 × 36 American Elm river desk with a sit/stand base.",
+    "image": "assets/images/Black Walnut Blue River Sit-Stand Desk.webp",
+    "modelId": "mdl-desk",
+    "designId": "des-river",
+    "selections": { "material": "mat-03", "color": "color-03", "color-gradient": "color-gradient-01", "finish-coating": "fin-coat-02", "finish-sheen": "fin-sheen-02", "finish-tint": "fin-tint-01", "dimensions": "dim-desk-72x36", "legs": "leg-sit-stand" },
+    "dimensionsDetail": { "length": 72, "width": 36, "height": "standard", "heightCustom": null, "presetId": "dim-desk-72x36" },
+    "addons": []
+  },
+  {
+    "id": "preset-desk-walnut-slab-sit-stand",
+    "title": "Walnut Slab Sit/Stand Desk",
+    "description": "72 × 30 Black Walnut slab desk with a sit/stand base.",
+    "image": "assets/images/Black Walnut Turquoise Sit-Stand Slab Desk.webp",
+    "modelId": "mdl-desk",
+    "designId": "des-slab",
+    "selections": { "material": "mat-01", "color": "color-03", "color-gradient": "color-gradient-04", "finish-coating": "fin-coat-02", "finish-sheen": "fin-sheen-02", "finish-tint": "fin-tint-01", "dimensions": "dimensions-custom", "legs": "leg-sit-stand" },
+    "dimensionsDetail": { "length": 72, "width": 30, "height": "standard", "heightCustom": null, "presetId": null },
+    "addons": ["addon-live-edge"]
+  },
+  {
+    "id": "preset-desk-walnut-sitting-slab",
+    "title": "Walnut Big Slab Sitting Desk",
+    "description": "108 × 50 Black Walnut slab desk with a static base.",
+    "image": "assets/images/Black Walnut Multi-Green Sitting Slab Desk.webp",
+    "modelId": "mdl-desk",
+    "designId": "des-slab",
+    "selections": { "material": "mat-01", "color": "color-03", "color-gradient": "color-gradient-04", "finish-coating": "fin-coat-02", "finish-sheen": "fin-sheen-02", "finish-tint": "fin-tint-01", "dimensions": "dimensions-custom", "legs": "leg-sample-06", "tube-size": "tube-2x4", "leg-finish": "leg-finish-01" },
+    "dimensionsDetail": { "length": 108, "width": 50, "height": "standard", "heightCustom": null, "presetId": null },
+    "addons": ["addon-live-edge"]
+  },
+  {
     "id": "preset-coffee-signature-maple",
     "title": "Signature Maple",
     "description": "Signature coffee preset with Spalted Maple and Live Edge.",
