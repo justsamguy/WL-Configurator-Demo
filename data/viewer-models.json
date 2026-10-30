@@ -118,6 +118,8 @@
       "leg-sit-stand": {
         "layout": "single-center",
         "allowThirdLeg": false,
+        "preserveFrameScale": true,
+        "preserveMaterial": true,
         "variants": [
           {
             "assetPath": "assets/models/sit-stand-desk-frame-72in.glb",

@@ -463,6 +463,8 @@ function buildLegRenderableParts(legCatalog = {}, selectionContext = {}) {
       placement: 'center',
       layout: 'single-center',
       legId: selectionContext.legId,
+      preserveFrameScale: definition.preserveFrameScale === true,
+      preserveMaterial: definition.preserveMaterial === true,
       assetPath: variant.assetPath,
       tubeFallbackScale
     }];
@@ -1197,6 +1199,14 @@ function computeLegTransform(partRoot, baseState, scaleMap, unitsPerInch, select
   if (!partRoot || !baseState || !baseState.metrics) return;
 
   const partConfig = getPartConfig(partRoot);
+  if (partConfig.preserveFrameScale) {
+    const metrics = getObjectMetrics(partRoot);
+    if (!metrics) return;
+    partRoot.position.x += -metrics.center.x;
+    partRoot.position.y += -metrics.min.y;
+    partRoot.position.z += -metrics.center.z;
+    return;
+  }
   const selectedDimensions = scaleMap && scaleMap.selectedDimensions
     ? { ...scaleMap.selectedDimensions, modelId: (state && state.selections && state.selections.model) || null }
     : {};
@@ -2934,6 +2944,7 @@ async function applySelectedLegFinish(renderRoot) {
         ? partRoot.userData.partConfig.role
         : '';
       if (role !== 'leg' && !partRoot.name.startsWith('leg-')) return;
+      if (partRoot.userData.partConfig && partRoot.userData.partConfig.preserveMaterial) return;
 
       partRoot.traverse((child) => {
         if (!child.isMesh || !child.material) return;
@@ -3240,14 +3251,6 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'Signature base',
       reason: 'The signature base does not have a dedicated local 3D asset yet.',
-      selectionNames: [legTitle]
-    };
-  }
-
-  if (legId === LEG_SIT_STAND_ID) {
-    return {
-      title: 'Sit/stand base',
-      reason: 'The dedicated adjustable base is being modeled separately; this preview currently shows the tabletop only.',
       selectionNames: [legTitle]
     };
   }
@@ -3724,6 +3727,8 @@ async function buildRenderAsset(partConfig, index = 0) {
     placement: partConfig.placement || '',
     layout: partConfig.layout || '',
     legId: partConfig.legId || '',
+    preserveFrameScale: partConfig.preserveFrameScale === true,
+    preserveMaterial: partConfig.preserveMaterial === true,
     tubeFallbackScale: Number.isFinite(Number(partConfig.tubeFallbackScale))
       ? Number(partConfig.tubeFallbackScale)
       : 1
