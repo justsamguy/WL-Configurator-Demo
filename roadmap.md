@@ -14,6 +14,9 @@
  - Add URL modifiers # using numbers to allow for link sharing in the config app and use this to replace the copy/paste button action in the Summary page (plan before implementing).
  - Decide whether to keep, replace, or remove the html2canvas self-screenshot flow for adding an example image to the PDF (currently not in use).
 
+- Add side/top view buttons as camera presets in the 3D viewer
+    - add toggleable dimension lines in these views: overall length, width, height
+- Add toggleable room decor
 - Add a way to display edge customizations in the viewer (edge_profile_3d_preview_plan.md).
 - Add Chair models.
 - Add the option to toggle tabletop legs and chairs in the 3D viewer (separate toggles for each and put the controls in the viewer controls section):
