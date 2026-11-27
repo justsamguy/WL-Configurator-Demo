@@ -3632,6 +3632,33 @@ p, label { font-size: calc(15px + 2pt); color: #374151; }
   color: #475569;
 }
 
+.viewer-status-box[data-status-tone="note"] {
+  pointer-events: auto;
+}
+
+.viewer-status-option-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.14em;
+  cursor: pointer;
+}
+
+.viewer-status-option-link:hover,
+.viewer-status-option-link:focus-visible {
+  color: #0f5f8c;
+}
+
+.viewer-status-option-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .viewer-status-spinner {
   position: absolute;
   right: 1rem;

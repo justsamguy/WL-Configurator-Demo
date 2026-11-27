@@ -44,7 +44,6 @@ const VIEWER_SUPPORT_NOTICE = Object.freeze({
   title: 'Preview limited',
   copy: `${MISSING_CONFIGURATION_MODEL_COPY} Some selected details may not appear in the preview.`
 });
-const VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT = 3;
 const DEBUG_AXIS_SIZE = 96;
 const DEBUG_AXIS_LENGTH = 1.15;
 const DEBUG_AXIS_HEAD_LENGTH = 0.22;
@@ -3132,10 +3131,33 @@ function hideStatusBox() {
   if (dom.statusBox.dataset) delete dom.statusBox.dataset.statusTone;
 }
 
-function showStatusBox({ title = '', copy = '', loading = false } = {}) {
+function showStatusBox({ title = '', copy = '', loading = false, options = [] } = {}) {
   if (!dom.statusBox || !dom.statusTitle || !dom.statusCopy || !dom.statusSpinner) return;
   dom.statusTitle.textContent = title;
-  dom.statusCopy.textContent = copy;
+  dom.statusCopy.replaceChildren();
+  if (Array.isArray(options) && options.length) {
+    dom.statusCopy.append(document.createTextNode('Not fully shown: '));
+    options.forEach((option, index) => {
+      if (index) dom.statusCopy.append(document.createTextNode(', '));
+      const label = String(option && option.label ? option.label : '').trim();
+      const stageIndex = Number(option && option.stageIndex);
+      const optionId = String(option && option.optionId ? option.optionId : '').trim();
+      if (!label || !Number.isInteger(stageIndex) || !optionId) {
+        dom.statusCopy.append(document.createTextNode(label));
+        return;
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'viewer-status-option-link';
+      button.dataset.stageIndex = String(stageIndex);
+      button.dataset.optionId = optionId;
+      button.textContent = label;
+      dom.statusCopy.append(button);
+    });
+    dom.statusCopy.append(document.createTextNode('.'));
+  } else {
+    dom.statusCopy.textContent = copy;
+  }
   dom.statusSpinner.hidden = !loading;
   dom.statusBox.dataset.statusTone = loading ? 'loading' : 'note';
   dom.statusBox.hidden = false;
@@ -3210,24 +3232,37 @@ function formatJoinedSelectionNames(names = []) {
   return uniqueNames;
 }
 
-function pushViewerNotice(notices, title, reason, selectionNames = title) {
+function createViewerNoticeOption(label, stageIndex, optionId) {
+  return { label: String(label || '').trim(), stageIndex, optionId };
+}
+
+function pushViewerNotice(notices, title, reason, selectionNames = title, selectionOptions = []) {
   if (!title || !reason) return;
   if (notices.some((notice) => notice.title === title && notice.reason === reason)) return;
   const names = Array.isArray(selectionNames) ? selectionNames : [selectionNames];
-  notices.push({ title, reason, selectionNames: formatJoinedSelectionNames(names) });
+  const options = Array.isArray(selectionOptions)
+    ? selectionOptions.filter((option) => option && option.label && Number.isInteger(option.stageIndex) && option.optionId)
+    : [];
+  notices.push({
+    title,
+    reason,
+    selectionNames: formatJoinedSelectionNames(names),
+    selectionOptions: options
+  });
 }
 
 function summarizeViewerNotices(notices = []) {
   if (!Array.isArray(notices) || !notices.length) return null;
-  const selectionNames = formatJoinedSelectionNames(notices.flatMap((notice) => notice.selectionNames || notice.title));
+  const selectionOptions = notices.flatMap((notice) => notice.selectionOptions || []);
+  const selectionNames = formatJoinedSelectionNames(selectionOptions.length
+    ? selectionOptions.map((option) => option.label)
+    : notices.flatMap((notice) => notice.selectionNames || notice.title));
   if (!selectionNames.length) return VIEWER_SUPPORT_NOTICE;
 
-  const visibleNames = selectionNames.slice(0, VIEWER_NOTICE_VISIBLE_SELECTION_LIMIT);
-  const remainingCount = selectionNames.length - visibleNames.length;
-  const suffix = remainingCount > 0 ? `, +${remainingCount} more` : '';
   return {
     title: VIEWER_SUPPORT_NOTICE.title,
-    copy: `Not fully shown: ${visibleNames.join(', ')}${suffix}.`
+    copy: `Not fully shown: ${selectionNames.join(', ')}.`,
+    options: selectionOptions
   };
 }
 
@@ -3247,7 +3282,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'No legs',
       reason: 'Leg preview is hidden because this configuration is set to use no legs.',
-      selectionNames: [legTitle]
+      selectionNames: [legTitle],
+      selectionOptions: [createViewerNoticeOption(legTitle, 5, legId)]
     };
   }
 
@@ -3255,7 +3291,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'Custom leg',
       reason: 'Custom leg bases are quoted separately and do not have a dedicated 3D asset yet.',
-      selectionNames: [formatCustomSelectionName(legTitle, 'Custom leg')]
+      selectionNames: [formatCustomSelectionName(legTitle, 'Custom leg')],
+      selectionOptions: [createViewerNoticeOption(formatCustomSelectionName(legTitle, 'Custom leg'), 5, legId)]
     };
   }
 
@@ -3263,7 +3300,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'Signature base',
       reason: 'The signature base does not have a dedicated local 3D asset yet.',
-      selectionNames: [legTitle]
+      selectionNames: [legTitle],
+      selectionOptions: [createViewerNoticeOption(legTitle, 5, legId)]
     };
   }
 
@@ -3278,7 +3316,8 @@ function getLegPreviewNotice(manifest = {}, modelId) {
     return {
       title: 'Leg preview',
       reason: 'The selected leg style does not have a local 3D asset yet.',
-      selectionNames: [legTitle]
+      selectionNames: [legTitle],
+      selectionOptions: [createViewerNoticeOption(legTitle, 5, legId)]
     };
   }
 
@@ -3288,7 +3327,11 @@ function getLegPreviewNotice(manifest = {}, modelId) {
   return {
     title: 'Leg preview',
     reason: 'The selected leg and tube combination does not have a local 3D asset yet.',
-    selectionNames: [legAndTubeTitle]
+    selectionNames: [legAndTubeTitle],
+    selectionOptions: [
+      createViewerNoticeOption(legTitle, 5, legId),
+      ...(tubeTitle ? [createViewerNoticeOption(tubeTitle, 5, selectionContext.tubeId)] : [])
+    ]
   };
 }
 
@@ -3302,7 +3345,10 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
   const designNotice = designId ? DESIGN_VIEWER_NOTICES[designId] : null;
   if (designNotice) {
     const designTitle = getOptionDisplayName('design', designId, designNotice.title);
-    pushViewerNotice(notices, designNotice.title, designNotice.reason, formatSelectionWithDescriptor(designTitle, 'design'));
+    const selectionName = formatSelectionWithDescriptor(designTitle, 'design');
+    pushViewerNotice(notices, designNotice.title, designNotice.reason, selectionName, [
+      createViewerNoticeOption(selectionName, 1, designId)
+    ]);
   }
 
   if (options.material === MATERIAL_CUSTOM_ID) {
@@ -3311,7 +3357,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Custom wood',
       'Custom wood species are quoted to spec, so the viewer keeps the standard slab material.',
-      formatCustomSelectionName(materialTitle, 'Custom wood')
+      formatCustomSelectionName(materialTitle, 'Custom wood'),
+      [createViewerNoticeOption(formatCustomSelectionName(materialTitle, 'Custom wood'), 2, options.material)]
     );
   } else if (options.material === MATERIAL_COOKIE_EXCLUSIVE_ID) {
     const materialTitle = getOptionDisplayName('material', options.material, 'Cookie exclusive wood');
@@ -3319,7 +3366,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Cookie exclusive wood',
       'This quoted wood option does not have a dedicated viewer texture yet.',
-      materialTitle
+      materialTitle,
+      [createViewerNoticeOption(materialTitle, 2, options.material)]
     );
   }
 
@@ -3329,7 +3377,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Custom epoxy color',
       'Custom epoxy colors are mixed to spec, so the viewer keeps the standard resin preview.',
-      formatCustomSelectionName(colorTitle, 'Custom epoxy color')
+      formatCustomSelectionName(colorTitle, 'Custom epoxy color'),
+      [createViewerNoticeOption(formatCustomSelectionName(colorTitle, 'Custom epoxy color'), 2, options.color)]
     );
   }
 
@@ -3340,7 +3389,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Custom epoxy gradient',
       'Custom gradient transitions are quoted to spec and are not rendered in the viewer.',
-      formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient')
+      formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient'),
+      [createViewerNoticeOption(formatCustomSelectionName(gradientTitle, 'Custom epoxy gradient'), 2, selectedGradientId)]
     );
   } else if (
     selectedGradientId === COLOR_GRADIENT_SINGLE_COLOR_ID
@@ -3351,7 +3401,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Single color epoxy',
       'Single-color epoxy is not rendered for multi-color epoxy palettes in the local 3D viewer yet.',
-      formatSelectionWithDescriptor(gradientTitle, 'epoxy')
+      formatSelectionWithDescriptor(gradientTitle, 'epoxy'),
+      [createViewerNoticeOption(formatSelectionWithDescriptor(gradientTitle, 'epoxy'), 2, selectedGradientId)]
     );
   } else if (
     selectedGradientId
@@ -3364,7 +3415,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Epoxy gradient',
       'Gradient transitions are not rendered in the local 3D viewer yet.',
-      formatSelectionWithDescriptor(gradientTitle, 'gradient')
+      formatSelectionWithDescriptor(gradientTitle, 'gradient'),
+      [createViewerNoticeOption(formatSelectionWithDescriptor(gradientTitle, 'gradient'), 2, selectedGradientId)]
     );
   }
 
@@ -3374,12 +3426,13 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Custom leg finish',
       'The viewer uses a neutral stand-in because custom metal finishes are finalized after quoting.',
-      formatCustomSelectionName(legFinishTitle, 'Custom leg finish')
+      formatCustomSelectionName(legFinishTitle, 'Custom leg finish'),
+      [createViewerNoticeOption(formatCustomSelectionName(legFinishTitle, 'Custom leg finish'), 5, options['leg-finish'])]
     );
   }
 
   const legNotice = getLegPreviewNotice(manifest, modelId);
-  if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames);
+  if (legNotice) pushViewerNotice(notices, legNotice.title, legNotice.reason, legNotice.selectionNames, legNotice.selectionOptions);
 
   const selectedAddons = Array.isArray(options.addon) ? options.addon : [];
   if (selectedAddons.includes(WATERFALL_ART_ADDON_ID)) {
@@ -3387,7 +3440,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Waterfall art',
       'Waterfall art is quoted to spec and is not shown in the standard viewer.',
-      getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art')
+      getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art'),
+      [createViewerNoticeOption(getOptionDisplayName('addon', WATERFALL_ART_ADDON_ID, 'Waterfall art'), 6, WATERFALL_ART_ADDON_ID)]
     );
   }
   if (selectedAddons.some((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))) {
@@ -3398,7 +3452,10 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Edge profile',
       'Edge profile changes are not modeled in the local viewer yet.',
-      edgeProfileNames
+      edgeProfileNames,
+      selectedAddons
+        .filter((addonId) => EDGE_PROFILE_VIEWER_ADDON_IDS.has(addonId))
+        .map((addonId) => createViewerNoticeOption(getOptionDisplayName('addon', addonId, 'Edge profile'), 6, addonId))
     );
   }
   if (
@@ -3409,7 +3466,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Lower shelf',
       'Lower shelf geometry is only shown for compatible coffee table bases.',
-      getOptionDisplayName('addon', LOWER_SHELF_ADDON_ID, 'Lower shelf')
+      getOptionDisplayName('addon', LOWER_SHELF_ADDON_ID, 'Lower shelf'),
+      [createViewerNoticeOption(getOptionDisplayName('addon', LOWER_SHELF_ADDON_ID, 'Lower shelf'), 6, LOWER_SHELF_ADDON_ID)]
     );
   }
   if (selectedAddons.includes('addon-embedded-logo')) {
@@ -3417,7 +3475,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Embedded logo',
       'Embedded logo placement is laid out to spec and is not shown in the standard viewer.',
-      getOptionDisplayName('addon', 'addon-embedded-logo', 'Embedded logo')
+      getOptionDisplayName('addon', 'addon-embedded-logo', 'Embedded logo'),
+      [createViewerNoticeOption(getOptionDisplayName('addon', 'addon-embedded-logo', 'Embedded logo'), 6, 'addon-embedded-logo')]
     );
   }
   if (selectedAddons.includes('addon-custom-river')) {
@@ -3425,7 +3484,8 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Custom river design',
       'Custom river layouts are quoted to spec and do not have a standard 3D preview.',
-      getOptionDisplayName('addon', 'addon-custom-river', 'Custom river design')
+      getOptionDisplayName('addon', 'addon-custom-river', 'Custom river design'),
+      [createViewerNoticeOption(getOptionDisplayName('addon', 'addon-custom-river', 'Custom river design'), 6, 'addon-custom-river')]
     );
   }
   if (selectedAddons.some((addonId) => TECH_VIEWER_ADDON_IDS.has(addonId))) {
@@ -3436,7 +3496,10 @@ function collectViewerSelectionNotices(manifest = {}, modelId) {
       notices,
       'Tech add-ons',
       'Power, data, and lighting hardware is installed to spec and is not shown in the 3D viewer.',
-      techAddonNames
+      techAddonNames,
+      selectedAddons
+        .filter((addonId) => TECH_VIEWER_ADDON_IDS.has(addonId))
+        .map((addonId) => createViewerNoticeOption(getOptionDisplayName('addon', addonId, 'Tech add-on'), 6, addonId))
     );
   }
 
@@ -3454,7 +3517,8 @@ function applyViewerSupportNotice(manifest = {}, modelId) {
   showStatusBox({
     title: notice.title,
     copy: notice.copy,
-    loading: false
+    loading: false,
+    options: notice.options
   });
   setLiveStatus(`${getModelTitle(modelId)} 3D preview loaded. ${notice.copy}`);
 }
@@ -4036,6 +4100,23 @@ export async function initViewer() {
   dom.errorCopy = document.getElementById('viewer-error-copy');
   dom.liveRegion = document.getElementById('viewer-status');
   dom.retryButton = document.getElementById('viewer-retry');
+
+  if (dom.statusCopy && dom.statusCopy.dataset.viewerBound !== 'true') {
+    dom.statusCopy.addEventListener('click', (event) => {
+      const button = event.target && event.target.closest
+        ? event.target.closest('.viewer-status-option-link')
+        : null;
+      if (!button) return;
+      const stageIndex = Number(button.dataset.stageIndex);
+      const optionId = button.dataset.optionId || '';
+      if (!Number.isInteger(stageIndex) || !optionId) return;
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent('request-tooltip-option-focus', {
+        detail: { stageIndex, optionId }
+      }));
+    });
+    dom.statusCopy.dataset.viewerBound = 'true';
+  }
 
   if (!dom.surface || !dom.canvas) {
     log.warn('Viewer shell not found. Viewer initialization deferred.');
