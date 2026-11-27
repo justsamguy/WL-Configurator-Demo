@@ -3,7 +3,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
-import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { loadData } from './dataLoader.js';
 import { getVisibleLegCount, getWaterfallEdgeCount } from './pricing.js';
@@ -27,7 +26,6 @@ const log = VIEWER_DEBUG_ENABLED
   : { debug() {}, info() {}, warn() {}, error() {} };
 
 const VIEWER_MANIFEST_PATH = 'data/viewer-models.json';
-const DRACO_DECODER_PATH = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/';
 const LEG_FINISH_DATA_PATH = 'data/leg-finish.json';
 const COLOR_DATA_PATH = 'data/colors.json';
 const FINISH_DATA_PATH = 'data/finish.json';
@@ -205,7 +203,6 @@ let scene = null;
 let camera = null;
 let controls = null;
 let loader = null;
-let dracoLoader = null;
 let floorMesh = null;
 let tabletopGlareLight = null;
 let initialized = false;
@@ -251,15 +248,6 @@ const dom = {
 
 let lastObservedModelId = null;
 
-function getGLTFLoader() {
-  if (loader) return loader;
-
-  dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath(DRACO_DECODER_PATH);
-  loader = new GLTFLoader();
-  loader.setDRACOLoader(dracoLoader);
-  return loader;
-}
 let lastObservedDesignId = null;
 let lastObservedMaterialId = null;
 let lastObservedFinishSheenId = null;
@@ -2419,7 +2407,8 @@ function cloneReusableMaterial(material) {
 async function loadMaterialSourceTemplates(assetPath) {
   if (!assetPath) return [];
   if (!materialSourcePromises.has(assetPath)) {
-    materialSourcePromises.set(assetPath, getGLTFLoader().loadAsync(assetPath).then((gltf) => {
+    if (!loader) loader = new GLTFLoader();
+    materialSourcePromises.set(assetPath, loader.loadAsync(assetPath).then((gltf) => {
       const sourceRoot = gltf.scene || (Array.isArray(gltf.scenes) ? gltf.scenes[0] : null);
       if (!sourceRoot) throw new Error('Material donor GLB did not contain a scene.');
 
@@ -3788,10 +3777,11 @@ function resolveViewerConfig(manifest, modelId) {
 }
 
 async function buildRenderAsset(partConfig, index = 0) {
+  if (!loader) loader = new GLTFLoader();
   const assetPath = partConfig && typeof partConfig.assetPath === 'string' ? partConfig.assetPath : '';
   if (!assetPath) throw new Error('No asset path configured for viewer model.');
 
-  const gltf = await getGLTFLoader().loadAsync(assetPath);
+  const gltf = await loader.loadAsync(assetPath);
   const sourceRoot = gltf.scene || (Array.isArray(gltf.scenes) ? gltf.scenes[0] : null);
   if (!sourceRoot) throw new Error('GLB did not contain a scene.');
 
@@ -4004,6 +3994,11 @@ export async function updateModel(modelId, { force = false } = {}) {
     showReadyState(modelId, config, manifest);
   } catch (error) {
     log.warn('Failed to load 3D preview', { modelId, error });
+    console.error('[Viewer] Failed to load 3D preview', {
+      modelId,
+      assetPaths: getRenderAssetPaths(config),
+      error
+    });
     if (requestToken !== pendingRequestToken) return;
     showErrorState(title, ERROR_COPY);
   } finally {
